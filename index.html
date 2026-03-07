@@ -6002,8 +6002,8 @@ function DicePopup({popup,LC,TH,S,onClose,playSfx}){
           {phase!=='roll'&&<div style={{marginTop:10,transition:'opacity 0.3s',opacity:phase==='done'?1:0.8}}>
             <div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:4,flexWrap:'wrap',fontSize:17,color:TH.text}}>
               <span style={{fontWeight:'bold',color:dieColor,fontSize:19}}>{ch.roll}</span>
-              {mods.map((m,i)=><span key={i} style={{color:m.val>=0?TH.green:TH.red}}>
-                {m.val>=0?'+':'−'}{Math.abs(m.val)} <span style={{fontSize:13,color:TH.textDim}}>({m.label})</span>
+              {mods.map((m,i)=><span key={i} style={{color:typeof m.val==='string'?TH.gold:m.val>=0?TH.green:TH.red}}>
+                {typeof m.val==='string'?(' '+m.val+' '):(m.val>=0?'+':'−')+Math.abs(m.val)} <span style={{fontSize:13,color:TH.textDim}}>({m.label})</span>
               </span>)}
               <span style={{color:TH.textBright,fontWeight:'bold'}}> = {ch.total}</span>
               <span style={{color:TH.textDim}}>vs</span>
