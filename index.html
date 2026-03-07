@@ -562,26 +562,30 @@ const UPGRADES={
 
 // ═══ APPRENTICES ═══
 // ═══ WORKSHOP VISUAL LAYOUT ═══
+// viewBox 600×350, cells 80×46, 6px gap
 const WS_ZONES=[
-  {id:'Crafting',label:'⚗️ Brewing',x:10,y:95,w:190,h:175,color:'#4a6a3a'},
-  {id:'Storage',label:'📦 Storage',x:205,y:95,w:190,h:175,color:'#5a4a3a'},
-  {id:'Business',label:'💰 Shopfront',x:400,y:95,w:190,h:175,color:'#6a5a2a'},
-  {id:'Comfort',label:'🏠 Living',x:10,y:278,w:285,h:95,color:'#5a3a3a'},
-  {id:'Advanced',label:'🔮 Advanced',x:170,y:8,w:260,h:82,color:'#3a3a6a'},
+  {id:'Advanced',label:'🔮 Advanced',x:6,y:4,w:588,h:74,color:'#6a5a9a'},
+  {id:'Crafting',label:'⚗️ Brewing',x:6,y:84,w:190,h:176,color:'#4a6a3a'},
+  {id:'Storage',label:'📦 Storage',x:202,y:84,w:190,h:176,color:'#5a4a3a'},
+  {id:'Business',label:'💰 Shopfront',x:398,y:84,w:190,h:176,color:'#6a5a2a'},
+  {id:'Comfort',label:'🏠 Living',x:6,y:266,w:588,h:76,color:'#5a3a3a'},
 ];
 const WS_POS={
-  cauldron_2:{x:35,y:110,zone:'Crafting'},cauldron_3:{x:110,y:110,zone:'Crafting'},
-  mortar:{x:35,y:170,zone:'Crafting'},runic_tools:{x:110,y:170,zone:'Crafting'},
-  bench_1:{x:35,y:228,zone:'Crafting'},bench_2:{x:110,y:228,zone:'Crafting'},
-  shelves:{x:225,y:110,zone:'Storage'},cellar:{x:305,y:110,zone:'Storage'},
-  vault:{x:265,y:170,zone:'Storage'},
-  shopfront:{x:420,y:110,zone:'Business'},signage:{x:500,y:110,zone:'Business'},
-  display:{x:420,y:170,zone:'Business'},rep_board:{x:500,y:170,zone:'Business'},
-  ledger:{x:460,y:228,zone:'Business'},
-  quarters:{x:30,y:292,zone:'Comfort'},hearth:{x:110,y:292,zone:'Comfort'},
-  garden:{x:190,y:292,zone:'Comfort'},garden_2:{x:270,y:292,zone:'Comfort'},
-  library:{x:190,y:22,zone:'Advanced'},forge:{x:270,y:22,zone:'Advanced'},
-  leyline:{x:350,y:22,zone:'Advanced'},
+  // Advanced — centered row of 3
+  library:{x:173,y:22},forge:{x:259,y:22},leyline:{x:345,y:22},
+  // Crafting — 2 cols × 3 rows
+  cauldron_2:{x:16,y:104},cauldron_3:{x:102,y:104},
+  mortar:{x:16,y:154},runic_tools:{x:102,y:154},
+  bench_1:{x:16,y:204},bench_2:{x:102,y:204},
+  // Storage — 2 cols × 2 rows (vault centered)
+  shelves:{x:212,y:104},cellar:{x:298,y:104},
+  vault:{x:255,y:154},
+  // Business — 2 cols × 3 rows (ledger centered)
+  shopfront:{x:408,y:104},signage:{x:494,y:104},
+  display:{x:408,y:154},rep_board:{x:494,y:154},
+  ledger:{x:451,y:204},
+  // Comfort — centered row of 4
+  quarters:{x:121,y:284},hearth:{x:207,y:284},garden:{x:293,y:284},garden_2:{x:379,y:284},
 };
 
 const AP_POOL=[
@@ -4548,24 +4552,22 @@ function CindervaleAlchemistInner(){
         {!workshopListView&&<>
           {/* ═══ SVG WORKSHOP VIEW ═══ */}
           <div style={{...S.card,padding:4,overflow:'hidden'}}>
-            <svg viewBox="0 0 600 380" style={{width:'100%',display:'block',borderRadius:8}} xmlns="http://www.w3.org/2000/svg">
+            <svg viewBox="0 0 600 350" style={{width:'100%',display:'block',borderRadius:8}} xmlns="http://www.w3.org/2000/svg">
               <defs>
                 <pattern id="wp_stone" width="20" height="20" patternUnits="userSpaceOnUse"><rect width="20" height="20" fill="#2a2218"/><rect x="0" y="0" width="9" height="9" fill="#302820" rx="1"/><rect x="10" y="10" width="9" height="9" fill="#2e2620" rx="1"/></pattern>
                 <pattern id="wp_wood" width="30" height="8" patternUnits="userSpaceOnUse"><rect width="30" height="8" fill="#3a2e20"/><line x1="0" y1="4" x2="30" y2="4" stroke="#4a3a28" strokeWidth="0.5"/></pattern>
                 <filter id="wp_glow"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+                <filter id="wp_afford"><feGaussianBlur stdDeviation="2.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
               </defs>
               {/* Background */}
-              <rect width="600" height="380" fill="url(#wp_stone)" rx="6"/>
-              <rect y="270" width="600" height="110" fill="url(#wp_wood)" rx="0"/>
-              <line x1="0" y1="270" x2="600" y2="270" stroke="#5a4a30" strokeWidth="2"/>
-              {/* Ceiling beams */}
-              <rect x="0" y="0" width="600" height="6" fill="#4a3a28"/>
-              <rect x="145" y="0" width="6" height="92" fill="#4a3a28" opacity="0.5"/>
-              <rect x="449" y="0" width="6" height="92" fill="#4a3a28" opacity="0.5"/>
+              <rect width="600" height="350" fill="url(#wp_stone)" rx="6"/>
+              <rect y="260" width="600" height="90" fill="url(#wp_wood)" rx="0"/>
+              <line x1="0" y1="260" x2="600" y2="260" stroke="#5a4a30" strokeWidth="2"/>
+              <rect x="0" y="0" width="600" height="5" fill="#4a3a28"/>
               {/* Zone backgrounds */}
               {WS_ZONES.map(z=><g key={z.id}>
-                <rect x={z.x} y={z.y} width={z.w} height={z.h} fill={z.color} opacity="0.15" rx="6" stroke={z.color} strokeWidth="1" strokeOpacity="0.3"/>
-                <text x={z.x+z.w/2} y={z.y+12} textAnchor="middle" fill={z.color} fontSize="11" fontWeight="bold" opacity="0.6">{z.label}</text>
+                <rect x={z.x} y={z.y} width={z.w} height={z.h} fill={z.color} opacity="0.12" rx="6" stroke={z.color} strokeWidth="1" strokeOpacity="0.25"/>
+                <text x={z.x+z.w/2} y={z.y+14} textAnchor="middle" fill={z.color} fontSize="11" fontWeight="bold" opacity="0.7">{z.label}</text>
               </g>)}
               {/* Upgrade hotspots */}
               {Object.entries(WS_POS).map(([uid,pos])=>{
@@ -4577,32 +4579,39 @@ function CindervaleAlchemistInner(){
                 const sel=selectedUpgrade===uid;
                 const zone=WS_ZONES.find(z=>z.id===u.cat);
                 const zc=zone?.color||'#888';
-                const w=68,h=54;
+                const w=80,h=46;
+                // Compute affordability
+                const pDisc=getFeatureVal('upgradeCostReduction')+(prepped?0.40:0);
+                const gCost=Math.max(1,Math.floor((u.cost.gold||0)*(1-Math.min(pDisc,0.9))));
+                const mE=Object.entries(u.cost).filter(([id])=>id!=='gold');
+                let wM=null;if(prepped&&mE.length>0){const s=[...mE].sort((a,b)=>(INGR[a[0]]?.val||0)-(INGR[b[0]]?.val||0));wM=s[0][0];}
+                const aM=mE.filter(([id])=>id!==wM);
+                const canBuy=reqMet&&!owned&&gold>=gCost&&aM.every(([id,q])=>(inv[id]||0)>=q);
                 return(<g key={uid} style={{cursor:'pointer'}} onClick={()=>setSelectedUpgrade(sel?null:uid)}>
+                  {/* Affordability glow behind cell */}
+                  {canBuy&&!owned&&<rect x={pos.x-3} y={pos.y-3} width={w+6} height={h+6} rx="7" fill={TH.gold} opacity="0.2" filter="url(#wp_afford)"/>}
                   {/* Cell background */}
                   <rect x={pos.x} y={pos.y} width={w} height={h} rx="5"
-                    fill={owned?zc:sel?'#ffffff10':'#00000030'}
-                    fillOpacity={owned?0.35:0.6}
-                    stroke={sel?TH.gold:owned?zc:prepped?TH.gold:reqMet?'#ffffff20':'#ffffff08'}
-                    strokeWidth={sel?2:1}
-                    filter={sel||prepped?'url(#wp_glow)':undefined}/>
+                    fill={owned?zc:canBuy?'#d4a42018':sel?'#ffffff10':'#00000030'}
+                    fillOpacity={owned?0.4:0.7}
+                    stroke={sel?TH.gold:owned?zc:canBuy?TH.gold:prepped?TH.gold:reqMet?'#ffffff18':'#ffffff08'}
+                    strokeWidth={sel?2.5:canBuy?1.5:1}/>
                   {/* Construction progress bar */}
                   {!owned&&cProg>0&&cProg<100&&<>
-                    <rect x={pos.x+3} y={pos.y+h-6} width={w-6} height={3} fill="#00000040" rx="1"/>
-                    <rect x={pos.x+3} y={pos.y+h-6} width={(w-6)*cProg/100} height={3} fill={TH.gold} rx="1"/>
+                    <rect x={pos.x+4} y={pos.y+h-7} width={w-8} height={3} fill="#00000040" rx="1"/>
+                    <rect x={pos.x+4} y={pos.y+h-7} width={(w-8)*cProg/100} height={3} fill={TH.gold} rx="1"/>
                   </>}
                   {/* Icon */}
-                  <text x={pos.x+w/2} y={pos.y+28} textAnchor="middle" fontSize={owned?'22':'18'} opacity={owned?1:reqMet?0.5:0.2}>{u.icon}</text>
+                  <text x={pos.x+w/2} y={pos.y+26} textAnchor="middle" fontSize={owned?'20':'16'} opacity={owned?1:canBuy?0.85:reqMet?0.4:0.15}>{u.icon}</text>
                   {/* Label */}
-                  <text x={pos.x+w/2} y={pos.y+h-2} textAnchor="middle" fontSize="8" fill={owned?'#c0d0a0':reqMet?'#999':'#555'}>{u.name.length>12?u.name.slice(0,11)+'…':u.name}</text>
-                  {/* Owned checkmark */}
-                  {owned&&<text x={pos.x+w-8} y={pos.y+12} fontSize="10" fill="#80e080">✓</text>}
-                  {/* Prepped indicator */}
-                  {prepped&&!owned&&<text x={pos.x+w-10} y={pos.y+12} fontSize="9" fill={TH.gold}>🔨</text>}
+                  <text x={pos.x+w/2} y={pos.y+h-3} textAnchor="middle" fontSize="8" fill={owned?'#c0d0a0':canBuy?TH.gold:reqMet?'#888':'#444'}>{u.name.length>14?u.name.slice(0,13)+'…':u.name}</text>
+                  {/* Status badges */}
+                  {owned&&<text x={pos.x+w-9} y={pos.y+12} fontSize="10" fill="#80e080">✓</text>}
+                  {prepped&&!owned&&<text x={pos.x+w-11} y={pos.y+12} fontSize="9" fill={TH.gold}>🔨</text>}
+                  {canBuy&&!owned&&!prepped&&<text x={pos.x+w-9} y={pos.y+12} fontSize="9" fill={TH.gold}>★</text>}
                 </g>);
               })}
-              {/* Decorative elements */}
-              <text x="300" y="375" textAnchor="middle" fontSize="11" fill="#5a4a30" fontStyle="italic" opacity="0.5">~ Your Workshop ~</text>
+              <text x="300" y="345" textAnchor="middle" fontSize="10" fill="#5a4a30" fontStyle="italic" opacity="0.4">~ Your Workshop ~</text>
             </svg>
           </div>
 
