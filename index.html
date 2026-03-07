@@ -1353,8 +1353,11 @@ function CindervaleAlchemistInner(){
   const [showSaveMenu,setShowSaveMenu]=useState(false);
   const [showJournal,setShowJournal]=useState(false);
   const [confirmDelete,setConfirmDelete]=useState(null);
-  const debugMode=new URLSearchParams(window.location.search).get('debug')==='1';
+  const [debugMode,setDebugMode]=useState(false);
   const [showDebug,setShowDebug]=useState(false);
+  // Activate dev tools: tap the ⚗️ title 5 times rapidly
+  const [devTaps,setDevTaps]=useState(0);const devTapTimer=useRef(null);
+  const handleDevTap=()=>{setDevTaps(p=>{const n=p+1;clearTimeout(devTapTimer.current);devTapTimer.current=setTimeout(()=>setDevTaps(0),2000);if(n>=5){setDebugMode(true);setShowDebug(true);return 0;}return n;});};
 
   const [phase,setPhase]=useState('identity');
   const [charName,setCharName]=useState('');
@@ -3408,7 +3411,7 @@ function CindervaleAlchemistInner(){
       {/* HEADER */}
       <div style={{width:'100%',maxWidth:1200,padding:'6px 16px',borderBottom:`1px solid ${TH.border}`,position:'relative'}}>
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-          <div style={{fontSize:20,color:TH.gold,letterSpacing:2,cursor:'pointer'}} onClick={()=>setScreen('map')}>⚗️ Cindervale</div>
+          <div style={{fontSize:20,color:TH.gold,letterSpacing:2,cursor:'pointer'}} onClick={()=>{setScreen('map');handleDevTap();}}>⚗️ Cindervale</div>
           <div style={{display:'flex',gap:4}}>
             <button style={{...S.btn('gold'),fontSize:14,padding:'3px 10px'}} onClick={()=>setConfirmRest(true)}>🌙 Rest ({hours}h)</button>
             {undoStack.length>0&&<button style={{...S.btn('def'),fontSize:14,padding:'3px 8px'}} onClick={undo}>↩️ Undo</button>}
