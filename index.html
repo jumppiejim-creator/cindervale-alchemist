@@ -551,7 +551,7 @@ const UPGRADES={
   display:{id:'display',name:'Display Cases',icon:'🏪',cat:'Business',desc:'+15% sell.',cost:{gold:70,hearthstone:2},effect:{sellBonus:0.15},tier:1,req:'shopfront'},
   rep_board:{id:'rep_board',name:'Rep Board',icon:'📋',cat:'Business',desc:'+5 all rep/day.',cost:{gold:50},effect:{dailyRep:5},tier:1,req:'signage'},
   ledger:{id:'ledger',name:'Ledger',icon:'📒',cat:'Business',desc:'+1 staff, +20% eff.',cost:{gold:40},effect:{apprenticeEff:0.2},tier:1,req:null},
-  quarters:{id:'quarters',name:'Quarters',icon:'🛏️',cat:'Comfort',desc:'+1h/day.',cost:{gold:35,ironroot_bark:3},effect:{bonusHours:1},tier:1,req:null},
+  quarters:{id:'quarters',name:'Beds',icon:'🛏️',cat:'Comfort',desc:'+1h/day. Upgrade from bedrolls.',cost:{gold:35,ironroot_bark:3},effect:{bonusHours:1},tier:1,req:null},
   hearth:{id:'hearth',name:'Hearth',icon:'🔥',cat:'Comfort',desc:'+2h, morale.',cost:{gold:100,hearthstone:3},effect:{bonusHours:2,morale:10},tier:2,req:'quarters'},
   garden:{id:'garden',name:'Garden',icon:'🌱',cat:'Comfort',desc:'Free daily herbs.',cost:{gold:45,ashbloom:5},effect:{dailyHerbs:true},tier:1,req:null},
   garden_2:{id:'garden_2',name:'Greenhouse',icon:'🌿',cat:'Comfort',desc:'Free rare herbs.',cost:{gold:150,moonpetal:3,sacred_ember:1},effect:{dailyRareHerbs:true},tier:2,req:'garden'},
@@ -1419,6 +1419,7 @@ function CindervaleAlchemistInner(){
   const [showTaskGuide,setShowTaskGuide]=useState(true);
   const [selectedUpgrade,setSelectedUpgrade]=useState(null);
   const [workshopListView,setWorkshopListView]=useState(false);
+  const [workshopTab,setWorkshopTab]=useState('workshop');
   const [showReport,setShowReport]=useState(true);
   const [confirmFire,setConfirmFire]=useState(null);
   const [upgrades,setUpgrades]=useState([]);
@@ -4661,17 +4662,40 @@ function CindervaleAlchemistInner(){
       {/* ═══════════ UPGRADES ═══════════ */}
       {screen==='upgrades'&&<>
         <BackBar title="Workshop Upgrades" icon="🏗️" back="workshop"/>
-        <div style={{display:'flex',justifyContent:'flex-end',marginBottom:4}}>
-          <button style={{fontSize:13,color:TH.textDim,background:'none',border:'none',cursor:'pointer',fontFamily:'inherit',textDecoration:'underline'}} onClick={()=>setWorkshopListView(p=>!p)}>{workshopListView?'🎨 Visual':'📋 List'}</button>
+        {/* Tab bar + toggle */}
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:4}}>
+          <div style={{display:'flex',gap:2,flexWrap:'wrap',flex:1}}>
+            {[
+              {id:'workshop',label:'🏠 Workshop',always:true},
+              {id:'storefront',label:'🏪 Storefront',always:true},
+              {id:'quarters',label:'🛏️ Quarters',always:true},
+              {id:'grounds',label:'🌿 Grounds',always:true},
+              {id:'library',label:'📚 Library',locked:!hasUp('library')},
+              {id:'forge',label:'🔨 Forge',locked:!hasUp('forge')},
+              {id:'leyline',label:'⚡ Ley Line',locked:!hasUp('leyline')},
+              {id:'greenhouse',label:'🌱 Greenhouse',locked:!hasUp('garden_2')},
+            ].map(tab=>{
+              const active=(workshopTab||'workshop')===tab.id;
+              return <button key={tab.id} onClick={()=>setWorkshopTab(tab.id)} style={{
+                padding:'4px 8px',fontSize:13,fontFamily:'inherit',cursor:'pointer',borderRadius:4,
+                border:'1px solid '+(active?TH.gold:tab.locked?TH.border+'66':TH.border),
+                background:active?TH.gold+'22':tab.locked?TH.panel+'44':'none',
+                color:active?TH.gold:tab.locked?TH.textDim+'88':TH.textDim,
+                opacity:tab.locked&&!active?0.6:1,
+              }}>{tab.locked&&!active?'🔒 ':''}{tab.label}</button>;
+            })}
+          </div>
+          <button style={{fontSize:13,color:TH.textDim,background:'none',border:'none',cursor:'pointer',fontFamily:'inherit',textDecoration:'underline',marginLeft:6}} onClick={()=>setWorkshopListView(p=>!p)}>{workshopListView?'🎨 Visual':'📋 List'}</button>
         </div>
 
         {!workshopListView&&<>
-          {/* ═══ ILLUSTRATED WORKSHOP ═══ */}
+          {/* ═══ IMAGE-BASED WORKSHOP ═══ */}
           {(()=>{
+            const tab=workshopTab||'workshop';
+            // Upgrade checker
             const ck=(uid)=>{
               const u=UPGRADES[uid];if(!u)return{owned:false,avail:false,canBuy:false};
-              const owned=upgrades.includes(uid);
-              const reqMet=!u.req||upgrades.includes(u.req);
+              const owned=upgrades.includes(uid);const reqMet=!u.req||upgrades.includes(u.req);
               const prepped=(constructProgress[uid]||0)>=100;
               const pDisc=getFeatureVal('upgradeCostReduction')+(prepped?0.40:0);
               const gCost=Math.max(1,Math.floor((u.cost.gold||0)*(1-Math.min(pDisc,0.9))));
@@ -4682,344 +4706,170 @@ function CindervaleAlchemistInner(){
               return{owned,avail:reqMet&&!owned,canBuy,prepped,cProg:constructProgress[uid]||0};
             };
             const sel=selectedUpgrade;const ss=(uid)=>setSelectedUpgrade(sel===uid?null:uid);
-            const hl=(uid)=>{const s=ck(uid);return sel===uid?'#d4a42088':s.owned?'none':s.canBuy?'#d4a42044':'none';};
-            const strk=(uid)=>{const s=ck(uid);return sel===uid?TH.gold:s.canBuy?TH.gold:'none';};
-            const op=(uid)=>{const s=ck(uid);return s.owned?1:s.canBuy?0.7:s.avail?0.25:0.08;};
-            // Glow filter for affordable items
-            return(
-          <div style={{position:'relative',borderRadius:8,overflow:'hidden',border:'1px solid '+TH.border}}>
-            <svg viewBox="0 0 600 480" style={{width:'100%',display:'block'}} xmlns="http://www.w3.org/2000/svg">
-              <defs>
-                <linearGradient id="wg_wall" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#3a3028"/><stop offset="1" stopColor="#2a2218"/></linearGradient>
-                <linearGradient id="wg_floor" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#4a3a28"/><stop offset="1" stopColor="#3a2e20"/></linearGradient>
-                <linearGradient id="wg_fire" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stopColor="#ff4400"/><stop offset=".5" stopColor="#ff8800"/><stop offset="1" stopColor="#ffcc00"/></linearGradient>
-                <linearGradient id="wg_glow" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#7060ff" stopOpacity=".6"/><stop offset="1" stopColor="#4030aa" stopOpacity=".2"/></linearGradient>
-                <filter id="wf_fire"><feGaussianBlur stdDeviation="3"/></filter>
-                <filter id="wf_glow"><feGaussianBlur stdDeviation="4"/></filter>
-                <filter id="wf_soft"><feGaussianBlur stdDeviation="2"/></filter>
-              </defs>
 
-              {/* ── Room structure ── */}
-              <rect width="600" height="480" fill="#1a1610"/>
-              <rect x="10" y="10" width="580" height="280" fill="url(#wg_wall)" rx="2"/>
-              <rect x="10" y="290" width="580" height="180" fill="url(#wg_floor)" rx="2"/>
-              {/* Floor boards */}
-              {[310,340,370,400,430,460].map(y=><line key={y} x1="12" y1={y} x2="588" y2={y} stroke="#5a4a30" strokeWidth=".5" opacity=".3"/>)}
-              {/* Ceiling beam */}
-              <rect x="0" y="0" width="600" height="12" fill="#4a3a28"/>
-              <rect x="0" y="8" width="600" height="4" fill="#3a2e18"/>
-              {/* Wall-floor border */}
-              <rect x="8" y="288" width="584" height="4" fill="#5a4a30"/>
-              {/* Window (back wall right) */}
-              <rect x="420" y="40" width="120" height="100" fill="#1a2a3a" rx="3" stroke="#5a4a30" strokeWidth="2"/>
-              <line x1="480" y1="40" x2="480" y2="140" stroke="#5a4a30" strokeWidth="1.5"/>
-              <line x1="420" y1="90" x2="540" y2="90" stroke="#5a4a30" strokeWidth="1.5"/>
-              <rect x="424" y="44" width="54" height="44" fill="#2a4060" opacity=".5" rx="1"/>
-              <rect x="484" y="44" width="54" height="44" fill="#2a3a55" opacity=".5" rx="1"/>
-              <rect x="424" y="94" width="54" height="42" fill="#1a3050" opacity=".5" rx="1"/>
-              <rect x="484" y="94" width="54" height="42" fill="#1a2a4a" opacity=".5" rx="1"/>
-              {/* Moonlight through window */}
-              <ellipse cx="480" cy="340" rx="80" ry="40" fill="#4060a0" opacity=".04"/>
+            // Tab configurations: {base, swap:{upgradeId:imageFile}, overlays:[{uid,x,y,w,h}], lockedRoom:uid}
+            const TABS={
+              workshop:{
+                base:'ws_base_workshop.png',
+                overlays:[
+                  {uid:'cauldron_2',x:5,y:35,w:18,h:30},
+                  {uid:'cauldron_3',x:25,y:35,w:18,h:30},
+                  {uid:'mortar',x:5,y:5,w:15,h:25},
+                  {uid:'runic_tools',x:22,y:5,w:15,h:25},
+                  {uid:'bench_1',x:45,y:40,w:22,h:30},
+                  {uid:'bench_2',x:68,y:40,w:22,h:30},
+                  {uid:'shelves',x:40,y:2,w:18,h:35},
+                  {uid:'cellar',x:60,y:65,w:15,h:25},
+                  {uid:'vault',x:78,y:65,w:15,h:25},
+                  {uid:'ledger',x:78,y:5,w:15,h:25},
+                ],
+              },
+              storefront:{
+                base:'ws_base_storefront.png',
+                swap:{shopfront:'ws_swap_shopfront.png'},
+                overlays:[
+                  {uid:'signage',x:10,y:5,w:20,h:30},
+                  {uid:'display',x:35,y:30,w:25,h:35},
+                  {uid:'rep_board',x:70,y:10,w:20,h:30},
+                ],
+              },
+              quarters:{
+                base:'ws_base_quarters.png',
+                swap:{quarters:'ws_swap_beds.png'},
+                overlays:[
+                  {uid:'hearth',x:55,y:15,w:35,h:55},
+                ],
+              },
+              grounds:{
+                base:'ws_base_grounds.png',
+                swap:{garden:'ws_swap_garden.png'},
+                overlays:[],
+              },
+              library:{lockedRoom:'library',img:'ws_library.png'},
+              forge:{lockedRoom:'forge',img:'ws_forge.png'},
+              leyline:{lockedRoom:'leyline',img:'ws_leyline.png'},
+              greenhouse:{lockedRoom:'garden_2',img:'ws_greenhouse.png'},
+            };
+            const tc=TABS[tab];if(!tc)return null;
 
-              {/* ════════ CRAFTING AREA (left) ════════ */}
-              <text x="120" y="28" textAnchor="middle" fill="#6a8a5a" fontSize="11" fontWeight="bold" opacity=".6">⚗️ Brewing Station</text>
+            // ─── Locked room tabs ───
+            if(tc.lockedRoom){
+              const uid=tc.lockedRoom;const u=UPGRADES[uid];const st=ck(uid);
+              if(st.owned){
+                return(<div style={{...S.card,padding:0,overflow:'hidden',borderRadius:8}}>
+                  <img src={tc.img} style={{width:'100%',display:'block',borderRadius:8}} alt={u?.name}/>
+                  <div style={{padding:'8px 12px',background:TH.green+'11',borderTop:'1px solid '+TH.green+'33'}}>
+                    <span style={{color:TH.green,fontSize:15}}>✓ {u?.icon} {u?.name} — Installed and active</span>
+                  </div>
+                </div>);
+              }
+              // Not owned — show purchase card with dimmed preview
+              const prepped=(constructProgress[uid]||0)>=100;const cProg=constructProgress[uid]||0;
+              const upgDisc=getFeatureVal('upgradeCostReduction')+(prepped?0.40:0);
+              const gc=Math.max(1,Math.floor((u.cost.gold||0)*(1-Math.min(upgDisc,0.9))));
+              const matEntries=Object.entries(u.cost).filter(([id])=>id!=='gold');
+              let waivedMat=null;
+              if(prepped&&matEntries.length>0){const sorted=[...matEntries].sort((a,b)=>(INGR[a[0]]?.val||0)-(INGR[b[0]]?.val||0));waivedMat=sorted[0][0];}
+              const adjMats=matEntries.filter(([id])=>id!==waivedMat);
+              const reqMet=!u.req||hasUp(u.req);
+              const canBuy=reqMet&&gold>=gc&&adjMats.every(([id,q])=>(inv[id]||0)>=q);
+              return(<div style={{...S.card,padding:0,overflow:'hidden',borderRadius:8}}>
+                <div style={{position:'relative'}}>
+                  <img src={tc.img} style={{width:'100%',display:'block',borderRadius:'8px 8px 0 0',filter:'brightness(0.3) grayscale(0.6)',opacity:0.7}} alt={u?.name+' (locked)'}/>
+                  <div style={{position:'absolute',top:'50%',left:'50%',transform:'translate(-50%,-50%)',textAlign:'center'}}>
+                    <div style={{fontSize:48,marginBottom:8}}>🔒</div>
+                    <div style={{fontSize:20,color:TH.gold,fontWeight:'bold',textShadow:'0 2px 8px #000'}}>{u?.icon} {u?.name}</div>
+                  </div>
+                </div>
+                <div style={{padding:12,background:TH.panelLight}}>
+                  <div style={{fontSize:15,color:TH.textDim,marginBottom:8}}>{u?.desc}</div>
+                  {!reqMet&&<div style={{fontSize:14,color:TH.red,marginBottom:6}}>🔒 Requires: {UPGRADES[u.req]?.icon} {UPGRADES[u.req]?.name}</div>}
+                  {cProg>0&&cProg<100&&<div style={{marginBottom:6}}><div style={{height:6,background:TH.panel,borderRadius:3,overflow:'hidden'}}><div style={{height:'100%',width:cProg+'%',background:TH.gold,borderRadius:3}}/></div><div style={{fontSize:13,color:TH.gold,marginTop:2}}>🔨 Construction: {cProg}%</div></div>}
+                  {prepped&&<div style={{fontSize:14,color:TH.gold,marginBottom:4}}>🔨 Prepped: gold -40%{waivedMat?', '+((INGR[waivedMat]?.icon||'')+' '+(INGR[waivedMat]?.name||waivedMat))+' waived':''}</div>}
+                  <div style={{...S.row}}>
+                    <span style={{fontSize:16,color:TH.gold,fontWeight:'bold'}}>{gc}g</span>
+                    {adjMats.map(([id,q])=><span key={id} style={{...S.tag,fontSize:14,borderColor:(inv[id]||0)>=q?TH.green:TH.red}}>{INGR[id]?.icon||id} {inv[id]||0}/{q}</span>)}
+                    {waivedMat&&<span style={{...S.tag,fontSize:14,borderColor:TH.gold,textDecoration:'line-through',opacity:.5}}>{INGR[waivedMat]?.icon||''}{INGR[waivedMat]?.name||waivedMat}</span>}
+                    <button style={{...S.btn(canBuy?'gold':'dim'),fontSize:15,padding:'4px 14px'}} onClick={()=>{if(canBuy)buyUpgrade(uid);}}>{!reqMet?'🔒 Locked':'Build '+u?.name}</button>
+                  </div>
+                </div>
+              </div>);
+            }
 
-              {/* cauldron_2 — Reinforced Cauldron */}
-              <g style={{cursor:'pointer'}} onClick={()=>ss('cauldron_2')} opacity={op('cauldron_2')}>
-                <rect x="40" y="160" width="80" height="70" fill={hl('cauldron_2')} rx="6" stroke={strk('cauldron_2')} strokeWidth="1.5"/>
-                {ck('cauldron_2').owned?<>
-                  <ellipse cx="80" cy="190" rx="28" ry="12" fill="#555" stroke="#777" strokeWidth="2"/>
-                  <path d="M52,190 Q52,220 60,225 L100,225 Q108,220 108,190" fill="#4a4a4a" stroke="#666" strokeWidth="1.5"/>
-                  <ellipse cx="80" cy="190" rx="24" ry="9" fill="#3a5530"/>
-                  {/* Steam */}
-                  <path d="M70,178 Q65,168 72,158" fill="none" stroke="#aaa" strokeWidth="1" opacity=".4"/><path d="M85,178 Q90,165 82,155" fill="none" stroke="#aaa" strokeWidth="1" opacity=".3"/>
-                  <line x1="55" y1="225" x2="55" y2="235" stroke="#666" strokeWidth="3"/><line x1="105" y1="225" x2="105" y2="235" stroke="#666" strokeWidth="3"/>
-                </>:<text x="80" y="200" textAnchor="middle" fontSize="28" opacity=".3">🫕</text>}
-                <text x="80" y="245" textAnchor="middle" fill={ck('cauldron_2').owned?'#aab89a':'#666'} fontSize="9">{ck('cauldron_2').owned?'Reinforced':'Cauldron'}</text>
-              </g>
+            // ─── Scene-based tabs (workshop, storefront, quarters, grounds) ───
+            // Determine which base image to show
+            let bgImg=tc.base;
+            if(tc.swap){Object.entries(tc.swap).forEach(([uid,img])=>{if(hasUp(uid))bgImg=img;});}
 
-              {/* cauldron_3 — Master's Cauldron */}
-              <g style={{cursor:'pointer'}} onClick={()=>ss('cauldron_3')} opacity={op('cauldron_3')}>
-                <rect x="130" y="160" width="80" height="70" fill={hl('cauldron_3')} rx="6" stroke={strk('cauldron_3')} strokeWidth="1.5"/>
-                {ck('cauldron_3').owned?<>
-                  <ellipse cx="170" cy="190" rx="30" ry="13" fill="#665544" stroke="#9a7a20" strokeWidth="2"/>
-                  <path d="M140,190 Q140,222 150,227 L190,227 Q200,222 200,190" fill="#554433" stroke="#9a7a20" strokeWidth="1.5"/>
-                  <ellipse cx="170" cy="190" rx="26" ry="10" fill="#4a6a30"/>
-                  <circle cx="155" cy="210" r="2" fill="#d4a420" opacity=".7"/><circle cx="170" cy="215" r="1.5" fill="#d4a420" opacity=".5"/><circle cx="185" cy="208" r="2" fill="#d4a420" opacity=".6"/>
-                  <path d="M160,178 Q154,164 162,152" fill="none" stroke="#cca" strokeWidth="1.5" opacity=".5"/><path d="M178,178 Q184,162 176,150" fill="none" stroke="#cca" strokeWidth="1.5" opacity=".4"/>
-                </>:<text x="170" y="200" textAnchor="middle" fontSize="28" opacity=".3">⚗️</text>}
-                <text x="170" y="245" textAnchor="middle" fill={ck('cauldron_3').owned?'#d4a420':'#666'} fontSize="9">{ck('cauldron_3').owned?"Master's":'Master Cldn'}</text>
-              </g>
-
-              {/* mortar — Precision Mortar */}
-              <g style={{cursor:'pointer'}} onClick={()=>ss('mortar')} opacity={op('mortar')}>
-                <rect x="40" y="80" width="70" height="60" fill={hl('mortar')} rx="6" stroke={strk('mortar')} strokeWidth="1.5"/>
-                {ck('mortar').owned?<>
-                  <ellipse cx="75" cy="115" rx="18" ry="10" fill="#777" stroke="#999" strokeWidth="1.5"/>
-                  <path d="M57,115 Q57,100 63,95 L87,95 Q93,100 93,115" fill="#666" stroke="#888" strokeWidth="1"/>
-                  <line x1="60" y1="95" x2="85" y2="82" stroke="#aaa" strokeWidth="3" strokeLinecap="round"/>
-                </>:<text x="75" y="115" textAnchor="middle" fontSize="24" opacity=".3">⚙️</text>}
-                <text x="75" y="148" textAnchor="middle" fill={ck('mortar').owned?'#aab89a':'#666'} fontSize="9">Mortar</text>
-              </g>
-
-              {/* runic_tools — wall-mounted tools */}
-              <g style={{cursor:'pointer'}} onClick={()=>ss('runic_tools')} opacity={op('runic_tools')}>
-                <rect x="120" y="80" width="70" height="60" fill={hl('runic_tools')} rx="6" stroke={strk('runic_tools')} strokeWidth="1.5"/>
-                {ck('runic_tools').owned?<>
-                  <line x1="135" y1="90" x2="135" y2="125" stroke="#aaa" strokeWidth="2" strokeLinecap="round"/>
-                  <line x1="150" y1="88" x2="150" y2="128" stroke="#bbb" strokeWidth="2.5" strokeLinecap="round"/>
-                  <line x1="165" y1="92" x2="165" y2="122" stroke="#999" strokeWidth="2" strokeLinecap="round"/>
-                  <line x1="175" y1="94" x2="175" y2="118" stroke="#aaa" strokeWidth="1.5" strokeLinecap="round"/>
-                  <rect x="130" y="86" width="50" height="3" fill="#5a4a30" rx="1"/>
-                </>:<text x="155" y="115" textAnchor="middle" fontSize="24" opacity=".3">🔧</text>}
-                <text x="155" y="148" textAnchor="middle" fill={ck('runic_tools').owned?'#aab89a':'#666'} fontSize="9">Runic Tools</text>
-              </g>
-
-              {/* bench_1 — Enchanting Bench */}
-              <g style={{cursor:'pointer'}} onClick={()=>ss('bench_1')} opacity={op('bench_1')}>
-                <rect x="40" y="250" width="80" height="50" fill={hl('bench_1')} rx="6" stroke={strk('bench_1')} strokeWidth="1.5"/>
-                {ck('bench_1').owned?<>
-                  <rect x="50" y="265" width="60" height="8" fill="#5a4a30" stroke="#6a5a3a" strokeWidth="1" rx="1"/>
-                  <rect x="50" y="273" width="4" height="18" fill="#4a3a28"/><rect x="106" y="273" width="4" height="18" fill="#4a3a28"/>
-                  <circle cx="68" cy="262" r="4" fill="#7060c0" opacity=".6"/><circle cx="85" cy="260" r="3" fill="#9080d0" opacity=".4"/>
-                </>:<text x="80" y="280" textAnchor="middle" fontSize="22" opacity=".3">✨</text>}
-                <text x="80" y="305" textAnchor="middle" fill={ck('bench_1').owned?'#b0a0d0':'#666'} fontSize="9">Ench. Bench</text>
-              </g>
-
-              {/* bench_2 — Arcane Nexus */}
-              <g style={{cursor:'pointer'}} onClick={()=>ss('bench_2')} opacity={op('bench_2')}>
-                <rect x="130" y="250" width="80" height="50" fill={hl('bench_2')} rx="6" stroke={strk('bench_2')} strokeWidth="1.5"/>
-                {ck('bench_2').owned?<>
-                  <rect x="140" y="265" width="60" height="8" fill="#3a3050" stroke="#6050a0" strokeWidth="1.5" rx="1"/>
-                  <rect x="140" y="273" width="4" height="18" fill="#3a3050"/><rect x="196" y="273" width="4" height="18" fill="#3a3050"/>
-                  <circle cx="170" cy="262" r="8" fill="url(#wg_glow)" filter="url(#wf_glow)"/>
-                  <circle cx="170" cy="262" r="4" fill="#9080ff" opacity=".8"/>
-                </>:<text x="170" y="280" textAnchor="middle" fontSize="22" opacity=".3">🔮</text>}
-                <text x="170" y="305" textAnchor="middle" fill={ck('bench_2').owned?'#a090e0':'#666'} fontSize="9">Arcane Nexus</text>
-              </g>
-
-              {/* ════════ STORAGE (back wall center) ════════ */}
-              <text x="310" y="28" textAnchor="middle" fill="#8a7a5a" fontSize="11" fontWeight="bold" opacity=".6">📦 Storage</text>
-
-              {/* shelves */}
-              <g style={{cursor:'pointer'}} onClick={()=>ss('shelves')} opacity={op('shelves')}>
-                <rect x="250" y="40" width="80" height="80" fill={hl('shelves')} rx="4" stroke={strk('shelves')} strokeWidth="1.5"/>
-                {ck('shelves').owned?<>
-                  <rect x="258" y="48" width="64" height="65" fill="#3a2e20" stroke="#5a4a30" strokeWidth="1.5" rx="2"/>
-                  {[58,72,86,100].map(y=><line key={y} x1="260" y1={y} x2="320" y2={y} stroke="#5a4a30" strokeWidth="1.5"/>)}
-                  <rect x="265" y="60" width="8" height="10" fill="#4a6a3a" rx="1"/><rect x="276" y="62" width="6" height="8" fill="#6a4a3a" rx="1"/>
-                  <rect x="290" y="74" width="7" height="10" fill="#3a4a6a" rx="1"/><rect x="305" y="76" width="8" height="8" fill="#5a5a3a" rx="1"/>
-                  <rect x="268" y="88" width="10" height="10" fill="#4a5a3a" rx="1"/><rect x="295" y="90" width="6" height="8" fill="#6a3a3a" rx="1"/>
-                </>:<text x="290" y="85" textAnchor="middle" fontSize="26" opacity=".3">📦</text>}
-                <text x="290" y="128" textAnchor="middle" fill={ck('shelves').owned?'#aab89a':'#666'} fontSize="9">Shelves</text>
-              </g>
-
-              {/* cellar — trapdoor */}
-              <g style={{cursor:'pointer'}} onClick={()=>ss('cellar')} opacity={op('cellar')}>
-                <rect x="250" y="320" width="55" height="45" fill={hl('cellar')} rx="4" stroke={strk('cellar')} strokeWidth="1.5"/>
-                {ck('cellar').owned?<>
-                  <rect x="258" y="328" width="40" height="30" fill="#2a2018" stroke="#5a4a30" strokeWidth="2" rx="2"/>
-                  <circle cx="290" cy="343" r="3" fill="#9a7a20"/>
-                  <line x1="262" y1="343" x2="294" y2="343" stroke="#4a3a20" strokeWidth=".5"/>
-                </>:<text x="278" y="348" textAnchor="middle" fontSize="22" opacity=".3">🏚️</text>}
-                <text x="278" y="372" textAnchor="middle" fill={ck('cellar').owned?'#aab89a':'#666'} fontSize="9">Cellar</text>
-              </g>
-
-              {/* vault */}
-              <g style={{cursor:'pointer'}} onClick={()=>ss('vault')} opacity={op('vault')}>
-                <rect x="315" y="320" width="55" height="45" fill={hl('vault')} rx="4" stroke={strk('vault')} strokeWidth="1.5"/>
-                {ck('vault').owned?<>
-                  <rect x="323" y="326" width="40" height="34" fill="#555" stroke="#888" strokeWidth="2" rx="3"/>
-                  <rect x="328" y="330" width="30" height="26" fill="#444" rx="2"/>
-                  <circle cx="343" cy="343" r="4" fill="#333" stroke="#999" strokeWidth="1"/>
-                  <circle cx="343" cy="343" r="1.5" fill="#d4a420"/>
-                </>:<text x="343" y="348" textAnchor="middle" fontSize="22" opacity=".3">🔐</text>}
-                <text x="343" y="372" textAnchor="middle" fill={ck('vault').owned?'#ccc':'#666'} fontSize="9">Vault</text>
-              </g>
-
-              {/* ════════ BUSINESS (right side) ════════ */}
-              <text x="490" y="28" textAnchor="middle" fill="#8a7a3a" fontSize="11" fontWeight="bold" opacity=".6">💰 Shop</text>
-
-              {/* shopfront — counter below window */}
-              <g style={{cursor:'pointer'}} onClick={()=>ss('shopfront')} opacity={op('shopfront')}>
-                <rect x="420" y="150" width="130" height="50" fill={hl('shopfront')} rx="4" stroke={strk('shopfront')} strokeWidth="1.5"/>
-                {ck('shopfront').owned?<>
-                  <rect x="430" y="160" width="110" height="12" fill="#5a4a30" stroke="#6a5a3a" strokeWidth="1" rx="1"/>
-                  <rect x="430" y="172" width="8" height="22" fill="#4a3a28"/><rect x="532" y="172" width="8" height="22" fill="#4a3a28"/>
-                  <rect x="445" y="155" width="18" height="6" fill="#d4a420" opacity=".5" rx="1"/>
-                </>:<text x="485" y="180" textAnchor="middle" fontSize="24" opacity=".3">🪟</text>}
-                <text x="485" y="206" textAnchor="middle" fill={ck('shopfront').owned?'#d4a420':'#666'} fontSize="9">Shop Front</text>
-              </g>
-
-              {/* signage — hanging sign by window */}
-              <g style={{cursor:'pointer'}} onClick={()=>ss('signage')} opacity={op('signage')}>
-                <rect x="550" y="40" width="40" height="50" fill={hl('signage')} rx="4" stroke={strk('signage')} strokeWidth="1.5"/>
-                {ck('signage').owned?<>
-                  <line x1="570" y1="42" x2="570" y2="55" stroke="#888" strokeWidth="1"/>
-                  <rect x="555" y="55" width="30" height="20" fill="#5a4a30" stroke="#7a6a40" strokeWidth="1" rx="2"/>
-                  <text x="570" y="69" textAnchor="middle" fill="#d4a420" fontSize="7">OPEN</text>
-                </>:<text x="570" y="70" textAnchor="middle" fontSize="20" opacity=".3">🪧</text>}
-                <text x="570" y="96" textAnchor="middle" fill={ck('signage').owned?'#d4a420':'#666'} fontSize="9">Sign</text>
-              </g>
-
-              {/* display — cases on counter */}
-              <g style={{cursor:'pointer'}} onClick={()=>ss('display')} opacity={op('display')}>
-                <rect x="420" y="210" width="65" height="50" fill={hl('display')} rx="4" stroke={strk('display')} strokeWidth="1.5"/>
-                {ck('display').owned?<>
-                  <rect x="430" y="220" width="45" height="30" fill="#2a3040" stroke="#5a6a7a" strokeWidth="1" rx="2" opacity=".8"/>
-                  <rect x="433" y="223" width="12" height="8" fill="#4a6a3a" rx="1" opacity=".7"/><rect x="448" y="225" width="10" height="6" fill="#6a3a4a" rx="1" opacity=".7"/>
-                  <rect x="435" y="235" width="8" height="10" fill="#3a3a6a" rx="1" opacity=".7"/>
-                </>:<text x="452" y="240" textAnchor="middle" fontSize="22" opacity=".3">🏪</text>}
-                <text x="452" y="266" textAnchor="middle" fill={ck('display').owned?'#aab89a':'#666'} fontSize="9">Display</text>
-              </g>
-
-              {/* rep_board */}
-              <g style={{cursor:'pointer'}} onClick={()=>ss('rep_board')} opacity={op('rep_board')}>
-                <rect x="495" y="210" width="55" height="50" fill={hl('rep_board')} rx="4" stroke={strk('rep_board')} strokeWidth="1.5"/>
-                {ck('rep_board').owned?<>
-                  <rect x="505" y="218" width="35" height="30" fill="#4a3a28" stroke="#6a5a3a" strokeWidth="1" rx="1"/>
-                  <rect x="509" y="223" width="14" height="3" fill="#d4a420" opacity=".6" rx=".5"/>
-                  <rect x="509" y="229" width="18" height="3" fill="#ccc" opacity=".4" rx=".5"/>
-                  <rect x="509" y="235" width="12" height="3" fill="#ccc" opacity=".3" rx=".5"/>
-                </>:<text x="522" y="240" textAnchor="middle" fontSize="22" opacity=".3">📋</text>}
-                <text x="522" y="266" textAnchor="middle" fill={ck('rep_board').owned?'#d4a420':'#666'} fontSize="9">Rep Board</text>
-              </g>
-
-              {/* ledger */}
-              <g style={{cursor:'pointer'}} onClick={()=>ss('ledger')} opacity={op('ledger')}>
-                <rect x="460" y="270" width="55" height="40" fill={hl('ledger')} rx="4" stroke={strk('ledger')} strokeWidth="1.5"/>
-                {ck('ledger').owned?<>
-                  <rect x="472" y="276" width="24" height="28" fill="#5a4a30" stroke="#7a6a40" strokeWidth="1" rx="2" transform="rotate(-8,484,290)"/>
-                  <line x1="477" y1="284" x2="492" y2="282" stroke="#999" strokeWidth=".5"/><line x1="477" y1="289" x2="490" y2="287" stroke="#999" strokeWidth=".5"/>
-                </>:<text x="488" y="294" textAnchor="middle" fontSize="20" opacity=".3">📒</text>}
-                <text x="488" y="316" textAnchor="middle" fill={ck('ledger').owned?'#d4a420':'#666'} fontSize="9">Ledger</text>
-              </g>
-
-              {/* ════════ COMFORT (bottom) ════════ */}
-              {/* quarters — bed */}
-              <g style={{cursor:'pointer'}} onClick={()=>ss('quarters')} opacity={op('quarters')}>
-                <rect x="20" y="380" width="80" height="50" fill={hl('quarters')} rx="4" stroke={strk('quarters')} strokeWidth="1.5"/>
-                {ck('quarters').owned?<>
-                  <rect x="30" y="392" width="55" height="28" fill="#4a3a28" stroke="#5a4a30" strokeWidth="1" rx="3"/>
-                  <rect x="30" y="390" width="55" height="10" fill="#6a5040" rx="2"/>
-                  <rect x="32" y="395" width="18" height="6" fill="#888" rx="2"/>
-                </>:<text x="60" y="410" textAnchor="middle" fontSize="22" opacity=".3">🛏️</text>}
-                <text x="60" y="438" textAnchor="middle" fill={ck('quarters').owned?'#aab89a':'#666'} fontSize="9">Quarters</text>
-              </g>
-
-              {/* hearth — fireplace */}
-              <g style={{cursor:'pointer'}} onClick={()=>ss('hearth')} opacity={op('hearth')}>
-                <rect x="110" y="380" width="90" height="50" fill={hl('hearth')} rx="4" stroke={strk('hearth')} strokeWidth="1.5"/>
-                {ck('hearth').owned?<>
-                  <path d="M120,425 L120,390 Q120,385 125,385 L185,385 Q190,385 190,390 L190,425" fill="#3a2a1a" stroke="#5a4a30" strokeWidth="1.5"/>
-                  <rect x="125" y="418" width="60" height="7" fill="#555" rx="1"/>
-                  <ellipse cx="155" cy="412" rx="20" ry="8" fill="#ff4400" opacity=".3" filter="url(#wf_fire)"/>
-                  <path d="M145,416 Q148,400 155,395 Q162,400 165,416" fill="url(#wg_fire)" opacity=".8"/>
-                  <path d="M150,416 Q152,405 155,402 Q158,405 160,416" fill="#ffcc00" opacity=".6"/>
-                </>:<text x="155" y="410" textAnchor="middle" fontSize="22" opacity=".3">🔥</text>}
-                <text x="155" y="438" textAnchor="middle" fill={ck('hearth').owned?'#e0a040':'#666'} fontSize="9">Hearth</text>
-              </g>
-
-              {/* garden */}
-              <g style={{cursor:'pointer'}} onClick={()=>ss('garden')} opacity={op('garden')}>
-                <rect x="210" y="380" width="75" height="50" fill={hl('garden')} rx="4" stroke={strk('garden')} strokeWidth="1.5"/>
-                {ck('garden').owned?<>
-                  <rect x="220" y="405" width="55" height="15" fill="#3a2e20" stroke="#5a4a30" strokeWidth="1" rx="2"/>
-                  <line x1="232" y1="405" x2="232" y2="390" stroke="#4a8a3a" strokeWidth="2"/><ellipse cx="232" cy="388" rx="6" ry="4" fill="#5aaa4a"/>
-                  <line x1="248" y1="405" x2="248" y2="392" stroke="#3a7a2a" strokeWidth="2"/><ellipse cx="248" cy="390" rx="5" ry="3" fill="#4a9a3a"/>
-                  <line x1="262" y1="405" x2="262" y2="394" stroke="#5a9a4a" strokeWidth="1.5"/><ellipse cx="262" cy="392" rx="4" ry="3" fill="#6aba5a"/>
-                </>:<text x="248" y="410" textAnchor="middle" fontSize="22" opacity=".3">🌱</text>}
-                <text x="248" y="438" textAnchor="middle" fill={ck('garden').owned?'#6aaa4a':'#666'} fontSize="9">Garden</text>
-              </g>
-
-              {/* garden_2 — Greenhouse */}
-              <g style={{cursor:'pointer'}} onClick={()=>ss('garden_2')} opacity={op('garden_2')}>
-                <rect x="295" y="380" width="75" height="50" fill={hl('garden_2')} rx="4" stroke={strk('garden_2')} strokeWidth="1.5"/>
-                {ck('garden_2').owned?<>
-                  <path d="M305,425 L305,395 Q332,380 360,395 L360,425" fill="none" stroke="#6aaa5a" strokeWidth="1.5" opacity=".6"/>
-                  <path d="M310,425 L310,398 Q332,385 355,398 L355,425" fill="#3a5a2a" opacity=".25"/>
-                  <circle cx="322" cy="405" r="4" fill="#d040a0" opacity=".6"/><circle cx="338" cy="400" r="3" fill="#e0d040" opacity=".5"/><circle cx="348" cy="408" r="3.5" fill="#40a0d0" opacity=".5"/>
-                  <line x1="322" y1="409" x2="322" y2="420" stroke="#4a8a3a" strokeWidth="1.5"/><line x1="338" y1="403" x2="338" y2="420" stroke="#3a7a2a" strokeWidth="1.5"/>
-                </>:<text x="332" y="410" textAnchor="middle" fontSize="22" opacity=".3">🌿</text>}
-                <text x="332" y="438" textAnchor="middle" fill={ck('garden_2').owned?'#6aaa4a':'#666'} fontSize="9">Greenhouse</text>
-              </g>
-
-              {/* ════════ ADVANCED (special) ════════ */}
-              {/* library — bookshelves on back wall */}
-              <g style={{cursor:'pointer'}} onClick={()=>ss('library')} opacity={op('library')}>
-                <rect x="340" y="40" width="70" height="80" fill={hl('library')} rx="4" stroke={strk('library')} strokeWidth="1.5"/>
-                {ck('library').owned?<>
-                  <rect x="348" y="48" width="54" height="65" fill="#3a2e20" stroke="#5a4a30" strokeWidth="1.5" rx="2"/>
-                  {[58,72,86,100].map(y=><line key={y} x1="350" y1={y} x2="400" y2={y} stroke="#5a4a30" strokeWidth="1"/>)}
-                  <rect x="353" y="60" width="5" height="10" fill="#8a3030" rx=".5"/><rect x="360" y="61" width="4" height="9" fill="#305a8a" rx=".5"/>
-                  <rect x="367" y="60" width="6" height="10" fill="#3a6a3a" rx=".5"/><rect x="376" y="62" width="4" height="8" fill="#8a7a30" rx=".5"/>
-                  <rect x="353" y="74" width="6" height="10" fill="#6a4060" rx=".5"/><rect x="362" y="75" width="5" height="9" fill="#4a5a7a" rx=".5"/>
-                  <rect x="353" y="88" width="4" height="10" fill="#7a6a40" rx=".5"/><rect x="360" y="89" width="6" height="9" fill="#4a6a5a" rx=".5"/>
-                </>:<text x="375" y="85" textAnchor="middle" fontSize="26" opacity=".3">📚</text>}
-                <text x="375" y="128" textAnchor="middle" fill={ck('library').owned?'#80b0d0':'#666'} fontSize="9">Library</text>
-              </g>
-
-              {/* forge */}
-              <g style={{cursor:'pointer'}} onClick={()=>ss('forge')} opacity={op('forge')}>
-                <rect x="220" y="40" width="70" height="75" fill={hl('forge')} rx="4" stroke={strk('forge')} strokeWidth="1.5"/>
-                {ck('forge').owned?<>
-                  <rect x="235" y="70" width="40" height="25" fill="#555" stroke="#888" strokeWidth="1.5" rx="2"/>
-                  <rect x="240" y="75" width="30" height="15" fill="#ff4400" opacity=".2"/>
-                  <path d="M248,98 L248,105 L267,105 L267,98" fill="#666" stroke="#888" strokeWidth="1"/>
-                  <rect x="250" y="100" width="15" height="5" fill="#777" rx="1"/>
-                  <ellipse cx="255" cy="82" rx="10" ry="5" fill="#ff6600" opacity=".25" filter="url(#wf_soft)"/>
-                </>:<text x="255" y="82" textAnchor="middle" fontSize="26" opacity=".3">🔨</text>}
-                <text x="255" y="122" textAnchor="middle" fill={ck('forge').owned?'#e08040':'#666'} fontSize="9">Forge</text>
-              </g>
-
-              {/* leyline — glowing circle on floor */}
-              <g style={{cursor:'pointer'}} onClick={()=>ss('leyline')} opacity={op('leyline')}>
-                <rect x="380" y="320" width="80" height="70" fill={hl('leyline')} rx="4" stroke={strk('leyline')} strokeWidth="1.5"/>
-                {ck('leyline').owned?<>
-                  <circle cx="420" cy="352" r="25" fill="url(#wg_glow)" filter="url(#wf_glow)" opacity=".6"/>
-                  <circle cx="420" cy="352" r="18" fill="none" stroke="#7060ff" strokeWidth="1.5" opacity=".6"/>
-                  <circle cx="420" cy="352" r="10" fill="none" stroke="#9080ff" strokeWidth="1" opacity=".8"/>
-                  <circle cx="420" cy="352" r="3" fill="#b0a0ff"/>
-                  {[0,60,120,180,240,300].map((a,i)=><circle key={i} cx={420+18*Math.cos(a*Math.PI/180)} cy={352+18*Math.sin(a*Math.PI/180)} r="2" fill="#7060ff" opacity=".5"/>)}
-                </>:<text x="420" y="360" textAnchor="middle" fontSize="26" opacity=".3">⚡</text>}
-                <text x="420" y="396" textAnchor="middle" fill={ck('leyline').owned?'#a090ff':'#666'} fontSize="9">Ley Line Tap</text>
-              </g>
-
-              {/* ── Room ambiance ── */}
-              <text x="300" y="470" textAnchor="middle" fontSize="11" fill="#5a4a30" fontStyle="italic" opacity=".4">~ {charName||'Your'}'s Workshop ~</text>
-            </svg>
-          </div>
-          );})()}
-
-          {/* Selected upgrade detail panel */}
-          {selectedUpgrade&&UPGRADES[selectedUpgrade]&&(()=>{
-            const u=UPGRADES[selectedUpgrade];const uid=selectedUpgrade;
-            const owned=hasUp(uid);const reqMet=!u.req||hasUp(u.req);
-            const prepped=(constructProgress[uid]||0)>=100;const cProg=constructProgress[uid]||0;
-            const upgDisc=getFeatureVal('upgradeCostReduction')+(prepped?0.40:0);
-            const gc=Math.max(1,Math.floor((u.cost.gold||0)*(1-Math.min(upgDisc,0.9))));
-            const matEntries=Object.entries(u.cost).filter(([id])=>id!=='gold');
-            let waivedMat=null;
-            if(prepped&&matEntries.length>0){const sorted=[...matEntries].sort((a,b)=>(INGR[a[0]]?.val||0)-(INGR[b[0]]?.val||0));waivedMat=sorted[0][0];}
-            const adjMats=matEntries.filter(([id])=>id!==waivedMat);
-            const canBuy=reqMet&&!owned&&gold>=gc&&adjMats.every(([id,q])=>(inv[id]||0)>=q);
-            return(<div style={{...S.card,borderColor:owned?TH.green:canBuy?TH.gold:TH.border,background:owned?`${TH.green}08`:prepped?`${TH.gold}06`:TH.panelLight}}>
-              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-                <div style={{fontSize:18,color:owned?TH.green:TH.textBright,fontWeight:'bold'}}>{u.icon} {u.name}{owned?' ✓':''}{prepped&&!owned?' 🔨':''}</div>
-                <button style={{background:'none',border:'none',color:TH.textDim,fontSize:18,cursor:'pointer'}} onClick={()=>setSelectedUpgrade(null)}>✕</button>
+            return(<>
+              <div style={{position:'relative',borderRadius:8,overflow:'hidden',border:'1px solid '+TH.border}}>
+                <img src={bgImg} style={{width:'100%',display:'block'}} alt={tab+' view'}/>
+                {/* Hotspot overlays */}
+                {(tc.overlays||[]).map(ov=>{
+                  const st=ck(ov.uid);const u=UPGRADES[ov.uid];if(!u)return null;
+                  // Scene swap upgrades: show as hotspot only if not owned
+                  if(tc.swap&&tc.swap[ov.uid])return null; // scene swaps handled by bgImg
+                  const isSelected=sel===ov.uid;
+                  return(<div key={ov.uid} onClick={()=>ss(ov.uid)} style={{
+                    position:'absolute',left:ov.x+'%',top:ov.y+'%',width:ov.w+'%',height:ov.h+'%',
+                    cursor:'pointer',borderRadius:6,transition:'all 0.2s',
+                    border:isSelected?'2px solid '+TH.gold:st.canBuy?'2px solid '+TH.gold+'88':st.owned?'2px solid '+TH.green+'66':'2px dashed '+TH.border+'44',
+                    background:isSelected?TH.gold+'33':st.canBuy?TH.gold+'22':st.owned?TH.green+'11':'transparent',
+                    display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',
+                  }}>
+                    {st.owned&&<img src={'ws_'+ov.uid+'.png'} style={{width:'90%',height:'90%',objectFit:'contain',filter:'drop-shadow(0 2px 4px #0008)'}} alt={u.name}/>}
+                    {!st.owned&&<>
+                      <div style={{fontSize:ov.w>16?24:18,opacity:st.canBuy?0.9:0.4}}>{u.icon}</div>
+                      <div style={{fontSize:ov.w>16?11:9,color:st.canBuy?TH.gold:TH.textDim,opacity:st.canBuy?1:0.5,textAlign:'center',textShadow:'0 1px 3px #000'}}>{u.name}</div>
+                    </>}
+                    {st.canBuy&&!st.owned&&<div style={{position:'absolute',top:-4,right:-4,background:TH.gold,color:'#000',borderRadius:'50%',width:16,height:16,fontSize:11,display:'flex',alignItems:'center',justifyContent:'center',fontWeight:'bold'}}>★</div>}
+                  </div>);
+                })}
+                {/* Scene swap purchase hotspot — for tabs with swaps, show buy button if not owned */}
+                {tc.swap&&Object.entries(tc.swap).map(([uid,img])=>{
+                  if(hasUp(uid))return null;
+                  const u=UPGRADES[uid];const st=ck(uid);
+                  return(<div key={uid} onClick={()=>ss(uid)} style={{
+                    position:'absolute',bottom:8,left:'50%',transform:'translateX(-50%)',
+                    background:'#000c',padding:'6px 14px',borderRadius:6,cursor:'pointer',
+                    border:'1px solid '+(st.canBuy?TH.gold:TH.border),textAlign:'center',
+                  }}>
+                    <div style={{fontSize:14,color:st.canBuy?TH.gold:TH.textDim,fontWeight:'bold'}}>{u?.icon} {u?.name}{st.canBuy?' ★':''}</div>
+                  </div>);
+                })}
               </div>
-              <div style={{fontSize:15,color:TH.textDim,margin:'4px 0'}}>{u.desc}</div>
-              {u.req&&!hasUp(u.req)&&<div style={{fontSize:14,color:TH.red}}>🔒 Requires: {UPGRADES[u.req]?.icon}{UPGRADES[u.req]?.name}</div>}
-              {!owned&&cProg>0&&cProg<100&&<div style={{margin:'4px 0'}}><div style={{height:6,background:TH.panel,borderRadius:3,overflow:'hidden'}}><div style={{height:'100%',width:cProg+'%',background:TH.gold,borderRadius:3}}/></div><div style={{fontSize:13,color:TH.gold,marginTop:2}}>🔨 Construction prep: {cProg}%</div></div>}
-              {!owned&&prepped&&<div style={{fontSize:14,color:TH.gold,margin:'3px 0'}}>🔨 Prepped: gold -40%{waivedMat?`, ${INGR[waivedMat]?.icon||''}${INGR[waivedMat]?.name||waivedMat} waived`:''}</div>}
-              {!owned&&<div style={{...S.row,marginTop:6}}>
-                <span style={{fontSize:15,color:TH.gold,fontWeight:'bold'}}>{gc}g{prepped?' ✦':''}</span>
-                {adjMats.map(([id,q])=><span key={id} style={{...S.tag,fontSize:14,borderColor:(inv[id]||0)>=q?TH.green:TH.red}}>{INGR[id]?.icon||id} {inv[id]||0}/{q}</span>)}
-                {waivedMat&&<span style={{...S.tag,fontSize:14,borderColor:TH.gold,textDecoration:'line-through',opacity:.5}}>{INGR[waivedMat]?.icon||''}{INGR[waivedMat]?.name||waivedMat}</span>}
-                <button style={{...S.btn(canBuy?'gold':'dim'),fontSize:15,padding:'4px 12px'}} onClick={()=>{if(canBuy){buyUpgrade(uid);setSelectedUpgrade(null);}}}>{!reqMet?'🔒 Locked':'Build'}</button>
-              </div>}
-              {owned&&<div style={{fontSize:14,color:TH.green,marginTop:4}}>✓ Installed and active</div>}
-            </div>);
+
+              {/* Selected upgrade detail panel */}
+              {sel&&UPGRADES[sel]&&(()=>{
+                const u=UPGRADES[sel];const uid=sel;
+                const owned=hasUp(uid);const reqMet=!u.req||hasUp(u.req);
+                const prepped=(constructProgress[uid]||0)>=100;const cProg=constructProgress[uid]||0;
+                const upgDisc=getFeatureVal('upgradeCostReduction')+(prepped?0.40:0);
+                const gc=Math.max(1,Math.floor((u.cost.gold||0)*(1-Math.min(upgDisc,0.9))));
+                const matEntries=Object.entries(u.cost).filter(([id])=>id!=='gold');
+                let waivedMat=null;
+                if(prepped&&matEntries.length>0){const sorted=[...matEntries].sort((a,b)=>(INGR[a[0]]?.val||0)-(INGR[b[0]]?.val||0));waivedMat=sorted[0][0];}
+                const adjMats=matEntries.filter(([id])=>id!==waivedMat);
+                const canBuy=reqMet&&!owned&&gold>=gc&&adjMats.every(([id,q])=>(inv[id]||0)>=q);
+                return(<div style={{...S.card,marginTop:6,borderColor:owned?TH.green:canBuy?TH.gold:TH.border,background:owned?TH.green+'08':prepped?TH.gold+'06':TH.panelLight}}>
+                  <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                    <div style={{fontSize:18,color:owned?TH.green:TH.textBright,fontWeight:'bold'}}>{u.icon} {u.name}{owned?' ✓':''}{prepped&&!owned?' 🔨':''}</div>
+                    <button style={{background:'none',border:'none',color:TH.textDim,fontSize:18,cursor:'pointer',fontFamily:'inherit'}} onClick={()=>setSelectedUpgrade(null)}>✕</button>
+                  </div>
+                  <div style={{fontSize:15,color:TH.textDim,margin:'4px 0'}}>{u.desc}</div>
+                  {u.req&&!hasUp(u.req)&&<div style={{fontSize:14,color:TH.red}}>🔒 Requires: {UPGRADES[u.req]?.icon} {UPGRADES[u.req]?.name}</div>}
+                  {!owned&&cProg>0&&cProg<100&&<div style={{margin:'4px 0'}}><div style={{height:6,background:TH.panel,borderRadius:3,overflow:'hidden'}}><div style={{height:'100%',width:cProg+'%',background:TH.gold,borderRadius:3}}/></div><div style={{fontSize:13,color:TH.gold,marginTop:2}}>🔨 Construction: {cProg}%</div></div>}
+                  {!owned&&prepped&&<div style={{fontSize:14,color:TH.gold,margin:'3px 0'}}>🔨 Prepped: gold -40%{waivedMat?', '+((INGR[waivedMat]?.icon||'')+' '+(INGR[waivedMat]?.name||waivedMat))+' waived':''}</div>}
+                  {!owned&&<div style={{...S.row,marginTop:6}}>
+                    <span style={{fontSize:15,color:TH.gold,fontWeight:'bold'}}>{gc}g{prepped?' ✦':''}</span>
+                    {adjMats.map(([id,q])=><span key={id} style={{...S.tag,fontSize:14,borderColor:(inv[id]||0)>=q?TH.green:TH.red}}>{INGR[id]?.icon||id} {inv[id]||0}/{q}</span>)}
+                    {waivedMat&&<span style={{...S.tag,fontSize:14,borderColor:TH.gold,textDecoration:'line-through',opacity:.5}}>{INGR[waivedMat]?.icon||''}{INGR[waivedMat]?.name||waivedMat}</span>}
+                    <button style={{...S.btn(canBuy?'gold':'dim'),fontSize:15,padding:'4px 12px'}} onClick={()=>{if(canBuy){buyUpgrade(uid);setSelectedUpgrade(null);}}}>{!reqMet?'🔒 Locked':'Build'}</button>
+                  </div>}
+                  {owned&&<div style={{fontSize:14,color:TH.green,marginTop:4}}>✓ Installed and active</div>}
+                </div>);
+              })()}
+            </>);
           })()}
         </>}
         {workshopListView&&<>
