@@ -4076,9 +4076,7 @@ function CindervaleAlchemistInner(){
             {['tarn','holst','marta','gretta'].map(n=><button key={n} style={S.btn(dlgNpc===n?'gold':'def')} onClick={()=>openNpc(n)}>{NPCS[n]?.icon} {NPCS[n]?.name}</button>)}
           </div>
           {dlgNpc&&(NPCS[dlgNpc]?.loc==='chapel'||NPCS[dlgNpc]?.loc==='tavern')&&<NpcDlg npc={NPCS[dlgNpc]} {...{dlgLine,setDlgLine,setDlgNpc,availQ,aQ,acceptQ,compQ,qP,qObj,S,questDlg,setQuestDlg,openNpc}}/>}
-          {!dlgNpc&&(()=>{const first=['tarn','holst','marta','gretta'].find(n=>NPCS[n]);
-            return first?<NpcDlg npc={NPCS[first]} {...{dlgLine,setDlgLine,setDlgNpc,availQ,aQ,acceptQ,compQ,qP,qObj,S,questDlg,setQuestDlg,openNpc}}/>
-            :<div style={{color:TH.textDim,fontSize:16,textAlign:'center',padding:8}}>The warm hearth crackles. The tavern is empty tonight.</div>;})()}
+          {!dlgNpc&&<div style={{color:TH.textDim,fontSize:15,textAlign:'center',padding:12,fontStyle:'italic'}}>The warm hearth crackles softly. Choose someone to speak with.</div>}
         </div>
       </>}
 
