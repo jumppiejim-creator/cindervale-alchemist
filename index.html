@@ -1662,27 +1662,34 @@ function CindervaleAlchemistInner(){
   const [showImport,setShowImport]=useState(false);
   const [importText,setImportText]=useState('');
   const [importInput,setImportInput]=useState('');
-  const exportSave=()=>{
+  const exportSave=(data)=>{
     try{
-      const state=gatherState();
+      const state=data||gatherState();
+      if(!state.charName){setSaveMsg("No save to export");setTimeout(()=>setSaveMsg(null),3000);return;}
       const json=JSON.stringify({...state,_v:SAVE_VERSION,_at:new Date().toISOString(),_export:true});
       const b64=btoa(unescape(encodeURIComponent(json)));
       if(navigator.clipboard&&navigator.clipboard.writeText){
-        navigator.clipboard.writeText(b64).then(()=>setSaveMsg('Save code copied to clipboard!')).catch(()=>setSaveMsg('Export generated — copy manually'));
-      }else{setSaveMsg('Export generated — copy the code');}
+        navigator.clipboard.writeText(b64).then(()=>setSaveMsg("Save code copied to clipboard!")).catch(()=>setSaveMsg("Export ready. Copy from the box below."));
+      }else{setSaveMsg("Export ready. Copy from the box below.");}
       setImportText(b64);setShowImport(true);
-    }catch(e){setSaveMsg('Export failed: '+e.message);}
-    setTimeout(()=>setSaveMsg(null),3000);
+    }catch(e){setSaveMsg("Export failed: "+e.message);}
+    setTimeout(()=>setSaveMsg(null),4000);
   };
   const importSave=(str)=>{
+    if(!str||!str.trim()){setSaveMsg('⚠️ Paste a save code first');setTimeout(()=>setSaveMsg(null),3000);return;}
     try{
       const clean=str.trim();
-      const json=decodeURIComponent(escape(atob(clean)));
+      let json;
+      try{json=decodeURIComponent(escape(atob(clean)));}catch(e){
+        // Maybe it's raw JSON pasted directly
+        json=clean;
+      }
       const data=JSON.parse(json);
-      if(!data.charName){setSaveMsg('Invalid save data');setTimeout(()=>setSaveMsg(null),2500);return;}
-      restoreState(data);setGameStarted(true);setShowImport(false);setImportText('');
-      setSaveMsg(`Loaded: ${data.charName} — Day ${data.day}`);setTimeout(()=>setSaveMsg(null),3000);
-    }catch(e){setSaveMsg('Import failed — invalid code');setTimeout(()=>setSaveMsg(null),2500);}
+      if(!data.charName||!data.day){setSaveMsg('⚠️ Invalid save data — missing character info');setTimeout(()=>setSaveMsg(null),3000);return;}
+      restoreState(data);
+      setGameStarted(true);setShowImport(false);setImportInput('');setImportText('');
+      setSaveMsg(`✅ Loaded: ${data.charName} — Day ${data.day}`);setTimeout(()=>setSaveMsg(null),4000);
+    }catch(e){setSaveMsg('⚠️ Import failed — check the code and try again');setTimeout(()=>setSaveMsg(null),3000);}
   };
 
   // ─── HARVEST (Hour-by-Hour Expedition) ───
@@ -2884,6 +2891,7 @@ function CindervaleAlchemistInner(){
   if(!gameStarted){
     return(
       <div style={S.app}><link href="https://fonts.googleapis.com/css2?family=Almendra:wght@400;700&display=swap" rel="stylesheet"/>
+        {saveMsg&&<div style={{position:'fixed',top:8,left:'50%',transform:'translateX(-50%)',background:TH.greenDim,color:TH.green,padding:'6px 16px',borderRadius:6,fontSize:15,zIndex:1000,border:`1px solid ${TH.green}44`,maxWidth:'90%',textAlign:'center'}}>{saveMsg}</div>}
         <div style={{maxWidth:500,padding:'60px 20px',width:'100%',textAlign:'center'}}>
           <div style={{fontSize:32,color:TH.gold,letterSpacing:4,marginBottom:4,textShadow:`0 0 20px ${TH.goldDim}`}}>⚗️</div>
           <div style={{fontSize:32,color:TH.gold,letterSpacing:3,marginBottom:2}}>Cindervale Alchemist</div>
@@ -2918,7 +2926,7 @@ function CindervaleAlchemistInner(){
             {showImport&&<>
               <div style={{fontSize:14,color:TH.textDim,marginBottom:8}}>Export your save as a code, then paste it on another device to continue playing.</div>
               <div style={{...S.row,marginBottom:8}}>
-                <button style={{...S.btn('gold'),fontSize:15}} onClick={exportSave}>📤 Export Current Save</button>
+                <button style={{...S.btn(autoSaveData?'gold':'dim'),fontSize:15}} onClick={()=>exportSave(autoSaveData||saveSlots.find(s=>s))} disabled={!autoSaveData&&!saveSlots.find(s=>s)}>📤 Export Save</button>
               </div>
               {importText&&<div style={{marginBottom:8}}>
                 <div style={{fontSize:13,color:TH.textDim,marginBottom:3}}>Your save code (tap to select all):</div>
