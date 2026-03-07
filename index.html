@@ -5189,7 +5189,7 @@ function CindervaleAlchemistInner(){
               ['forageYieldBonus','🌿 Forage Yield','+','extra items'],
               ['rareForageBonus','💎 Rare Finds','+','% chance'],
             ].map(([key,label,pre,suf])=>{const v=getFeatureVal(key);if(!v)return null;
-              const display=(key.includes('Chance')||key.includes('Percent')||(key.includes('Reduction')&&key!=='researchCostReduction')||key.includes('Discount')||key==='sellBonus'||key==='shelfSaleBonus'||key==='questGoldBonus'||key==='potionValueBonus'||key==='ingredientEfficiency'||key==='rareForageBonus')
+              const display=(key.includes('Chance')||key.includes('Percent')||(key.includes('Reduction')&&key!=='researchCostReduction'&&key!=='travelReduction')||key.includes('Discount')||key==='sellBonus'||key==='shelfSaleBonus'||key==='questGoldBonus'||key==='potionValueBonus'||key==='ingredientEfficiency'||key==='rareForageBonus')
                 ?Math.round(v*100):key==='xpMultiplier'||key==='repGainBonus'||key==='yieldMultiplier'?+(1+v).toFixed(1):v;
               return(
                 <div key={key} style={{padding:'2px 6px',background:TH.gold+'08',borderRadius:3,border:'1px solid '+TH.gold+'22'}}>
