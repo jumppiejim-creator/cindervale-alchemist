@@ -1353,6 +1353,8 @@ function CindervaleAlchemistInner(){
   const [showSaveMenu,setShowSaveMenu]=useState(false);
   const [showJournal,setShowJournal]=useState(false);
   const [confirmDelete,setConfirmDelete]=useState(null);
+  const debugMode=new URLSearchParams(window.location.search).get('debug')==='1';
+  const [showDebug,setShowDebug]=useState(false);
 
   const [phase,setPhase]=useState('identity');
   const [charName,setCharName]=useState('');
@@ -3331,6 +3333,76 @@ function CindervaleAlchemistInner(){
   return(
     <div style={S.app}><link href="https://fonts.googleapis.com/css2?family=Almendra:wght@400;700&display=swap" rel="stylesheet"/>
       <SaveOverlay/>
+      {/* ═══ DEBUG PANEL ═══ */}
+      {debugMode&&gameStarted&&<>
+        <div style={{position:'fixed',bottom:8,right:8,zIndex:1001}}>
+          <button onClick={()=>setShowDebug(p=>!p)} style={{background:showDebug?'#ff4444':'#444',color:'#fff',border:'none',borderRadius:'50%',width:36,height:36,fontSize:18,cursor:'pointer',boxShadow:'0 2px 8px #000a'}}>🐛</button>
+        </div>
+        {showDebug&&<div style={{position:'fixed',bottom:50,right:8,zIndex:1001,background:'#1a1a2a',border:'1px solid #555',borderRadius:8,padding:10,width:320,maxHeight:'80vh',overflow:'auto',fontSize:13,color:'#ddd',boxShadow:'0 4px 20px #000a'}} onClick={e=>e.stopPropagation()}>
+          <div style={{fontSize:16,color:'#ff8',marginBottom:6,display:'flex',justifyContent:'space-between'}}><b>🐛 Debug Panel</b><span style={{cursor:'pointer'}} onClick={()=>setShowDebug(false)}>✕</span></div>
+          <div style={{color:'#aaa',fontSize:11,marginBottom:8}}>Day {day} · {hours}h · Lv{getLvl(xp)} · {gold}g · {xp}xp</div>
+
+          <div style={{marginBottom:6}}><b style={{color:'#8cf'}}>💰 Resources</b></div>
+          <div style={{display:'flex',flexWrap:'wrap',gap:3,marginBottom:8}}>
+            <button onClick={()=>setGold(g=>g+100)} style={{padding:'2px 6px',fontSize:12,background:'#333',color:'#fd4',border:'1px solid #555',borderRadius:3,cursor:'pointer'}}>+100g</button>
+            <button onClick={()=>setGold(g=>g+1000)} style={{padding:'2px 6px',fontSize:12,background:'#333',color:'#fd4',border:'1px solid #555',borderRadius:3,cursor:'pointer'}}>+1000g</button>
+            <button onClick={()=>setGold(g=>g+10000)} style={{padding:'2px 6px',fontSize:12,background:'#333',color:'#fd4',border:'1px solid #555',borderRadius:3,cursor:'pointer'}}>+10000g</button>
+            <button onClick={()=>setXp(x=>x+500)} style={{padding:'2px 6px',fontSize:12,background:'#333',color:'#8f8',border:'1px solid #555',borderRadius:3,cursor:'pointer'}}>+500xp</button>
+            <button onClick={()=>setXp(x=>x+2000)} style={{padding:'2px 6px',fontSize:12,background:'#333',color:'#8f8',border:'1px solid #555',borderRadius:3,cursor:'pointer'}}>+2000xp</button>
+            <button onClick={()=>setSkPts(p=>p+5)} style={{padding:'2px 6px',fontSize:12,background:'#333',color:'#f8f',border:'1px solid #555',borderRadius:3,cursor:'pointer'}}>+5 SkPts</button>
+            <button onClick={()=>setHours(12)} style={{padding:'2px 6px',fontSize:12,background:'#333',color:'#8ff',border:'1px solid #555',borderRadius:3,cursor:'pointer'}}>Set 12h</button>
+          </div>
+
+          <div style={{marginBottom:6}}><b style={{color:'#8cf'}}>🌿 Ingredients</b></div>
+          <div style={{display:'flex',flexWrap:'wrap',gap:2,marginBottom:4}}>
+            {Object.entries(INGR).map(([id,ing])=><button key={id} onClick={()=>setInv(p=>({...p,[id]:(p[id]||0)+10}))} style={{padding:'1px 4px',fontSize:11,background:'#333',color:'#ccc',border:'1px solid #444',borderRadius:2,cursor:'pointer'}} title={ing.name+' +10'}>{ing.icon}</button>)}
+          </div>
+          <div style={{display:'flex',gap:3,marginBottom:8}}>
+            <button onClick={()=>{const n={};Object.keys(INGR).forEach(id=>n[id]=(inv[id]||0)+20);setInv(p=>({...p,...n}));}} style={{padding:'2px 6px',fontSize:12,background:'#335',color:'#8cf',border:'1px solid #555',borderRadius:3,cursor:'pointer'}}>+20 ALL</button>
+            <button onClick={()=>{const n={};Object.keys(INGR).forEach(id=>n[id]=(inv[id]||0)+99);setInv(p=>({...p,...n}));}} style={{padding:'2px 6px',fontSize:12,background:'#335',color:'#8cf',border:'1px solid #555',borderRadius:3,cursor:'pointer'}}>+99 ALL</button>
+          </div>
+
+          <div style={{marginBottom:6}}><b style={{color:'#8cf'}}>📜 Recipes</b></div>
+          <div style={{display:'flex',gap:3,marginBottom:4}}>
+            <button onClick={()=>setKnown(RECIPES.map(r=>r.id))} style={{padding:'2px 6px',fontSize:12,background:'#353',color:'#8f8',border:'1px solid #555',borderRadius:3,cursor:'pointer'}}>Learn ALL</button>
+            <span style={{fontSize:11,color:'#888'}}>Known: {known.length}/{RECIPES.length}</span>
+          </div>
+          <div style={{display:'flex',flexWrap:'wrap',gap:2,marginBottom:8}}>
+            {RECIPES.filter(r=>!known.includes(r.id)).slice(0,12).map(r=><button key={r.id} onClick={()=>setKnown(p=>[...p,r.id])} style={{padding:'1px 4px',fontSize:11,background:'#333',color:known.includes(r.id)?'#8f8':'#ccc',border:'1px solid #444',borderRadius:2,cursor:'pointer'}}>{r.name}</button>)}
+          </div>
+
+          <div style={{marginBottom:6}}><b style={{color:'#8cf'}}>🏗️ Upgrades</b></div>
+          <div style={{display:'flex',gap:3,marginBottom:4}}>
+            <button onClick={()=>setUpgrades(Object.keys(UPGRADES))} style={{padding:'2px 6px',fontSize:12,background:'#353',color:'#8f8',border:'1px solid #555',borderRadius:3,cursor:'pointer'}}>Buy ALL</button>
+            <span style={{fontSize:11,color:'#888'}}>Owned: {upgrades.length}/{Object.keys(UPGRADES).length}</span>
+          </div>
+          <div style={{display:'flex',flexWrap:'wrap',gap:2,marginBottom:8}}>
+            {Object.values(UPGRADES).filter(u=>!upgrades.includes(u.id)).map(u=><button key={u.id} onClick={()=>setUpgrades(p=>[...p,u.id])} style={{padding:'1px 4px',fontSize:11,background:'#333',color:'#ccc',border:'1px solid #444',borderRadius:2,cursor:'pointer'}}>{u.icon}{u.name}</button>)}
+          </div>
+
+          <div style={{marginBottom:6}}><b style={{color:'#8cf'}}>⏩ Time & Quests</b></div>
+          <div style={{display:'flex',flexWrap:'wrap',gap:3,marginBottom:8}}>
+            <button onClick={()=>setDay(d=>d+1)} style={{padding:'2px 6px',fontSize:12,background:'#333',color:'#ff8',border:'1px solid #555',borderRadius:3,cursor:'pointer'}}>+1 Day</button>
+            <button onClick={()=>setDay(d=>d+7)} style={{padding:'2px 6px',fontSize:12,background:'#333',color:'#ff8',border:'1px solid #555',borderRadius:3,cursor:'pointer'}}>+7 Days</button>
+            <button onClick={()=>{aQ.forEach(q=>{const p=qP(q);if(p.c<p.n)setInv(iv=>{const n={...iv};(q.goals||[]).forEach(g=>{if(g.type==='gather')n[g.item]=(n[g.item]||0)+g.qty;if(g.type==='brew')setPots(pp=>({...pp,[g.item]:(pp[g.item]||0)+g.qty}));});return n;});});}} style={{padding:'2px 6px',fontSize:12,background:'#533',color:'#f88',border:'1px solid #555',borderRadius:3,cursor:'pointer'}}>Fill Quests</button>
+          </div>
+
+          <div style={{marginBottom:6}}><b style={{color:'#8cf'}}>🎭 Factions</b></div>
+          <div style={{display:'flex',flexWrap:'wrap',gap:3,marginBottom:8}}>
+            {Object.keys(fRep).map(f=><button key={f} onClick={()=>setFRep(p=>({...p,[f]:(p[f]||0)+50}))} style={{padding:'2px 6px',fontSize:11,background:'#333',color:'#fc8',border:'1px solid #444',borderRadius:2,cursor:'pointer'}}>{f} +50</button>)}
+          </div>
+
+          <div style={{marginBottom:6}}><b style={{color:'#8cf'}}>🧪 Potions</b></div>
+          <div style={{display:'flex',flexWrap:'wrap',gap:2,marginBottom:8}}>
+            {RECIPES.filter(r=>known.includes(r.id)).map(r=><button key={r.id} onClick={()=>setPots(p=>({...p,[r.id]:(p[r.id]||0)+5}))} style={{padding:'1px 4px',fontSize:11,background:'#333',color:'#ccc',border:'1px solid #444',borderRadius:2,cursor:'pointer'}}>{r.icon||'🧪'}+5</button>)}
+          </div>
+
+          <div style={{marginBottom:6}}><b style={{color:'#8cf'}}>📍 Navigation</b></div>
+          <div style={{display:'flex',flexWrap:'wrap',gap:2,marginBottom:4}}>
+            {['map','workshop','market','tavern','wilds','character','upgrades','enchant','staff','factions'].map(s=><button key={s} onClick={()=>setScreen(s)} style={{padding:'1px 5px',fontSize:11,background:screen===s?'#553':'#333',color:screen===s?'#ff8':'#ccc',border:'1px solid #444',borderRadius:2,cursor:'pointer'}}>{s}</button>)}
+          </div>
+        </div>}
+      </>}
       {saveMsg&&<div style={{position:'fixed',top:8,right:12,background:TH.greenDim,color:TH.green,padding:'4px 12px',borderRadius:4,fontSize:15,zIndex:1000,border:`1px solid ${TH.green}44`}}>{saveMsg}</div>}
 
       {/* HEADER */}
