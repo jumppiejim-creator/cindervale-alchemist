@@ -1659,6 +1659,31 @@ function CindervaleAlchemistInner(){
   const loadSlot=async(slot)=>{const d=saveSlots[slot-1]||await sGet(sK(slot));if(d){restoreState(d);setGameStarted(true);}};
   const deleteSave=async(slot)=>{await sDel(sK(slot));setSaveSlots(p=>{const n=[...p];n[slot-1]=null;return n;});setConfirmDelete(null);};
   const newGame=()=>{restoreState(DEF);setLog([]);setGameStarted(true);};
+  const [showImport,setShowImport]=useState(false);
+  const [importText,setImportText]=useState('');
+  const [importInput,setImportInput]=useState('');
+  const exportSave=()=>{
+    try{
+      const state=gatherState();
+      const json=JSON.stringify({...state,_v:SAVE_VERSION,_at:new Date().toISOString(),_export:true});
+      const b64=btoa(unescape(encodeURIComponent(json)));
+      if(navigator.clipboard&&navigator.clipboard.writeText){
+        navigator.clipboard.writeText(b64).then(()=>setSaveMsg('Save code copied to clipboard!')).catch(()=>setSaveMsg('Export generated — copy manually'));
+      }else{setSaveMsg('Export generated — copy the code');}
+      setImportText(b64);setShowImport(true);
+    }catch(e){setSaveMsg('Export failed: '+e.message);}
+    setTimeout(()=>setSaveMsg(null),3000);
+  };
+  const importSave=(str)=>{
+    try{
+      const clean=str.trim();
+      const json=decodeURIComponent(escape(atob(clean)));
+      const data=JSON.parse(json);
+      if(!data.charName){setSaveMsg('Invalid save data');setTimeout(()=>setSaveMsg(null),2500);return;}
+      restoreState(data);setGameStarted(true);setShowImport(false);setImportText('');
+      setSaveMsg(`Loaded: ${data.charName} — Day ${data.day}`);setTimeout(()=>setSaveMsg(null),3000);
+    }catch(e){setSaveMsg('Import failed — invalid code');setTimeout(()=>setSaveMsg(null),2500);}
+  };
 
   // ─── HARVEST (Hour-by-Hour Expedition) ───
   const getExpeditionInfo=(reg)=>{
@@ -2884,6 +2909,28 @@ function CindervaleAlchemistInner(){
               </div>);})}
           </div>
           <button style={{...S.btn('gold'),fontSize:20,padding:'10px 30px',marginTop:8}} onClick={newGame}>✨ New Game</button>
+
+          {/* Cross-device save transfer */}
+          <div style={{...S.card,marginTop:12,textAlign:'left'}}>
+            <div style={{...S.cT,cursor:'pointer',display:'flex',justifyContent:'space-between',alignItems:'center'}} onClick={()=>setShowImport(p=>!p)}>
+              <span>📲 Cross-Device Transfer</span><span style={{fontSize:13,color:TH.textDim}}>{showImport?'▲':'▼'}</span>
+            </div>
+            {showImport&&<>
+              <div style={{fontSize:14,color:TH.textDim,marginBottom:8}}>Export your save as a code, then paste it on another device to continue playing.</div>
+              <div style={{...S.row,marginBottom:8}}>
+                <button style={{...S.btn('gold'),fontSize:15}} onClick={exportSave}>📤 Export Current Save</button>
+              </div>
+              {importText&&<div style={{marginBottom:8}}>
+                <div style={{fontSize:13,color:TH.textDim,marginBottom:3}}>Your save code (tap to select all):</div>
+                <textarea readOnly value={importText} onClick={e=>e.target.select()} style={{width:'100%',height:60,background:TH.bg,color:TH.text,border:'1px solid '+TH.border,borderRadius:4,padding:6,fontSize:12,fontFamily:'monospace',resize:'none'}}/>
+              </div>}
+              <div style={{fontSize:14,color:TH.textDim,marginBottom:4}}>Paste a save code to import:</div>
+              <div style={{display:'flex',gap:6}}>
+                <textarea placeholder="Paste save code here…" value={importInput} onChange={e=>setImportInput(e.target.value)} style={{flex:1,height:50,background:TH.bg,color:TH.text,border:'1px solid '+TH.border,borderRadius:4,padding:6,fontSize:12,fontFamily:'monospace',resize:'none'}}/>
+                <button style={{...S.btn('gold'),fontSize:14,alignSelf:'flex-end'}} onClick={()=>importSave(importInput)}>📥 Import</button>
+              </div>
+            </>}
+          </div>
           </>}
         </div>
       </div>);
@@ -3203,6 +3250,7 @@ function CindervaleAlchemistInner(){
           </div>);})}
         <div style={{...S.row,justifyContent:'space-between',marginTop:6}}>
           <button style={S.btn('dim')} onClick={()=>setShowSaveMenu(false)}>Close</button>
+          <button style={{...S.btn(),fontSize:14}} onClick={()=>{exportSave();setShowSaveMenu(false);}}>📤 Export</button>
           <button style={S.btn('red')} onClick={()=>{setGameStarted(false);setShowSaveMenu(false);}}>🚪 Title</button>
         </div>
       </div>
