@@ -418,7 +418,7 @@ const CLASSES={
       {classLv:2,name:'Bargain Hunter',desc:'Shop buy prices -15%. Sell prices +10%.',effects:{buyDiscount:0.15,sellBonus:0.10}},
       {classLv:3,name:'Specialization',desc:'Choose a specialization path. +5% sell bonus.',effects:{sellBonus:0.05}},
       {classLv:4,name:'Staff Manager',desc:'+1 max apprentice slot. Staff gain +10% efficiency.',effects:{maxApprenticeBonus:1,staffEfficiencyBonus:0.10}},
-      {classLv:5,name:'Trade Routes',desc:'Passive income doubled. Shop restocks 2 additional rare items daily.',effects:{passiveIncomeMulti:2,shopRestockBonus:2}},
+      {classLv:5,name:'Trade Routes',desc:'Passive income doubled. Shop restocks 2 additional rare items daily. +25% shelf capacity.',effects:{passiveIncomeMulti:2,shopRestockBonus:2,shelfCapacityBonus:0.25}},
       {classLv:6,name:'Reputation Precedes You',desc:'All faction reputation gains +25%. Faction vendors offer 10% discount.',effects:{repGainBonus:0.25,buyDiscount:0.10}},
       {classLv:7,name:'Golden Tongue',desc:'Enchanting/potion customers pay 20% more. +1 customer per morning.',effects:{customerPayBonus:0.20,customerBonus:1}},
       {classLv:8,name:'Trade Empire',desc:'Staff efficiency +30% (stacks). +1 max apprentice. Payroll -25%.',effects:{staffEfficiencyBonus:0.30,maxApprenticeBonus:1,payrollDiscount:0.25}},
@@ -516,14 +516,14 @@ const FEATS={
   silver_tongue:{id:'silver_tongue',name:'Silver Tongue',icon:'🗣️',cat:'commerce',desc:'+15% shelf sale chance. +10% all sell prices.',effects:{shelfSaleBonus:0.15,sellBonus:0.10}},
   talent_scout:{id:'talent_scout',name:'Talent Scout',icon:'🔍',cat:'commerce',desc:'+2 hire candidates. All candidates have +2 to highest stat.',effects:{hireBonusCandidates:2,hireBonusStat:2}},
   patron:{id:'patron',name:'Patron of the Arts',icon:'🎭',cat:'commerce',desc:'Customer orders pay 25% more. +1 customer per morning.',effects:{customerPayBonus:0.25,customerBonus:1}},
-  supply_lines:{id:'supply_lines',name:'Supply Lines',icon:'🚚',cat:'commerce',desc:'Procurement finds 2× rare items. Shop restock is cheaper.',effects:{shopRestockBonus:1,buyDiscount:0.10}},
+  supply_lines:{id:'supply_lines',name:'Supply Lines',icon:'🚚',cat:'commerce',desc:'Procurement finds 2× rare items. +2 shelf capacity. Shop restock is cheaper.',effects:{shopRestockBonus:1,buyDiscount:0.10,shelfCapacity:2}},
   penny_pincher:{id:'penny_pincher',name:'Penny Pincher',icon:'🪙',cat:'commerce',desc:'All gold costs (purchases, upgrades, hiring, payroll) -10%.',effects:{upgradeCostReduction:0.15,buyDiscount:0.10}},
   // ── General ──
   early_riser:{id:'early_riser',name:'Early Riser',icon:'🌅',cat:'general',desc:'+1 hour per day.',effects:{bonusHoursPerDay:1}},
   multitasker:{id:'multitasker',name:'Multitasker',icon:'🔀',cat:'general',desc:'One free 0-hour action per day.',effects:{freeAction:1}},
   jack_of_all:{id:'jack_of_all',name:'Jack of All Trades',icon:'🃏',cat:'general',desc:'+1 to all skill checks where you have 0 ranks.',effects:{bonusSkillPerLevel:1,xpMultiplier:0.05}},
   prodigy:{id:'prodigy',name:'Prodigy',icon:'⭐',cat:'general',desc:'+1 to all six stats (can exceed soft cap).',effects:{craftBonus:1,enchantBonus:1,extractionBonus:1,sellBonus:0.10,xpMultiplier:0.05,bonusHoursPerDay:1}},
-  tough:{id:'tough',name:'Tough',icon:'💪',cat:'general',desc:'Immune to staff morale penalties. Negative town events halved.',effects:{bonusHoursPerDay:1,eventDamageReduction:0.5}},
+  tough:{id:'tough',name:'Tough',icon:'💪',cat:'general',desc:'Once per day, reroll a failed check. +1h/day. Negative town events halved.',effects:{bonusHoursPerDay:1,eventDamageReduction:0.5,checkReroll:1}},
   focused_mind:{id:'focused_mind',name:'Focused Mind',icon:'🧠',cat:'general',desc:'+1 skill point per level (retroactive).',effects:{bonusSkillPerLevel:1}},
   lorekeeper:{id:'lorekeeper',name:'Lorekeeper',icon:'📚',cat:'general',desc:'+25% XP from quests/board requests. Quest completion +5 faction rep.',effects:{questXPBonus:0.25,questRepBonus:5}},
   relentless:{id:'relentless',name:'Relentless',icon:'🔥',cat:'general',desc:'After a failed check, +2 to next check of same type. Stacks to +6.',effects:{failStreakBonus:2,failStreakCap:6}},
@@ -587,6 +587,43 @@ const WS_POS={
   // Comfort — centered row of 4
   quarters:{x:121,y:284},hearth:{x:207,y:284},garden:{x:293,y:284},garden_2:{x:379,y:284},
 };
+
+// ═══ TRAIT EFFECTS ═══
+const TRAIT_FX={
+  'Quick Learner':{xpMult:0.25,desc:'+25% XP gain'},
+  'Clumsy':{effMult:-0.10,desc:'-10% task efficiency'},
+  'Keen Senses':{forageEff:0.12,desc:'+12% foraging efficiency'},
+  'Shy':{shopEff:-0.08,desc:'-8% shopkeeping efficiency'},
+  'Tireless':{moraleDelta:2,desc:'+2 morale/day'},
+  'Gruff':{moraleDelta:-1,desc:'-1 morale/day'},
+  'Creative':{enchantEff:0.12,desc:'+12% enchanting efficiency'},
+  'Distracted':{effMult:-0.06,desc:'-6% task efficiency'},
+  'Organized':{effMult:0.08,desc:'+8% task efficiency'},
+  'By-the-Book':{researchEff:-0.10,desc:'-10% research efficiency'},
+  'Arcane Gifted':{enchantEff:0.15,researchEff:0.10,desc:'+15% enchant, +10% research efficiency'},
+  'Fragile':{forageEff:-0.12,desc:'-12% foraging efficiency'},
+  'Experienced':{effMult:0.10,desc:'+10% task efficiency'},
+  'Slow':{effMult:-0.08,desc:'-8% task efficiency'},
+  'Silver Tongue':{shopEff:0.20,desc:'+20% shopkeeping efficiency'},
+  'Unreliable':{moraleDelta:-2,desc:'-2 morale/day'},
+  'Methodical':{researchEff:0.15,desc:'+15% research efficiency'},
+  'Absent-Minded':{effMult:-0.05,desc:'-5% task efficiency'},
+  'Curious':{researchEff:0.10,xpMult:0.10,desc:'+10% research eff, +10% XP'},
+  'Impatient':{moraleDelta:-1,desc:'-1 morale/day'},
+  'Master Brewer':{brewEff:0.18,desc:'+18% brewing efficiency'},
+  'Set in Ways':{researchEff:-0.12,desc:'-12% research efficiency'},
+  'Fleet-Footed':{forageEff:0.10,desc:'+10% foraging efficiency'},
+  'Restless':{moraleDelta:-1,effMult:0.04,desc:'-1 morale/day, +4% efficiency'},
+  'Inventive':{brewEff:0.10,researchEff:0.08,desc:'+10% brew, +8% research efficiency'},
+  'Perfectionist':{effMult:0.06,moraleDelta:-1,desc:'+6% efficiency, -1 morale/day'},
+  'Numerate':{shopEff:0.12,desc:'+12% shopkeeping efficiency'},
+  'Cautious':{forageEff:-0.06,desc:'-6% foraging efficiency'},
+  'Insightful':{researchEff:0.18,desc:'+18% research efficiency'},
+  'Eccentric':{moraleDelta:-1,researchEff:0.08,desc:'-1 morale/day, +8% research'},
+  'Strong':{forageEff:0.12,desc:'+12% foraging efficiency'},
+  'Blunt':{shopEff:-0.10,desc:'-10% shopkeeping efficiency'},
+};
+const SPEC_MATCH={forage:'foraging',brew:'brewing',shopkeep:'shopkeeping',research_task:'research',construct:'building'};
 
 const AP_POOL=[
   {id:'ap_korrin',name:'Korrin Ashfoot',icon:'👦',personality:'Eager dwarf, steady hands.',baseStat:{tec:12,dis:11,inu:9},specialty:'brewing',salary:5,traits:['Quick Learner','Clumsy']},
@@ -2564,7 +2601,25 @@ function CindervaleAlchemistInner(){
       const apSalary=Math.max(1,Math.floor(ap.salary*(1-payrollDisc)*halfPay));
       totalSal+=apSalary;const task=apprTasks[ap.id];
       if(!task){report.push({n:ap.name,i:ap.icon,r:'Idle',t:'idle'});return{...ap,morale:Math.max(40,ap.morale-5)};}
-      const aLvl=getApprLvl(ap.id);const eff=Math.max(0.3,0.5+getMod(ap.baseStat[TASK_TYPES[task.type]?.stat]||10)*0.05+aLvl*0.1+upEff('apprenticeEff')+staffEffBonus);
+      const aLvl=getApprLvl(ap.id);
+      // Base efficiency from stat + level + upgrades + class bonuses
+      let eff=Math.max(0.3,0.5+getMod(ap.baseStat[TASK_TYPES[task.type]?.stat]||10)*0.05+aLvl*0.1+upEff('apprenticeEff')+staffEffBonus);
+      // Morale modifier: <30% = ×0.6, <50% = ×0.8, >80% = ×1.1
+      const mor=ap.morale||50;eff*=mor<30?0.6:mor<50?0.8:mor>80?1.1:1.0;
+      // Specialty match: +15% when doing their preferred task
+      if(ap.specialty&&SPEC_MATCH[task.type]===ap.specialty)eff*=1.15;
+      // Trait effects
+      (ap.traits||[]).forEach(t=>{const fx=TRAIT_FX[t];if(!fx)return;
+        if(fx.effMult)eff*=(1+fx.effMult);
+        if(task.type==='forage'&&fx.forageEff)eff*=(1+fx.forageEff);
+        if(task.type==='brew'&&fx.brewEff)eff*=(1+fx.brewEff);
+        if(task.type==='shopkeep'&&fx.shopEff)eff*=(1+fx.shopEff);
+        if((task.type==='research_task')&&fx.researchEff)eff*=(1+fx.researchEff);
+        if(task.type==='construct'&&fx.enchantEff)eff*=(1+fx.enchantEff);
+      });
+      eff=Math.max(0.2,Math.min(eff,3.0));
+      const traitXpMult=(ap.traits||[]).reduce((m,t)=>m*(1+(TRAIT_FX[t]?.xpMult||0)),1);
+      const axp=sxpMult*traitXpMult;
       if(task.type==='forage'&&task.target){
         const reg=REGIONS.find(r=>r.id===task.target);
         if(reg&&level>=regUnlock(reg)){
@@ -2580,7 +2635,7 @@ function CindervaleAlchemistInner(){
           Object.entries(g).forEach(([id,q])=>modInv(id,q));
           const yieldStr=Object.entries(g).map(([id,q])=>`${INGR[id]?.icon||''}${INGR[id]?.name||id} ×${q}`).join(', ');
           report.push({n:ap.name,i:ap.icon,r:`Foraged ${empGatherH}h at ${reg.icon}${reg.name}: ${yieldStr}`,t:'ok'});
-          setApprXP(p=>({...p,[ap.id]:(p[ap.id]||0)+Math.floor(15*sxpMult)}));}
+          setApprXP(p=>({...p,[ap.id]:(p[ap.id]||0)+Math.floor(15*axp)}));}
       } else if(task.type==='brew'&&task.target){
         const recipe=RECIPES.find(r=>r.id===task.target);if(recipe){
           const cost={};recipe.ingr.forEach(id=>{cost[id]=(cost[id]||0)+1;});
@@ -2591,11 +2646,11 @@ function CindervaleAlchemistInner(){
               Object.entries(cost).forEach(([id,q])=>modInv(id,-q));modPot(recipe.id,1);
               report.push({n:ap.name,i:ap.icon,r:`Brewed ${recipe.icon}${recipe.name} (2nd try)`,t:'ok'});gainXP(Math.floor(recipe.xp*.3));
             } else{if(Math.random()<.5)Object.entries(cost).forEach(([id,q])=>modInv(id,-q));report.push({n:ap.name,i:ap.icon,r:`Failed ${recipe.name}`,t:'fail'});}
-            setApprXP(p=>({...p,[ap.id]:(p[ap.id]||0)+Math.floor(10*sxpMult)}));
+            setApprXP(p=>({...p,[ap.id]:(p[ap.id]||0)+Math.floor(10*axp)}));
           } else report.push({n:ap.name,i:ap.icon,r:`No mats for ${recipe.name}`,t:'fail'});}
       } else if(task.type==='shopkeep'){
         const g=Math.floor((5+level*2+aLvl*3)*eff*(1+upEff('sellBonus')+getFeatureVal('sellBonus')));setGold(gg=>gg+g);
-        report.push({n:ap.name,i:ap.icon,r:`Shop: +${g}g`,t:'ok'});setApprXP(p=>({...p,[ap.id]:(p[ap.id]||0)+Math.floor(12*sxpMult)}));
+        report.push({n:ap.name,i:ap.icon,r:`Shop: +${g}g`,t:'ok'});setApprXP(p=>({...p,[ap.id]:(p[ap.id]||0)+Math.floor(12*axp)}));
       } else if(task.type==='research_task'){
         const undP=RECIPES.filter(r=>!known.includes(r.id)&&level>=r.unlock&&(!r.faction||getRL(r.faction)>=(r.fReq||0)));
         const undE=ENCHANTMENTS.filter(e=>!knownEnch.includes(e.id)&&(!e.faction||getRL(e.faction)>=(e.fReq||0)));
@@ -2610,7 +2665,7 @@ function CindervaleAlchemistInner(){
             report.push({n:ap.name,i:ap.icon,r:`Inscription: ${d.icon}${d.name}!`,t:'ok'});
           }
         } else report.push({n:ap.name,i:ap.icon,r:'Studied. No breakthrough.',t:'idle'});
-        setApprXP(p=>({...p,[ap.id]:(p[ap.id]||0)+Math.floor(10*sxpMult)}));
+        setApprXP(p=>({...p,[ap.id]:(p[ap.id]||0)+Math.floor(10*axp)}));
       } else if(task.type==='construct'&&task.target){
         const u=UPGRADES[task.target];
         if(u&&!hasUp(task.target)){
@@ -2619,10 +2674,11 @@ function CindervaleAlchemistInner(){
           const cur=constructProgress[task.target]||0;const next=Math.min(100,cur+progress);
           if(next>=100)report.push({n:ap.name,i:ap.icon,r:`🔨 ${u.icon}${u.name} prep complete! Gold -40%, 1 mat waived.`,t:'ok'});
           else report.push({n:ap.name,i:ap.icon,r:`🔨 ${u.icon}${u.name}: ${Math.min(100,next)}% (+${progress}%)`,t:'ok'});
-          setApprXP(p=>({...p,[ap.id]:(p[ap.id]||0)+Math.floor(8*sxpMult)}));
+          setApprXP(p=>({...p,[ap.id]:(p[ap.id]||0)+Math.floor(8*axp)}));
         } else report.push({n:ap.name,i:ap.icon,r:`${u?'Already built':'Unknown upgrade'}`,t:'idle'});
       }
-      return{...ap,morale:Math.min(100,Math.max(20,ap.morale+(upEff('morale')||0)+2+getFeatureVal('healMorale')))};
+      const traitMorale=(ap.traits||[]).reduce((s,t)=>s+(TRAIT_FX[t]?.moraleDelta||0),0);
+      return{...ap,morale:Math.min(100,Math.max(20,ap.morale+(upEff('morale')||0)+2+getFeatureVal('healMorale')+traitMorale))};
     });
     setHiredAppr(updatedAppr);
     setGold(g=>Math.max(0,g-totalSal));if(totalSal>0)report.push({n:'Payroll',i:'💰',r:`-${totalSal}g${gold<totalSal?' (couldn\'t cover!)':''}`,t:gold<totalSal?'fail':'idle'});
@@ -4766,10 +4822,18 @@ function CindervaleAlchemistInner(){
             return(
             <div key={ap.id} style={{padding:'8px',background:TH.panelLight,borderRadius:4,marginBottom:5,border:'1px solid '+TH.border}}>
               <div style={{display:'flex',justifyContent:'space-between'}}><span style={{fontSize:16,color:TH.textBright}}>{ap.icon}{ap.name} Lv{aLvl}</span>
-                <span style={{fontSize:14}}><span style={{color:TH.gold}}>{ap.salary}g/d</span> <span style={{color:ap.morale>=70?TH.green:ap.morale>=40?TH.orange:TH.red}}>♥{ap.morale}%</span></span></div>
-              <div style={{width:'100%',height:3,background:TH.panel,borderRadius:2,margin:'2px 0'}}><div style={{height:'100%',width:ap.morale+'%',background:ap.morale>=70?TH.green:ap.morale>=40?TH.orange:TH.red,borderRadius:2}}/></div>
+                <span style={{fontSize:14}}>
+                  <span style={{color:TH.gold,cursor:'help'}} title={'Daily salary paid each morning. Signing fee: '+ap.salary*5+'g'}>{ap.salary}g/d</span>
+                  {' '}<span style={{color:ap.morale>=70?TH.green:ap.morale>=40?TH.orange:TH.red}}>♥{ap.morale}%</span>
+                  <span style={{fontSize:12,color:ap.morale>=80?TH.green:ap.morale>=50?TH.textDim:ap.morale>=30?TH.orange:TH.red,marginLeft:2}}>({ap.morale>=80?'+10% eff':ap.morale>=50?'normal':ap.morale>=30?'-20% eff':'-40% eff'})</span>
+                </span></div>
+              <div style={{width:'100%',height:3,background:TH.panel,borderRadius:2,margin:'2px 0'}} title={'Morale '+ap.morale+'%: '+(ap.morale>=80?'+10% efficiency':ap.morale>=50?'Normal':ap.morale>=30?'-20% efficiency':'-40% efficiency')}><div style={{height:'100%',width:ap.morale+'%',background:ap.morale>=70?TH.green:ap.morale>=40?TH.orange:TH.red,borderRadius:2}}/></div>
+              <div style={{fontSize:13,color:TH.textDim,margin:'3px 0',display:'flex',flexWrap:'wrap',gap:4,alignItems:'center'}}>
+                {ap.specialty&&<span style={{padding:'1px 5px',background:TH.gold+'15',borderRadius:3,border:'1px solid '+TH.gold+'33',fontSize:12,color:TH.gold}}>⭐ {ap.specialty}{task&&SPEC_MATCH[task.type]===ap.specialty?' ✦+15%':''}</span>}
+                {(ap.traits||[]).map(t=>{const fx=TRAIT_FX[t];const isGood=(fx?.effMult>0||fx?.xpMult>0||fx?.forageEff>0||fx?.brewEff>0||fx?.shopEff>0||fx?.researchEff>0||fx?.enchantEff>0);const isBad=(fx?.effMult<0||fx?.moraleDelta<=-2||fx?.forageEff<0||fx?.brewEff<0||fx?.shopEff<0||fx?.researchEff<0);return <span key={t} style={{padding:'1px 5px',fontSize:12,borderRadius:3,background:isGood?TH.green+'12':(isBad?TH.red+'12':TH.bg),border:'1px solid '+(isGood?TH.green+'33':isBad?TH.red+'33':TH.border),color:isGood?TH.green:isBad?TH.red:TH.textDim}}>{t}{fx?.desc?' — '+fx.desc:''}</span>;})}
+              </div>
               <div style={{fontSize:14,color:TH.textDim,margin:'3px 0'}}>
-                Stats: {Object.entries(ap.baseStat).map(([s,v])=><span key={s} style={{marginRight:5,color:STATS[s]?.color||TH.text}}>{STATS[s]?.icon||s} {v}</span>)}
+                Stats: {Object.entries(ap.baseStat).map(([s,v])=><span key={s} style={{marginRight:5,color:STATS[s]?.color||TH.text,cursor:'help'}} title={STATS[s]?.name+' '+v+' (mod '+(getMod(v)>=0?'+':'')+getMod(v)+'). '+({tec:'Used for brewing & foraging efficiency',com:'Used for shopkeeping gold earned',acu:'Used for research discovery chance',dis:'Used for construction speed & endurance',inu:'Used for attunement & intuition checks',cre:'Used for creative & experimental tasks'}[s]||'')}>{STATS[s]?.icon||s} {v}</span>)}
               </div>
               <div style={{fontSize:14,color:TH.text,marginBottom:3}}>Task: <b style={{color:task?TH.gold:TH.textDim}}>{task?TASK_TYPES[task.type]?.icon+' '+TASK_TYPES[task.type]?.name+(task.target?' ('+(task.type==='forage'?(REGIONS.find(r=>r.id===task.target)?.name||task.target):task.type==='brew'?(RECIPES.find(r=>r.id===task.target)?.name||task.target):task.type==='construct'?(UPGRADES[task.target]?.name||task.target):task.target)+')':''):'None — assign below'}</b>
                 {task&&<span style={{fontSize:13,color:TH.textDim}}> — {TASK_TYPES[task.type]?.desc}</span>}
