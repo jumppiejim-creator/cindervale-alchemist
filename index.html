@@ -1666,30 +1666,36 @@ function CindervaleAlchemistInner(){
     try{
       const state=data||gatherState();
       if(!state.charName){setSaveMsg("No save to export");setTimeout(()=>setSaveMsg(null),3000);return;}
-      const json=JSON.stringify({...state,_v:SAVE_VERSION,_at:new Date().toISOString(),_export:true});
+      const slim={...state,log:(state.log||[]).slice(-5),dailyReport:[],milestones:(state.milestones||[]).slice(-10)};
+      delete slim._at;delete slim._v;delete slim._export;
+      const json=JSON.stringify(slim);
       const b64=btoa(unescape(encodeURIComponent(json)));
+      const code='CV1~'+b64;
       if(navigator.clipboard&&navigator.clipboard.writeText){
-        navigator.clipboard.writeText(b64).then(()=>setSaveMsg("Save code copied to clipboard!")).catch(()=>setSaveMsg("Export ready. Copy from the box below."));
+        navigator.clipboard.writeText(code).then(()=>setSaveMsg("Save code copied! ("+Math.round(code.length/1024)+"KB)")).catch(()=>setSaveMsg("Export ready. Copy from the box below."));
       }else{setSaveMsg("Export ready. Copy from the box below.");}
-      setImportText(b64);setShowImport(true);
+      setImportText(code);setShowImport(true);
     }catch(e){setSaveMsg("Export failed: "+e.message);}
-    setTimeout(()=>setSaveMsg(null),4000);
+    setTimeout(()=>setSaveMsg(null),5000);
   };
   const importSave=(str)=>{
-    if(!str||!str.trim()){setSaveMsg('⚠️ Paste a save code first');setTimeout(()=>setSaveMsg(null),3000);return;}
+    if(!str||!str.trim()){setSaveMsg('Paste a save code first');setTimeout(()=>setSaveMsg(null),3000);return;}
     try{
-      const clean=str.trim();
+      let clean=str.replace(/[\s\u200B\uFEFF]/g,'');
+      if(clean.startsWith('CV1~'))clean=clean.slice(4);
       let json;
-      try{json=decodeURIComponent(escape(atob(clean)));}catch(e){
-        // Maybe it's raw JSON pasted directly
-        json=clean;
+      try{json=decodeURIComponent(escape(atob(clean)));}catch(decErr){
+        try{json=str.trim();JSON.parse(json);}catch(e2){
+          setSaveMsg('Import failed: code appears corrupted ('+clean.length+' chars). Try re-exporting.');
+          setTimeout(()=>setSaveMsg(null),5000);return;
+        }
       }
       const data=JSON.parse(json);
-      if(!data.charName||!data.day){setSaveMsg('⚠️ Invalid save data — missing character info');setTimeout(()=>setSaveMsg(null),3000);return;}
+      if(!data.charName||!data.day){setSaveMsg('Invalid save data');setTimeout(()=>setSaveMsg(null),3000);return;}
       restoreState(data);
       setGameStarted(true);setShowImport(false);setImportInput('');setImportText('');
-      setSaveMsg(`✅ Loaded: ${data.charName} — Day ${data.day}`);setTimeout(()=>setSaveMsg(null),4000);
-    }catch(e){setSaveMsg('⚠️ Import failed — check the code and try again');setTimeout(()=>setSaveMsg(null),3000);}
+      setSaveMsg('Loaded: '+data.charName+' — Day '+data.day);setTimeout(()=>setSaveMsg(null),4000);
+    }catch(e){setSaveMsg('Import failed: '+e.message);setTimeout(()=>setSaveMsg(null),5000);}
   };
 
   // ─── HARVEST (Hour-by-Hour Expedition) ───
