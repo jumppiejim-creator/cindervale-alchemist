@@ -3,6 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#d4a420">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Cindervale">
+<meta name="description" content="A fantasy alchemy crafting RPG. Brew potions, enchant items, and build your workshop in Cindervale.">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
 <title>Cindervale Alchemist</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -6227,6 +6235,15 @@ function ExpeditionHourPopup({hr,TH,S,LC,INGR,FACTIONS,onOk,onSkipAll,remaining,
 
 
 ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(CindervaleAlchemist));
+</script>
+<script>
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>{
+    navigator.serviceWorker.register('/sw.js').then(reg=>{
+      console.log('[PWA] Service worker registered',reg.scope);
+    }).catch(err=>console.log('[PWA] SW registration failed',err));
+  });
+}
 </script>
 </body>
 </html>
