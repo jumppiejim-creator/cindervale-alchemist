@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Workshop Layout Tool</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:#1a1610;color:#e0d6c0;font-family:system-ui,sans-serif;padding:10px;}
+h1{color:#d4a420;font-size:20px;margin-bottom:8px;}
+.tabs{display:flex;gap:4px;margin-bottom:8px;flex-wrap:wrap;}
+.tab{padding:4px 10px;border:1px solid #555;background:#2a2218;color:#aaa;border-radius:4px;cursor:pointer;font-size:13px;}
+.tab.active{border-color:#d4a420;color:#d4a420;background:#3a2e18;}
+.canvas-wrap{position:relative;border:2px solid #555;border-radius:8px;overflow:hidden;margin-bottom:10px;user-select:none;}
+.canvas-wrap img.base{width:100%;display:block;}
+.overlay{position:absolute;border:2px dashed rgba(212,164,32,0.6);cursor:move;display:flex;align-items:center;justify-content:center;overflow:hidden;border-radius:4px;}
+.overlay img{width:100%;height:100%;object-fit:contain;pointer-events:none;}
+.overlay.selected{border:2px solid #d4a420;box-shadow:0 0 12px #d4a42066;}
+.overlay .label{position:absolute;bottom:-18px;left:0;right:0;text-align:center;font-size:10px;color:#d4a420;white-space:nowrap;text-shadow:0 1px 3px #000;}
+.overlay .resize{position:absolute;bottom:-4px;right:-4px;width:12px;height:12px;background:#d4a420;border-radius:50%;cursor:nwse-resize;border:1px solid #000;}
+.controls{background:#2a2218;border:1px solid #555;border-radius:6px;padding:10px;margin-bottom:8px;}
+.controls label{font-size:12px;color:#aaa;margin-right:6px;}
+.controls input[type=number]{width:55px;background:#1a1610;color:#e0d6c0;border:1px solid #555;border-radius:3px;padding:2px 4px;font-size:12px;}
+.controls button{padding:3px 8px;background:#3a3028;color:#d4a420;border:1px solid #d4a420;border-radius:3px;cursor:pointer;font-size:12px;margin-left:4px;}
+.controls button:hover{background:#4a3a28;}
+#output{background:#111;color:#8f8;border:1px solid #444;border-radius:4px;padding:8px;font-family:monospace;font-size:11px;white-space:pre-wrap;max-height:250px;overflow:auto;margin-top:8px;}
+.help{font-size:12px;color:#888;margin-bottom:8px;}
+.item-list{display:flex;flex-wrap:wrap;gap:3px;margin-bottom:6px;}
+.item-btn{padding:2px 6px;font-size:11px;background:#333;color:#ccc;border:1px solid #555;border-radius:3px;cursor:pointer;}
+.item-btn.placed{border-color:#4a8a3a;color:#8f8;}
+.item-btn.active{border-color:#d4a420;color:#d4a420;background:#3a2e18;}
+</style>
+</head><body>
+<h1>🏗️ Workshop Layout Positioning Tool</h1>
+<p class="help">Drag items to position them. Drag the gold dot to resize. Click an item to select, then fine-tune with controls below. Hit "Export JSON" when done.</p>
+
+<div class="tabs" id="tabBar"></div>
+<div class="item-list" id="itemList"></div>
+
+<div class="controls" id="controlPanel" style="display:none">
+  <b id="selName" style="color:#d4a420;font-size:13px;margin-right:10px;"></b>
+  <label>X%</label><input type="number" id="inX" step="1" min="0" max="100" onchange="updateFromInputs()">
+  <label>Y%</label><input type="number" id="inY" step="1" min="0" max="100" onchange="updateFromInputs()">
+  <label>W%</label><input type="number" id="inW" step="1" min="3" max="60" onchange="updateFromInputs()">
+  <label>H%</label><input type="number" id="inH" step="1" min="3" max="60" onchange="updateFromInputs()">
+  <button onclick="removeSelected()">🗑 Remove</button>
+  <button onclick="toggleVisibility()">👁 Toggle</button>
+</div>
+
+<div class="canvas-wrap" id="canvasWrap">
+  <img class="base" id="baseImg" src="">
+  <div id="overlayContainer"></div>
+</div>
+
+<button onclick="exportJSON()" style="padding:6px 16px;background:#3a3028;color:#d4a420;border:1px solid #d4a420;border-radius:4px;cursor:pointer;font-size:14px;margin-right:6px;">📋 Export JSON</button>
+<button onclick="copyJSON()" style="padding:6px 16px;background:#3a3028;color:#8f8;border:1px solid #5a5;border-radius:4px;cursor:pointer;font-size:14px;">📋 Copy to Clipboard</button>
+
+<pre id="output"></pre>
+
+<script>
+const TABS = {
+  workshop: {
+    base: 'ws_base_workshop.png',
+    items: [
+      {uid:'cauldron_2',name:'Reinforced Cauldron',img:'ws_cauldron_2.png',x:5,y:35,w:18,h:30},
+      {uid:'cauldron_3',name:"Master's Cauldron",img:'ws_cauldron_3.png',x:25,y:35,w:18,h:30},
+      {uid:'mortar',name:'Precision Mortar',img:'ws_mortar.png',x:5,y:5,w:15,h:25},
+      {uid:'runic_tools',name:'Runic Tools',img:'ws_runic_tools.png',x:22,y:5,w:15,h:25},
+      {uid:'bench_1',name:'Enchanting Bench',img:'ws_bench_1.png',x:45,y:40,w:22,h:30},
+      {uid:'bench_2',name:'Arcane Nexus',img:'ws_bench_2.png',x:68,y:40,w:22,h:30},
+      {uid:'shelves',name:'Shelves',img:'ws_shelves.png',x:40,y:2,w:18,h:35},
+      {uid:'cellar',name:'Cellar',img:'ws_cellar.png',x:60,y:65,w:15,h:25},
+      {uid:'vault',name:'Vault',img:'ws_vault.png',x:78,y:65,w:15,h:25},
+      {uid:'ledger',name:'Ledger',img:'ws_ledger.png',x:78,y:5,w:15,h:25},
+    ]
+  },
+  storefront: {
+    base: 'ws_base_storefront.png',
+    note: 'Base swaps to ws_swap_shopfront.png when Shop Front is purchased. Position overlays on the UPGRADED image.',
+    altBase: 'ws_swap_shopfront.png',
+    items: [
+      {uid:'signage',name:'Signage',img:'ws_signage.png',x:10,y:5,w:20,h:30},
+      {uid:'display',name:'Display Cases',img:'ws_display.png',x:35,y:30,w:25,h:35},
+      {uid:'rep_board',name:'Rep Board',img:'ws_rep_board.png',x:70,y:10,w:20,h:30},
+    ]
+  },
+  quarters: {
+    base: 'ws_base_quarters.png',
+    note: 'Base swaps to ws_swap_beds.png when Beds is purchased. Position hearth on BOTH bases.',
+    altBase: 'ws_swap_beds.png',
+    items: [
+      {uid:'hearth',name:'Hearth',img:'ws_hearth.png',x:55,y:15,w:35,h:55},
+    ]
+  },
+  grounds: {
+    base: 'ws_base_grounds.png',
+    note: 'Swaps to ws_swap_garden.png when Garden purchased. No overlays needed.',
+    items: []
+  }
+};
+
+let currentTab = 'workshop';
+let selectedUid = null;
+let items = {}; // {uid: {x,y,w,h,visible}}
+let dragging = null; // {uid, mode:'move'|'resize', startX, startY, origX, origY, origW, origH}
+let useAltBase = false;
+
+function init() {
+  // Build tab bar
+  const tabBar = document.getElementById('tabBar');
+  tabBar.innerHTML = '';
+  Object.entries(TABS).forEach(([id, tab]) => {
+    const btn = document.createElement('div');
+    btn.className = 'tab' + (id === currentTab ? ' active' : '');
+    btn.textContent = id.charAt(0).toUpperCase() + id.slice(1);
+    btn.onclick = () => { currentTab = id; selectedUid = null; useAltBase = false; loadTab(); };
+    tabBar.appendChild(btn);
+  });
+
+  loadTab();
+}
+
+function loadTab() {
+  const tab = TABS[currentTab];
+  const baseImg = document.getElementById('baseImg');
+  baseImg.src = useAltBase && tab.altBase ? tab.altBase : tab.base;
+
+  // Reset items for this tab
+  items = {};
+  tab.items.forEach(it => {
+    items[it.uid] = { ...it, visible: true };
+  });
+
+  // Rebuild tab bar active state
+  document.querySelectorAll('.tab').forEach((el, i) => {
+    el.className = 'tab' + (Object.keys(TABS)[i] === currentTab ? ' active' : '');
+  });
+
+  // Item list buttons
+  const list = document.getElementById('itemList');
+  list.innerHTML = '';
+  if (tab.altBase) {
+    const toggleBtn = document.createElement('button');
+    toggleBtn.className = 'item-btn';
+    toggleBtn.textContent = useAltBase ? '🔄 Show Base' : '🔄 Show Upgraded';
+    toggleBtn.style.borderColor = '#88f';
+    toggleBtn.style.color = '#88f';
+    toggleBtn.onclick = () => { useAltBase = !useAltBase; loadTab(); };
+    list.appendChild(toggleBtn);
+  }
+  if (tab.note) {
+    const note = document.createElement('div');
+    note.style.cssText = 'font-size:11px;color:#888;width:100%;margin-bottom:4px;';
+    note.textContent = '📝 ' + tab.note;
+    list.appendChild(note);
+  }
+  tab.items.forEach(it => {
+    const btn = document.createElement('button');
+    btn.className = 'item-btn' + (selectedUid === it.uid ? ' active' : '');
+    btn.textContent = it.name;
+    btn.onclick = () => { selectedUid = it.uid; renderOverlays(); updateControls(); };
+    list.appendChild(btn);
+  });
+
+  selectedUid = null;
+  document.getElementById('controlPanel').style.display = 'none';
+  renderOverlays();
+}
+
+function renderOverlays() {
+  const container = document.getElementById('overlayContainer');
+  container.innerHTML = '';
+  const tab = TABS[currentTab];
+
+  // Update item list button states
+  document.querySelectorAll('.item-btn').forEach(btn => {
+    const it = tab.items.find(i => i.name === btn.textContent);
+    if (it) {
+      btn.className = 'item-btn' + (selectedUid === it.uid ? ' active' : '') + (items[it.uid]?.visible ? ' placed' : '');
+    }
+  });
+
+  Object.entries(items).forEach(([uid, it]) => {
+    if (!it.visible) return;
+    const div = document.createElement('div');
+    div.className = 'overlay' + (selectedUid === uid ? ' selected' : '');
+    div.style.left = it.x + '%';
+    div.style.top = it.y + '%';
+    div.style.width = it.w + '%';
+    div.style.height = it.h + '%';
+    div.dataset.uid = uid;
+
+    const img = document.createElement('img');
+    img.src = it.img;
+    div.appendChild(img);
+
+    const label = document.createElement('div');
+    label.className = 'label';
+    label.textContent = it.name;
+    div.appendChild(label);
+
+    const resize = document.createElement('div');
+    resize.className = 'resize';
+    resize.dataset.uid = uid;
+    resize.dataset.mode = 'resize';
+    div.appendChild(resize);
+
+    div.onmousedown = (e) => startDrag(e, uid, 'move');
+    div.ontouchstart = (e) => startDrag(e, uid, 'move');
+    resize.onmousedown = (e) => { e.stopPropagation(); startDrag(e, uid, 'resize'); };
+    resize.ontouchstart = (e) => { e.stopPropagation(); startDrag(e, uid, 'resize'); };
+
+    container.appendChild(div);
+  });
+
+  updateControls();
+}
+
+function startDrag(e, uid, mode) {
+  e.preventDefault();
+  selectedUid = uid;
+  const pt = e.touches ? e.touches[0] : e;
+  const it = items[uid];
+  dragging = { uid, mode, startX: pt.clientX, startY: pt.clientY, origX: it.x, origY: it.y, origW: it.w, origH: it.h };
+  renderOverlays();
+}
+
+function onDrag(e) {
+  if (!dragging) return;
+  e.preventDefault();
+  const pt = e.touches ? e.touches[0] : e;
+  const wrap = document.getElementById('canvasWrap');
+  const rect = wrap.getBoundingClientRect();
+  const dx = ((pt.clientX - dragging.startX) / rect.width) * 100;
+  const dy = ((pt.clientY - dragging.startY) / rect.height) * 100;
+  const it = items[dragging.uid];
+
+  if (dragging.mode === 'move') {
+    it.x = Math.max(0, Math.min(100 - it.w, Math.round(dragging.origX + dx)));
+    it.y = Math.max(0, Math.min(100 - it.h, Math.round(dragging.origY + dy)));
+  } else {
+    it.w = Math.max(3, Math.min(60, Math.round(dragging.origW + dx)));
+    it.h = Math.max(3, Math.min(60, Math.round(dragging.origH + dy)));
+  }
+
+  // Update DOM directly for performance
+  const el = document.querySelector(`.overlay[data-uid="${dragging.uid}"]`);
+  if (el) {
+    el.style.left = it.x + '%';
+    el.style.top = it.y + '%';
+    el.style.width = it.w + '%';
+    el.style.height = it.h + '%';
+  }
+  updateControls();
+}
+
+function endDrag() {
+  dragging = null;
+}
+
+document.addEventListener('mousemove', onDrag);
+document.addEventListener('mouseup', endDrag);
+document.addEventListener('touchmove', onDrag, { passive: false });
+document.addEventListener('touchend', endDrag);
+
+function updateControls() {
+  const panel = document.getElementById('controlPanel');
+  if (!selectedUid || !items[selectedUid]) {
+    panel.style.display = 'none';
+    return;
+  }
+  panel.style.display = 'block';
+  const it = items[selectedUid];
+  document.getElementById('selName').textContent = it.name;
+  document.getElementById('inX').value = it.x;
+  document.getElementById('inY').value = it.y;
+  document.getElementById('inW').value = it.w;
+  document.getElementById('inH').value = it.h;
+}
+
+function updateFromInputs() {
+  if (!selectedUid || !items[selectedUid]) return;
+  const it = items[selectedUid];
+  it.x = parseInt(document.getElementById('inX').value) || 0;
+  it.y = parseInt(document.getElementById('inY').value) || 0;
+  it.w = parseInt(document.getElementById('inW').value) || 10;
+  it.h = parseInt(document.getElementById('inH').value) || 10;
+  renderOverlays();
+}
+
+function removeSelected() {
+  if (selectedUid && items[selectedUid]) {
+    items[selectedUid].visible = false;
+    selectedUid = null;
+    renderOverlays();
+  }
+}
+
+function toggleVisibility() {
+  if (selectedUid && items[selectedUid]) {
+    items[selectedUid].visible = !items[selectedUid].visible;
+    renderOverlays();
+  }
+}
+
+function exportJSON() {
+  const allData = {};
+  Object.entries(TABS).forEach(([tabId, tab]) => {
+    // Save current tab state if it's the active one
+    if (tabId === currentTab) {
+      allData[tabId] = Object.entries(items).map(([uid, it]) => ({
+        uid, x: it.x, y: it.y, w: it.w, h: it.h
+      }));
+    } else {
+      // Use defaults for non-active tabs
+      allData[tabId] = tab.items.map(it => ({
+        uid: it.uid, x: it.x, y: it.y, w: it.w, h: it.h
+      }));
+    }
+  });
+
+  // Also output in the exact format the code uses
+  let codeOutput = '// Paste these overlay arrays into the TABS config in index.html\n\n';
+  Object.entries(allData).forEach(([tabId, overlays]) => {
+    if (overlays.length === 0) return;
+    codeOutput += `// ${tabId} tab overlays:\n`;
+    codeOutput += `overlays:[\n`;
+    overlays.forEach(ov => {
+      codeOutput += `  {uid:'${ov.uid}',x:${ov.x},y:${ov.y},w:${ov.w},h:${ov.h}},\n`;
+    });
+    codeOutput += `],\n\n`;
+  });
+
+  document.getElementById('output').textContent = codeOutput;
+}
+
+function copyJSON() {
+  exportJSON();
+  const text = document.getElementById('output').textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    document.getElementById('output').style.borderColor = '#5a5';
+    setTimeout(() => document.getElementById('output').style.borderColor = '#444', 1500);
+  });
+}
+
+init();
+</script>
+</body></html>
