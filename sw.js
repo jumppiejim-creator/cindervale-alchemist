@@ -1,4 +1,4 @@
-const CACHE_NAME = 'cindervale-v1';
+const CACHE_NAME = 'cindervale-v2';
 const ASSETS = [
   '/',
   '/index.html',
@@ -32,7 +32,23 @@ const ASSETS = [
   '/ws_library.png',
   '/ws_forge.png',
   '/ws_leyline.png',
-  '/ws_greenhouse.png'
+  '/ws_greenhouse.png',
+  // NPC portraits
+  '/npc_brenna.png',
+  '/npc_tarn.png',
+  '/npc_holst.png',
+  '/npc_marta.png',
+  '/npc_gretta.png',
+  '/npc_thorek.png',
+  '/npc_fiona.png',
+  '/npc_barret.png',
+  '/npc_mama_grinn.png',
+  '/npc_jax.png',
+  '/npc_sister_venna.png',
+  '/npc_rorik.png',
+  '/npc_anya.png',
+  '/npc_gorrik.png',
+  '/npc_sera.png'
 ];
 
 // Install: cache all static assets

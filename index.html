@@ -5729,23 +5729,32 @@ function CindervaleAlchemistInner(){
 function CindervaleAlchemist(){return <EB><CindervaleAlchemistInner/></EB>;}
 
 // ═══════ NPC PORTRAIT COMPONENT ═══════
+const NPC_PORTRAITS={
+  'Brenna':'npc_brenna.png','Tarn':'npc_tarn.png','Holst':'npc_holst.png',
+  'Marta':'npc_marta.png','Gretta':'npc_gretta.png',
+  'Thorek':'npc_thorek.png','Fiona':'npc_fiona.png','Barret':'npc_barret.png',
+  'Mama Grinn':'npc_mama_grinn.png','Jax':'npc_jax.png',
+  'Sister Venna':'npc_sister_venna.png','Rorik':'npc_rorik.png',
+  'Anya':'npc_anya.png','Gorrik':'npc_gorrik.png','Sera':'npc_sera.png',
+};
 function NpcPortrait({npc,size=80,customerData}){
   const p=npc?.portrait||customerData?.portrait||{bg:['#444','#2a2a2a'],ring:'#888'};
   const icon=npc?.icon||'🧑';
   const name=npc?.name||'';
-  const initial=name?name[0]:'?';
   const s=size;
+  // Check for Canva portrait image — try npc key (lowercase) first, then full name
+  const imgKey=npc?.id||name;
+  const imgSrc=NPC_PORTRAITS[imgKey]||NPC_PORTRAITS[name]||null;
   return(
     <div style={{width:s,height:s,borderRadius:'50%',position:'relative',flexShrink:0,
-      background:`linear-gradient(135deg, ${p.bg[0]}, ${p.bg[1]})`,
+      background:imgSrc?'#1a1610':`linear-gradient(135deg, ${p.bg[0]}, ${p.bg[1]})`,
       border:`3px solid ${p.ring}`,
       boxShadow:`0 0 12px ${p.ring}44, inset 0 0 20px rgba(0,0,0,.4)`,
       display:'flex',alignItems:'center',justifyContent:'center',overflow:'hidden'}}>
-      {/* Inner ring decoration */}
-      <div style={{position:'absolute',inset:4,borderRadius:'50%',border:`1px solid ${p.ring}66`}}/>
-      {/* Icon */}
-      <div style={{fontSize:s*0.45,lineHeight:1,filter:'drop-shadow(0 2px 4px rgba(0,0,0,.5))',zIndex:1}}>{icon}</div>
-      {/* Bottom name badge */}
+      {imgSrc?<img src={imgSrc} style={{width:'100%',height:'100%',objectFit:'cover',borderRadius:'50%'}} alt={name}/>:<>
+        <div style={{position:'absolute',inset:4,borderRadius:'50%',border:`1px solid ${p.ring}66`}}/>
+        <div style={{fontSize:s*0.45,lineHeight:1,filter:'drop-shadow(0 2px 4px rgba(0,0,0,.5))',zIndex:1}}>{icon}</div>
+      </>}
       <div style={{position:'absolute',bottom:-1,left:'50%',transform:'translateX(-50%)',
         background:p.ring,color:'#fff',fontSize:Math.max(9,s*0.12),fontWeight:'bold',
         padding:'1px 6px',borderRadius:'6px 6px 0 0',whiteSpace:'nowrap',
