@@ -26,6 +26,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
 <script src="portraits.js"></script>
 <script src="location-images.js"></script>
+<script src="npc-portraits.js"></script>
 <script type="text/babel" data-type="module">
 const { useState, useEffect, useCallback, useRef, Component, createElement } = React;
 const Tone = window.Tone;
@@ -4651,7 +4652,7 @@ function CindervaleAlchemistInner(){
             return(
             <div key={cust.id} style={{padding:'8px 10px',background:have?TH.gold+'08':TH.panelLight,borderRadius:6,marginBottom:6,border:'1px solid '+(have?TH.borderGold:TH.border)}}>
               <div style={{display:'flex',gap:8,marginBottom:6}}>
-                <NpcPortrait npc={{icon:'🧑',name:cust.customer,portrait:CUST_DATA[cust.customer]?.portrait}} size={52}/>
+                <NpcPortrait npc={{icon:'🧑',name:cust.customer,portrait:CUST_DATA[cust.customer]?.portrait}} size={80}/>
                 <div style={{flex:1}}>
                   <div style={{fontSize:17,color:TH.goldBright}}>{cust.customer} <span style={{fontSize:14,color:TH.textDim}}>· {cust.title}</span></div>
                   <div style={{padding:'4px 8px',background:TH.bg,borderRadius:3,border:'1px solid '+TH.border,fontSize:15,fontStyle:'italic',color:TH.text,margin:'4px 0'}}>{cust.line}</div>
@@ -4684,7 +4685,7 @@ function CindervaleAlchemistInner(){
           return(
           <div key={cust.id} style={{...S.card,borderColor:TH.borderGold}}>
             <div style={{display:'flex',gap:10,marginBottom:8}}>
-              <NpcPortrait npc={{icon:cust.icon||'🧑',name:cust.customer,portrait:cd.portrait}} size={56}/>
+              <NpcPortrait npc={{icon:cust.icon||'🧑',name:cust.customer,portrait:cd.portrait}} size={90}/>
               <div style={{flex:1}}>
                 <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
                   <div><div style={{fontSize:18,color:TH.goldBright}}>{cust.customer}</div>
@@ -5729,14 +5730,7 @@ function CindervaleAlchemistInner(){
 function CindervaleAlchemist(){return <EB><CindervaleAlchemistInner/></EB>;}
 
 // ═══════ NPC PORTRAIT COMPONENT ═══════
-const NPC_PORTRAITS={
-  'Brenna':'npc_brenna.png','Tarn':'npc_tarn.png','Holst':'npc_holst.png',
-  'Marta':'npc_marta.png','Gretta':'npc_gretta.png',
-  'Thorek':'npc_thorek.png','Fiona':'npc_fiona.png','Barret':'npc_barret.png',
-  'Mama Grinn':'npc_mama_grinn.png','Jax':'npc_jax.png',
-  'Sister Venna':'npc_sister_venna.png','Rorik':'npc_rorik.png',
-  'Anya':'npc_anya.png','Gorrik':'npc_gorrik.png','Sera':'npc_sera.png',
-};
+const NPC_PORTRAITS=typeof NPC_PORTRAIT_IMGS!=='undefined'?NPC_PORTRAIT_IMGS:{};
 function NpcPortrait({npc,size=80,customerData}){
   const p=npc?.portrait||customerData?.portrait||{bg:['#444','#2a2a2a'],ring:'#888'};
   const icon=npc?.icon||'🧑';
@@ -5777,15 +5771,15 @@ function NpcDlg({npc,dlgLine,setDlgLine,setDlgNpc,availQ,aQ,acceptQ,compQ,qP,S,q
   // Modal overlay styles
   const overlay={position:'fixed',top:0,left:0,right:0,bottom:0,background:'rgba(0,0,0,.75)',
     zIndex:998,display:'flex',alignItems:'center',justifyContent:'center',padding:12};
-  const modal={background:TH.panel,border:`2px solid ${npc.portrait?.ring||TH.borderGold}`,
-    borderRadius:12,maxWidth:440,width:'100%',maxHeight:'85vh',overflow:'auto',
+  const modal={position:'relative',background:TH.panel,border:`2px solid ${npc.portrait?.ring||TH.borderGold}`,
+    borderRadius:12,maxWidth:560,width:'100%',maxHeight:'90vh',overflow:'auto',
     boxShadow:`0 0 30px ${npc.portrait?.ring||TH.gold}33, 0 8px 32px rgba(0,0,0,.6)`};
-  const header={display:'flex',gap:12,alignItems:'center',padding:'14px 16px',
+  const header={display:'flex',flexDirection:'column',alignItems:'center',padding:'16px 20px 12px',
     borderBottom:`1px solid ${TH.border}`,
     background:`linear-gradient(135deg, ${npc.portrait?.bg?.[0]||TH.panel}22, transparent)`};
-  const body={padding:'12px 16px'};
-  const bubble={padding:'12px 16px',background:TH.bg,borderRadius:10,
-    border:`1px solid ${npc.portrait?.ring||TH.border}44`,fontSize:16,lineHeight:1.7,
+  const body={padding:'14px 20px'};
+  const bubble={padding:'14px 18px',background:TH.bg,borderRadius:10,
+    border:`1px solid ${npc.portrait?.ring||TH.border}44`,fontSize:17,lineHeight:1.7,
     margin:'8px 0',fontStyle:'italic',color:TH.text,position:'relative'};
   const bubbleArrow={position:'absolute',top:-8,left:20,width:0,height:0,
     borderLeft:'8px solid transparent',borderRight:'8px solid transparent',
@@ -5793,12 +5787,12 @@ function NpcDlg({npc,dlgLine,setDlgLine,setDlgNpc,availQ,aQ,acceptQ,compQ,qP,S,q
 
   const Header=()=>(
     <div style={header}>
-      <NpcPortrait npc={npc} size={72}/>
-      <div style={{flex:1}}>
-        <div style={{fontSize:20,color:TH.textBright,fontWeight:'bold'}}>{npc.name}</div>
-        <div style={{fontSize:14,color:npc.portrait?.ring||TH.textDim}}>{npc.title||''}</div>
+      <button onClick={closeDlg} style={{position:'absolute',top:8,right:12,background:'none',border:'none',color:TH.textDim,fontSize:22,cursor:'pointer',padding:4,zIndex:1}}>✕</button>
+      <NpcPortrait npc={npc} size={140}/>
+      <div style={{textAlign:'center',marginTop:8}}>
+        <div style={{fontSize:22,color:TH.textBright,fontWeight:'bold'}}>{npc.name}</div>
+        <div style={{fontSize:15,color:npc.portrait?.ring||TH.textDim}}>{npc.title||''}</div>
       </div>
-      <button onClick={closeDlg} style={{background:'none',border:'none',color:TH.textDim,fontSize:22,cursor:'pointer',padding:4}}>✕</button>
     </div>
   );
 
