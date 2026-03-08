@@ -101,7 +101,7 @@ const computeRankProg=(curRank,curProg,added)=>{let r=curRank,p=curProg+added;wh
 const rankB=(r,pb)=>[0,pb,Math.floor(pb*1.5),pb*2][r]||0;
 
 // ═══ SAVE HELPERS ═══
-const SAVE_VERSION=2;const SP='cindervale-save';const AK=`${SP}:auto`;const sK=n=>`${SP}:slot-${n}`;
+const SAVE_VERSION=2;const BUILD_VERSION='2026.03.08.B';const SP='cindervale-save';const AK=`${SP}:auto`;const sK=n=>`${SP}:slot-${n}`;
 const _useArtifactStorage=(()=>{try{return typeof window!=='undefined'&&window.storage&&typeof window.storage.get==='function';}catch(e){return false;}})();
 const _useLocalStorage=(()=>{try{localStorage.setItem('_test','1');localStorage.removeItem('_test');return true;}catch(e){return false;}})();
 const hasStorage=()=>_useArtifactStorage||_useLocalStorage;
@@ -4495,6 +4495,7 @@ function CindervaleAlchemistInner(){
       <div style={{width:'100%',maxWidth:1200,padding:'6px 16px',borderBottom:`1px solid ${TH.border}`,position:'relative'}}>
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
           <div style={{fontSize:20,color:TH.gold,letterSpacing:2,cursor:'pointer'}} onClick={()=>{setScreen('map');handleDevTap();}}>⚗️ Cindervale</div>
+          <div style={{fontSize:9,color:TH.textDim,position:'absolute',right:8,top:2}}>{BUILD_VERSION}</div>
           <div style={{display:'flex',gap:4}}>
             <button style={{...S.btn('gold'),fontSize:14,padding:'3px 10px'}} onClick={()=>setConfirmRest(true)}>🌙 Rest ({hours}h)</button>
             {undoStack.length>0&&<button style={{...S.btn('def'),fontSize:14,padding:'3px 8px'}} onClick={undo}>↩️ Undo</button>}
