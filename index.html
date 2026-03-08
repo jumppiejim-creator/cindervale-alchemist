@@ -19,7 +19,6 @@
 </style>
 </head>
 <body>
-<div id="build-check" style="position:fixed;top:0;left:0;background:#ff0;color:#f00;font-size:14px;font-weight:bold;padding:4px 12px;z-index:99999;">BUILD 2026.03.08.B — If you see this, the HTML is correct</div>
 <div id="root"></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
@@ -4047,7 +4046,7 @@ function CindervaleAlchemistInner(){
         <div style={{maxWidth:500,padding:'60px 20px',width:'100%',textAlign:'center'}}>
           <div style={{fontSize:32,color:TH.gold,letterSpacing:4,marginBottom:4,textShadow:`0 0 20px ${TH.goldDim}`}}>⚗️</div>
           <div style={{fontSize:32,color:TH.gold,letterSpacing:3,marginBottom:2}}>Cindervale Alchemist</div>
-          <div style={{fontSize:16,color:'#ff0000',fontWeight:'bold',background:'#ffff00',padding:'4px 8px',borderRadius:4}}>BUILD: {BUILD_VERSION}</div>
+          <div style={{fontSize:12,color:TH.textDim}}>Build {BUILD_VERSION}</div>
           <div style={{color:TH.textDim,fontSize:16,marginBottom:30}}>Crafting · Enchanting · Community</div>
           {loadingSlots?<div style={{color:TH.textDim}}>Loading...</div>:<>
           {autoSaveData&&<div style={{...S.card,borderColor:TH.green,textAlign:'left',cursor:'pointer'}} onClick={()=>loadSave(autoSaveData)}>
@@ -7856,12 +7855,13 @@ function ExpeditionHourPopup({hr,TH,S,LC,INGR,FACTIONS,onOk,onSkipAll,remaining,
 ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(CindervaleAlchemist));
 </script>
 <script>
+// Clean up any old service workers
 if('serviceWorker' in navigator){
-  window.addEventListener('load',()=>{
-    navigator.serviceWorker.register('/sw.js').then(reg=>{
-      console.log('[PWA] Service worker registered',reg.scope);
-    }).catch(err=>console.log('[PWA] SW registration failed',err));
+  navigator.serviceWorker.getRegistrations().then(regs=>{
+    regs.forEach(r=>r.unregister());
+    if(regs.length>0)console.log('[Cleanup] Unregistered '+regs.length+' old service worker(s)');
   });
+  caches.keys().then(keys=>keys.forEach(k=>caches.delete(k)));
 }
 </script>
 </body>
