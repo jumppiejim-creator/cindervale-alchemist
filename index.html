@@ -387,11 +387,11 @@ const CLASSES={
     desc:'Discover recipes faster, earn more XP, and turn experiments from gambles into science.',
     shortDesc:'Research, discovery, XP acceleration',
     features:[
-      {classLv:1,name:'Research Study',desc:'Can conduct research studies to discover recipes. Gain proficiency in Research and Lore.',effects:{researchCostReduction:0.5,xpMultiplier:0.05}},
-      {classLv:2,name:'Speed Reader',desc:'Research studies cost 1 fewer hour (min 1). +10% base discovery chance.',effects:{researchCostReduction:1,discoveryChanceBonus:0.10}},
+      {classLv:1,name:'Research Study',desc:'Can conduct research studies to discover recipes. Gain proficiency in Research and Lore. +5% discovery chance.',effects:{discoveryChanceBonus:0.05,xpMultiplier:0.05}},
+      {classLv:2,name:'Speed Reader',desc:'One free research study per day (no hour cost). +10% base discovery chance.',effects:{freeResearchPerDay:1,discoveryChanceBonus:0.10}},
       {classLv:3,name:'Specialization',desc:'Choose a specialization path. +5% discovery chance.',effects:{discoveryChanceBonus:0.05}},
       {classLv:4,name:'Eureka!',desc:'Experiments: +15% discovery chance. On discovery, show recipe stat/DC info.',effects:{experimentBonus:0.15,showRecipeInfo:true}},
-      {classLv:5,name:'Academic Network',desc:'+15% XP from all sources. Research studies cost 1 fewer hour.',effects:{xpMultiplier:0.15,researchCostReduction:1}},
+      {classLv:5,name:'Academic Network',desc:'+15% XP from all sources. +1 free research study per day (2 total).',effects:{xpMultiplier:0.15,freeResearchPerDay:1}},
       {classLv:6,name:'Cross-Reference',desc:'Experiment Bench shows hints based on how close your combination is.',effects:{experimentHints:true}},
       {classLv:7,name:'Thesis Defense',desc:'+3 to all ACU-based checks. Research can discover enchantment patterns too. +1 bonus skill point per level.',effects:{craftBonus:1,bonusSkillPerLevel:1,xpMultiplier:0.10}},
       {classLv:8,name:'Grand Theorem',desc:'+25% discovery chance from all sources. See full ingredient tables for explored regions.',effects:{discoveryChanceBonus:0.25,showIngredients:true}},
@@ -895,6 +895,327 @@ const CUST_DATA={
   'Sera':{title:'Veilwalker Adept',portrait:{bg:['#2d2450','#1a1535'],ring:'#7b68c4'},lines:['"The Veil thins near the Heartforge. Mundane steel won\'t suffice."','"I sense potential in your workshop. The old magic lingers here."','"Careful with arcane resonance — I\'ll know if you cut corners."']},
 };
 const CUST_NAMES=Object.keys(CUST_DATA);
+
+// ═══ APOTHECARY CLINIC SYSTEM ═══
+const CLINIC_AILMENTS=[
+  {id:'miners_cough',name:"Miner's Cough",icon:'🫁',desc:'"Been working the deep shafts... can\'t stop coughing up black dust."',
+    category:'respiratory',tier:1,great:['ashveil'],good:['healing_salve','ash_poultice'],
+    hints:{fail:'The symptoms are unclear.',partial:'This looks respiratory — something soothing or cleansing.',full:"Classic miner's lung. An Ashveil Tonic would clear it right up."}},
+  {id:'forge_burns',name:'Forge Burns',icon:'🔥',desc:'"Splashed with molten slag yesterday. Hurts something fierce."',
+    category:'injury',tier:1,great:['healing_salve'],good:['ash_poultice','bark_shield'],
+    hints:{fail:'Hard to tell how deep the damage goes.',partial:'Clearly a burn injury — needs something restorative or protective.',full:'Surface burns with minor tissue damage. A Healing Salve is exactly what this needs.'}},
+  {id:'venom_bite',name:'Venom Bite',icon:'🐍',desc:'"Something bit me in the Ironwood. My arm\'s gone numb and purple."',
+    category:'poison',tier:1,great:['ash_poultice'],good:['healing_salve','thornbark_tonic'],
+    hints:{fail:'The wound looks angry but you can\'t identify the venom.',partial:'Definitely a toxin — needs something that draws poison or neutralizes venom.',full:'Ironwood asp venom. An Ash Poultice will draw it right out.'}},
+  {id:'cave_chills',name:'Cave Chills',icon:'🥶',desc:'"Spent too long in the Crystal Hollows. Can\'t get warm no matter what."',
+    category:'exposure',tier:1,great:['firebrew'],good:['healing_salve','thermal_potion'],
+    hints:{fail:'They\'re shivering but you\'re not sure why.',partial:'Exposure to deep cold — they need warming from the inside.',full:'Mineral cold from the Hollows. A Firebrew will thaw them to the bone.'}},
+  {id:'ashlung',name:'Ashlung',icon:'💨',desc:'"The ash storms last week... now everything tastes like cinder."',
+    category:'respiratory',tier:2,great:['ashveil'],good:['healing_salve','celestial_balm'],
+    hints:{fail:'Respiratory distress of some kind.',partial:'Ash particle damage to the lungs. Needs a cleansing tonic.',full:'Ashlung — the Ashveil Tonic was practically invented for this.'}},
+  {id:'veil_sickness',name:'Veil Sickness',icon:'🌀',desc:'"I see things... shapes at the edge of my vision. The whispers won\'t stop."',
+    category:'arcane',tier:2,great:['celestial_balm'],good:['moonweave','veil_sight'],
+    hints:{fail:'Something is deeply wrong but mundane medicine won\'t help.',partial:'Arcane exposure — this person needs something with celestial or lunar properties.',full:'Veil Sickness — exposure to raw magical energy. A Celestial Balm will restore their senses.'}},
+  {id:'iron_rot',name:'Iron Rot',icon:'🦴',desc:'"My joints creak like old hinges. The Cinderfolk say it\'s the minerals."',
+    category:'chronic',tier:2,great:['ironhide'],good:['healing_salve','geode_tonic','embersteel_oil'],
+    hints:{fail:'Chronic joint condition — difficult to diagnose precisely.',partial:'Mineral buildup in the joints. Needs something fortifying or mineral-based.',full:'Iron Rot from deep mine exposure. An Ironhide Potion will reinforce the joints from within.'}},
+  {id:'spore_fever',name:'Spore Fever',icon:'🍄',desc:'"Went into the Fungal Caves for mushrooms... now I\'m seeing colors and burning up."',
+    category:'poison',tier:2,great:['gloom_draught'],good:['ashveil','healing_salve'],
+    hints:{fail:'High fever with unusual symptoms.',partial:'Fungal toxin infection — needs something that combats spore-based ailments.',full:'Gloomcap spore fever. A Gloom Draught will neutralize the fungal toxins.'}},
+  {id:'ember_madness',name:'Ember Madness',icon:'🧠',desc:'"The Heartforge calls to me in my sleep. I can feel the heat in my skull."',
+    category:'arcane',tier:3,great:['celestial_balm'],good:['moonweave','silver_salve'],
+    hints:{fail:'Something profoundly unnatural. You sense danger.',partial:'Deep arcane corruption — only the most potent restorative magic will help.',full:'Ember Madness — the Heartforge\'s dormant magic is leaking. Only a Celestial Balm can silence it.'}},
+  {id:'phantom_limb',name:'Phantom Pain',icon:'👻',desc:'"Lost my hand in Shaft Nine. But I still feel it burning. Every night."',
+    category:'chronic',tier:3,great:['celestial_balm'],good:['moonweave','silver_salve','echo_elixir'],
+    hints:{fail:'The pain is real but has no physical source.',partial:'Residual nerve damage with possible arcane component. Needs powerful restoration.',full:'Phantom nerve fire — the Heartforge energy fused with the wound. A Celestial Balm can quiet the echoes.'}},
+];
+
+// ═══ VENOMIST CONTRACTS SYSTEM ═══
+const VENOM_CONTRACTS=[
+  {id:'vc_ash_drakes',name:'Ash Drake Nest',icon:'🐉',desc:'"The vents are crawling with drakes. We need something that burns."',
+    tier:1,weakness:'fire',faction:'ashwardens',basePay:25,baseXp:40,
+    ingredients:['embercap','volcanic_essence'],ingredientQty:[2,0]},
+  {id:'vc_cave_spiders',name:'Cave Spider Infestation',icon:'🕷️',desc:'"The Fungal Caves are webbed shut. Miners can\'t get through."',
+    tier:1,weakness:'fungal',faction:'cinderfolk',basePay:25,baseXp:40,
+    ingredients:['gloomcap','embercap'],ingredientQty:[2,0]},
+  {id:'vc_tunnel_rats',name:'Giant Tunnel Rats',icon:'🐀',desc:'"They\'re eating through the grain stores. Fast-acting poison needed."',
+    tier:1,weakness:'quick',faction:'hearthkeepers',basePay:20,baseXp:35,
+    ingredients:['ashbloom','ironroot_bark'],ingredientQty:[2,0]},
+  {id:'vc_ash_wasps',name:'Ash Wasp Swarm',icon:'🐝',desc:'"A nest built in the watchtower rafters. Soldiers are getting stung daily."',
+    tier:1,weakness:'smoke',faction:'ashwardens',basePay:22,baseXp:35,
+    ingredients:['ashbloom','embercap'],ingredientQty:[2,0]},
+  {id:'vc_veil_stalker',name:'Veil Stalker',icon:'👁️',desc:'"Something is hunting near the Moonlit Glade. It phases through wards."',
+    tier:2,weakness:'arcane',faction:'veilwalkers',basePay:45,baseXp:70,
+    ingredients:['moonpetal','starwort'],ingredientQty:[2,1]},
+  {id:'vc_iron_wurm',name:'Iron Wurm',icon:'🪱',desc:'"A wurm in the deep mines. Regular weapons bounce off its hide."',
+    tier:2,weakness:'corrosive',faction:'cinderfolk',basePay:50,baseXp:75,
+    ingredients:['volcanic_essence','ashite'],ingredientQty:[1,2]},
+  {id:'vc_ember_golem',name:'Rogue Ember Golem',icon:'🗿',desc:'"A Heartforge construct wandering the Rim. It\'s destroying everything."',
+    tier:2,weakness:'cold',faction:'ashwardens',basePay:55,baseXp:80,
+    ingredients:['moonpetal','hearthstone'],ingredientQty:[2,1]},
+  {id:'vc_shadow_beast',name:'Shadow Beast',icon:'🦇',desc:'"It comes at night. We\'ve lost two patrols. Whatever it is, it fears light."',
+    tier:2,weakness:'radiant',faction:'ashwardens',basePay:50,baseXp:70,
+    ingredients:['starwort','hearthstone'],ingredientQty:[2,1]},
+  {id:'vc_heartforge_horror',name:'Heartforge Horror',icon:'💀',desc:'"Something ancient stirred in the deep. The Wardens need your deadliest brew."',
+    tier:3,weakness:'primordial',faction:'ashwardens',basePay:100,baseXp:150,
+    ingredients:['volcanic_essence','deep_crystal','sacred_ember'],ingredientQty:[2,1,1]},
+  {id:'vc_veil_abomination',name:'Veil Abomination',icon:'🌀',desc:'"The Veil tore open near the Glade. What came through... we need to put it down."',
+    tier:3,weakness:'veil-rend',faction:'veilwalkers',basePay:110,baseXp:160,
+    ingredients:['veil_shard','moonpetal','starwort'],ingredientQty:[1,2,1]},
+];
+const POTENCY_LEVELS=[
+  {id:'standard',name:'Standard',dc:10,payMult:1,icon:'⚗️'},
+  {id:'concentrated',name:'Concentrated',dc:14,payMult:2,icon:'💧'},
+  {id:'lethal',name:'Lethal',dc:18,payMult:3,icon:'💀'},
+  {id:'legendary',name:'Legendary',dc:22,payMult:5,icon:'☠️'},
+];
+
+// ═══ RUNESMITH WEAPON FORGING SYSTEM ═══
+const FORGE_WEAPONS=[
+  {id:'fw_sword',name:'Sword',icon:'⚔️',tier:1,forgeDC:10,matCost:{ironroot_bark:2,hearthstone:1},desc:'A sturdy blade ready for inscription.'},
+  {id:'fw_dagger',name:'Dagger',icon:'🗡️',tier:1,forgeDC:8,matCost:{ironroot_bark:1,hearthstone:1},desc:'A swift blade — light and precise.'},
+  {id:'fw_axe',name:'Axe',icon:'🪓',tier:1,forgeDC:11,matCost:{ironroot_bark:2,bark_resin:1},desc:'A heavy chopping weapon with a broad head.'},
+  {id:'fw_mace',name:'Mace',icon:'🔨',tier:2,forgeDC:13,matCost:{ashite:2,hearthstone:1},desc:'A crushing weapon of hardened ore.'},
+  {id:'fw_bow',name:'Bow',icon:'🏹',tier:2,forgeDC:12,matCost:{ironroot_bark:2,moonpetal:1},desc:'A recurve bow strung with alchemically-treated sinew.'},
+  {id:'fw_greatsword',name:'Greatsword',icon:'⚔️',tier:2,forgeDC:15,matCost:{ashite:2,embervein:1,ironroot_bark:1},desc:'A massive two-handed blade of forge-tempered steel.'},
+  {id:'fw_runic_blade',name:'Runic Blade',icon:'✨',tier:3,forgeDC:18,matCost:{embervein:2,deep_crystal:1,ashite:1},desc:'A blade forged with channels for runic energy.'},
+  {id:'fw_heartforge_arm',name:'Heartforge Arm',icon:'🔥',tier:3,forgeDC:20,matCost:{volcanic_essence:2,embervein:1,hearthstone:2},desc:'A weapon infused with the Heartforge\'s dormant power.'},
+];
+const WEAPON_PREFIXES=['Cinder','Ash','Iron','Ember','Deep','Forge','Rune','Storm','Dawn','Dusk','Shadow','Flame','Frost','Thunder','Void','Star','Moon','Blood','Stone','Drake'];
+const WEAPON_SUFFIXES=['fang','ward','bite','edge','bane','song','strike','cleaver','reaper','caller','render','keeper','guard','breaker','heart','brand','fury','wrath','maw','spike'];
+const genWeaponName=()=>WEAPON_PREFIXES[Math.floor(Math.random()*WEAPON_PREFIXES.length)]+WEAPON_SUFFIXES[Math.floor(Math.random()*WEAPON_SUFFIXES.length)];
+
+// ═══ WARDKEEPER SHIELD COMMISSIONS ═══
+const SHIELD_COMMISSIONS=[
+  {id:'sc_mine_patrol',name:'Mine Patrol Gear',icon:'⛏️',desc:'"My squad works Shaft Nine. We need armor that shrugs off falling rock and resists the heat."',
+    tier:1,layers:['e_ironbark','e_frost'],faction:'cinderfolk',baseGold:35,baseXp:40},
+  {id:'sc_gate_guard',name:'Gate Guard Kit',icon:'🏰',desc:'"Standing watch all night in ash storms. I need wards against wind and fire."',
+    tier:1,layers:['e_ironbark','e_shield'],faction:'ashwardens',baseGold:40,baseXp:45},
+  {id:'sc_pilgrim_cloak',name:'Pilgrim\'s Cloak',icon:'🧥',desc:'"The road to the shrine is dangerous. Protect me from beasts and the cold."',
+    tier:1,layers:['e_beast','e_frost'],faction:'hearthkeepers',baseGold:32,baseXp:38},
+  {id:'sc_scout_leather',name:'Scout\'s Leather',icon:'🦊',desc:'"I need to move fast and quiet, but still survive an ambush."',
+    tier:2,layers:['e_feather','e_shadow','e_shield'],faction:'ashwardens',baseGold:65,baseXp:70},
+  {id:'sc_forge_apron',name:'Forgemaster\'s Apron',icon:'🔥',desc:'"Working near the vents. One splash of magma and I\'m done without good wards."',
+    tier:2,layers:['e_ironbark','e_forge','e_shield'],faction:'cinderfolk',baseGold:70,baseXp:75},
+  {id:'sc_veil_robe',name:'Veilwalker Robe',icon:'🌀',desc:'"The Veil tears at unprotected minds. Layer every ward you know on this."',
+    tier:2,layers:['e_spelldrinker','e_shadow','e_shield'],faction:'veilwalkers',baseGold:75,baseXp:80},
+  {id:'sc_captain_plate',name:'Captain\'s Plate',icon:'⚔️',desc:'"I lead from the front. This armor needs to stop everything — blade, fire, and magic."',
+    tier:3,layers:['e_ironbark','e_forge','e_spelldrinker'],faction:'ashwardens',baseGold:120,baseXp:130},
+  {id:'sc_heartforge_ward',name:'Heartforge Expedition Suit',icon:'💎',desc:'"We\'re going deeper than anyone has in decades. Every layer of protection could save a life."',
+    tier:3,layers:['e_ironbark','e_forge','e_spelldrinker'],faction:'veilwalkers',baseGold:140,baseXp:150},
+];
+
+// ═══ SPELLWEAVER PLANAR ATTUNEMENT ═══
+const PLANAR_FOCUSES=[
+  {id:'feywild',name:'Feywild',icon:'🧚',color:'#60d080',
+    desc:'Enchantments shimmer with illusory beauty. Utility enchants earn more, but some enchantments fade overnight.',
+    effects:{utilityGoldMult:1.3,fadeChance:0.10},
+    flavor:'The air shimmers with motes of golden light. Reality feels thin, playful, alive.'},
+  {id:'shadowfell',name:'Shadowfell',icon:'🌑',color:'#6040a0',
+    desc:'Dark energy empowers defenses but destabilizes offensive magic.',
+    effects:{defensiveBonus:2,offensiveDCPenalty:3},
+    flavor:'Shadows deepen. The inscriptions drink darkness and grow stronger.'},
+  {id:'elemental_chaos',name:'Elemental Chaos',icon:'🌪️',color:'#d06040',
+    desc:'Raw elemental power surges through your work. Double-inscription chance rises, but failures destroy materials.',
+    effects:{dualChanceBonus:0.20,failDestroyMats:true},
+    flavor:'Fire, ice, lightning, stone — the elements war at your fingertips, barely contained.'},
+  {id:'astral_sea',name:'Astral Sea',icon:'✨',color:'#4080d0',
+    desc:'Pure cosmic precision. Lower DCs on everything, but customers pay less for the understated work.',
+    effects:{dcReduction:2,goldPenalty:0.15},
+    flavor:'Time slows. Your hands move with impossible precision, guided by starlight.'},
+];
+const PLANAR_COMBOS={
+  'feywild+shadowfell':{name:'Twilight Veil',icon:'🌆',desc:'Illusion and shadow merge. Enchantments are invisible until activated — customers pay +50% for the mystery.',effects:{allGoldMult:1.5}},
+  'feywild+elemental_chaos':{name:'Wild Magic',icon:'🎆',desc:'Chaotic fey energy. Every enchant has a 25% chance to randomly apply a bonus enchantment for free.',effects:{bonusEnchantChance:0.25}},
+  'feywild+astral_sea':{name:'Dreamweave',icon:'💫',desc:'Dreamy precision. All enchantments auto-succeed DC 12 or below. +20% gold from utility enchants.',effects:{autoSuccessDC:12,utilityGoldMult:1.2}},
+  'shadowfell+elemental_chaos':{name:'Void Storm',icon:'⚫',desc:'Destructive shadow energy. +4 inscription bonus, but crit failures (nat 1) destroy the customer\'s item.',effects:{inscriptionBonus:4,critFailDestroy:true}},
+  'shadowfell+astral_sea':{name:'Null Space',icon:'🕳️',desc:'Perfect stillness. All DCs reduced by 3. Defensive enchants worth double.',effects:{dcReduction:3,defensiveGoldMult:2.0}},
+  'elemental_chaos+astral_sea':{name:'Primordial Order',icon:'⚛️',desc:'Chaos contained by cosmic law. +3 inscription, +25% gold, no material destruction on failure.',effects:{inscriptionBonus:3,allGoldMult:1.25}},
+};
+
+// ═══ TINKERER GADGET CRAFTING ═══
+const GADGET_BLUEPRINTS=[
+  {id:'gd_compass',name:'Ingredient Compass',icon:'🧭',tier:1,dc:10,
+    matCost:{hearthstone:2,ironroot_bark:1},desc:'A magnetized crystal vial that pulses near alchemical reagents.',
+    effect:'forageBonus',values:[1,2,3],effectDesc:['+1 forage ingredient','+2 forage ingredients','+3 forage ingredients']},
+  {id:'gd_stirrer',name:'Auto-Stirrer',icon:'🌀',tier:1,dc:10,
+    matCost:{ironroot_bark:2,bark_resin:1},desc:'A clockwork arm that maintains perfect brew rotation.',
+    effect:'craftBonus',values:[1,2,3],effectDesc:['+1 craft bonus','+2 craft bonus','+3 craft bonus']},
+  {id:'gd_furnace',name:'Pocket Furnace',icon:'🔥',tier:1,dc:12,
+    matCost:{embercap:2,hearthstone:1},desc:'A palm-sized crucible that burns with alchemical fire.',
+    effect:'freeBrewsPerDay',values:[1,2,3],effectDesc:['1 free brew/day','2 free brews/day','3 free brews/day']},
+  {id:'gd_assistant',name:'Clockwork Assistant',icon:'🤖',tier:2,dc:14,
+    matCost:{ashite:2,ironroot_bark:2,hearthstone:1},desc:'A mechanical helper that follows simple instructions.',
+    effect:'clockworkStaff',values:[0,1,2],effectDesc:['Staff member (no stars)','Staff member (★)','Staff member (★★)']},
+  {id:'gd_salvager',name:'Salvage Reclaimer',icon:'♻️',tier:2,dc:13,
+    matCost:{ashite:1,embervein:1,bark_resin:1},desc:'A filter that recovers usable reagents from failed experiments.',
+    effect:'salvageBonus',values:[0.25,0.50,0.75],effectDesc:['+25% salvage','+50% salvage','+75% salvage']},
+  {id:'gd_detector',name:'Resonance Detector',icon:'📡',tier:2,dc:14,
+    matCost:{moonpetal:2,hearthstone:1},desc:'A tuning fork that hums near rare mineral deposits.',
+    effect:'rareForageBonus',values:[0.10,0.20,0.30],effectDesc:['+10% rare finds','+20% rare finds','+30% rare finds']},
+  {id:'gd_regulator',name:'Efficiency Regulator',icon:'⚙️',tier:1,dc:11,
+    matCost:{ironroot_bark:2,ashbloom:2},desc:'A timing mechanism that optimizes staff workflow.',
+    effect:'staffEffBonus',values:[0.15,0.30,0.45],effectDesc:['+15% staff efficiency','+30% staff efficiency','+45% staff efficiency']},
+  {id:'gd_perpetual',name:'Perpetual Motion Engine',icon:'♾️',tier:3,dc:20,legendary:true,
+    matCost:{embervein:3,deep_crystal:2,volcanic_essence:1},desc:'A device that defies natural law — self-sustaining energy.',
+    effect:'perpetual',values:[null,null,[3,2]],effectDesc:['—','—','+3 hours/day AND 2 free crafts']},
+  {id:'gd_probability',name:'Probability Manipulator',icon:'🎲',tier:3,dc:20,legendary:true,
+    matCost:{starwort:2,deep_crystal:2,moonpetal:2},desc:'A crystalline device that nudges fate in your favor.',
+    effect:'rerollsPerDay',values:[null,null,2],effectDesc:['—','—','Reroll 2 failed checks/day']},
+];
+
+// ═══ CONSTRUCTOR BLUEPRINT WORKSHOP ═══
+const CONSTRUCTOR_BPS=[
+  {id:'bp_training',name:'Training Room',icon:'🎓',tier:1,draftDC:10,buildSessions:2,
+    matCost:{ironroot_bark:3,bark_resin:2},desc:'A dedicated space for staff development with practice stations.',
+    effect:'staffXPMult',value:2,effectDesc:'All apprentices gain 2× XP from tasks'},
+  {id:'bp_rain',name:'Rain Collector',icon:'💧',tier:1,draftDC:10,buildSessions:3,
+    matCost:{ironroot_bark:2,hearthstone:2},desc:'An alchemical condensation array that extracts reagents from morning dew.',
+    effect:'freeIngredients',value:2,effectDesc:'Gain 2 free common ingredients each morning'},
+  {id:'bp_shelves',name:'Reinforced Shelves',icon:'📦',tier:1,draftDC:11,buildSessions:2,
+    matCost:{ironroot_bark:4,bark_resin:2},desc:'Heavy-duty shelving with alchemical preservation coatings.',
+    effect:'shelfDouble',value:true,effectDesc:'Potion shelf capacity doubled'},
+  {id:'bp_cauldron',name:'Second Cauldron',icon:'⚗️',tier:2,draftDC:14,buildSessions:4,
+    matCost:{ashite:3,embervein:1,hearthstone:2},desc:'A fully independent brewing station for parallel production.',
+    effect:'dualBrew',value:true,effectDesc:'Brew 2 different recipes in the same hour'},
+  {id:'bp_deck',name:'Observation Deck',icon:'🔭',tier:2,draftDC:13,buildSessions:4,
+    matCost:{ironroot_bark:4,moonpetal:2,hearthstone:1},desc:'A rooftop perch with a spyglass — see who approaches Cindervale.',
+    effect:'previewCustomers',value:true,effectDesc:'See tomorrow\'s customer list in the evening'},
+  {id:'bp_tunnel',name:'Supply Tunnel',icon:'🚇',tier:2,draftDC:15,buildSessions:5,
+    matCost:{ashite:4,ironroot_bark:3,embervein:1},desc:'A concealed passage connecting to the Cinderfolk supply network.',
+    effect:'freeRestock',value:3,effectDesc:'3 free random ingredients restocked each morning'},
+  {id:'bp_automaton',name:'Automaton Forge',icon:'🤖',tier:3,draftDC:18,buildSessions:7,legendary:true,
+    matCost:{embervein:3,deep_crystal:2,ashite:3,volcanic_essence:1},desc:'A self-operating brewing apparatus that works while you sleep.',
+    effect:'overnightBrew',value:true,effectDesc:'Workshop produces 1 random potion overnight'},
+  {id:'bp_sanctum',name:'Architect\'s Sanctum',icon:'🏛️',tier:3,draftDC:20,buildSessions:8,legendary:true,
+    matCost:{deep_crystal:3,embervein:2,volcanic_essence:2,starwort:2},desc:'A master architect\'s study that enhances all your other constructions.',
+    effect:'reinforceAll',value:true,effectDesc:'All blueprints get +50% effect, future build time halved'},
+];
+
+// ═══ NATURALIST FIELD JOURNAL ═══
+const FIELD_DISCOVERIES={
+  ashfields:[
+    {id:'fd_ash_bloom_cycle',name:'Ashbloom Bloom Cycle',icon:'🌸',type:'flora',desc:'The ashbloom only opens its petals during thermal updrafts — timing your harvest to these windows yields stronger specimens.',bonus:{ingredient:'ashbloom',extraYield:1}},
+    {id:'fd_cinder_beetle',name:'Cinder Beetle Colony',icon:'🪲',type:'fauna',desc:'These beetles process ash into nutrient-rich soil. Their tunnels mark where the healthiest plants grow.',bonus:{dangerReduce:0.15}},
+    {id:'fd_thermal_vents',name:'Thermal Vent Mapping',icon:'🌡️',type:'geological',desc:'The vent patterns follow the old Heartforge conduits. Knowing the map reveals hidden mineral deposits.',bonus:{ingredient:'ash_salt',extraYield:1}},
+  ],
+  ironwood:[
+    {id:'fd_ironwood_rings',name:'Ironwood Growth Rings',icon:'🌲',type:'flora',desc:'The rings contain compressed iron — older trees yield bark with higher mineral content.',bonus:{ingredient:'ironroot_bark',extraYield:1}},
+    {id:'fd_moss_fox',name:'Moss Fox Den',icon:'🦊',type:'fauna',desc:'These foxes cache amber sap in their dens. Following their trails leads to the richest groves.',bonus:{dangerReduce:0.15}},
+    {id:'fd_amber_seep',name:'Amber Seep Formation',icon:'💛',type:'geological',desc:'Ancient tree resin fossilized into alchemically-active amber. Found only where bedrock meets root systems.',bonus:{ingredient:'amber_sap',extraYield:1}},
+  ],
+  fungal_caves:[
+    {id:'fd_biolum_network',name:'Bioluminescent Network',icon:'✨',type:'flora',desc:'The glowing fungi communicate through underground mycelium threads. Harvesting at pulse-peaks yields potent specimens.',bonus:{ingredient:'embercap',extraYield:1}},
+    {id:'fd_cave_bat_roost',name:'Cave Bat Roost',icon:'🦇',type:'fauna',desc:'Bat guano enriches the cave floor, creating pockets of hyper-productive fungal growth.',bonus:{dangerReduce:0.15}},
+    {id:'fd_spore_geode',name:'Spore Geode Formation',icon:'💎',type:'geological',desc:'Hollow geodes that incubate rare spore colonies. Cracking one open carefully yields concentrated alchemical material.',bonus:{ingredient:'echo_fungus',extraYield:1}},
+  ],
+  crystal_hollow:[
+    {id:'fd_singing_crystals',name:'Singing Crystal Harmonics',icon:'🎵',type:'flora',desc:'Certain crystals resonate at frequencies that attract mineral growth. The singing ones are always richer.',bonus:{ingredient:'hearthstone',extraYield:1}},
+    {id:'fd_crystal_worm',name:'Crystal Worm Tunnels',icon:'🪱',type:'fauna',desc:'Worms that digest rock and excrete crystalline waste. Their tunnels are veins of pure mineral.',bonus:{dangerReduce:0.15}},
+    {id:'fd_resonance_chamber',name:'Resonance Chamber',icon:'🔔',type:'geological',desc:'A natural acoustic chamber where crystal growth is accelerated by vibration. Rare minerals concentrate here.',bonus:{ingredient:'resonance_ore',extraYield:1}},
+  ],
+  moonlit_glade:[
+    {id:'fd_lunar_bloom',name:'Lunar Bloom Timing',icon:'🌙',type:'flora',desc:'Moonpetals are 3× more potent when harvested under specific lunar phases.',bonus:{ingredient:'moonpetal',extraYield:1}},
+    {id:'fd_moth_migration',name:'Silver Moth Migration',icon:'🦋',type:'fauna',desc:'Moths that pollinate moonpetals. Their scales contain concentrated lunar essence.',bonus:{dangerReduce:0.15}},
+    {id:'fd_dewstone',name:'Dewstone Deposits',icon:'💧',type:'geological',desc:'Stones that condense magical moisture. Alchemically active water that enhances any lunar ingredient.',bonus:{ingredient:'dew_crystal',extraYield:1}},
+  ],
+  volcanic_vents:[
+    {id:'fd_magma_lily',name:'Magma Lily Root System',icon:'🌺',type:'flora',desc:'Heat-resistant flowers whose roots tap directly into magma channels. Incredibly potent alchemical reagents.',bonus:{ingredient:'volcanic_essence',extraYield:1}},
+    {id:'fd_fire_salamander',name:'Fire Salamander Nests',icon:'🦎',type:'fauna',desc:'Salamanders that thrive in extreme heat. Their shed skins are natural fire-proofing agents.',bonus:{dangerReduce:0.20}},
+    {id:'fd_obsidian_flow',name:'Obsidian Flow Pattern',icon:'⬛',type:'geological',desc:'Volcanic glass forms in predictable patterns. Reading the flow reveals where rare minerals crystallize.',bonus:{ingredient:'obsidian_flake',extraYield:1}},
+  ],
+  deep_mines:[
+    {id:'fd_echo_crystal',name:'Echo Crystal Veins',icon:'🔮',type:'flora',desc:'Crystals that amplify sound — miners use them to detect cave-ins, but alchemists know their true value.',bonus:{ingredient:'echo_stone',extraYield:1}},
+    {id:'fd_mine_spider',name:'Mine Spider Silk',icon:'🕸️',type:'fauna',desc:'Spiders that spin threads stronger than steel. Their webs mark safe passages through unstable shafts.',bonus:{dangerReduce:0.20}},
+    {id:'fd_dark_vein',name:'Dark Amber Vein',icon:'🟤',type:'geological',desc:'Veins of compressed organic material from before the Heartforge was built. Ancient and powerful.',bonus:{ingredient:'dark_amber',extraYield:1}},
+  ],
+  heartforge_rim:[
+    {id:'fd_phoenix_nest',name:'Phoenix Ash Deposit',icon:'🔥',type:'flora',desc:'Where phoenix ash settles, the most potent fire reagents grow. The ash itself is alchemical gold.',bonus:{ingredient:'phoenix_ash',extraYield:2}},
+    {id:'fd_forge_spirit',name:'Forge Spirit Traces',icon:'👻',type:'fauna',desc:'Echoes of the workers who built the Heartforge. Their spiritual residue calms the volatile energies.',bonus:{dangerReduce:0.25}},
+    {id:'fd_primordial_seam',name:'Primordial Seam',icon:'⚡',type:'geological',desc:'A crack in reality where raw creation energy leaks through. The rarest geological find in Cindervale.',bonus:{ingredient:'primordial_ash',extraYield:2}},
+  ],
+};
+
+// ═══ ARCHIVIST LORE ARCHIVE ═══
+const LORE_CHAINS={
+  heartforge:{id:'heartforge',name:'Heartforge History',icon:'🔥',color:'#d08040',
+    desc:'The rise and fall of Cindervale\'s great forge — and the secret of what silenced it.',
+    fragments:[
+      {id:'lf_hf1',name:'The First Flame',desc:'The Heartforge was lit by a coalition of all four factions working together — a feat never repeated.',factions:['cinderfolk','ashwardens']},
+      {id:'lf_hf2',name:'The Master Alchemist',desc:'A legendary alchemist named Edden created the Forge Catalyst that kept the Heartforge burning for centuries.',factions:['hearthkeepers']},
+      {id:'lf_hf3',name:'The Day It Died',desc:'The Heartforge didn\'t simply go cold — something inside it chose to sleep. The last Forgekeeper heard it whisper.',factions:['cinderfolk','veilwalkers']},
+      {id:'lf_hf4',name:'The Rekindling Prophecy',desc:'Tarn\'s oldest texts speak of a catalyst — not a potion, but a person. Someone who can hear the Forge\'s dreams.',factions:['veilwalkers']},
+    ],
+    reward:{xpMultiplier:0.10},rewardDesc:'+10% XP from all sources permanently'},
+  veilwalker:{id:'veilwalker',name:'Veilwalker Secrets',icon:'🌀',color:'#7b68c4',
+    desc:'The truth behind the Veil — and why Cindervale sits at its thinnest point.',
+    fragments:[
+      {id:'lf_vw1',name:'The Thin Place',desc:'Cindervale was built here deliberately. The Veil is thin because the Heartforge punched through it.',factions:['veilwalkers']},
+      {id:'lf_vw2',name:'The Other Side',desc:'The Veilwalkers don\'t just watch the Veil — some have crossed it. What they found changed them forever.',factions:['veilwalkers','hearthkeepers']},
+      {id:'lf_vw3',name:'The Warding Song',desc:'The original wards around Cindervale aren\'t runes — they\'re a song, hummed by the stones themselves.',factions:['veilwalkers','cinderfolk']},
+    ],
+    reward:{discoveryChanceBonus:0.15},rewardDesc:'+15% discovery chance permanently'},
+  cinderfolk:{id:'cinderfolk',name:'Cinderfolk Legends',icon:'⛏️',color:'#aa8866',
+    desc:'Stories passed down through generations of miners — the deep history written in stone.',
+    fragments:[
+      {id:'lf_cf1',name:'The Deep King',desc:'Before Cindervale, the Cinderfolk served an underground king. His throne room lies beneath Shaft Nine.',factions:['cinderfolk']},
+      {id:'lf_cf2',name:'Living Stone',desc:'The deepest mines aren\'t carved — they grew. The stone down there moves on its own, slowly.',factions:['cinderfolk','ashwardens']},
+      {id:'lf_cf3',name:'The Ore That Sings',desc:'Miners report hearing music from certain veins. It\'s not madness — it\'s resonance ore responding to the Heartforge.',factions:['cinderfolk']},
+      {id:'lf_cf4',name:'The Pact',desc:'The Cinderfolk didn\'t discover the mines. Something down there invited them in — and they made a deal.',factions:['cinderfolk','veilwalkers']},
+      {id:'lf_cf5',name:'Return of the Deep',desc:'The tremors aren\'t random. The Deep King is turning in his sleep. When the Heartforge relights, he\'ll wake.',factions:['cinderfolk','ashwardens','veilwalkers']},
+    ],
+    reward:{forageYieldBonus:1},rewardDesc:'+1 forage yield in all regions permanently'},
+  ashwarden:{id:'ashwarden',name:'Ashwarden Chronicles',icon:'⚔️',color:'#cc5544',
+    desc:'The military history of Cindervale\'s protectors — and the threats they\'ve kept secret.',
+    fragments:[
+      {id:'lf_aw1',name:'The First Watch',desc:'The Ashwardens weren\'t formed to protect against beasts. They were formed to guard the Heartforge from people.',factions:['ashwardens']},
+      {id:'lf_aw2',name:'The Siege of Ash',desc:'Cindervale was attacked once — an army from the coast. The Heartforge defended itself. No one speaks of how.',factions:['ashwardens','hearthkeepers']},
+      {id:'lf_aw3',name:'Holst\'s Secret',desc:'Captain Holst knows what\'s in the deep tunnels. He\'s seen it. That\'s why he never sleeps.',factions:['ashwardens']},
+      {id:'lf_aw4',name:'The Last Order',desc:'If the Heartforge relights, the Ashwardens have a sealed order from the founder. No one alive knows what it says.',factions:['ashwardens','veilwalkers']},
+    ],
+    reward:{questGoldBonus:0.20,questRepBonus:5},rewardDesc:'+20% quest gold and +5 rep permanently'},
+};
+const ALL_LORE_FRAGMENTS=Object.values(LORE_CHAINS).flatMap(c=>c.fragments.map(f=>({...f,chainId:c.id})));
+
+// ═══ RANGER COMPANION SYSTEM ═══
+const RANGER_COMPANIONS=[
+  {id:'rc_fox',name:'Cinder Fox',icon:'🦊',region:'ashfields',role:'gatherer',color:'#d08040',
+    desc:'A rust-furred fox that thrives in the ash. Knows every hidden bloom.',
+    primary:{type:'gather',ingr:['ashbloom','char_root','ash_salt','ember_petal'],baseYield:[1,1,2,2,3]},
+    secondary:{type:'scout_gather',desc:'Also gathers from adjacent regions',unlockLv:3},
+    legendary:'Once/day: bring back a rare ingredient from any region'},
+  {id:'rc_monkey',name:'Cave Monkey',icon:'🐒',region:'fungal_caves',role:'shopkeeper',color:'#a07050',
+    desc:'A clever primate that mimics your movements. Surprisingly good with shelves.',
+    primary:{type:'shop',baseGold:[3,5,8,12,18]},
+    secondary:{type:'organize',desc:'+1 potion shelf capacity per loyalty level',unlockLv:3},
+    legendary:'Automatically stocks shelves from your potion supply each morning'},
+  {id:'rc_hawk',name:'Ash Hawk',icon:'🦅',region:'ironwood',role:'scout',color:'#6090c0',
+    desc:'A keen-eyed raptor that rides the thermal updrafts above the canopy.',
+    primary:{type:'danger_reduce',values:[0.25,0.40,0.50,0.60,0.75]},
+    secondary:{type:'travel_reduce',desc:'-1 travel time to scouted region',unlockLv:3},
+    legendary:'Once/day: instant travel (0 hours) to any region'},
+  {id:'rc_hound',name:'Ridge Hound',icon:'🐕',region:'crystal_hollow',role:'greeter',color:'#c09040',
+    desc:'A loyal hound with crystalline eyes. Customers love petting it at the door.',
+    primary:{type:'customers',values:[0,0,1,1,2]},
+    secondary:{type:'morale_aura',desc:'+5 staff morale per morning',unlockLv:3},
+    legendary:'Premium customers pay 15% more (charmed by the hound)'},
+  {id:'rc_salamander',name:'Fire Salamander',icon:'🦎',region:'volcanic_vents',role:'guardian',color:'#d04040',
+    desc:'A heat-resistant lizard that glows with inner fire. Protective and watchful.',
+    primary:{type:'staff_morale',values:[5,8,10,12,15]},
+    secondary:{type:'guard',desc:'Prevents negative morning events that cost gold',unlockLv:3},
+    legendary:'Staff never drop below 50% morale while guardian is active'},
+  {id:'rc_moth',name:'Silver Moth',icon:'🦋',region:'moonlit_glade',role:'muse',color:'#9080c0',
+    desc:'A luminous moth drawn to magical resonance. Its presence sharpens the mind.',
+    primary:{type:'research',values:[0.05,0.08,0.10,0.13,0.15]},
+    secondary:{type:'xp_aura',desc:'+5% XP from all sources',unlockLv:3},
+    legendary:'Research auto-discovers on first attempt each day'},
+  {id:'rc_phoenix',name:'Phoenix Hatchling',icon:'🔥',region:'heartforge_rim',role:'legendary',color:'#d4a420',legendary_only:true,
+    desc:'A newborn phoenix, impossibly rare. Its feathers contain primordial fire.',
+    primary:{type:'gather',ingr:['phoenix_ash','volcanic_essence','primordial_ash','forge_scale'],baseYield:[1,1,2,2,3]},
+    secondary:{type:'resurrect',desc:'Once/day: retry a failed craft check',unlockLv:3},
+    legendary:'Passively generates 1 Heartforge ingredient every morning'},
+];
+
 const POT_LINES={
   'Thorek':['"The boys in Shaft Nine need salves after every shift. I\'m buying."','"Something for sore muscles and worse. Whatever you recommend."'],
   'Fiona':['"I\'ll take whatever you have. Potions sell for triple in the capital."','"My caravan leaves at dawn — what\'s ready?"'],
@@ -1416,6 +1737,16 @@ function CindervaleAlchemistInner(){
   const [factionAlign,setFactionAlign]=useState(null); // null or faction id string
   const [enchQ,setEnchQ]=useState([]);
   const [potCustQ,setPotCustQ]=useState([]);
+  const [clinicPatients,setClinicPatients]=useState([]);
+  const [venomContracts,setVenomContracts]=useState([]);
+  const [forgedWeapons,setForgedWeapons]=useState([]);
+  const [shieldCommissions,setShieldCommissions]=useState([]);
+  const [planarFocus,setPlanarFocus]=useState(null); // {planeIds:['feywild'], day:1}
+  const [gadgets,setGadgets]=useState([]); // [{blueprintId:'gd_compass',mk:1,equipped:true}]
+  const [blueprints,setBlueprints]=useState([]); // [{bpId:'bp_training',drafted:true,buildProgress:0,complete:false}]
+  const [fieldJournal,setFieldJournal]=useState([]); // ['fd_ash_bloom_cycle','fd_cinder_beetle',...]
+  const [loreFragments,setLoreFragments]=useState([]); // ['lf_hf1','lf_vw2',...]
+  const [companions,setCompanions]=useState([]); // [{compId:'rc_fox',loyalty:1,active:true}]
   const [shelves,setShelves]=useState({});
   const [lastCheck,setLastCheck]=useState(null);
   const [resultPopup,setResultPopup]=useState(null); // {title,detail,type}
@@ -1476,8 +1807,12 @@ function CindervaleAlchemistInner(){
     }
     for(const fid of playerFeats){const f=FEATS[fid];if(f&&f.effects?.[effectKey]!=null){const v=f.effects[effectKey];total+=typeof v==='number'?v:v===true?1:0;}}
     const fEfx=getFactionEffects(fRep,factionAlign);if(fEfx[effectKey])total+=fEfx[effectKey];
+    // Archivist lore chain completed bonuses
+    for(const [,chain] of Object.entries(LORE_CHAINS)){
+      if(chain.reward[effectKey]&&chain.fragments.every(f=>loreFragments.includes(f.id))){total+=chain.reward[effectKey];}
+    }
     return total;
-  },[classLevels,specs,playerFeats,fRep,factionAlign]);
+  },[classLevels,specs,playerFeats,fRep,factionAlign,loreFragments]);
   const hasFeature=useCallback((effectKey)=>{
     for(const [cid,lv] of Object.entries(classLevels)){
       const cls=CLASSES[cid];if(!cls)continue;
@@ -1497,9 +1832,9 @@ function CindervaleAlchemistInner(){
   const gatherState=useCallback(()=>({
     phase,charName,charRace,charGender,stats,ptsLeft,skRanks,skPts,skProgress,classLevels,specs,playerFeats,asiSpent,startingClass,
     screen,day,hours,xp,gold,inv,pots,known,aQ,doneQ,
-    log:log.slice(-30),milestones,fRep,factionAlign,upgrades,hiredAppr,apprTasks,apprXP,enchQ,potCustQ,shelves,dailyReport,
+    log:log.slice(-30),milestones,fRep,factionAlign,upgrades,hiredAppr,apprTasks,apprXP,enchQ,potCustQ,clinicPatients,venomContracts,forgedWeapons,shieldCommissions,planarFocus,gadgets,blueprints,fieldJournal,loreFragments,companions,shelves,dailyReport,
     boardQ,activeBQ,doneBQCount,dayFlags,knownEnch,brewCounts,procureItems,pubPapers,selectedSite,constructProgress,
-  }),[phase,charName,charRace,charGender,stats,ptsLeft,skRanks,skPts,skProgress,classLevels,specs,playerFeats,asiSpent,startingClass,screen,day,hours,xp,gold,inv,pots,known,aQ,doneQ,log,milestones,fRep,factionAlign,upgrades,hiredAppr,apprTasks,apprXP,enchQ,potCustQ,shelves,dailyReport,boardQ,activeBQ,doneBQCount,dayFlags,knownEnch,brewCounts,procureItems,constructProgress,selectedSite]);
+  }),[phase,charName,charRace,charGender,stats,ptsLeft,skRanks,skPts,skProgress,classLevels,specs,playerFeats,asiSpent,startingClass,screen,day,hours,xp,gold,inv,pots,known,aQ,doneQ,log,milestones,fRep,factionAlign,upgrades,hiredAppr,apprTasks,apprXP,enchQ,potCustQ,clinicPatients,venomContracts,forgedWeapons,shieldCommissions,planarFocus,gadgets,blueprints,fieldJournal,loreFragments,companions,shelves,dailyReport,boardQ,activeBQ,doneBQCount,dayFlags,knownEnch,brewCounts,procureItems,constructProgress,selectedSite]);
 
   const restoreState=useCallback((s)=>{
     if(!s)return;
@@ -1523,7 +1858,7 @@ function CindervaleAlchemistInner(){
     setUpgrades(s.upgrades||[]);setHiredAppr(s.hiredAppr||[]);
     setApprTasks(s.apprTasks||{});setApprXP(s.apprXP||{});
     prevLvl.current=getLvl(s.xp||0);
-    setDailyReport(s.dailyReport||[]);setEnchQ(s.enchQ||[]);setPotCustQ(s.potCustQ||[]);setShelves(s.shelves||{});setLastCheck(null);setNews([]);setMorningReport(null);
+    setDailyReport(s.dailyReport||[]);setEnchQ(s.enchQ||[]);setPotCustQ(s.potCustQ||[]);setClinicPatients(s.clinicPatients||[]);setVenomContracts(s.venomContracts||[]);setForgedWeapons(s.forgedWeapons||[]);setShieldCommissions(s.shieldCommissions||[]);setPlanarFocus(s.planarFocus||null);setGadgets(s.gadgets||[]);setBlueprints(s.blueprints||[]);setFieldJournal(s.fieldJournal||[]);setLoreFragments(s.loreFragments||[]);setCompanions(s.companions||[]);setShelves(s.shelves||{});setLastCheck(null);setNews([]);setMorningReport(null);
     setBoardQ(s.boardQ||[]);setActiveBQ(s.activeBQ||[]);setDoneBQCount(s.doneBQCount||0);setDayFlags(s.dayFlags||[]);setKnownEnch(s.knownEnch&&s.knownEnch.length>0?s.knownEnch:['e_sharp','e_glow','e_ironbark','e_feather','e_windwalk','e_rootbind']);
     setBrewCounts(s.brewCounts||{});setProcureItems(s.procureItems||[]);setPubPapers(s.pubPapers||[]);setConstructProgress(s.constructProgress||{});
     setSelHex(null);setVBuild('workshop');setDlgNpc(null);setShowShop(false);setQuestDlg(null);setPendingLevelUp(null);setSelectedSite(s.selectedSite||null);
@@ -1583,7 +1918,7 @@ function CindervaleAlchemistInner(){
   const snapshot=useCallback(()=>{
     const snap={day,hours,xp,gold,inv:{...inv},pots:{...pots},known:[...known],aQ:[...aQ],doneQ:[...doneQ],
       fRep:{...fRep},upgrades:[...upgrades],hiredAppr:hiredAppr.map(a=>({...a})),apprTasks:{...apprTasks},apprXP:{...apprXP},
-      skRanks:{...skRanks},skPts,skProgress:{...skProgress},enchQ:[...enchQ],potCustQ:[...potCustQ],shelves:{...shelves},milestones:[...milestones],log:[...log],dailyReport:[...dailyReport],brewCounts:{...brewCounts},procureItems:[...procureItems],constructProgress:{...constructProgress}};
+      skRanks:{...skRanks},skPts,skProgress:{...skProgress},enchQ:[...enchQ],potCustQ:[...potCustQ],clinicPatients:[...clinicPatients],venomContracts:[...venomContracts],forgedWeapons:[...forgedWeapons],shieldCommissions:[...shieldCommissions],planarFocus,gadgets:[...gadgets],blueprints:[...blueprints],fieldJournal:[...fieldJournal],loreFragments:[...loreFragments],companions:companions.map(c=>({...c})),gadgets,blueprints,fieldJournal,loreFragments,companions,shelves:{...shelves},milestones:[...milestones],log:[...log],dailyReport:[...dailyReport],brewCounts:{...brewCounts},procureItems:[...procureItems],constructProgress:{...constructProgress}};
     setUndoStack(p=>[...p.slice(-4),snap]);
   },[day,hours,xp,gold,inv,pots,known,aQ,doneQ,fRep,upgrades,hiredAppr,apprTasks,apprXP,skRanks,skPts,skProgress,enchQ,potCustQ,shelves,milestones,log,dailyReport,brewCounts,procureItems,constructProgress]);
 
@@ -1606,7 +1941,7 @@ function CindervaleAlchemistInner(){
     setInv(snap.inv);setPots(snap.pots);setKnown(snap.known);setAQ(snap.aQ);setDoneQ(snap.doneQ);
     setFRep(snap.fRep);setUpgrades(snap.upgrades);setHiredAppr(snap.hiredAppr);
     setApprTasks(snap.apprTasks);setApprXP(snap.apprXP);setSkRanks(snap.skRanks);setSkPts(snap.skPts);setSkProgress(snap.skProgress||{});
-    setEnchQ(snap.enchQ);setPotCustQ(snap.potCustQ||[]);setShelves(snap.shelves||{});setMilestones(snap.milestones);setLog(snap.log);setDailyReport(snap.dailyReport);
+    setEnchQ(snap.enchQ);setPotCustQ(snap.potCustQ||[]);setClinicPatients(snap.clinicPatients||[]);setVenomContracts(snap.venomContracts||[]);setForgedWeapons(snap.forgedWeapons||[]);setShieldCommissions(snap.shieldCommissions||[]);setPlanarFocus(snap.planarFocus||null);setGadgets(snap.gadgets||[]);setBlueprints(snap.blueprints||[]);setFieldJournal(snap.fieldJournal||[]);setLoreFragments(snap.loreFragments||[]);setCompanions(snap.companions||[]);setShelves(snap.shelves||{});setMilestones(snap.milestones);setLog(snap.log);setDailyReport(snap.dailyReport);
     setBrewCounts(snap.brewCounts||{});setProcureItems(snap.procureItems||[]);setPubPapers(snap.pubPapers||[]);setConstructProgress(snap.constructProgress||{});
     setLastCheck(null);
     addLog('↩️ Time seems to blur — you find yourself a moment before, as if the last action never happened.','info');
@@ -1662,7 +1997,9 @@ function CindervaleAlchemistInner(){
     setPotCustQ(pQ);
     // Enchanting customers — all classes get them; enchanters get bonus
     const enchBonus=isEnch?1:0;
-    const n=1+Math.floor(Math.random()*2)+upEff('extraCustomers')+enchBonus+custBonusF;
+    const forgeBonus=forgedWeapons.filter(w=>w.displayed).length; // Named weapons attract customers
+    const compCustBonus=companions.filter(c=>c.active&&RANGER_COMPANIONS.find(r=>r.id===c.compId)?.primary.type==='customers').reduce((s,c)=>{const comp=RANGER_COMPANIONS.find(r=>r.id===c.compId);return s+(comp?.primary.values[Math.min(c.loyalty-1,4)]||0);},0);
+    const n=1+Math.floor(Math.random()*2)+upEff('extraCustomers')+enchBonus+custBonusF+Math.min(3,forgeBonus)+compCustBonus;
     const q=[];
     const effKnownEnch=knownEnch.length>0?knownEnch:['e_sharp','e_glow','e_ironbark','e_feather','e_windwalk','e_rootbind'];
     for(let i=0;i<n;i++){const mT=level>=7?3:level>=4?2:1;const items=CUST_ITEMS.filter(it=>it.tier<=mT);
@@ -1695,8 +2032,61 @@ function CindervaleAlchemistInner(){
         line:cd.lines[Math.floor(Math.random()*cd.lines.length)],
         reqEnch,
         id:Math.random().toString(36).slice(2)});}
-    setEnchQ(q);return{ench:q.length,pot:pQ.length};
-  },[classLevels,level,known,knownEnch,getSkMod,upEff,getRL]);
+    setEnchQ(q);
+    // ═══ CLINIC PATIENTS (Apothecary spec) ═══
+    const isApoth=specs.alchemist==='apothecary';
+    let clinicN=0;
+    if(isApoth){
+      const apothLv=classLevels.alchemist||0;
+      clinicN=apothLv>=10?3:apothLv>=6?2:1;
+      const maxTier=apothLv>=10?3:apothLv>=6?2:1;
+      const available=CLINIC_AILMENTS.filter(a=>a.tier<=maxTier);
+      const patients=[];
+      const patientNames=['Elderly Miner','Young Farmer','Ashwarden Recruit','Tavern Regular','Cinderfolk Worker','Pilgrim','Traveling Peddler','Quarry Hand','Blacksmith\'s Wife','Shepherd Boy'];
+      for(let i=0;i<clinicN&&available.length>0;i++){
+        const ailment=available[Math.floor(Math.random()*available.length)];
+        const pName=patientNames[Math.floor(Math.random()*patientNames.length)];
+        patients.push({id:'cl_'+Math.random().toString(36).slice(2),ailmentId:ailment.id,patientName:pName,examined:false,diagLevel:0,prescribed:false});
+      }
+      setClinicPatients(patients);
+    } else { setClinicPatients([]); }
+    // ═══ VENOMIST CONTRACTS ═══
+    const isVenom=specs.alchemist==='venomist';
+    let contractN=0;
+    if(isVenom){
+      const venLv=classLevels.alchemist||0;
+      contractN=venLv>=10?3:venLv>=6?2:1;
+      const maxTier=venLv>=10?3:venLv>=6?2:1;
+      const available=VENOM_CONTRACTS.filter(c=>c.tier<=maxTier);
+      const contracts=[];
+      for(let i=0;i<contractN&&available.length>0;i++){
+        const contract=available[Math.floor(Math.random()*available.length)];
+        const maxPotency=venLv>=10?3:venLv>=6?2:1;
+        contracts.push({id:'vc_'+Math.random().toString(36).slice(2),contractId:contract.id,fulfilled:false,chosenPotency:null});
+      }
+      setVenomContracts(contracts);
+    } else { setVenomContracts([]); }
+    // ═══ WARDKEEPER SHIELD COMMISSIONS ═══
+    const isWardkeeper=specs.enchanter==='wardkeeper';
+    let commissionN=0;
+    if(isWardkeeper){
+      const wkLv=classLevels.enchanter||0;
+      commissionN=wkLv>=10?3:wkLv>=6?2:1;
+      const maxTier=wkLv>=10?3:wkLv>=6?2:1;
+      const maxLayers=wkLv>=6?3:2;
+      const available=SHIELD_COMMISSIONS.filter(c=>c.tier<=maxTier&&c.layers.length<=maxLayers);
+      const commissions=[];
+      const commNames=['Grizzled Miner','Ashwarden Sergeant','Traveling Scholar','Young Recruit','Forge Worker','Veilwalker Initiate','Caravan Guard','Village Elder'];
+      for(let i=0;i<commissionN&&available.length>0;i++){
+        const comm=available[Math.floor(Math.random()*available.length)];
+        const cName=commNames[Math.floor(Math.random()*commNames.length)];
+        commissions.push({id:'sc_'+Math.random().toString(36).slice(2),commissionId:comm.id,clientName:cName,
+          layersCompleted:0,layersFailed:0,retryUsed:false,done:false});
+      }
+      setShieldCommissions(commissions);
+    } else { setShieldCommissions([]); }
+    return{ench:q.length,pot:pQ.length,clinic:clinicN,contracts:contractN,commissions:commissionN};
+  },[classLevels,specs,level,known,knownEnch,getSkMod,upEff,getRL]);
   const maxAppr=1+Math.floor(level/3)+(hasUp('ledger')?1:0)+getFeatureVal('maxApprenticeBonus');
   const hasMilestone=id=>milestones.includes(id);
   const earnMilestone=(id)=>{
@@ -1798,6 +2188,10 @@ function CindervaleAlchemistInner(){
         const minDistinct=Math.min(3,picked.length);
         for(let d=0;d<minDistinct;d++){hourG[picked[d]]=(hourG[picked[d]]||0)+1;}
         for(let t=0;t<total-minDistinct;t++){const id=picked[Math.floor(Math.random()*picked.length)];hourG[id]=(hourG[id]||0)+1;}
+        // Field Journal discovery bonuses — permanent extra yields from documented flora/geological
+        const regDiscs=FIELD_DISCOVERIES[reg.id]||[];
+        regDiscs.forEach(d=>{if(fieldJournal.includes(d.id)&&d.bonus.extraYield&&d.bonus.ingredient){
+          hourG[d.bonus.ingredient]=(hourG[d.bonus.ingredient]||0)+d.bonus.extraYield;}});
       } else {
         if(Math.random()<0.35){const id=picked[Math.floor(Math.random()*picked.length)];hourG[id]=1;}
       }
@@ -1830,6 +2224,12 @@ function CindervaleAlchemistInner(){
       for(const ev of H_EVENTS){
         let evProb=ev.prob;
         if(riskReduc>0&&ev.good===false)evProb*=(1-riskReduc);
+        // Field Journal fauna discoveries reduce danger in this region
+        if(ev.good===false){const faunaDiscs=(FIELD_DISCOVERIES[reg.id]||[]).filter(d=>d.type==='fauna'&&fieldJournal.includes(d.id));
+          faunaDiscs.forEach(d=>{if(d.bonus.dangerReduce)evProb*=(1-d.bonus.dangerReduce);});}
+        // Ranger companion hawk danger reduction
+        if(ev.good===false){companions.filter(c=>c.active).forEach(c=>{const comp=RANGER_COMPANIONS.find(r=>r.id===c.compId);
+          if(comp?.primary.type==='danger_reduce'){evProb*=(1-comp.primary.values[Math.min(c.loyalty-1,4)]);}});}
         if(posMulti>1&&ev.good!==false)evProb*=posMulti;
         if(Math.random()>=evProb)continue;
         event={text:ev.text,good:ev.good!==false,check:null,resultText:null,effect:null,effectDetail:null,effectItems:null,effectXp:0,effectRep:null,dangerSensed:false};
@@ -1885,13 +2285,63 @@ function CindervaleAlchemistInner(){
       const effMod=getSkMod('efficiency');
       let effBonus=false;
       if(effMod>0&&Math.random()<effMod*0.03){hoursLeft++;effBonus=true;}
+      // ═══ NATURALIST FIELD DISCOVERY ═══
+      let discovery=null;
+      const isNaturalist=specs.scholar==='naturalist';
+      if(isNaturalist&&ext.success){
+        const natLv=classLevels.scholar||0;
+        const discChance=natLv>=10?0.40:natLv>=6?0.30:0.20;
+        const canGeo=natLv>=6;
+        const regionDiscs=FIELD_DISCOVERIES[reg.id]||[];
+        const undiscovered=regionDiscs.filter(d=>!fieldJournal.includes(d.id)&&(d.type!=='geological'||canGeo));
+        if(undiscovered.length>0&&Math.random()<discChance){
+          const disc=undiscovered[Math.floor(Math.random()*undiscovered.length)];
+          // Research check to document it — Lv10 auto-succeeds
+          const docDC=10+reg.diff*2;
+          const autoDoc=natLv>=10;
+          let documented=autoDoc;
+          if(!autoDoc){const docCh=pureCheck('research',docDC);const rb=getFeatureVal('craftBonus');if(rb)docCh.total+=rb;documented=docCh.total>=docDC;}
+          if(documented){
+            fieldJournal.push(disc.id); // mutate for this loop; state update below
+            discovery={...disc,documented:true};
+            // Apply bonus yield immediately for this hour
+            if(disc.bonus.extraYield&&disc.bonus.ingredient&&hourG[disc.bonus.ingredient]!==undefined){
+              hourG[disc.bonus.ingredient]=(hourG[disc.bonus.ingredient]||0)+disc.bonus.extraYield;
+            }
+          } else {
+            discovery={...disc,documented:false};
+          }
+        }
+      }
+      // ═══ RANGER COMPANION ENCOUNTER ═══
+      let companionEnc=null;
+      const isRanger=specs.warden==='ranger';
+      if(isRanger&&ext.success){
+        const rngLv=classLevels.warden||0;
+        const encChance=rngLv>=10?0.35:rngLv>=6?0.25:0.15;
+        const maxSlots=rngLv>=10?3:rngLv>=6?2:1;
+        const owned=companions.map(c=>c.compId);
+        const regionComps=RANGER_COMPANIONS.filter(c=>c.region===reg.id&&!owned.includes(c.id)&&(!c.legendary_only||rngLv>=10));
+        if(regionComps.length>0&&companions.length<maxSlots&&Math.random()<encChance){
+          const comp=regionComps[Math.floor(Math.random()*regionComps.length)];
+          // Attunement check to tame
+          const tameDC=10+reg.diff*2;
+          const tameCh=pureCheck('attunement',tameDC);
+          if(tameCh.total>=tameDC){
+            companions.push({compId:comp.id,loyalty:1,active:true,tamedDay:day});
+            companionEnc={...comp,tamed:true,check:tameCh};
+          } else {
+            companionEnc={...comp,tamed:false,check:tameCh};
+          }
+        }
+      }
       // Accumulate
       Object.entries(hourG).forEach(([id,q])=>{cumG[id]=(cumG[id]||0)+q;});
       cumXp+=hxp+(event?.effectXp||0);
       queue.push({
         hourNum:h,totalHours:hoursLeft,regName:curSite?reg.name+' — '+curSite.name:reg.name,regIcon:reg.icon,travelTime:info.travelTime,
         ext,gathered:{...hourG},xp:hxp+(event?.effectXp||0),event,
-        cumGathered:{...cumG},cumXp,isFinal:false,divBonus,effBonus,luckyBonus,attuneBonus,
+        cumGathered:{...cumG},cumXp,isFinal:false,divBonus,effBonus,luckyBonus,attuneBonus,discovery,companionEnc,
       });
     }
     if(queue.length>0){
@@ -1917,6 +2367,12 @@ function CindervaleAlchemistInner(){
       queue.forEach(q=>{q.totalHours=queue.length;});
       queue[queue.length-1].isFinal=true;
     }
+    // Update field journal with any discoveries made during expedition
+    const newDiscs=queue.filter(q=>q.discovery?.documented).map(q=>q.discovery.id);
+    if(newDiscs.length>0)setFieldJournal(prev=>[...new Set([...prev,...newDiscs])]);
+    // Update companions with any tamed during expedition
+    const newComps=queue.filter(q=>q.companionEnc?.tamed).map(q=>({compId:q.companionEnc.id,loyalty:1,active:true,tamedDay:day}));
+    if(newComps.length>0)setCompanions(prev=>[...prev,...newComps]);
     setExpQ(queue);
   };
   // Advance expedition — apply one hour's effects, shift queue
@@ -1926,7 +2382,7 @@ function CindervaleAlchemistInner(){
     Object.entries(hr.gathered).forEach(([id,q])=>{if(q>0)modInv(id,q);});
     gainXP(hr.xp);
     if(hr.event?.effectRep)addRep(hr.event.effectRep.faction,hr.event.effectRep.amount);
-    addLog(`⛏️ Hour ${hr.hourNum}: ${hr.ext.success?'✅':'❌'} ${Object.entries(hr.gathered).filter(([,q])=>q>0).map(([id,q])=>INGR[id]?.icon+INGR[id]?.name+' ×'+q).join(', ')||'nothing'}${hr.divBonus?' | 👁️ Divination: +1 '+hr.divBonus.icon+hr.divBonus.name:''}${hr.luckyBonus?' | 🍀 Lucky: +1 '+hr.luckyBonus.icon+hr.luckyBonus.name:''}${hr.attuneBonus?' | 🎯 Attuned: +1 '+hr.attuneBonus.icon+hr.attuneBonus.name:''}${hr.effBonus?' | ⏱️ Efficiency: bonus hour!':''}${hr.event?(hr.event.dangerSensed?' | ⚠️ Danger Sense saved you!':' | '+hr.event.text):''}`,'harvest');
+    addLog(`⛏️ Hour ${hr.hourNum}: ${hr.ext.success?'✅':'❌'} ${Object.entries(hr.gathered).filter(([,q])=>q>0).map(([id,q])=>INGR[id]?.icon+INGR[id]?.name+' ×'+q).join(', ')||'nothing'}${hr.divBonus?' | 👁️ Divination: +1 '+hr.divBonus.icon+hr.divBonus.name:''}${hr.luckyBonus?' | 🍀 Lucky: +1 '+hr.luckyBonus.icon+hr.luckyBonus.name:''}${hr.attuneBonus?' | 🎯 Attuned: +1 '+hr.attuneBonus.icon+hr.attuneBonus.name:''}${hr.effBonus?' | ⏱️ Efficiency: bonus hour!':''}${hr.discovery?(hr.discovery.documented?' | 🌿 Discovered: '+hr.discovery.icon+' '+hr.discovery.name+'!':' | 🌿 Noticed something, but couldn\'t document it...'):''}${hr.companionEnc?(hr.companionEnc.tamed?' | 🦊 Tamed: '+hr.companionEnc.icon+' '+hr.companionEnc.name+'!':' | 🦊 Spotted '+hr.companionEnc.icon+' '+hr.companionEnc.name+' but it fled...'):''}${hr.event?(hr.event.dangerSensed?' | ⚠️ Danger Sense saved you!':' | '+hr.event.text):''}`,'harvest');
     const rest=expQ.slice(1);
     setExpQ(rest);
     if(rest.length===0){
@@ -2145,9 +2601,12 @@ function CindervaleAlchemistInner(){
   const doResearch=(type)=>{
     const loreMod=getSkMod('lore');const scholarReduc=getFeatureVal('researchCostReduction');
     const resCost=Math.max(1,(loreMod>=4?1:2)-scholarReduc);
-    if(hours<resCost){addLog(`Research takes ${resCost} hour${resCost>1?'s':''} of focused study.${loreMod>=4||scholarReduc>0?' (reduced by skills/features)':''}`,'error');return;}
+    const freeResPerDay=getFeatureVal('freeResearchPerDay');
+    const freeUsed=dayFlags.filter(f=>f==='free_research_used').length;
+    const isFree=freeResPerDay>freeUsed;
+    if(!isFree&&hours<resCost){addLog(`Research takes ${resCost} hour${resCost>1?'s':''} of focused study.${freeResPerDay>0?' (free attempts used today)':''}`,'error');return;}
     snapshot();
-    setHours(h=>h-resCost);
+    if(isFree){setDayFlags(f=>[...f,'free_research_used']);}else{setHours(h=>h-resCost);}
     const innovB=getSkMod('innovation');const resB=getSkMod('research');
     const discBonus=getFeatureVal('discoveryChanceBonus');
     const chance=0.2+innovB*0.06+resB*0.04+discBonus; // ~20-60% depending on skills+features
@@ -2337,6 +2796,463 @@ function CindervaleAlchemistInner(){
   };
   const dismissPotCust=(cust)=>setPotCustQ(p=>p.filter(c=>c!==cust));
 
+  // ═══ APOTHECARY CLINIC ═══
+  const examinePatient=(patientId)=>{
+    const patient=clinicPatients.find(p=>p.id===patientId);
+    if(!patient||patient.examined)return;
+    const ailment=CLINIC_AILMENTS.find(a=>a.id===patient.ailmentId);if(!ailment)return;
+    // Attunement check — DC scales with ailment tier
+    const dc=8+ailment.tier*3;
+    const ch=doCheck('attunement',dc);
+    // Determine diagnosis level: 0=fail, 1=partial (beat DC), 2=full (beat DC by 5+)
+    let diagLevel=0;
+    if(ch.success)diagLevel=ch.total>=dc+5?2:1;
+    // Apothecary level bonus — higher levels diagnose better
+    const apothLv=classLevels.alchemist||0;
+    if(diagLevel<2&&apothLv>=6&&ch.total>=dc-2)diagLevel=Math.max(diagLevel,1);
+    if(diagLevel<2&&apothLv>=10)diagLevel=2; // Lv10 always gets full diagnosis
+    setClinicPatients(prev=>prev.map(p=>p.id===patientId?{...p,examined:true,diagLevel}:p));
+    const diagText=diagLevel===2?ailment.hints.full:diagLevel===1?ailment.hints.partial:ailment.hints.fail;
+    showResult('🩺 Examination — '+patient.patientName,diagLevel>=1?'craft':'info',
+      ailment.icon+' '+ailment.name+'\n'+diagText,ch);
+  };
+
+  const prescribePotion=(patientId,potionId)=>{
+    const patient=clinicPatients.find(p=>p.id===patientId);
+    if(!patient||patient.prescribed)return;
+    if((pots[potionId]||0)<1){addLog('You don\'t have any of that potion in stock.','error');return;}
+    const ailment=CLINIC_AILMENTS.find(a=>a.id===patient.ailmentId);if(!ailment)return;
+    const recipe=RECIPES.find(r=>r.id===potionId);if(!recipe)return;
+    snapshot();
+    // Determine match quality
+    let matchQuality='none';let matchMult=0;
+    if(ailment.great.includes(potionId)){matchQuality='great';matchMult=1.0;}
+    else if(ailment.good.includes(potionId)){matchQuality='good';matchMult=0.6;}
+    else{matchQuality='wrong';matchMult=0;}
+    // Consume the potion
+    setPots(p=>({...p,[potionId]:Math.max(0,(p[potionId]||0)-1)}));
+    // Calculate rewards
+    const baseGold=15+ailment.tier*12;const baseXp=20+ailment.tier*15;
+    const goldReward=Math.floor(baseGold*matchMult*(1+getSkMod('haggling')*0.03));
+    const xpReward=Math.floor(baseXp*matchMult);
+    const repFaction=ailment.tier>=3?'hearthkeepers':['hearthkeepers','cinderfolk','ashwardens'][Math.floor(Math.random()*3)];
+    const repReward=matchQuality==='great'?10+ailment.tier*5:matchQuality==='good'?5:0;
+    if(goldReward>0)setGold(g=>g+goldReward);
+    if(xpReward>0)gainXP(xpReward);
+    if(repReward>0)addRep(repFaction,repReward);
+    // Mark patient as treated
+    setClinicPatients(prev=>prev.map(p=>p.id===patientId?{...p,prescribed:true,matchQuality}:p));
+    // Feedback
+    const GREAT_LINES=['"I feel better already! Bless you, alchemist."','"That\'s exactly what I needed. The pain is fading!"','"*sighs with relief* You really know your craft."'];
+    const GOOD_LINES=['"Hmm... it\'s helping, I think. Not quite right but better than nothing."','"The symptoms are easing. Slowly, but they are."'];
+    const WRONG_LINES=['"I... don\'t think that did anything."','"*grimaces* That\'s not quite hitting the mark, is it?"','"Well, at least it didn\'t make it worse."'];
+    const lines=matchQuality==='great'?GREAT_LINES:matchQuality==='good'?GOOD_LINES:WRONG_LINES;
+    const patientLine=lines[Math.floor(Math.random()*lines.length)];
+    const rewardText=(goldReward>0?'\n+'+goldReward+'g':'')+(xpReward>0?' +'+xpReward+' XP':'')+(repReward>0?' +'+repReward+' '+FACTIONS[repFaction]?.name+' rep':'');
+    showResult('🏥 '+patient.patientName+' — '+(matchQuality==='great'?'Perfect Cure!':matchQuality==='good'?'Partial Relief':'Wrong Remedy'),
+      matchQuality==='great'?'craft':matchQuality==='good'?'info':'error',
+      'Prescribed: '+recipe.icon+' '+recipe.name+'\n'+patientLine+(rewardText?'\n'+rewardText:''));
+  };
+
+  // ═══ VENOMIST CONTRACTS ═══
+  const fulfillContract=(vcId,potencyId)=>{
+    const vc=venomContracts.find(v=>v.id===vcId);if(!vc||vc.fulfilled)return;
+    const contract=VENOM_CONTRACTS.find(c=>c.id===vc.contractId);if(!contract)return;
+    const potency=POTENCY_LEVELS.find(p=>p.id===potencyId);if(!potency)return;
+    // Check ingredients
+    const hasIngr=contract.ingredients.every((id,i)=>(inv[id]||0)>=(contract.ingredientQty[i]||0));
+    if(!hasIngr){addLog('Not enough ingredients to brew this poison.','error');return;}
+    if(hours<1){addLog('Brewing a contract poison takes 1 hour.','error');return;}
+    snapshot();
+    setHours(h=>h-1);
+    // Consume ingredients
+    setInv(p=>{const n={...p};contract.ingredients.forEach((id,i)=>{n[id]=Math.max(0,(n[id]||0)-(contract.ingredientQty[i]||0));});return n;});
+    // Craft check using improvisation
+    const dc=potency.dc;
+    const ch=doCheck('improvisation',dc);
+    const cfb=getFeatureVal('craftBonus');if(cfb){ch.total+=cfb;ch.extras.push({label:'Venomist',val:cfb});}
+    const csb=upEff('craftSkillBonus');if(csb){ch.total+=csb;ch.extras.push({label:'Upgrades',val:csb});}
+    ch.success=ch.total>=dc;
+    if(ch.success){
+      const goldReward=Math.floor(contract.basePay*potency.payMult*(1+getSkMod('haggling')*0.03));
+      const xpReward=Math.floor(contract.baseXp*potency.payMult*0.8);
+      const repReward=Math.floor((8+contract.tier*4)*potency.payMult*0.5);
+      setGold(g=>g+goldReward);gainXP(xpReward);addRep(contract.faction,repReward);
+      setVenomContracts(prev=>prev.map(v=>v.id===vcId?{...v,fulfilled:true,chosenPotency:potencyId,success:true}:v));
+      const SUCC_LINES=['"Deadly work, alchemist. The Wardens are in your debt."','"This will do the job. Payment as agreed."','"*inspects the vial* Potent. Very potent. Well done."'];
+      showResult('☠️ Contract Fulfilled! — '+potency.name+' Potency',
+        'craft',contract.icon+' '+contract.name+'\n'+SUCC_LINES[Math.floor(Math.random()*SUCC_LINES.length)]+
+        '\n+'+goldReward+'g +'+xpReward+' XP +'+repReward+' '+(FACTIONS[contract.faction]?.name||'')+' rep',ch);
+    } else {
+      // Failure — ingredients consumed, no reward
+      setVenomContracts(prev=>prev.map(v=>v.id===vcId?{...v,fulfilled:true,chosenPotency:potencyId,success:false}:v));
+      const FAIL_LINES=['"The mixture is unstable. This won\'t do."','"I can smell it — something\'s off. Too weak."','"*dumps the vial* Back to the drawing board, alchemist."'];
+      showResult('☠️ Contract Failed — '+potency.name+' Potency',
+        'error',contract.icon+' '+contract.name+'\n'+FAIL_LINES[Math.floor(Math.random()*FAIL_LINES.length)]+'\nIngredients consumed. No payment.',ch);
+    }
+  };
+
+  // ═══ RUNESMITH WEAPON FORGING ═══
+  const forgeWeapon=(weaponId,enchantId)=>{
+    const weapon=FORGE_WEAPONS.find(w=>w.id===weaponId);if(!weapon)return;
+    const enchant=ENCHANTMENTS.find(e=>e.id===enchantId);if(!enchant)return;
+    const rsLv=classLevels.enchanter||0;
+    // Check daily forge limit
+    const forgesToday=dayFlags.filter(f=>f==='forge_used').length;
+    const maxForges=rsLv>=10?3:rsLv>=6?2:1;
+    if(forgesToday>=maxForges){addLog(`You can only forge ${maxForges} weapon${maxForges>1?'s':''} per day.`,'error');return;}
+    // Check ingredients
+    const hasMats=Object.entries(weapon.matCost).every(([id,q])=>(inv[id]||0)>=q);
+    if(!hasMats){addLog('Not enough materials to forge this weapon.','error');return;}
+    if(hours<2){addLog('Forging a weapon takes 2 hours.','error');return;}
+    snapshot();
+    setHours(h=>h-2);
+    setDayFlags(f=>[...f,'forge_used']);
+    // Consume materials
+    setInv(p=>{const n={...p};Object.entries(weapon.matCost).forEach(([id,q])=>{n[id]=Math.max(0,(n[id]||0)-q);});return n;});
+    // Step 1: Forging check (Precision)
+    const forgeDC=weapon.forgeDC;
+    const forgeCh=doCheck('precision',forgeDC);
+    const cfb=getFeatureVal('craftBonus');if(cfb){forgeCh.total+=cfb;forgeCh.extras.push({label:'Craft',val:cfb});}
+    forgeCh.success=forgeCh.total>=forgeDC;
+    if(!forgeCh.success){
+      // Forge failure — materials lost
+      const FAIL=['The metal warps under the hammer. The blank is ruined.','A crack splits the blade during tempering. Back to raw ore.','The alloy refuses to hold shape. Your materials are spent.'];
+      showResult('🔨 Forging Failed — '+weapon.name,'error',weapon.icon+' '+weapon.name+'\n'+FAIL[Math.floor(Math.random()*FAIL.length)]+'\nMaterials consumed.',forgeCh);
+      return;
+    }
+    // Step 2: Inscription check (Inscription)
+    const enchDC=enchant.dc||12;
+    const inscCh=doCheck('inscription',enchDC);
+    const eb=getFeatureVal('enchantBonus');if(eb){inscCh.total+=eb;inscCh.extras.push({label:'Runesmith',val:eb});}
+    inscCh.success=inscCh.total>=enchDC;
+    if(!inscCh.success){
+      // Inscription failed — plain weapon, sellable but not special
+      const plainGold=Math.floor(weapon.tier*8+5);
+      setGold(g=>g+plainGold);
+      gainXP(Math.floor(weapon.tier*10));
+      const PARTIAL=['The runes flicker and fade. A solid weapon, but uninscribed.','Your inscription crumbles. The blank is good steel, at least.'];
+      showResult('🔨 Inscription Failed — Plain '+weapon.name,'info',weapon.icon+' '+weapon.name+'\n'+PARTIAL[Math.floor(Math.random()*PARTIAL.length)]+'\nSold as plain weapon: +'+plainGold+'g',inscCh);
+      return;
+    }
+    // Both succeeded! Create a Named Weapon
+    const wName=genWeaponName();
+    const goldValue=Math.floor((weapon.tier*20+enchant.tier*15)*(1+getSkMod('haggling')*0.03+getFeatureVal('enchantGoldBonus')));
+    const xpReward=Math.floor(weapon.tier*15+enchant.tier*12);
+    gainXP(xpReward);
+    const newWeapon={id:'fw_'+Math.random().toString(36).slice(2),name:wName,weaponType:weapon.name,weaponIcon:weapon.icon,
+      enchantId,enchantName:enchant.name,enchantIcon:enchant.icon,tier:Math.max(weapon.tier,enchant.tier||1),
+      goldValue,forgedDay:day,displayed:true};
+    setForgedWeapons(prev=>[...prev,newWeapon]);
+    const SUCC=[`The runes ignite with inner fire. You've created something remarkable.`,`The inscription blazes to life — a weapon worthy of legend.`,`Hammer and rune unite. ${wName} is born.`];
+    showResult('⚔️ Weapon Forged! — '+wName,'craft',
+      weapon.icon+' '+weapon.name+' + '+enchant.icon+' '+enchant.name+'\n'+SUCC[Math.floor(Math.random()*SUCC.length)]+
+      '\nDisplayed in shop window — attracts premium customers.\n+'+xpReward+' XP',forgeCh);
+    addLog(`⚔️ Forged ${weapon.icon}${wName} (${weapon.name} + ${enchant.name}). Displayed in shop.`,'quest');
+  };
+
+  // ═══ WARDKEEPER SHIELD COMMISSIONS ═══
+  const inscribeCommissionLayer=(scId)=>{
+    const sc=shieldCommissions.find(s=>s.id===scId);if(!sc||sc.done)return;
+    const comm=SHIELD_COMMISSIONS.find(c=>c.id===sc.commissionId);if(!comm)return;
+    const layerIdx=sc.layersCompleted+sc.layersFailed;
+    if(layerIdx>=comm.layers.length){return;}
+    const enchId=comm.layers[layerIdx];
+    const enchant=ENCHANTMENTS.find(e=>e.id===enchId);if(!enchant)return;
+    if(hours<1){addLog('Each inscription layer takes 1 hour.','error');return;}
+    snapshot();
+    setHours(h=>h-1);
+    // Inscription check
+    const dc=enchant.dc||12;
+    const ch=doCheck('inscription',dc);
+    const eb=getFeatureVal('enchantBonus');if(eb){ch.total+=eb;ch.extras.push({label:'Wardkeeper',val:eb});}
+    ch.success=ch.total>=dc;
+    if(ch.success){
+      const newCompleted=sc.layersCompleted+1;
+      const totalLayers=comm.layers.length;
+      const allDone=newCompleted+sc.layersFailed>=totalLayers;
+      setShieldCommissions(prev=>prev.map(s=>s.id===scId?{...s,layersCompleted:newCompleted,done:allDone}:s));
+      if(allDone){
+        // Calculate rewards based on completion ratio
+        const ratio=newCompleted/totalLayers;
+        const payMult=ratio>=1?1.0:ratio>=0.66?0.75:0.4;
+        const goldReward=Math.floor(comm.baseGold*payMult*(1+getSkMod('haggling')*0.03+getFeatureVal('enchantGoldBonus')));
+        const xpReward=Math.floor(comm.baseXp*payMult);
+        const repReward=ratio>=1?12+comm.tier*5:ratio>=0.66?6:0;
+        // Bonus referral for perfect completion
+        const referral=ratio>=1;
+        setGold(g=>g+goldReward);gainXP(xpReward);if(repReward>0)addRep(comm.faction,repReward);
+        const PERFECT=['"Every layer holds. This is masterwork — I\'ll send my whole squad to you."','"*tests the wards* Flawless. The Wardens will hear of this."'];
+        const GOOD=['"Most of the wards took. It\'ll do for now. Fair payment."','"Not perfect, but solid enough for the field."'];
+        const PARTIAL=['"*frowns* Only partial protection. I\'ll pay, but not full price."'];
+        const lines=ratio>=1?PERFECT:ratio>=0.66?GOOD:PARTIAL;
+        showResult('🛡️ Commission '+(ratio>=1?'Perfect!':ratio>=0.66?'Good':'Partial')+' — '+sc.clientName,
+          ratio>=1?'craft':'info',
+          comm.icon+' '+comm.name+' · '+newCompleted+'/'+totalLayers+' layers\n'+
+          lines[Math.floor(Math.random()*lines.length)]+
+          '\n+'+goldReward+'g +'+xpReward+' XP'+(repReward>0?' +'+repReward+' '+(FACTIONS[comm.faction]?.name||'')+' rep':'')+
+          (referral?'\n⭐ Referral: +1 commission tomorrow!':''),ch);
+        addLog(`🛡️ Completed ${comm.icon}${comm.name} for ${sc.clientName} — ${newCompleted}/${totalLayers} layers.`,'quest');
+      } else {
+        showResult('🛡️ Layer '+newCompleted+'/'+totalLayers+' — '+enchant.icon+' '+enchant.name,'craft',
+          'Inscription holds! '+(totalLayers-layerIdx-1)+' layer'+(totalLayers-layerIdx-1!==1?'s':'')+' remaining.',ch);
+      }
+    } else {
+      // Layer failed
+      const wkLv=classLevels.enchanter||0;
+      const canRetry=wkLv>=6&&!sc.retryUsed;
+      const newFailed=sc.layersFailed+1;
+      const totalLayers=comm.layers.length;
+      const allDone=sc.layersCompleted+newFailed>=totalLayers;
+      if(canRetry){
+        // Don't count the failure yet — mark retry used, let them try again
+        setShieldCommissions(prev=>prev.map(s=>s.id===scId?{...s,retryUsed:true}:s));
+        showResult('🛡️ Layer Failed — Retry Available!','info',
+          enchant.icon+' '+enchant.name+' — the rune flickered and faded.\nYour expertise allows one retry per commission.',ch);
+      } else {
+        setShieldCommissions(prev=>prev.map(s=>s.id===scId?{...s,layersFailed:newFailed,done:allDone}:s));
+        if(allDone){
+          const ratio=sc.layersCompleted/totalLayers;
+          const payMult=ratio>=0.66?0.75:ratio>0?0.4:0;
+          const goldReward=Math.floor(comm.baseGold*payMult);
+          const xpReward=Math.floor(comm.baseXp*0.3);
+          if(goldReward>0)setGold(g=>g+goldReward);gainXP(xpReward);
+          showResult('🛡️ Commission Complete — '+sc.clientName,'info',
+            comm.icon+' '+comm.name+' · '+sc.layersCompleted+'/'+totalLayers+' layers\n'+
+            (sc.layersCompleted>0?'"It\'s not what I hoped, but it\'ll have to do."':'"*shakes head* I can\'t use this. Partial payment for your time."')+
+            (goldReward>0?'\n+'+goldReward+'g':'')+(xpReward>0?' +'+xpReward+' XP':''),ch);
+        } else {
+          showResult('🛡️ Layer Failed — '+enchant.icon+' '+enchant.name,'error',
+            'The inscription crumbles. Moving to next layer.\n'+(totalLayers-sc.layersCompleted-newFailed)+' layer'+(totalLayers-sc.layersCompleted-newFailed!==1?'s':'')+' remaining.',ch);
+        }
+      }
+    }
+  };
+
+  // ═══ SPELLWEAVER PLANAR ATTUNEMENT ═══
+  const attunePlane=(planeId)=>{
+    const swLv=classLevels.enchanter||0;
+    const canDual=swLv>=10;
+    const duration=swLv>=6?2:1;
+    // Check if already attuned to this plane
+    if(planarFocus&&planarFocus.planeIds.includes(planeId)){addLog('Already attuned to this plane.','info');return;}
+    // If dual attunement (Lv10), add to existing
+    if(canDual&&planarFocus&&planarFocus.planeIds.length===1&&planarFocus.expiresDay>day){
+      const newIds=[...planarFocus.planeIds,planeId].sort();
+      setPlanarFocus({planeIds:newIds,expiresDay:day+duration});
+      const combo=PLANAR_COMBOS[newIds.join('+')];
+      const p=PLANAR_FOCUSES.find(f=>f.id===planeId);
+      showResult('🌀 Planar Convergence!','craft',
+        (combo?combo.icon+' '+combo.name+'\n'+combo.desc:p.icon+' '+p.name+' added')+
+        '\nAttunement lasts '+duration+' day'+(duration>1?'s':'')+'.','');
+      addLog(`🌀 Convergence: ${combo?combo.icon+combo.name:p.name}. Active for ${duration} day${duration>1?'s':''}.`,'quest');
+      return;
+    }
+    // New attunement
+    const plane=PLANAR_FOCUSES.find(f=>f.id===planeId);if(!plane)return;
+    setPlanarFocus({planeIds:[planeId],expiresDay:day+duration});
+    showResult('🌀 Planar Attunement — '+plane.icon+' '+plane.name,'craft',
+      plane.flavor+'\n\n'+plane.desc+'\nActive for '+duration+' day'+(duration>1?'s':'')+'.','');
+    addLog(`🌀 Attuned to ${plane.icon}${plane.name}. Active for ${duration} day${duration>1?'s':''}.`,'info');
+  };
+  const getActivePlanes=()=>{
+    if(!planarFocus||planarFocus.expiresDay<=day)return[];
+    return planarFocus.planeIds;
+  };
+  const getPlanarCombo=()=>{
+    const ids=getActivePlanes();
+    if(ids.length<2)return null;
+    return PLANAR_COMBOS[ids.sort().join('+')]||null;
+  };
+
+  // ═══ CONSTRUCTOR BLUEPRINTS ═══
+  const getBPSlots=()=>{const cLv=classLevels.artificer||0;return cLv>=10?6:cLv>=6?4:2;};
+  const hasSanctum=()=>blueprints.some(b=>b.bpId==='bp_sanctum'&&b.complete);
+  const getCompletedBPs=()=>blueprints.filter(b=>b.complete);
+  const draftBlueprint=(bpId)=>{
+    const bp=CONSTRUCTOR_BPS.find(b=>b.id===bpId);if(!bp)return;
+    if(blueprints.find(b=>b.bpId===bpId)){addLog('You already have this blueprint.','error');return;}
+    const activeCount=blueprints.length;
+    if(activeCount>=getBPSlots()){addLog(`You can only have ${getBPSlots()} active blueprints.`,'error');return;}
+    if(bp.legendary&&(classLevels.artificer||0)<10){addLog('Legendary blueprints require Artificer Lv10.','error');return;}
+    if(hours<1){addLog('Drafting a blueprint takes 1 hour.','error');return;}
+    snapshot();
+    setHours(h=>h-1);
+    const ch=doCheck('research',bp.draftDC);
+    const cfb=getFeatureVal('craftBonus');if(cfb){ch.total+=cfb;ch.extras.push({label:'Craft',val:cfb});}
+    ch.success=ch.total>=bp.draftDC;
+    if(!ch.success){
+      showResult('🏗️ Draft Failed — '+bp.name,'error',bp.icon+' '+bp.desc+'\nThe calculations don\'t add up. Try again tomorrow.',ch);return;
+    }
+    setBlueprints(prev=>[...prev,{id:'bp_'+Math.random().toString(36).slice(2),bpId,drafted:true,buildProgress:0,complete:false}]);
+    gainXP(bp.draftDC*3);
+    showResult('🏗️ Blueprint Drafted! — '+bp.icon+' '+bp.name,'craft',
+      bp.desc+'\nReady to build — '+bp.buildSessions+' build sessions required.\nEffect: '+bp.effectDesc,ch);
+    addLog(`🏗️ Drafted blueprint for ${bp.icon}${bp.name}. ${bp.buildSessions} sessions to build.`,'quest');
+  };
+  const buildBlueprint=(blueprintId)=>{
+    const entry=blueprints.find(b=>b.id===blueprintId);if(!entry||entry.complete)return;
+    const bp=CONSTRUCTOR_BPS.find(b=>b.id===entry.bpId);if(!bp)return;
+    const cLv=classLevels.artificer||0;
+    const hourCost=cLv>=6?0.5:1;const sanctumBonus=hasSanctum()&&entry.bpId!=='bp_sanctum';
+    const sessionsNeeded=sanctumBonus?Math.ceil(bp.buildSessions/2):bp.buildSessions;
+    if(hours<hourCost){addLog(`Building takes ${hourCost} hour${hourCost<1?'s':''}.`,'error');return;}
+    // Check materials (cost spread across sessions)
+    const sessionFrac=1/sessionsNeeded;
+    const matCheck={};Object.entries(bp.matCost).forEach(([id,q])=>{matCheck[id]=Math.max(1,Math.ceil(q*sessionFrac));});
+    const hasMats=Object.entries(matCheck).every(([id,q])=>(inv[id]||0)>=q);
+    if(!hasMats){addLog('Not enough materials for this build session.','error');return;}
+    snapshot();
+    setHours(h=>h-hourCost);
+    setInv(p=>{const n={...p};Object.entries(matCheck).forEach(([id,q])=>{n[id]=Math.max(0,(n[id]||0)-q);});return n;});
+    const ch=doCheck('precision',bp.draftDC-2);
+    const cfb=getFeatureVal('craftBonus');if(cfb){ch.total+=cfb;ch.extras.push({label:'Craft',val:cfb});}
+    ch.success=ch.total>=(bp.draftDC-2);
+    if(!ch.success){
+      showResult('🏗️ Build Session — '+bp.name,'info',bp.icon+' The work is slow today. No progress, but no damage either.\nProgress: '+entry.buildProgress+'/'+sessionsNeeded,ch);return;
+    }
+    const newProg=entry.buildProgress+1;
+    const done=newProg>=sessionsNeeded;
+    setBlueprints(prev=>prev.map(b=>b.id===blueprintId?{...b,buildProgress:newProg,complete:done}:b));
+    gainXP(Math.floor(bp.draftDC*2));
+    if(done){
+      showResult('🏗️ Construction Complete! — '+bp.icon+' '+bp.name,'craft',
+        '🎉 '+bp.desc+'\n\nEffect now active: '+bp.effectDesc,ch);
+      addLog(`🏗️ Completed ${bp.icon}${bp.name}! ${bp.effectDesc}`,'quest');
+    } else {
+      const PROG=['Walls going up. Good progress.','Foundation is solid. Moving to the frame.','The structure takes shape.','Another day of honest work.'];
+      showResult('🏗️ Build Session — '+bp.icon+' '+bp.name,'craft',
+        PROG[Math.floor(Math.random()*PROG.length)]+'\nProgress: '+newProg+'/'+sessionsNeeded,ch);
+    }
+  };
+
+  // ═══ RECLAIMER DECONSTRUCTION LAB ═══
+  const breakdownPotion=(potionId)=>{
+    if((pots[potionId]||0)<1){addLog('No potions of that type in stock.','error');return;}
+    const recipe=RECIPES.find(r=>r.id===potionId);if(!recipe)return;
+    if(hours<1){addLog('Breaking down a potion takes 1 hour.','error');return;}
+    snapshot();setHours(h=>h-1);
+    setPots(p=>({...p,[potionId]:Math.max(0,(p[potionId]||0)-1)}));
+    const rcLv=classLevels.artificer||0;
+    // Lv6+ = 100% recovery, else precision check determines yield
+    let recoveryPct=1.0;
+    if(rcLv<6){
+      const ch=doCheck('precision',10);
+      const cfb=getFeatureVal('craftBonus');if(cfb){ch.total+=cfb;}
+      recoveryPct=ch.success?(ch.total>=15?0.75:0.50):0.25;
+    }
+    // Lv10 = 150% yield
+    if(rcLv>=10)recoveryPct=1.5;
+    const recovered={};
+    recipe.ingr.forEach(id=>{if(Math.random()<recoveryPct){recovered[id]=(recovered[id]||0)+1;}});
+    // Guarantee at least 1 ingredient
+    if(Object.keys(recovered).length===0){const id=recipe.ingr[0];recovered[id]=1;}
+    setInv(p=>{const n={...p};Object.entries(recovered).forEach(([id,q])=>{n[id]=(n[id]||0)+q;});return n;});
+    gainXP(Math.floor(recipe.xp*0.3));
+    const recStr=Object.entries(recovered).map(([id,q])=>(INGR[id]?.icon||id)+'×'+q).join(' ');
+    showResult('♻️ Potion Breakdown — '+recipe.icon+' '+recipe.name,'craft',
+      'Recovered: '+recStr+'\n+'+Math.floor(recipe.xp*0.3)+' XP');
+  };
+  const reclaimerTransmute=(srcId,tgtId)=>{
+    const rcLv=classLevels.artificer||0;
+    const ratio=rcLv>=6?2:3;
+    if((inv[srcId]||0)<ratio){addLog(`Need ${ratio} of that ingredient to transmute.`,'error');return;}
+    if(hours<1){addLog('Transmutation takes 1 hour.','error');return;}
+    snapshot();setHours(h=>h-1);
+    setInv(p=>({...p,[srcId]:Math.max(0,(p[srcId]||0)-ratio),[tgtId]:(p[tgtId]||0)+1}));
+    gainXP(8);
+    showResult('♻️ Transmuted!','craft',(INGR[srcId]?.icon||srcId)+'×'+ratio+' → '+(INGR[tgtId]?.icon||tgtId)+'×1\n+8 XP');
+  };
+  const doSalvageAuction=(items)=>{
+    // items = {ingredientId: qty, ...}
+    const totalItems=Object.values(items).reduce((s,v)=>s+v,0);
+    if(totalItems<1)return;
+    if(dayFlags.includes('salvage_auction_used')){addLog('Salvage auction already used today.','error');return;}
+    snapshot();
+    setDayFlags(f=>[...f,'salvage_auction_used']);
+    setInv(p=>{const n={...p};Object.entries(items).forEach(([id,q])=>{n[id]=Math.max(0,(n[id]||0)-q);});return n;});
+    const rcLv=classLevels.artificer||0;
+    // Gold based on ingredient rarity
+    let goldTotal=0;let xpTotal=0;
+    Object.entries(items).forEach(([id,q])=>{
+      const ingr=INGR[id];const rarity=ingr?.tier||1;
+      goldTotal+=q*(2+rarity*3);xpTotal+=q*(1+rarity*2);
+    });
+    setGold(g=>g+goldTotal);gainXP(xpTotal);
+    // Lv10: chance of rare ingredient trade
+    let tradeResult='';
+    if(rcLv>=10&&Math.random()<0.35){
+      const rareIngr=['moonpetal','volcanic_essence','embervein','starwort','deep_crystal','ashite'];
+      const tradeId=rareIngr[Math.floor(Math.random()*rareIngr.length)];
+      setInv(p=>({...p,[tradeId]:(p[tradeId]||0)+1}));
+      tradeResult='\n⭐ The buyer offers a trade: '+(INGR[tradeId]?.icon||tradeId)+' '+(INGR[tradeId]?.name||tradeId)+'!';
+    }
+    showResult('♻️ Salvage Auction','craft',
+      'Sold '+totalItems+' ingredients in bulk.\n+'+goldTotal+'g +'+xpTotal+' XP'+tradeResult);
+  };
+
+  // ═══ TINKERER GADGETS ═══
+  const getGadgetSlots=()=>{const tkLv=classLevels.artificer||0;return tkLv>=10?6:tkLv>=6?4:2;};
+  const getMaxMk=()=>{const tkLv=classLevels.artificer||0;return tkLv>=10?3:tkLv>=6?2:1;};
+  const getGadgetEffect=(effectKey)=>{
+    return gadgets.filter(g=>g.equipped).reduce((sum,g)=>{
+      const bp=GADGET_BLUEPRINTS.find(b=>b.id===g.blueprintId);if(!bp||bp.effect!==effectKey)return sum;
+      const val=bp.values[g.mk-1];return val?sum+(typeof val==='number'?val:0):sum;
+    },0);
+  };
+  const craftGadget=(bpId)=>{
+    const bp=GADGET_BLUEPRINTS.find(b=>b.id===bpId);if(!bp)return;
+    // Check if already own this gadget
+    const existing=gadgets.find(g=>g.blueprintId===bpId);
+    if(existing){addLog('You already own a '+bp.name+'. Try upgrading it instead.','error');return;}
+    if(bp.legendary&&getMaxMk()<3){addLog('Legendary gadgets require Tinkerer Lv10.','error');return;}
+    const hasMats=Object.entries(bp.matCost).every(([id,q])=>(inv[id]||0)>=q);
+    if(!hasMats){addLog('Not enough materials to craft '+bp.name+'.','error');return;}
+    if(hours<2){addLog('Crafting a gadget takes 2 hours.','error');return;}
+    snapshot();
+    setHours(h=>h-2);
+    setInv(p=>{const n={...p};Object.entries(bp.matCost).forEach(([id,q])=>{n[id]=Math.max(0,(n[id]||0)-q);});return n;});
+    const ch=doCheck('precision',bp.dc);
+    const cfb=getFeatureVal('craftBonus');if(cfb){ch.total+=cfb;ch.extras.push({label:'Craft',val:cfb});}
+    ch.success=ch.total>=bp.dc;
+    if(!ch.success){
+      showResult('⚙️ Gadget Failed — '+bp.name,'error',bp.icon+' '+bp.desc+'\nThe mechanism jams. Materials consumed.',ch);return;
+    }
+    const equipped=gadgets.filter(g=>g.equipped).length<getGadgetSlots();
+    setGadgets(prev=>[...prev,{id:'gd_'+Math.random().toString(36).slice(2),blueprintId:bpId,mk:1,equipped}]);
+    gainXP(bp.dc*5);
+    showResult('⚙️ Gadget Crafted! — '+bp.icon+' '+bp.name+' Mk I','craft',
+      bp.desc+'\nEffect: '+bp.effectDesc[0]+(equipped?'\nAuto-equipped!':'\nSlots full — equip from gadget bench.'),ch);
+    addLog(`⚙️ Built ${bp.icon}${bp.name} Mk I. ${bp.effectDesc[0]}`,'quest');
+  };
+  const upgradeGadget=(gadgetId)=>{
+    const g=gadgets.find(x=>x.id===gadgetId);if(!g)return;
+    const bp=GADGET_BLUEPRINTS.find(b=>b.id===g.blueprintId);if(!bp)return;
+    const maxMk=getMaxMk();
+    if(g.mk>=maxMk){addLog('Max upgrade level reached for current Tinkerer level.','error');return;}
+    // Upgrade costs scaled materials
+    const costMult=g.mk+1;
+    const hasMats=Object.entries(bp.matCost).every(([id,q])=>(inv[id]||0)>=q*costMult);
+    if(!hasMats){addLog(`Upgrading to Mk ${g.mk+1} requires ${costMult}× base materials.`,'error');return;}
+    if(hours<1){addLog('Upgrading a gadget takes 1 hour.','error');return;}
+    snapshot();
+    setHours(h=>h-1);
+    setInv(p=>{const n={...p};Object.entries(bp.matCost).forEach(([id,q])=>{n[id]=Math.max(0,(n[id]||0)-q*costMult);});return n;});
+    const newMk=g.mk+1;
+    setGadgets(prev=>prev.map(x=>x.id===gadgetId?{...x,mk:newMk}:x));
+    gainXP(bp.dc*3*newMk);
+    showResult('⚙️ Upgraded! — '+bp.icon+' '+bp.name+' Mk '+['I','II','III'][newMk-1],'craft',
+      'Effect: '+bp.effectDesc[newMk-1],'');
+    addLog(`⚙️ Upgraded ${bp.icon}${bp.name} to Mk ${['I','II','III'][newMk-1]}. ${bp.effectDesc[newMk-1]}`,'quest');
+  };
+  const toggleGadget=(gadgetId)=>{
+    const g=gadgets.find(x=>x.id===gadgetId);if(!g)return;
+    if(g.equipped){setGadgets(prev=>prev.map(x=>x.id===gadgetId?{...x,equipped:false}:x));return;}
+    const equipped=gadgets.filter(x=>x.equipped).length;
+    if(equipped>=getGadgetSlots()){addLog('All gadget slots are full. Unequip one first.','error');return;}
+    setGadgets(prev=>prev.map(x=>x.id===gadgetId?{...x,equipped:true}:x));
+  };
+
   // ─── SHOP SHELVES ───
   const baseShelf=(hasUp('display')?12:hasUp('shopfront')?8:4)+getSkMod('stockpiling')*2;
   const SHELF_MAX=Math.floor(baseShelf*(1+getFeatureVal('shelfCapacityBonus'))*(getFeatureVal('doubleStorage')?2:1));
@@ -2431,6 +3347,31 @@ function CindervaleAlchemistInner(){
     if(q.id==='fc_hk3')earnMilestone('hk_chain');
     if(q.id==='fc_vw3')earnMilestone('vw_chain');
     if(q.id==='fc_cf3')earnMilestone('cf_chain');
+    // ═══ ARCHIVIST LORE FRAGMENT DISCOVERY ═══
+    if(specs.scholar==='archivist'){
+      const arcLv=classLevels.scholar||0;
+      const fragChance=arcLv>=10?0.50:arcLv>=6?0.40:0.30;
+      if(Math.random()<fragChance){
+        const qFaction=q.faction?[q.faction]:['hearthkeepers'];
+        const undiscovered=ALL_LORE_FRAGMENTS.filter(f=>!loreFragments.includes(f.id)&&f.factions.some(ff=>qFaction.includes(ff)));
+        if(undiscovered.length>0){
+          const frag=undiscovered[Math.floor(Math.random()*undiscovered.length)];
+          setLoreFragments(prev=>[...prev,frag.id]);
+          const chain=LORE_CHAINS[frag.chainId];
+          const chainFrags=chain.fragments.map(f=>f.id);
+          const nowComplete=chainFrags.every(fid=>fid===frag.id||loreFragments.includes(fid));
+          const fragXp=arcLv>=6?40:20;
+          gainXP(fragXp);
+          addLog(`📜 Lore Fragment: "${frag.name}" — ${frag.desc} (+${fragXp}XP)`,'quest');
+          if(nowComplete){
+            addLog(`📜 LORE CHAIN COMPLETE: ${chain.icon} ${chain.name}! ${chain.rewardDesc}`,'level');
+            showResult('📜 Lore Chain Complete!','craft',chain.icon+' '+chain.name+'\n\n'+chain.desc+'\n\nReward: '+chain.rewardDesc);
+          } else {
+            showResult('📜 Lore Fragment Discovered','info',chain.icon+' '+chain.name+'\n"'+frag.name+'"\n\n'+frag.desc+'\n+'+fragXp+' XP');
+          }
+        }
+      }
+    }
   };
   const availQ=QUESTS.filter(q=>!doneQ.includes(q.id)&&!aQ.find(a=>a.id===q.id)&&level>=q.unlock&&(!q.fReq||getRL(q.faction)>=q.fReq)&&(!q.reqQuest||doneQ.includes(q.reqQuest)));
 
@@ -2460,6 +3401,19 @@ function CindervaleAlchemistInner(){
     if(bq.faction){const fRes=FACTIONS[bq.faction]?.res;if(fRes){const dropChance=getFeatureVal('factionBonusDrop_'+fRes);if(dropChance>0&&Math.random()<dropChance){modInv(fRes,1);addLog(`✨ Faction bonus: +1 ${INGR[fRes]?.icon||''} ${INGR[fRes]?.name||fRes} from ${FACTIONS[bq.faction].name} reputation!`,'info');}}}
     addLog(`✅ Board request complete: ${bq.name} — +${bq.gold}g, +${bq.xp}XP${bq.faction?' | '+FACTIONS[bq.faction]?.icon+'+'+Math.floor(bq.fRep*bqRepB)+' rep':''}`,'quest');
     if(doneBQCount+1>=20)earnMilestone('board_veteran');
+    // Archivist lore fragment from board quests
+    if(specs.scholar==='archivist'){
+      const arcLv=classLevels.scholar||0;const fragChance=arcLv>=10?0.50:arcLv>=6?0.40:0.30;
+      if(Math.random()<fragChance){
+        const bqFaction=bq.faction?[bq.faction]:['hearthkeepers'];
+        const undiscovered=ALL_LORE_FRAGMENTS.filter(f=>!loreFragments.includes(f.id)&&f.factions.some(ff=>bqFaction.includes(ff)));
+        if(undiscovered.length>0){const frag=undiscovered[Math.floor(Math.random()*undiscovered.length)];
+          setLoreFragments(prev=>[...prev,frag.id]);const chain=LORE_CHAINS[frag.chainId];const fragXp=arcLv>=6?40:20;gainXP(fragXp);
+          addLog(`📜 Lore Fragment: "${frag.name}" (+${fragXp}XP)`,'quest');
+          showResult('📜 Lore Fragment','info',chain.icon+' '+chain.name+'\n"'+frag.name+'"\n\n'+frag.desc+'\n+'+fragXp+' XP');
+        }
+      }
+    }
     showResult('📌 Request Fulfilled!','quest',`${bq.giver}: "${bq.itemIcon}${bq.itemName} received. Much appreciated!"\n+${bq.gold}g  +${bq.xp}XP`+(bq.faction?'\n+'+bq.fRep+' '+FACTIONS[bq.faction]?.name+' rep':''));
   };
   const abandonBQ=(bq)=>{setActiveBQ(p=>p.filter(q=>q.id!==bq.id));addLog(`📌 Abandoned: ${bq.name}`,'info');};
@@ -2634,7 +3588,8 @@ function CindervaleAlchemistInner(){
       });
       eff=Math.max(0.2,Math.min(eff,3.0));
       const traitXpMult=(ap.traits||[]).reduce((m,t)=>m*(1+(TRAIT_FX[t]?.xpMult||0)),1);
-      const axp=sxpMult*traitXpMult;
+      const trainingRoomMult=blueprints.some(b=>b.bpId==='bp_training'&&b.complete)?(blueprints.some(b=>b.bpId==='bp_sanctum'&&b.complete)?3:2):1;
+      const axp=sxpMult*traitXpMult*trainingRoomMult;
       if(task.type==='forage'&&task.target){
         const reg=REGIONS.find(r=>r.id===task.target);
         if(reg&&level>=regUnlock(reg)){
@@ -2914,6 +3869,117 @@ function CindervaleAlchemistInner(){
     // Faction standing
     const facLines=Object.entries(FACTIONS).map(([fid,f])=>{const rep=fRep[fid]||0;const rl=getRepLvl(rep);const nxt=rl<REP_TH.length-1?REP_TH[rl+1]:null;return{icon:f.icon,label:f.name+' — '+REP_LVS[rl],val:nxt?rep+'/'+nxt:'MAX',color:factionAlign===fid?f.color:TH.textDim};});
     mrSections.push({title:'🏛️ Faction Standing',lines:facLines});
+    // ═══ CLOCKWORK ASSISTANT (Tinkerer gadget) ═══
+    const clockworkGadget=gadgets.find(g=>g.blueprintId==='gd_assistant'&&g.equipped);
+    if(clockworkGadget){
+      const mk=clockworkGadget.mk;const starRating=mk>=3?2:mk>=2?1:0;
+      const eff=0.5+starRating*0.2;const clockLines=[];
+      // Pick a random task
+      const tasks=['brew','forage','shopkeep'];const task=tasks[Math.floor(Math.random()*tasks.length)];
+      if(task==='brew'&&Object.keys(pots).length>0){
+        // Brew a random known potion
+        const brewable=RECIPES.filter(r=>known.includes(r.id)&&r.ingr.every(id=>(inv[id]||0)>=1));
+        if(brewable.length>0){const r=brewable[Math.floor(Math.random()*brewable.length)];
+          if(Math.random()<eff){
+            setInv(p=>{const n={...p};r.ingr.forEach(id=>{n[id]=Math.max(0,(n[id]||0)-1);});return n;});
+            setPots(p=>({...p,[r.id]:(p[r.id]||0)+1}));
+            clockLines.push({icon:'🤖',label:'Brewed '+r.icon+r.name,val:'×1',color:TH.green});
+          } else {clockLines.push({icon:'🤖',label:'Attempted '+r.icon+r.name+' — failed',val:'',color:TH.red});}
+        } else {clockLines.push({icon:'🤖',label:'No brewable recipes available',val:'idle',color:TH.textDim});}
+      } else if(task==='forage'){
+        const common=['ashbloom','embercap','ironroot_bark','char_root','bark_resin'];
+        const found=Math.max(1,Math.floor(eff*2));
+        const items={};for(let i=0;i<found;i++){const id=common[Math.floor(Math.random()*common.length)];items[id]=(items[id]||0)+1;}
+        setInv(p=>{const n={...p};Object.entries(items).forEach(([id,q])=>{n[id]=(n[id]||0)+q;});return n;});
+        clockLines.push({icon:'🤖',label:'Gathered ingredients',val:Object.entries(items).map(([id,q])=>(INGR[id]?.icon||id)+'×'+q).join(' '),color:TH.green});
+      } else {
+        const shopGold=Math.floor(5+starRating*5+Math.random()*10);
+        setGold(g=>g+shopGold);
+        clockLines.push({icon:'🤖',label:'Tended shop',val:'+'+shopGold+'g',color:TH.gold});
+      }
+      if(clockLines.length>0)mrSections.push({title:'🤖 Clockwork Assistant'+(starRating>0?' '+'★'.repeat(starRating):''),lines:clockLines});
+    }
+    // ═══ CONSTRUCTOR BLUEPRINT MORNING EFFECTS ═══
+    const completedBPs=blueprints.filter(b=>b.complete);
+    if(completedBPs.length>0){
+      const bpLines=[];const sanctum=completedBPs.find(b=>b.bpId==='bp_sanctum');const mult=sanctum?1.5:1;
+      // Rain Collector
+      const rain=completedBPs.find(b=>b.bpId==='bp_rain');
+      if(rain){const n=Math.floor(2*mult);const common=['ashbloom','embercap','ironroot_bark','char_root','bark_resin','ash_salt','cinder_moss','ember_petal'];
+        const items={};for(let i=0;i<n;i++){const id=common[Math.floor(Math.random()*common.length)];items[id]=(items[id]||0)+1;}
+        setInv(p=>{const nn={...p};Object.entries(items).forEach(([id,q])=>{nn[id]=(nn[id]||0)+q;});return nn;});
+        bpLines.push({icon:'💧',label:'Rain Collector',val:Object.entries(items).map(([id,q])=>(INGR[id]?.icon||id)+'×'+q).join(' '),color:TH.green});}
+      // Supply Tunnel
+      const tunnel=completedBPs.find(b=>b.bpId==='bp_tunnel');
+      if(tunnel){const n=Math.floor(3*mult);const mid=['moonpetal','gloomcap','ashite','volcanic_essence','ironroot_bark','hearthstone','embercap'];
+        const items={};for(let i=0;i<n;i++){const id=mid[Math.floor(Math.random()*mid.length)];items[id]=(items[id]||0)+1;}
+        setInv(p=>{const nn={...p};Object.entries(items).forEach(([id,q])=>{nn[id]=(nn[id]||0)+q;});return nn;});
+        bpLines.push({icon:'🚇',label:'Supply Tunnel',val:Object.entries(items).map(([id,q])=>(INGR[id]?.icon||id)+'×'+q).join(' '),color:TH.green});}
+      // Automaton Forge
+      const auto=completedBPs.find(b=>b.bpId==='bp_automaton');
+      if(auto){const brewable=RECIPES.filter(r=>known.includes(r.id)&&r.ingr.every(id=>(inv[id]||0)>=1));
+        if(brewable.length>0){const r=brewable[Math.floor(Math.random()*brewable.length)];
+          setInv(p=>{const nn={...p};r.ingr.forEach(id=>{nn[id]=Math.max(0,(nn[id]||0)-1);});return nn;});
+          setPots(p=>({...p,[r.id]:(p[r.id]||0)+1}));
+          bpLines.push({icon:'🤖',label:'Automaton Forge',val:'Brewed '+r.icon+r.name,color:TH.green});
+        } else {bpLines.push({icon:'🤖',label:'Automaton Forge',val:'No ingredients available',color:TH.textDim});}}
+      // Training Room (effect applied in staff processing)
+      const train=completedBPs.find(b=>b.bpId==='bp_training');
+      if(train)bpLines.push({icon:'🎓',label:'Training Room',val:'Staff XP ×'+Math.floor(2*mult),color:TH.gold});
+      if(bpLines.length>0)mrSections.push({title:'🏗️ Constructor Projects',lines:bpLines});
+    }
+    // ═══ RANGER COMPANION MORNING EFFECTS ═══
+    if(companions.length>0){
+      const compLines=[];
+      companions.filter(c=>c.active).forEach(c=>{
+        const comp=RANGER_COMPANIONS.find(r=>r.id===c.compId);if(!comp)return;
+        const loy=c.loyalty;
+        const effMult=loy>=5?1.5:loy>=4?1.0:loy>=3?1.0:loy>=2?0.75:0.5;
+        // Primary abilities
+        if(comp.primary.type==='gather'){
+          const yield_=comp.primary.baseYield[Math.min(loy-1,4)];
+          const items={};for(let i=0;i<yield_;i++){const id=comp.primary.ingr[Math.floor(Math.random()*comp.primary.ingr.length)];items[id]=(items[id]||0)+1;}
+          setInv(p=>{const n={...p};Object.entries(items).forEach(([id,q])=>{n[id]=(n[id]||0)+q;});return n;});
+          compLines.push({icon:comp.icon,label:comp.name+' gathered',val:Object.entries(items).map(([id,q])=>(INGR[id]?.icon||id)+'×'+q).join(' '),color:TH.green});
+        } else if(comp.primary.type==='shop'){
+          const g=comp.primary.baseGold[Math.min(loy-1,4)];setGold(gg=>gg+g);
+          compLines.push({icon:comp.icon,label:comp.name+' tended shop',val:'+'+g+'g',color:TH.gold});
+        } else if(comp.primary.type==='staff_morale'){
+          const morBoost=comp.primary.values[Math.min(loy-1,4)];
+          setHiredAppr(prev=>prev.map(a=>({...a,morale:Math.min(100,(a.morale||50)+morBoost)})));
+          compLines.push({icon:comp.icon,label:comp.name+' boosted morale',val:'+'+morBoost+'% all staff',color:TH.green});
+        } else if(comp.primary.type==='customers'){
+          const extra=comp.primary.values[Math.min(loy-1,4)];
+          if(extra>0)compLines.push({icon:comp.icon,label:comp.name+' attracted customers',val:'+'+extra+' today',color:TH.gold});
+        } else if(comp.primary.type==='research'){
+          const bonus=comp.primary.values[Math.min(loy-1,4)];
+          compLines.push({icon:comp.icon,label:comp.name+' sharpened focus',val:'+'+(bonus*100).toFixed(0)+'% discovery',color:'#9080c0'});
+        } else if(comp.primary.type==='danger_reduce'){
+          const pct=comp.primary.values[Math.min(loy-1,4)];
+          compLines.push({icon:comp.icon,label:comp.name+' scouting',val:'-'+(pct*100).toFixed(0)+'% danger',color:'#6090c0'});
+        }
+        // Secondary abilities (loyalty 3+)
+        if(loy>=3&&comp.secondary){
+          if(comp.secondary.type==='organize'&&comp.id==='rc_monkey'){
+            compLines.push({icon:'📦',label:'Organized shelves',val:'+'+loy+' capacity',color:TH.textDim});
+          } else if(comp.secondary.type==='xp_aura'&&comp.id==='rc_moth'){
+            compLines.push({icon:'✨',label:'Muse aura',val:'+5% XP',color:'#9080c0'});
+          } else if(comp.secondary.type==='morale_aura'&&comp.id==='rc_hound'){
+            setHiredAppr(prev=>prev.map(a=>({...a,morale:Math.min(100,(a.morale||50)+5)})));
+            compLines.push({icon:'❤️',label:'Hound cheered staff',val:'+5% morale',color:TH.green});
+          }
+        }
+      });
+      // Loyalty increases — +1 per day for active companions (every 3 days)
+      setCompanions(prev=>prev.map(c=>{
+        if(!c.active||c.loyalty>=5)return c;
+        const daysActive=(day+1)-c.tamedDay;
+        const newLoy=Math.min(5,1+Math.floor(daysActive/3));
+        if(newLoy>c.loyalty)compLines.push({icon:'❤️',label:RANGER_COMPANIONS.find(r=>r.id===c.compId)?.name||'Companion',val:'Loyalty → '+newLoy+' '+'★'.repeat(newLoy),color:TH.gold});
+        return{...c,loyalty:Math.max(c.loyalty,newLoy)};
+      }));
+      if(compLines.length>0)mrSections.push({title:'🦊 Companions',lines:compLines});
+    }
     // Always show morning report
     const MR_FLAVOR=['Dawn breaks over Cindervale. Smoke curls from the workshop chimney.','The morning bell rings across the village square.','Another day begins — the scent of ash and hearthfire fills the air.','Birdsong mixes with the distant clang of the smithy as you open shop.','Mist clings to the cobblestones as Cindervale stirs to life.','The sun crests the eastern ridge, painting the rooftops in amber.','A cool breeze carries the scent of ashbloom through the village.','You wake to the rhythmic tapping of the notice board being updated.'];
     setMorningReport({dayNum:day+1,sections:mrSections,baseH,flavor:MR_FLAVOR[Math.floor(Math.random()*MR_FLAVOR.length)]});
@@ -2952,6 +4018,14 @@ function CindervaleAlchemistInner(){
   if(readyQ.length>0)readyQ.forEach(q=>alerts.push({text:`"${q.name}" is complete! ${q.giver} awaits your return.`,to:q.loc==='market'?'market':'tavern',label:q.loc==='market'?`🛒 ${q.giver}`:`🍺 ${q.giver}`,npc:q.giver.toLowerCase()}));
   if(enchQ.length>0)alerts.push({text:enchQ.length+' enchant customer'+(enchQ.length>1?'s':'')+' waiting.',to:'enchant',label:'✨ Enchant'});
   if(potCustQ.length>0)alerts.push({text:potCustQ.length+' potion order'+(potCustQ.length>1?'s':'')+' waiting.',to:'enchant',label:'🧪 Orders'});
+  const clinicWaiting=clinicPatients.filter(p=>!p.prescribed).length;
+  if(clinicWaiting>0)alerts.push({text:clinicWaiting+' clinic patient'+(clinicWaiting!==1?'s':'')+' waiting.',to:'workshop',label:'🏥 Clinic'});
+  const contractsActive=venomContracts.filter(v=>!v.fulfilled).length;
+  if(contractsActive>0)alerts.push({text:contractsActive+' venom contract'+(contractsActive!==1?'s':'')+' available.',to:'workshop',label:'☠️ Contracts'});
+  const contractsWaiting=venomContracts.filter(c=>!c.fulfilled).length;
+  if(contractsWaiting>0)alerts.push({text:contractsWaiting+' venom contract'+(contractsWaiting!==1?'s':'')+' available.',to:'workshop',label:'☠️ Contracts'});
+  const commissionsWaiting=shieldCommissions.filter(c=>!c.done).length;
+  if(commissionsWaiting>0)alerts.push({text:commissionsWaiting+' shield commission'+(commissionsWaiting!==1?'s':'')+' waiting.',to:'workshop',label:'🛡️ Commissions'});
   if(day===1&&aQ.length===0&&screen!=='quests')alerts.push({text:'Brenna at the Market has work for a new alchemist. Introduce yourself.',to:'market',label:'🛒 Visit Brenna',npc:'brenna'});
   if(hours<=0&&screen!=='map')alerts.push({text:'The day\'s hours are spent. Time to rest and let tomorrow bring new work.',to:'map',label:'🏘️ Cindervale'});
   const readyBQ=activeBQ.filter(bq=>{const p=bqProgress(bq);return p.c>=p.n;});
@@ -4062,7 +5136,16 @@ function CindervaleAlchemistInner(){
                   if(sp){setSkRanks(p=>{const n={...p};sp.bSkills.forEach(sk=>{n[sk]=Math.max(n[sk]||0,1);});return n;});}
                 }
                 // Apply feat
-                if(pendingLevelUp.chosenFeat){setPlayerFeats(p=>[...p,pendingLevelUp.chosenFeat]);}
+                if(pendingLevelUp.chosenFeat){
+                  setPlayerFeats(p=>[...p,pendingLevelUp.chosenFeat]);
+                  // Grant retroactive skill points for feats with bonusSkillPerLevel
+                  const featDef=FEATS[pendingLevelUp.chosenFeat];
+                  if(featDef?.effects?.bonusSkillPerLevel){
+                    const retroPts=pendingLevelUp.newCharLevel*featDef.effects.bonusSkillPerLevel;
+                    setSkPts(p=>p+retroPts);
+                    addLog(`🧠 ${featDef.name}: +${retroPts} retroactive skill points (${featDef.effects.bonusSkillPerLevel}/level × ${pendingLevelUp.newCharLevel} levels)`,'level');
+                  }
+                }
                 // Apply ASI
                 if(pendingLevelUp.asiChoices&&Object.values(pendingLevelUp.asiChoices).some(v=>v>0)){
                   setAsiSpent(p=>[...p,{lv:pendingLevelUp.newCharLevel,choices:pendingLevelUp.asiChoices}]);
@@ -4361,6 +5444,524 @@ function CindervaleAlchemistInner(){
           <button style={{...S.btn(),fontSize:14}} onClick={()=>setScreen('enchant')}>🛒 Customers{enchNote?' ('+enchNote+')':''}</button>
           <button style={{...S.btn(),fontSize:14}} onClick={()=>setScreen('upgrades')}>🏗️ Upgrades ({upgrades.length})</button>
         </div>
+
+        {/* ═══ APOTHECARY CLINIC ═══ */}
+        {clinicPatients.length>0&&<div style={{...S.card,borderColor:'#6a9a6a',background:'#6a9a6a08'}}>
+          <div style={S.cT}>🏥 Apothecary Clinic — {clinicPatients.filter(p=>!p.prescribed).length} patient{clinicPatients.filter(p=>!p.prescribed).length!==1?'s':''} waiting</div>
+          {clinicPatients.map(patient=>{
+            const ailment=CLINIC_AILMENTS.find(a=>a.id===patient.ailmentId);if(!ailment)return null;
+            const treated=patient.prescribed;
+            return(<div key={patient.id} style={{padding:'8px 10px',background:treated?TH.green+'08':TH.panelLight,borderRadius:6,marginBottom:6,border:'1px solid '+(treated?TH.green+'44':TH.border),opacity:treated?0.6:1}}>
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                <div><span style={{fontSize:16,color:TH.textBright}}>{ailment.icon} {patient.patientName}</span>
+                  {treated&&<span style={{color:patient.matchQuality==='great'?TH.green:patient.matchQuality==='good'?TH.gold:TH.red,fontSize:13,marginLeft:6}}>
+                    {patient.matchQuality==='great'?'✅ Cured!':patient.matchQuality==='good'?'🟡 Helped':'❌ Wrong remedy'}</span>}
+                </div>
+              </div>
+              <div style={{fontSize:14,fontStyle:'italic',color:TH.textDim,margin:'4px 0'}}>{ailment.desc}</div>
+              {!treated&&<>
+                {/* Diagnosis info */}
+                {patient.examined&&<div style={{fontSize:14,color:patient.diagLevel>=2?TH.green:patient.diagLevel>=1?TH.gold:TH.textDim,margin:'4px 0',padding:'4px 8px',background:TH.bg,borderRadius:4,border:'1px solid '+TH.border}}>
+                  🩺 {patient.diagLevel>=2?ailment.hints.full:patient.diagLevel>=1?ailment.hints.partial:ailment.hints.fail}
+                </div>}
+                <div style={{...S.row,marginTop:6,flexWrap:'wrap'}}>
+                  {!patient.examined&&<button style={{...S.btn('gold'),fontSize:14}} onClick={()=>examinePatient(patient.id)}>🩺 Examine</button>}
+                  <select onChange={e=>{if(e.target.value)prescribePotion(patient.id,e.target.value);}} value="" style={{padding:'4px 6px',background:TH.panelLight,color:TH.text,border:'1px solid '+TH.border,borderRadius:4,fontFamily:'inherit',fontSize:14,flex:1,minWidth:140}}>
+                    <option value="">💊 Prescribe a potion...</option>
+                    {RECIPES.filter(r=>known.includes(r.id)&&(pots[r.id]||0)>0).map(r=>
+                      <option key={r.id} value={r.id}>{r.icon} {r.name} ({pots[r.id]||0} in stock)</option>
+                    )}
+                  </select>
+                </div>
+              </>}
+            </div>);
+          })}
+        </div>}
+
+        {/* ═══ VENOMIST CONTRACTS ═══ */}
+        {venomContracts.length>0&&<div style={{...S.card,borderColor:'#9a4a6a',background:'#9a4a6a08'}}>
+          <div style={S.cT}>☠️ Venom Contracts — {venomContracts.filter(v=>!v.fulfilled).length} active</div>
+          {venomContracts.map(vc=>{
+            const contract=VENOM_CONTRACTS.find(c=>c.id===vc.contractId);if(!contract)return null;
+            const done=vc.fulfilled;
+            const venLv=classLevels.alchemist||0;
+            const maxPotIdx=venLv>=10?3:venLv>=6?2:1;
+            const hasIngr=contract.ingredients.every((id,i)=>(inv[id]||0)>=(contract.ingredientQty[i]||0));
+            return(<div key={vc.id} style={{padding:'8px 10px',background:done?(vc.success?TH.green+'08':TH.red+'08'):TH.panelLight,borderRadius:6,marginBottom:6,border:'1px solid '+(done?(vc.success?TH.green+'44':TH.red+'44'):TH.border),opacity:done?0.6:1}}>
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                <span style={{fontSize:16,color:TH.textBright}}>{contract.icon} {contract.name} <span style={{fontSize:13,color:TH.textDim}}>· Tier {contract.tier}</span></span>
+                {done&&<span style={{color:vc.success?TH.green:TH.red,fontSize:13}}>{vc.success?'✅ Fulfilled':'❌ Failed'}</span>}
+              </div>
+              <div style={{fontSize:14,fontStyle:'italic',color:TH.textDim,margin:'4px 0'}}>{contract.desc}</div>
+              <div style={{fontSize:13,color:TH.text,margin:'2px 0'}}>Weakness: <b style={{color:'#c060a0'}}>{contract.weakness}</b> · Faction: {FACTIONS[contract.faction]?.icon} {FACTIONS[contract.faction]?.name}</div>
+              {!done&&<>
+                <div style={{fontSize:13,color:TH.textDim,margin:'3px 0'}}>
+                  Ingredients: {contract.ingredients.map((id,i)=>{const q=contract.ingredientQty[i];if(!q)return null;const have=(inv[id]||0);return <span key={id} style={{color:have>=q?TH.green:TH.red,marginRight:6}}>{INGR[id]?.icon||id} {have}/{q}</span>;}).filter(Boolean)}
+                </div>
+                <div style={{...S.row,marginTop:6,flexWrap:'wrap',gap:4}}>
+                  {POTENCY_LEVELS.slice(0,maxPotIdx+1).map(pot=>{
+                    const goldEst=Math.floor(contract.basePay*pot.payMult);
+                    return <button key={pot.id} style={{...S.btn(hasIngr&&hours>=1?'gold':'dim'),fontSize:13,padding:'3px 8px'}}
+                      disabled={!hasIngr||hours<1||done}
+                      onClick={()=>fulfillContract(vc.id,pot.id)}
+                      title={'DC '+pot.dc+' · ~'+goldEst+'g'}
+                    >{pot.icon} {pot.name} (DC{pot.dc} · ~{goldEst}g)</button>;
+                  })}
+                </div>
+              </>}
+            </div>);
+          })}
+        </div>}
+
+        {/* ═══ RUNESMITH FORGE ═══ */}
+        {specs.enchanter==='runesmith'&&<div style={{...S.card,borderColor:'#d08040',background:'#d0804008'}}>
+          <div style={S.cT}>🔨 Runesmith Forge — {(()=>{const used=dayFlags.filter(f=>f==='forge_used').length;const rsLv=classLevels.enchanter||0;const max=rsLv>=10?3:rsLv>=6?2:1;return `${max-used}/${max} forges remaining`;})()}</div>
+          {(()=>{
+            const rsLv=classLevels.enchanter||0;
+            const maxTier=rsLv>=10?3:rsLv>=6?2:1;
+            const available=FORGE_WEAPONS.filter(w=>w.tier<=maxTier);
+            const weaponEnchs=ENCHANTMENTS.filter(e=>e.cat==='weapon'&&knownEnch.includes(e.id));
+            const forgesToday=dayFlags.filter(f=>f==='forge_used').length;
+            const maxForges=rsLv>=10?3:rsLv>=6?2:1;
+            const canForge=forgesToday<maxForges&&hours>=2;
+            return <>
+              {available.map(w=>{
+                const hasMats=Object.entries(w.matCost).every(([id,q])=>(inv[id]||0)>=q);
+                return <div key={w.id} style={{padding:'6px 10px',background:TH.panelLight,borderRadius:6,marginBottom:5,border:'1px solid '+TH.border}}>
+                  <div style={{...S.row,justifyContent:'space-between'}}>
+                    <span style={{fontSize:15,color:TH.textBright}}>{w.icon} {w.name} <span style={{fontSize:12,color:TH.textDim}}>T{w.tier} · DC{w.forgeDC}</span></span>
+                    <span style={{fontSize:12,color:TH.textDim}}>
+                      {Object.entries(w.matCost).map(([id,q])=>{const have=inv[id]||0;return <span key={id} style={{color:have>=q?TH.green:TH.red,marginLeft:4}}>{INGR[id]?.icon||id}{have}/{q}</span>;})}{' · 2h'}
+                    </span>
+                  </div>
+                  <div style={{...S.row,marginTop:4,flexWrap:'wrap',gap:3}}>
+                    {weaponEnchs.map(e=>
+                      <button key={e.id} style={{...S.btn(canForge&&hasMats?'gold':'dim'),fontSize:12,padding:'2px 6px'}}
+                        disabled={!canForge||!hasMats} onClick={()=>forgeWeapon(w.id,e.id)}
+                        title={e.name+' (DC'+e.dc+')'}>{e.icon} {e.name}</button>
+                    )}
+                    {weaponEnchs.length===0&&<span style={{fontSize:12,color:TH.textDim}}>Learn weapon enchantments to forge</span>}
+                  </div>
+                </div>;
+              })}
+              {forgedWeapons.length>0&&<>
+                <div style={{fontSize:14,color:'#d08040',fontWeight:'bold',marginTop:8,marginBottom:4}}>⚔️ Display Case ({forgedWeapons.filter(w=>w.displayed).length} weapons · +{Math.min(3,forgedWeapons.filter(w=>w.displayed).length)} bonus customers/day)</div>
+                <div style={{display:'flex',flexWrap:'wrap',gap:4}}>
+                  {forgedWeapons.map(w=>
+                    <div key={w.id} style={{padding:'3px 8px',background:'#d0804015',borderRadius:4,border:'1px solid #d0804033',fontSize:13}}>
+                      <span style={{color:'#d08040',fontWeight:'bold'}}>{w.weaponIcon} {w.name}</span>
+                      <span style={{color:TH.textDim,marginLeft:4}}>({w.weaponType}+{w.enchantName})</span>
+                    </div>
+                  )}
+                </div>
+              </>}
+            </>;
+          })()}
+        </div>}
+
+        {/* ═══ WARDKEEPER SHIELD COMMISSIONS ═══ */}
+        {shieldCommissions.length>0&&<div style={{...S.card,borderColor:'#4080d0',background:'#4080d008'}}>
+          <div style={S.cT}>🛡️ Shield Commissions — {shieldCommissions.filter(c=>!c.done).length} active</div>
+          {shieldCommissions.map(sc=>{
+            const comm=SHIELD_COMMISSIONS.find(c=>c.id===sc.commissionId);if(!comm)return null;
+            const totalLayers=comm.layers.length;
+            const currentLayerIdx=sc.layersCompleted+sc.layersFailed;
+            const currentEnchId=currentLayerIdx<totalLayers?comm.layers[currentLayerIdx]:null;
+            const currentEnch=currentEnchId?ENCHANTMENTS.find(e=>e.id===currentEnchId):null;
+            return(<div key={sc.id} style={{padding:'8px 10px',background:sc.done?TH.green+'08':TH.panelLight,borderRadius:6,marginBottom:6,border:'1px solid '+(sc.done?TH.green+'44':TH.border),opacity:sc.done?0.6:1}}>
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                <span style={{fontSize:16,color:TH.textBright}}>{comm.icon} {sc.clientName} <span style={{fontSize:13,color:TH.textDim}}>· {comm.name}</span></span>
+                {sc.done&&<span style={{color:TH.green,fontSize:13}}>✅ Complete ({sc.layersCompleted}/{totalLayers})</span>}
+              </div>
+              <div style={{fontSize:14,fontStyle:'italic',color:TH.textDim,margin:'4px 0'}}>{comm.desc}</div>
+              {/* Layer progress bar */}
+              <div style={{display:'flex',gap:3,margin:'6px 0'}}>
+                {comm.layers.map((enchId,i)=>{
+                  const ench=ENCHANTMENTS.find(e=>e.id===enchId);
+                  const done=i<sc.layersCompleted+sc.layersFailed;
+                  const success=i<sc.layersCompleted||(i>=sc.layersCompleted&&i<sc.layersCompleted); // approximate
+                  const isNext=i===currentLayerIdx&&!sc.done;
+                  // Better tracking: layers 0..layersCompleted-1 are successes, then failures
+                  const isSuccess=i<currentLayerIdx&&i<sc.layersCompleted;
+                  const isFail=i<currentLayerIdx&&!isSuccess;
+                  return <div key={i} style={{flex:1,padding:'3px 6px',borderRadius:4,fontSize:12,textAlign:'center',
+                    background:isSuccess?TH.green+'20':isFail?TH.red+'20':isNext?'#4080d020':TH.bg,
+                    border:'1px solid '+(isSuccess?TH.green+'66':isFail?TH.red+'66':isNext?'#4080d066':TH.border),
+                    color:isSuccess?TH.green:isFail?TH.red:isNext?'#4080d0':TH.textDim}}>
+                    {isSuccess?'✓':isFail?'✗':''} {ench?.icon} {ench?.name||enchId}
+                  </div>;
+                })}
+              </div>
+              {!sc.done&&currentEnch&&<div style={{...S.row,marginTop:4}}>
+                <button style={{...S.btn(hours>=1?'gold':'dim'),fontSize:14}} disabled={hours<1}
+                  onClick={()=>inscribeCommissionLayer(sc.id)}>
+                  ✨ Inscribe {currentEnch.icon} {currentEnch.name} (DC{currentEnch.dc||12}) — 1h
+                </button>
+                {sc.retryUsed&&<span style={{fontSize:12,color:TH.textDim,marginLeft:6}}>Retry used</span>}
+              </div>}
+            </div>);
+          })}
+        </div>}
+
+        {/* ═══ SPELLWEAVER PLANAR ATTUNEMENT ═══ */}
+        {specs.enchanter==='spellweaver'&&<div style={{...S.card,borderColor:'#a060e0',background:'#a060e008'}}>
+          <div style={S.cT}>🌀 Planar Attunement</div>
+          {(()=>{
+            const swLv=classLevels.enchanter||0;
+            const activePlanes=getActivePlanes();
+            const combo=getPlanarCombo();
+            const maxPlanes=swLv>=10?2:1;
+            const availCount=swLv>=6?4:2;
+            const available=PLANAR_FOCUSES.slice(0,availCount);
+            const canAttune=activePlanes.length<maxPlanes||(activePlanes.length>0&&planarFocus.expiresDay<=day);
+            return <>
+              {/* Active attunement display */}
+              {activePlanes.length>0&&<div style={{padding:'8px 12px',background:'#a060e015',borderRadius:6,marginBottom:8,border:'1px solid #a060e044'}}>
+                {combo?<>
+                  <div style={{fontSize:16,color:'#d090ff',fontWeight:'bold'}}>{combo.icon} {combo.name} — Convergence Active</div>
+                  <div style={{fontSize:14,color:TH.text,margin:'3px 0'}}>{combo.desc}</div>
+                </>:<>
+                  {activePlanes.map(pid=>{const p=PLANAR_FOCUSES.find(f=>f.id===pid);return p?
+                    <div key={pid}><span style={{fontSize:16,color:p.color,fontWeight:'bold'}}>{p.icon} {p.name}</span>
+                    <span style={{fontSize:13,color:TH.textDim,marginLeft:8}}>{p.desc}</span></div>:null;})}
+                </>}
+                <div style={{fontSize:12,color:TH.textDim,marginTop:4}}>Expires: Day {planarFocus.expiresDay}
+                  {swLv>=10&&activePlanes.length<2&&' · Can add second plane (Convergence)'}</div>
+              </div>}
+              {activePlanes.length===0&&<div style={{fontSize:14,color:TH.textDim,marginBottom:6}}>No active attunement. Choose a plane to channel its energy into your enchantments.</div>}
+              {/* Plane selection */}
+              <div style={{display:'flex',flexWrap:'wrap',gap:6}}>
+                {available.map(plane=>{
+                  const isActive=activePlanes.includes(plane.id);
+                  return <button key={plane.id} style={{flex:'1 1 45%',padding:'8px 10px',borderRadius:6,cursor:isActive?'default':'pointer',
+                    background:isActive?plane.color+'25':TH.panelLight,border:'2px solid '+(isActive?plane.color:TH.border),
+                    color:isActive?plane.color:TH.text,textAlign:'left',fontFamily:'inherit',fontSize:13,opacity:isActive?0.7:1}}
+                    disabled={isActive} onClick={()=>attunePlane(plane.id)}>
+                    <div style={{fontWeight:'bold',fontSize:14}}>{plane.icon} {plane.name}</div>
+                    <div style={{fontSize:12,color:isActive?plane.color+'aa':TH.textDim,marginTop:2}}>{plane.desc}</div>
+                  </button>;
+                })}
+              </div>
+              {swLv<6&&<div style={{fontSize:12,color:TH.textDim,marginTop:6}}>🔒 More planes unlock at Enchanter Lv6</div>}
+              {swLv>=6&&swLv<10&&<div style={{fontSize:12,color:TH.textDim,marginTop:6}}>🔒 Convergence (dual attunement) unlocks at Enchanter Lv10</div>}
+            </>;
+          })()}
+        </div>}
+
+        {/* ═══ TINKERER GADGET BENCH ═══ */}
+        {specs.artificer==='tinkerer'&&<div style={{...S.card,borderColor:'#c0a040',background:'#c0a04008'}}>
+          <div style={S.cT}>⚙️ Gadget Bench — {gadgets.filter(g=>g.equipped).length}/{getGadgetSlots()} slots</div>
+          {(()=>{
+            const tkLv=classLevels.artificer||0;
+            const maxTier=tkLv>=10?3:tkLv>=6?2:1;
+            const maxMk=getMaxMk();
+            const available=GADGET_BLUEPRINTS.filter(b=>b.tier<=maxTier&&(!b.legendary||maxMk>=3));
+            const owned=gadgets.map(g=>g.blueprintId);
+            return <>
+              {/* Equipped gadgets */}
+              {gadgets.length>0&&<div style={{marginBottom:8}}>
+                <div style={{fontSize:13,color:'#c0a040',fontWeight:'bold',marginBottom:4}}>Your Gadgets:</div>
+                {gadgets.map(g=>{
+                  const bp=GADGET_BLUEPRINTS.find(b=>b.id===g.blueprintId);if(!bp)return null;
+                  const mkLabel=['I','II','III'][g.mk-1];
+                  return <div key={g.id} style={{display:'flex',alignItems:'center',gap:6,padding:'4px 8px',background:g.equipped?'#c0a04015':TH.bg,borderRadius:4,marginBottom:3,border:'1px solid '+(g.equipped?'#c0a04044':TH.border)}}>
+                    <button style={{fontSize:12,padding:'1px 6px',background:g.equipped?TH.green+'20':'#44444480',color:g.equipped?TH.green:TH.textDim,border:'1px solid '+(g.equipped?TH.green+'66':TH.border),borderRadius:3,cursor:'pointer',fontFamily:'inherit'}}
+                      onClick={()=>toggleGadget(g.id)}>{g.equipped?'✓ ON':'OFF'}</button>
+                    <span style={{color:TH.textBright,fontSize:14}}>{bp.icon} {bp.name} <span style={{color:'#c0a040'}}>Mk {mkLabel}</span></span>
+                    <span style={{fontSize:12,color:TH.textDim,flex:1}}>{bp.effectDesc[g.mk-1]}</span>
+                    {g.mk<maxMk&&<button style={{...S.btn('gold'),fontSize:11,padding:'1px 6px'}}
+                      onClick={()=>upgradeGadget(g.id)} title={'Upgrade to Mk '+['I','II','III'][g.mk]+' ('+((g.mk+1))+'× materials, 1h)'}>↑ Mk {['I','II','III'][g.mk]}</button>}
+                  </div>;
+                })}
+              </div>}
+              {/* Craftable blueprints */}
+              {available.filter(b=>!owned.includes(b.id)).length>0&&<>
+                <div style={{fontSize:13,color:TH.textDim,marginBottom:4}}>Blueprints:</div>
+                {available.filter(b=>!owned.includes(b.id)).map(bp=>{
+                  const hasMats=Object.entries(bp.matCost).every(([id,q])=>(inv[id]||0)>=q);
+                  return <div key={bp.id} style={{padding:'5px 8px',background:TH.panelLight,borderRadius:4,marginBottom:3,border:'1px solid '+TH.border}}>
+                    <div style={{...S.row,justifyContent:'space-between'}}>
+                      <span style={{fontSize:14,color:TH.textBright}}>{bp.icon} {bp.name} {bp.legendary&&<span style={{color:'#d4a420',fontSize:11}}>★ LEGENDARY</span>}</span>
+                      <button style={{...S.btn(hasMats&&hours>=2?'gold':'dim'),fontSize:12,padding:'2px 8px'}} disabled={!hasMats||hours<2}
+                        onClick={()=>craftGadget(bp.id)}>🔨 Craft (DC{bp.dc} · 2h)</button>
+                    </div>
+                    <div style={{fontSize:12,color:TH.textDim}}>{bp.desc}</div>
+                    <div style={{fontSize:12,marginTop:2}}>
+                      <span style={{color:TH.textDim}}>Effect: </span><span style={{color:'#c0a040'}}>{bp.effectDesc[0]}</span>
+                      <span style={{color:TH.textDim,marginLeft:8}}>Materials: </span>
+                      {Object.entries(bp.matCost).map(([id,q])=>{const have=inv[id]||0;return <span key={id} style={{color:have>=q?TH.green:TH.red,marginRight:4}}>{INGR[id]?.icon||id}{have}/{q}</span>;})}
+                    </div>
+                  </div>;
+                })}
+              </>}
+              {tkLv<6&&<div style={{fontSize:12,color:TH.textDim,marginTop:4}}>🔒 More slots & Mk II upgrades at Artificer Lv6</div>}
+              {tkLv>=6&&tkLv<10&&<div style={{fontSize:12,color:TH.textDim,marginTop:4}}>🔒 Mk III & legendary gadgets at Artificer Lv10</div>}
+            </>;
+          })()}
+        </div>}
+
+        {/* ═══ CONSTRUCTOR BLUEPRINTS ═══ */}
+        {specs.artificer==='constructor'&&<div style={{...S.card,borderColor:'#8090a0',background:'#8090a008'}}>
+          <div style={S.cT}>🏗️ Blueprint Workshop — {blueprints.length}/{getBPSlots()} projects</div>
+          {(()=>{
+            const cLv=classLevels.artificer||0;
+            const maxTier=cLv>=10?3:cLv>=6?2:1;
+            const available=CONSTRUCTOR_BPS.filter(b=>b.tier<=maxTier&&(!b.legendary||(cLv>=10)));
+            const owned=blueprints.map(b=>b.bpId);
+            const sanctum=hasSanctum();
+            return <>
+              {/* Active projects */}
+              {blueprints.length>0&&<div style={{marginBottom:8}}>
+                {blueprints.map(entry=>{
+                  const bp=CONSTRUCTOR_BPS.find(b=>b.id===entry.bpId);if(!bp)return null;
+                  const sessions=sanctum&&entry.bpId!=='bp_sanctum'?Math.ceil(bp.buildSessions/2):bp.buildSessions;
+                  const pct=Math.round(entry.buildProgress/sessions*100);
+                  return <div key={entry.id} style={{padding:'6px 10px',background:entry.complete?'#8090a015':TH.panelLight,borderRadius:6,marginBottom:4,border:'1px solid '+(entry.complete?TH.green+'44':TH.border)}}>
+                    <div style={{...S.row,justifyContent:'space-between'}}>
+                      <span style={{fontSize:15,color:TH.textBright}}>{bp.icon} {bp.name} {bp.legendary&&<span style={{color:'#d4a420',fontSize:11}}>★</span>}
+                        {entry.complete&&<span style={{color:TH.green,fontSize:13,marginLeft:6}}>✅ Active{sanctum&&entry.bpId!=='bp_sanctum'?' (Reinforced)':''}</span>}
+                      </span>
+                      {!entry.complete&&<span style={{fontSize:12,color:TH.textDim}}>{entry.buildProgress}/{sessions} sessions</span>}
+                    </div>
+                    {entry.complete?<div style={{fontSize:13,color:TH.green}}>{bp.effectDesc}{sanctum&&entry.bpId!=='bp_sanctum'?' (+50%)':''}</div>
+                    :<>
+                      <div style={{width:'100%',height:6,background:TH.panel,borderRadius:3,margin:'4px 0'}}>
+                        <div style={{height:'100%',width:pct+'%',background:'#8090a0',borderRadius:3,transition:'width 0.3s'}}/>
+                      </div>
+                      <div style={{...S.row,gap:4}}>
+                        <button style={{...S.btn(hours>=(cLv>=6?0.5:1)?'gold':'dim'),fontSize:13}} disabled={hours<(cLv>=6?0.5:1)}
+                          onClick={()=>buildBlueprint(entry.id)}>🔨 Build ({cLv>=6?'30min':'1h'} · Precision DC{bp.draftDC-2})</button>
+                        <span style={{fontSize:12,color:TH.textDim}}>Materials/session: {Object.entries(bp.matCost).map(([id,q])=>{
+                          const perSession=Math.max(1,Math.ceil(q/sessions));const have=inv[id]||0;
+                          return <span key={id} style={{color:have>=perSession?TH.green:TH.red,marginRight:3}}>{INGR[id]?.icon||id}{have}/{perSession}</span>;})}</span>
+                      </div>
+                    </>}
+                  </div>;
+                })}
+              </div>}
+              {/* Available blueprints to draft */}
+              {available.filter(b=>!owned.includes(b.id)).length>0&&blueprints.length<getBPSlots()&&<>
+                <div style={{fontSize:13,color:TH.textDim,marginBottom:4}}>Available Blueprints:</div>
+                {available.filter(b=>!owned.includes(b.id)).map(bp=>
+                  <div key={bp.id} style={{padding:'5px 8px',background:TH.panelLight,borderRadius:4,marginBottom:3,border:'1px solid '+TH.border}}>
+                    <div style={{...S.row,justifyContent:'space-between'}}>
+                      <span style={{fontSize:14,color:TH.textBright}}>{bp.icon} {bp.name} {bp.legendary&&<span style={{color:'#d4a420',fontSize:11}}>★ LEGENDARY</span>}
+                        <span style={{fontSize:12,color:TH.textDim,marginLeft:6}}>T{bp.tier} · {sanctum?Math.ceil(bp.buildSessions/2):bp.buildSessions} sessions</span></span>
+                      <button style={{...S.btn(hours>=1?'gold':'dim'),fontSize:12,padding:'2px 8px'}} disabled={hours<1}
+                        onClick={()=>draftBlueprint(bp.id)}>📐 Draft (DC{bp.draftDC} · 1h)</button>
+                    </div>
+                    <div style={{fontSize:12,color:TH.textDim}}>{bp.desc}</div>
+                    <div style={{fontSize:12,color:'#8090a0'}}>Effect: {bp.effectDesc}</div>
+                  </div>
+                )}
+              </>}
+              {cLv<6&&<div style={{fontSize:12,color:TH.textDim,marginTop:4}}>🔒 More slots & faster building at Artificer Lv6</div>}
+              {cLv>=6&&cLv<10&&<div style={{fontSize:12,color:TH.textDim,marginTop:4}}>🔒 Legendary blueprints at Artificer Lv10</div>}
+            </>;
+          })()}
+        </div>}
+
+        {/* ═══ RECLAIMER DECONSTRUCTION LAB ═══ */}
+        {specs.artificer==='reclaimer'&&<div style={{...S.card,borderColor:'#60a080',background:'#60a00808'}}>
+          <div style={S.cT}>♻️ Deconstruction Lab</div>
+          {(()=>{
+            const rcLv=classLevels.artificer||0;
+            const auctionUsed=dayFlags.includes('salvage_auction_used');
+            const freeCraftUsed=dayFlags.includes('free_craft_used');
+            return <>
+              {/* Potion Breakdown */}
+              <div style={{fontSize:14,color:'#60a080',fontWeight:'bold',marginBottom:4}}>🧪 Potion Breakdown {rcLv>=6?'(100% recovery)':rcLv>=10?'(150% yield)':'(50-75% recovery)'}</div>
+              <div style={{display:'flex',flexWrap:'wrap',gap:3,marginBottom:8}}>
+                {Object.entries(pots).filter(([id,q])=>q>0).map(([id,q])=>{
+                  const r=RECIPES.find(x=>x.id===id);if(!r)return null;
+                  return <button key={id} style={{...S.btn(hours>=1?'gold':'dim'),fontSize:12,padding:'2px 6px'}} disabled={hours<1}
+                    onClick={()=>breakdownPotion(id)}>{r.icon} {r.name} ({q}) → ingredients</button>;
+                })}
+                {Object.entries(pots).filter(([,q])=>q>0).length===0&&<span style={{fontSize:13,color:TH.textDim}}>No potions to break down</span>}
+              </div>
+
+              {/* Ingredient Transmutation */}
+              <div style={{fontSize:14,color:'#60a080',fontWeight:'bold',marginBottom:4}}>🔄 Transmutation ({rcLv>=6?'2':'3'}:1 ratio)</div>
+              {(()=>{
+                const [txSrc,setTxSrc]=[null,null]; // Can't use hooks in IIFE, use select onChange directly
+                const ratio=rcLv>=6?2:3;
+                const eligible=Object.entries(inv).filter(([id,q])=>q>=ratio);
+                const allIngr=Object.keys(INGR).filter(id=>(inv[id]||0)>0||INGR[id]);
+                return <div style={{display:'flex',gap:4,alignItems:'center',marginBottom:8,flexWrap:'wrap'}}>
+                  <select id="tx_src" style={{padding:'3px 6px',background:TH.panelLight,color:TH.text,border:'1px solid '+TH.border,borderRadius:4,fontFamily:'inherit',fontSize:13}}>
+                    <option value="">From...</option>
+                    {eligible.map(([id,q])=><option key={id} value={id}>{INGR[id]?.icon||''} {INGR[id]?.name||id} ({q})</option>)}
+                  </select>
+                  <span style={{color:TH.textDim}}>→</span>
+                  <select id="tx_tgt" style={{padding:'3px 6px',background:TH.panelLight,color:TH.text,border:'1px solid '+TH.border,borderRadius:4,fontFamily:'inherit',fontSize:13}}>
+                    <option value="">To...</option>
+                    {Object.entries(INGR).filter(([id])=>id!=='unknown').map(([id,ig])=><option key={id} value={id}>{ig.icon||''} {ig.name||id}</option>)}
+                  </select>
+                  <button style={{...S.btn(hours>=1?'gold':'dim'),fontSize:13,padding:'2px 8px'}} disabled={hours<1}
+                    onClick={()=>{const s=document.getElementById('tx_src')?.value;const t=document.getElementById('tx_tgt')?.value;
+                      if(s&&t&&s!==t)reclaimerTransmute(s,t);else addLog('Select different source and target ingredients.','error');}}>
+                    ♻️ Transmute (1h)</button>
+                </div>;
+              })()}
+
+              {/* Salvage Auction (Lv6+) */}
+              {rcLv>=6&&<>
+                <div style={{fontSize:14,color:'#60a080',fontWeight:'bold',marginBottom:4}}>📦 Salvage Auction {auctionUsed?'(used today)':''}{rcLv>=10?' · ⭐ Rare trade possible':''}</div>
+                {!auctionUsed?<div style={{display:'flex',gap:4,alignItems:'center',flexWrap:'wrap'}}>
+                  <select id="salv_ingr" style={{padding:'3px 6px',background:TH.panelLight,color:TH.text,border:'1px solid '+TH.border,borderRadius:4,fontFamily:'inherit',fontSize:13,minWidth:140}}>
+                    <option value="">Pick ingredient...</option>
+                    {Object.entries(inv).filter(([,q])=>q>0).map(([id,q])=><option key={id} value={id}>{INGR[id]?.icon||''} {INGR[id]?.name||id} ({q})</option>)}
+                  </select>
+                  <select id="salv_qty" style={{padding:'3px 6px',background:TH.panelLight,color:TH.text,border:'1px solid '+TH.border,borderRadius:4,fontFamily:'inherit',fontSize:13}}>
+                    {[1,2,3,5,10].map(n=><option key={n} value={n}>×{n}</option>)}
+                  </select>
+                  <button style={{...S.btn('gold'),fontSize:13,padding:'2px 8px'}}
+                    onClick={()=>{const id=document.getElementById('salv_ingr')?.value;const qty=parseInt(document.getElementById('salv_qty')?.value||'1');
+                      if(id&&qty>0&&(inv[id]||0)>=qty)doSalvageAuction({[id]:qty});else addLog('Select an ingredient you have enough of.','error');}}>
+                    💰 Sell</button>
+                </div>:<span style={{fontSize:13,color:TH.textDim}}>Come back tomorrow for another auction.</span>}
+              </>}
+
+              {/* Free Craft (Lv10) */}
+              {rcLv>=10&&!freeCraftUsed&&<div style={{fontSize:13,color:TH.green,marginTop:6,padding:'4px 8px',background:TH.green+'08',borderRadius:4}}>
+                ✨ Perfect Reclamation: Your next craft today consumes no ingredients (applied automatically)
+              </div>}
+            </>;
+          })()}
+        </div>}
+
+        {/* ═══ NATURALIST FIELD JOURNAL ═══ */}
+        {specs.scholar==='naturalist'&&<div style={{...S.card,borderColor:'#60b060',background:'#60b00808'}}>
+          <div style={S.cT}>🌿 Field Journal — {fieldJournal.length} discoveries</div>
+          {(()=>{
+            const natLv=classLevels.scholar||0;
+            const canGeo=natLv>=6;
+            const totalPossible=Object.entries(FIELD_DISCOVERIES).reduce((s,[,discs])=>s+discs.filter(d=>d.type!=='geological'||canGeo).length,0);
+            const regions=REGIONS.filter(r=>level>=regUnlock(r));
+            return <>
+              <div style={{fontSize:13,color:TH.textDim,marginBottom:6}}>
+                Documented: {fieldJournal.length}/{totalPossible} · Discovery chance: {natLv>=10?'40%':natLv>=6?'30%':'20%'}/forage hour
+                {natLv>=10&&' · Auto-document'}
+                {!canGeo&&' · 🔒 Geological at Scholar Lv6'}
+              </div>
+              {regions.map(reg=>{
+                const regDiscs=FIELD_DISCOVERIES[reg.id]||[];
+                if(regDiscs.length===0)return null;
+                const available=regDiscs.filter(d=>d.type!=='geological'||canGeo);
+                const documented=available.filter(d=>fieldJournal.includes(d.id));
+                const allDone=documented.length===available.length&&available.length>0;
+                return <div key={reg.id} style={{marginBottom:6}}>
+                  <div style={{fontSize:14,fontWeight:'bold',color:allDone?TH.green:TH.text}}>
+                    {reg.icon} {reg.name} — {documented.length}/{available.length}
+                    {allDone&&<span style={{color:TH.green,marginLeft:6,fontSize:12}}>★ Region Mastery!</span>}
+                  </div>
+                  <div style={{display:'flex',flexWrap:'wrap',gap:3,marginTop:2}}>
+                    {available.map(d=>{
+                      const found=fieldJournal.includes(d.id);
+                      return <div key={d.id} style={{padding:'2px 6px',fontSize:12,borderRadius:3,
+                        background:found?'#60b06015':'#33333380',border:'1px solid '+(found?'#60b06044':TH.border),
+                        color:found?'#60b060':TH.textDim}} title={found?d.desc+'\n\nBonus: '+(d.bonus.extraYield?'+'+d.bonus.extraYield+' '+(INGR[d.bonus.ingredient]?.name||d.bonus.ingredient)+'/hour':d.bonus.dangerReduce?'-'+Math.round(d.bonus.dangerReduce*100)+'% danger':''):'Undiscovered — forage this region to find it'}>
+                        {found?d.icon:'❓'} {found?d.name:'???'}
+                        {found&&<span style={{marginLeft:3,color:TH.textDim}}>({d.type})</span>}
+                      </div>;
+                    })}
+                  </div>
+                </div>;
+              })}
+            </>;
+          })()}
+        </div>}
+
+        {/* ═══ ARCHIVIST LORE ARCHIVE ═══ */}
+        {specs.scholar==='archivist'&&<div style={{...S.card,borderColor:'#c0a060',background:'#c0a06008'}}>
+          <div style={S.cT}>📜 Lore Archive — {loreFragments.length}/{ALL_LORE_FRAGMENTS.length} fragments</div>
+          {(()=>{
+            const arcLv=classLevels.scholar||0;
+            const chainsAvail=arcLv>=6?4:2;
+            const chains=Object.values(LORE_CHAINS).slice(0,chainsAvail);
+            const allChainsComplete=chains.every(c=>c.fragments.every(f=>loreFragments.includes(f.id)));
+            return <>
+              <div style={{fontSize:13,color:TH.textDim,marginBottom:6}}>
+                Fragment chance: {arcLv>=10?'50%':arcLv>=6?'40%':'30%'} per quest · {arcLv>=6?'Double':'Standard'} XP per fragment
+                {arcLv<6&&' · 🔒 More chains at Scholar Lv6'}
+              </div>
+              {chains.map(chain=>{
+                const found=chain.fragments.filter(f=>loreFragments.includes(f.id));
+                const complete=found.length===chain.fragments.length;
+                return <div key={chain.id} style={{marginBottom:8,padding:'8px 10px',background:complete?chain.color+'15':TH.panelLight,borderRadius:6,border:'1px solid '+(complete?chain.color+'66':TH.border)}}>
+                  <div style={{fontSize:15,fontWeight:'bold',color:complete?chain.color:TH.textBright}}>
+                    {chain.icon} {chain.name} — {found.length}/{chain.fragments.length}
+                    {complete&&<span style={{marginLeft:6,fontSize:12,color:TH.green}}>✅ {chain.rewardDesc}</span>}
+                  </div>
+                  <div style={{fontSize:13,color:TH.textDim,margin:'2px 0'}}>{chain.desc}</div>
+                  <div style={{display:'flex',flexWrap:'wrap',gap:3,marginTop:4}}>
+                    {chain.fragments.map(frag=>{
+                      const have=loreFragments.includes(frag.id);
+                      return <div key={frag.id} style={{padding:'2px 8px',fontSize:12,borderRadius:3,
+                        background:have?chain.color+'20':'#33333380',border:'1px solid '+(have?chain.color+'44':TH.border),
+                        color:have?chain.color:TH.textDim,cursor:have?'help':'default'}}
+                        title={have?frag.desc:'Undiscovered — complete quests related to: '+frag.factions.map(f=>FACTIONS[f]?.name||f).join(', ')}>
+                        {have?'📜':'❓'} {have?frag.name:'???'}
+                      </div>;
+                    })}
+                  </div>
+                </div>;
+              })}
+              {allChainsComplete&&chainsAvail>=4&&<div style={{padding:'8px 12px',background:'#d4a42015',borderRadius:6,border:'2px solid #d4a42066',textAlign:'center',marginTop:4}}>
+                <div style={{fontSize:16,color:'#d4a420',fontWeight:'bold'}}>📜 Grand Archive Complete!</div>
+                <div style={{fontSize:14,color:TH.text}}>All lore chains documented. +25% all gold, +25% all XP</div>
+              </div>}
+            </>;
+          })()}
+        </div>}
+
+        {/* ═══ RANGER COMPANIONS ═══ */}
+        {specs.warden==='ranger'&&<div style={{...S.card,borderColor:'#40a060',background:'#40a00808'}}>
+          <div style={S.cT}>🦊 Companions — {companions.length}/{(classLevels.warden||0)>=10?3:(classLevels.warden||0)>=6?2:1} slots</div>
+          {companions.length===0&&<div style={{fontSize:14,color:TH.textDim,marginBottom:6}}>
+            No companions yet. Forage in the wilds — creatures may appear and can be tamed with an Attunement check.
+            <br/>Encounter chance: {(classLevels.warden||0)>=10?'35%':(classLevels.warden||0)>=6?'25%':'15%'} per forage hour.
+          </div>}
+          {companions.map(c=>{
+            const comp=RANGER_COMPANIONS.find(r=>r.id===c.compId);if(!comp)return null;
+            const loy=c.loyalty;const loyPct=Math.min(100,((loy-1)*25)+Math.min(25,((day-c.tamedDay)%3)/3*25));
+            const hasSecondary=loy>=3&&comp.secondary;
+            const hasLegendary=loy>=5;
+            return <div key={c.compId} style={{padding:'8px 10px',background:c.active?comp.color+'10':TH.bg,borderRadius:6,marginBottom:5,border:'2px solid '+(c.active?comp.color+'66':TH.border)}}>
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                <div>
+                  <span style={{fontSize:18}}>{comp.icon}</span>
+                  <span style={{fontSize:16,color:comp.color,fontWeight:'bold',marginLeft:4}}>{comp.name}</span>
+                  <span style={{color:TH.gold,marginLeft:6}}>{'★'.repeat(loy)}{'☆'.repeat(5-loy)}</span>
+                  <span style={{fontSize:12,color:TH.textDim,marginLeft:4}}>({['Bonded','Trusted','Devoted','Inseparable','Soulbound'][loy-1]})</span>
+                </div>
+                <button style={{fontSize:12,padding:'2px 8px',background:c.active?TH.green+'20':'#44444480',color:c.active?TH.green:TH.textDim,border:'1px solid '+(c.active?TH.green+'66':TH.border),borderRadius:3,cursor:'pointer',fontFamily:'inherit'}}
+                  onClick={()=>setCompanions(prev=>prev.map(x=>x.compId===c.compId?{...x,active:!x.active}:x))}>{c.active?'✓ Active':'Idle'}</button>
+              </div>
+              <div style={{fontSize:13,color:TH.textDim,margin:'3px 0'}}>{comp.desc}</div>
+              {/* Loyalty bar */}
+              {loy<5&&<div style={{display:'flex',alignItems:'center',gap:4,margin:'3px 0'}}>
+                <span style={{fontSize:11,color:TH.textDim,minWidth:50}}>Loyalty</span>
+                <div style={{flex:1,height:4,background:TH.panel,borderRadius:2}}><div style={{height:'100%',width:loyPct+'%',background:comp.color,borderRadius:2}}/></div>
+                <span style={{fontSize:11,color:comp.color}}>→ {'★'.repeat(loy+1)}</span>
+              </div>}
+              {/* Abilities */}
+              <div style={{display:'flex',flexWrap:'wrap',gap:4,marginTop:4}}>
+                <span style={{padding:'2px 6px',fontSize:12,background:comp.color+'15',border:'1px solid '+comp.color+'33',borderRadius:3,color:comp.color}}>
+                  {comp.role==='gatherer'?'🌿':comp.role==='shopkeeper'?'🏪':comp.role==='scout'?'🦅':comp.role==='greeter'?'🐕':comp.role==='guardian'?'🛡️':comp.role==='muse'?'✨':'🔥'} Primary: {comp.role}
+                </span>
+                {hasSecondary&&<span style={{padding:'2px 6px',fontSize:12,background:TH.gold+'15',border:'1px solid '+TH.gold+'33',borderRadius:3,color:TH.gold}}>
+                  🔓 {comp.secondary.desc}
+                </span>}
+                {hasLegendary&&<span style={{padding:'2px 6px',fontSize:12,background:'#d4a42020',border:'1px solid #d4a42066',borderRadius:3,color:'#d4a420'}}>
+                  ⭐ {comp.legendary}
+                </span>}
+              </div>
+            </div>;
+          })}
+          {(classLevels.warden||0)<6&&<div style={{fontSize:12,color:TH.textDim,marginTop:4}}>🔒 More slots at Warden Lv6</div>}
+        </div>}
+
         <div style={S.card}><div style={S.cT}>⚗️ Recipes ({known.length}/{RECIPES.length})</div>
         {RECIPES.filter(r=>known.includes(r.id)).map(r=>{
           const cost={};r.ingr.forEach(id=>{cost[id]=(cost[id]||0)+1;});const can=Object.entries(cost).every(([id,q])=>(inv[id]||0)>=q);
@@ -4442,16 +6043,20 @@ function CindervaleAlchemistInner(){
           <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
             {(()=>{const undiscP=RECIPES.filter(r=>!known.includes(r.id)&&level>=r.unlock&&(!r.faction||getRL(r.faction)>=(r.fReq||0)));
               const undiscE=ENCHANTMENTS.filter(e=>!knownEnch.includes(e.id)&&(!e.faction||getRL(e.faction)>=(e.fReq||0)));
-              const chance=Math.min(0.65,0.2+getSkMod('innovation')*0.06+getSkMod('research')*0.04);
-              const resCost=getSkMod('lore')>=4?1:2;
+              const chance=Math.min(0.65,0.2+getSkMod('innovation')*0.06+getSkMod('research')*0.04+getFeatureVal('discoveryChanceBonus'));
+              const resCost=Math.max(1,(getSkMod('lore')>=4?1:2)-getFeatureVal('researchCostReduction'));
+              const freeRes=getFeatureVal('freeResearchPerDay');
+              const freeUsed=dayFlags.filter(f=>f==='free_research_used').length;
+              const hasFree=freeRes>freeUsed;
+              const canAct=hasFree||hours>=resCost;
               return <>
-                <button style={S.btn(hours>=resCost&&undiscP.length>0?'gold':'dim')} onClick={()=>doResearch('potion')} disabled={hours<resCost||undiscP.length===0}>
-                  ⚗️ Study Potions ({undiscP.length} unknown) — {resCost}h{resCost<2?' (📖 Lore)':''}
+                <button style={S.btn(canAct&&undiscP.length>0?'gold':'dim')} onClick={()=>doResearch('potion')} disabled={!canAct||undiscP.length===0}>
+                  ⚗️ Study Potions ({undiscP.length} unknown) — {hasFree?'FREE':''+resCost+'h'}
                 </button>
-                <button style={S.btn(hours>=resCost&&undiscE.length>0?'gold':'dim')} onClick={()=>doResearch('enchant')} disabled={hours<resCost||undiscE.length===0}>
-                  ✨ Study Enchantments ({undiscE.length} unknown) — {resCost}h{resCost<2?' (📖 Lore)':''}
+                <button style={S.btn(canAct&&undiscE.length>0?'gold':'dim')} onClick={()=>doResearch('enchant')} disabled={!canAct||undiscE.length===0}>
+                  ✨ Study Enchantments ({undiscE.length} unknown) — {hasFree?'FREE':''+resCost+'h'}
                 </button>
-                <div style={{fontSize:13,color:TH.textDim,width:'100%'}}>Discovery chance: ~{Math.round(chance*100)}% per session</div>
+                <div style={{fontSize:13,color:TH.textDim,width:'100%'}}>Discovery chance: ~{Math.round(chance*100)}%{hasFree?` · 📖 Free studies: ${freeRes-freeUsed}/${freeRes}`:''}</div>
               </>;})()}
           </div>
           {/* Known recipes summary */}
@@ -5014,12 +6619,19 @@ function CindervaleAlchemistInner(){
               return{label:'—',color:TH.red,tip:'Poor fit'};};
             return(
             <div key={ap.id} style={{padding:'8px',background:TH.panelLight,borderRadius:4,marginBottom:5,border:'1px solid '+TH.border}}>
-              <div style={{display:'flex',justifyContent:'space-between'}}><span style={{fontSize:16,color:TH.textBright}}>{ap.icon}{ap.name} Lv{aLvl}</span>
+              <div style={{display:'flex',justifyContent:'space-between'}}><span style={{fontSize:16,color:TH.textBright}}>{ap.icon}{ap.name} <span style={{color:TH.gold}} title={'Level '+aLvl+' — Each level gives +10% task efficiency.\nXP: '+(apprXP[ap.id]||0)+'/'+((aLvl+1)*100)+(aLvl>=5?' (MAX)':'')}>{'★'.repeat(aLvl)||'☆'} Lv{aLvl}</span></span>
                 <span style={{fontSize:14}}>
                   <span style={{color:TH.gold,cursor:'help'}} title={'Daily salary paid each morning. Signing fee: '+ap.salary*5+'g'}>{ap.salary}g/d</span>
                   {' '}<span style={{color:ap.morale>=70?TH.green:ap.morale>=40?TH.orange:TH.red}}>♥{ap.morale}%</span>
                   <span style={{fontSize:12,color:ap.morale>=80?TH.green:ap.morale>=50?TH.textDim:ap.morale>=30?TH.orange:TH.red,marginLeft:2}}>({ap.morale>=80?'+10% eff':ap.morale>=50?'normal':ap.morale>=30?'-20% eff':'-40% eff'})</span>
                 </span></div>
+              {/* XP Progress bar */}
+              {aLvl<5&&(()=>{const xp=apprXP[ap.id]||0;const curLvXp=aLvl*100;const nextLvXp=(aLvl+1)*100;const prog=xp-curLvXp;const needed=nextLvXp-curLvXp;const pct=Math.min(100,Math.round(prog/needed*100));
+                return <div style={{display:'flex',alignItems:'center',gap:4,margin:'2px 0'}}>
+                  <span style={{fontSize:11,color:TH.textDim,minWidth:55}}>XP {prog}/{needed}</span>
+                  <div style={{flex:1,height:4,background:TH.panel,borderRadius:2}}><div style={{height:'100%',width:pct+'%',background:TH.gold,borderRadius:2,transition:'width 0.3s'}}/></div>
+                  <span style={{fontSize:11,color:TH.gold}}>→ Lv{aLvl+1}</span>
+                </div>;})()}
               <div style={{width:'100%',height:3,background:TH.panel,borderRadius:2,margin:'2px 0'}} title={'Morale '+ap.morale+'%: '+(ap.morale>=80?'+10% efficiency':ap.morale>=50?'Normal':ap.morale>=30?'-20% efficiency':'-40% efficiency')}><div style={{height:'100%',width:ap.morale+'%',background:ap.morale>=70?TH.green:ap.morale>=40?TH.orange:TH.red,borderRadius:2}}/></div>
               <div style={{fontSize:13,color:TH.textDim,margin:'3px 0',display:'flex',flexWrap:'wrap',gap:4,alignItems:'center'}}>
                 {ap.specialty&&<span style={{padding:'1px 5px',background:TH.gold+'15',borderRadius:3,border:'1px solid '+TH.gold+'33',fontSize:12,color:TH.gold}}>⭐ {ap.specialty}{task&&SPEC_MATCH[task.type]===ap.specialty?' ✦+15%':''}</span>}
@@ -5512,6 +7124,7 @@ function CindervaleAlchemistInner(){
               ['failStreakBonus','🔥 Fail Streak','+','/fail'],
               ['discoveryChanceBonus','🔍 Discovery','+','% chance'],
               ['researchCostReduction','📖 Research','-','h cost'],
+              ['freeResearchPerDay','📖 Free Research','','/day'],
               ['forageYieldBonus','🌿 Forage Yield','+','extra items'],
               ['rareForageBonus','💎 Rare Finds','+','% chance'],
             ].map(([key,label,pre,suf])=>{const v=getFeatureVal(key);if(!v)return null;
