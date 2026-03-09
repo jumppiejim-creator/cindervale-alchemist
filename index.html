@@ -7024,7 +7024,7 @@ function CindervaleAlchemistInner(){
         {(prestigeLevels.arcanist||0)>=1&&(()=>{
           const aLv=prestigeLevels.arcanist||0;
           const maxEff=getMaxEffects();
-          const [selCat,setSelCatState]=typeof React.useState==='function'?React.useState('weapon'):[null,null];
+          // Category, power, and effect selections managed via DOM (getElementById)
           // Use a ref-based approach for local UI state within the IIFE
           return <div style={{...S.card,borderColor:'#8060c0',background:'linear-gradient(135deg,#1a1830,#22203a)'}}>
             <div style={S.cT}>✨ Arcanist Pattern Workshop — {customPatterns.length}/{getPatternSlots()} patterns</div>
