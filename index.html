@@ -3276,6 +3276,7 @@ function CindervaleAlchemistInner(){
 
   // ═══ MAGITECH ENGINEER — AUTOMATA ═══
   const AUTOMATON_NAMES=['Alpha','Beta','Gamma','Delta','Epsilon','Zeta'];
+  const AUTOMATON_PORTRAITS={0:'auto_alpha.png',1:'auto_beta.png',2:'auto_gamma.png'};
   const getAutoSlots=()=>{const mLv=prestigeLevels.magitech||0;return mLv>=5?3:mLv>=3?2:mLv>=1?1:0;};
   const getAutoEfficiency=()=>{const mLv=prestigeLevels.magitech||0;return mLv>=4?1.0:mLv>=2?0.8:0.6;};
   const getAutoLvl=(autoId)=>Math.min(5,Math.floor((automata.find(a=>a.id===autoId)?.xp||0)/80));
@@ -6941,44 +6942,57 @@ function CindervaleAlchemistInner(){
             No automata built yet. Build one to start autonomous operations.
           </div>}
           {/* Built automata */}
-          {automata.map(auto=>{
+          {automata.map((auto,autoIdx)=>{
             const aLvl=getAutoLvl(auto.id);
             const xp=auto.xp||0;const curLvXp=aLvl*80;const nextLvXp=(aLvl+1)*80;
             const prog=xp-curLvXp;const needed=nextLvXp-curLvXp;const pct=Math.min(100,Math.round(prog/needed*100));
             const mLv=prestigeLevels.magitech||0;
-            return <div key={auto.id} style={{padding:'6px 10px',background:TH.panelLight,borderRadius:6,marginBottom:5,border:'1px solid '+(auto.task?'#a0a06066':TH.border)}}>
-              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-                <div>
-                  <span style={{fontSize:16}}>🤖</span>
-                  <span style={{fontSize:15,color:'#a0a060',fontWeight:'bold',marginLeft:4}}>{auto.name}</span>
-                  <span style={{color:TH.gold,marginLeft:6}}>{'★'.repeat(aLvl)}{'☆'.repeat(5-aLvl)}</span>
+            const portrait=AUTOMATON_PORTRAITS[autoIdx];
+            return <div key={auto.id} style={{padding:'10px 12px',background:'linear-gradient(135deg,#1a1a2e,#22223a)',borderRadius:8,marginBottom:8,border:'2px solid '+(auto.task?'#a0a06088':'#a0a06033'),boxShadow:auto.task?'0 0 12px #a0a06020':'none'}}>
+              <div style={{display:'flex',gap:12}}>
+                {/* Portrait */}
+                <div style={{flexShrink:0}}>
+                  {portrait?<img src={portrait} alt={auto.name} style={{width:90,height:90,borderRadius:8,border:'2px solid #a0a06066',objectFit:'cover'}}
+                    onError={e=>{e.target.style.display='none';}}/>
+                    :<div style={{width:90,height:90,borderRadius:8,border:'2px solid #a0a06044',background:'#a0a06015',display:'flex',alignItems:'center',justifyContent:'center',fontSize:40}}>🤖</div>}
                 </div>
-                <span style={{fontSize:13,color:auto.task?TH.green:TH.textDim}}>{auto.task?'⚡ Active':'💤 Idle'}</span>
+                {/* Info column */}
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:2}}>
+                    <div>
+                      <span style={{fontSize:17,color:'#c0c080',fontWeight:'bold'}}>{auto.name}</span>
+                      <span style={{color:TH.gold,marginLeft:6,fontSize:14}}>{'★'.repeat(aLvl)}{'☆'.repeat(5-aLvl)}</span>
+                    </div>
+                    <span style={{fontSize:12,padding:'2px 8px',borderRadius:10,background:auto.task?TH.green+'20':'#44444480',color:auto.task?TH.green:TH.textDim,border:'1px solid '+(auto.task?TH.green+'44':TH.border)}}>{auto.task?'⚡ Active':'💤 Idle'}</span>
+                  </div>
+                  {/* XP bar */}
+                  {mLv>=3&&aLvl<5&&<div style={{display:'flex',alignItems:'center',gap:4,margin:'4px 0'}}>
+                    <span style={{fontSize:11,color:TH.textDim,minWidth:55}}>XP {prog}/{needed}</span>
+                    <div style={{flex:1,height:5,background:'#33333380',borderRadius:3}}><div style={{height:'100%',width:pct+'%',background:'linear-gradient(90deg,#a0a060,#c0c080)',borderRadius:3,transition:'width 0.3s'}}/></div>
+                    <span style={{fontSize:11,color:'#a0a060'}}>→ Lv{aLvl+1}</span>
+                  </div>}
+                  {/* Current assignment */}
+                  {auto.task&&<div style={{fontSize:13,color:'#c0c080',margin:'4px 0',padding:'3px 8px',background:'#a0a06010',borderRadius:4,border:'1px solid #a0a06033'}}>
+                    📋 {auto.task.type==='brew'?'⚗️ Brew '+(RECIPES.find(r=>r.id===auto.task.target)?.icon||'')+(RECIPES.find(r=>r.id===auto.task.target)?.name||auto.task.target)
+                      :auto.task.type==='forage'?'⛏️ Forage '+(REGIONS.find(r=>r.id===auto.task.target)?.icon||'')+(REGIONS.find(r=>r.id===auto.task.target)?.name||auto.task.target)
+                      :auto.task.type==='shopkeep'?'🏪 Shopkeeping'
+                      :auto.task.type==='enchant'?'✨ Enchanting':'❓ Unknown'}
+                  </div>}
+                  {/* Last report */}
+                  {auto.lastReport&&<div style={{fontSize:12,margin:'3px 0',padding:'3px 8px',background:auto.lastReport.color+'10',borderRadius:4,border:'1px solid '+auto.lastReport.color+'22',color:auto.lastReport.color}}>
+                    📊 Day {auto.lastReport.day}: {auto.lastReport.text} — {auto.lastReport.val}
+                  </div>}
+                </div>
               </div>
-              {/* XP bar (if Lv3+ magitech) */}
-              {mLv>=3&&aLvl<5&&<div style={{display:'flex',alignItems:'center',gap:4,margin:'3px 0'}}>
-                <span style={{fontSize:11,color:TH.textDim,minWidth:55}}>XP {prog}/{needed}</span>
-                <div style={{flex:1,height:4,background:TH.panel,borderRadius:2}}><div style={{height:'100%',width:pct+'%',background:'#a0a060',borderRadius:2}}/></div>
-                <span style={{fontSize:11,color:'#a0a060'}}>→ Lv{aLvl+1}</span>
-              </div>}
-              {/* Task assignment */}
-              {auto.task&&<div style={{fontSize:13,color:TH.textDim,margin:'3px 0',padding:'2px 6px',background:TH.bg,borderRadius:3,border:'1px solid '+TH.border}}>
-                📋 Assigned: {auto.task.type==='brew'?'⚗️ Brew '+(RECIPES.find(r=>r.id===auto.task.target)?.icon||'')+(RECIPES.find(r=>r.id===auto.task.target)?.name||auto.task.target)
-                  :auto.task.type==='forage'?'⛏️ Forage '+(REGIONS.find(r=>r.id===auto.task.target)?.icon||'')+(REGIONS.find(r=>r.id===auto.task.target)?.name||auto.task.target)
-                  :auto.task.type==='shopkeep'?'🏪 Shopkeeping'
-                  :auto.task.type==='enchant'?'✨ Enchanting':'❓ Unknown'}
-              </div>}
-              {auto.lastReport&&<div style={{fontSize:12,margin:'2px 0',padding:'2px 6px',background:auto.lastReport.color+'10',borderRadius:3,border:'1px solid '+auto.lastReport.color+'22',color:auto.lastReport.color}}>
-                📊 Day {auto.lastReport.day}: {auto.lastReport.text} — {auto.lastReport.val}
-              </div>}
-              <div style={{display:'flex',flexWrap:'wrap',gap:3,marginTop:4}}>
+              {/* Task dropdown — full width below portrait */}
+              <div style={{marginTop:6}}>
                 <select value={auto.task?.type==='brew'?'brew_'+auto.task.target:auto.task?.type==='forage'?'forage_'+auto.task.target:auto.task?.type||''} onChange={e=>{
                   const v=e.target.value;
                   if(!v){assignAutoTask(auto.id,null,null);return;}
                   if(v.startsWith('brew_')){assignAutoTask(auto.id,'brew',v.replace('brew_',''));return;}
                   if(v.startsWith('forage_')){assignAutoTask(auto.id,'forage',v.replace('forage_',''));return;}
                   assignAutoTask(auto.id,v,null);
-                }} style={{padding:'3px 6px',background:TH.panelLight,color:TH.text,border:'1px solid '+TH.border,borderRadius:4,fontFamily:'inherit',fontSize:13,flex:1}}>
+                }} style={{width:'100%',padding:'5px 8px',background:'#1e1e30',color:TH.text,border:'1px solid #a0a06044',borderRadius:4,fontFamily:'inherit',fontSize:13}}>
                   <option value="">-- Assign Task --</option>
                   <optgroup label="⚗️ Brew">
                     {RECIPES.filter(r=>known.includes(r.id)).map(r=><option key={r.id} value={'brew_'+r.id}>{r.icon} {r.name}</option>)}
