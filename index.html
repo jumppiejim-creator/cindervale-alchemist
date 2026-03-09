@@ -101,7 +101,7 @@ const computeRankProg=(curRank,curProg,added)=>{let r=curRank,p=curProg+added;wh
 const rankB=(r,pb)=>[0,pb,Math.floor(pb*1.5),pb*2][r]||0;
 
 // ═══ SAVE HELPERS ═══
-const SAVE_VERSION=2;const BUILD_VERSION='2026.03.08.C';const SP='cindervale-save';const AK=`${SP}:auto`;const sK=n=>`${SP}:slot-${n}`;
+const SAVE_VERSION=2;const BUILD_VERSION='2026.03.08.E';const SP='cindervale-save';const AK=`${SP}:auto`;const sK=n=>`${SP}:slot-${n}`;
 const _useArtifactStorage=(()=>{try{return typeof window!=='undefined'&&window.storage&&typeof window.storage.get==='function';}catch(e){return false;}})();
 const _useLocalStorage=(()=>{try{localStorage.setItem('_test','1');localStorage.removeItem('_test');return true;}catch(e){return false;}})();
 const hasStorage=()=>_useArtifactStorage||_useLocalStorage;
@@ -1296,6 +1296,90 @@ const FACTION_PAIRS=[
     rewards:['Both shops +2 items','Cross-faction quests, 15% vendor discount','Celestial Balm brews at -2 DC, +25% rep both']},
 ];
 
+// ═══ PRESTIGE CLASSES ═══
+const PRESTIGE_CLASSES={
+  cartographer:{id:'cartographer',name:'Cartographer',icon:'🗺️',color:'#50a0a0',
+    req:{warden:3,scholar:3},maxLv:5,
+    desc:'Explorer-scholar who maps hidden regions containing unique ingredients.',
+    features:[
+      {lv:1,name:'Hidden Paths',desc:'Discover secret sub-areas within known regions with unique ingredients. 25% chance per forage hour.'},
+      {lv:2,name:'Detailed Maps',desc:'Hidden area discovery chance +15%. Mapped areas yield +1 bonus ingredient.'},
+      {lv:3,name:'Cartographer\'s Insight',desc:'See all ingredients in a region before committing to forage. +10% XP from foraging.'},
+      {lv:4,name:'Pathfinder\'s Network',desc:'Staff foraging uses your mapped paths: +25% staff forage yield.'},
+      {lv:5,name:'Legendary Atlas',desc:'Discover the Heartforge\'s hidden chambers. Unique legendary ingredients only you can access.'},
+    ]},
+  spellbrewer:{id:'spellbrewer',name:'Spellbrewer',icon:'⚗️',color:'#9060c0',
+    req:{alchemist:3,enchanter:3},maxLv:5,
+    desc:'Creates infused potions that combine brewing and enchanting effects.',
+    features:[
+      {lv:1,name:'Infusion Basics',desc:'Combine a known potion + known enchantment into an Infused Potion. New crafting interface.'},
+      {lv:2,name:'Stable Infusions',desc:'+2 craft bonus on infusions. Infused potions sell at 2× base value.'},
+      {lv:3,name:'Dual Essence',desc:'Infused potions apply both the potion AND enchantment effect. Discovery chance +15%.'},
+      {lv:4,name:'Resonant Brewing',desc:'Successful infusions have 20% chance to produce 2×. Materials cost -1 per infusion.'},
+      {lv:5,name:'Grand Synthesis',desc:'Create legendary infusions. Combine 2 potions + 1 enchantment into a triple-effect brew.'},
+    ]},
+  magitech:{id:'magitech',name:'Magitech Engineer',icon:'🔧',color:'#a0a060',
+    req:{artificer:3,enchanter:3},maxLv:5,
+    desc:'Builds magical automata that perform workshop tasks autonomously.',
+    features:[
+      {lv:1,name:'Automaton Frame',desc:'Build a basic automaton (1 active). Performs one task per day at 60% efficiency.'},
+      {lv:2,name:'Improved Servos',desc:'Automaton efficiency +20%. Can assign to brew, forage, or shopkeep.'},
+      {lv:3,name:'Second Automaton',desc:'+1 automaton slot (2 total). Automata gain XP and level up like staff.'},
+      {lv:4,name:'Enchanted Core',desc:'Automata can perform enchanting tasks. Efficiency +20% (total 100%).'},
+      {lv:5,name:'Master Construct',desc:'+1 automaton (3 total). Automata can perform prestige tasks. Self-repairing.'},
+    ]},
+  brandmaster:{id:'brandmaster',name:'Brand Master',icon:'🏷️',color:'#d0a060',
+    req:{merchant:3,alchemist:3},maxLv:5,
+    desc:'Creates named product lines that build customer loyalty and premium pricing.',
+    features:[
+      {lv:1,name:'First Brand',desc:'Create a named potion brand. Branded potions sell at 1.5× price.'},
+      {lv:2,name:'Brand Recognition',desc:'Branded potions attract 1 repeat customer per morning who buys only your brand.'},
+      {lv:3,name:'Product Line',desc:'Create a second brand. Each brand can cover multiple potions. 2× price.'},
+      {lv:4,name:'Premium Label',desc:'Branded potions earn reputation. +5 faction rep per branded sale.'},
+      {lv:5,name:'Legendary Brand',desc:'Third brand slot. Legendary brands sell at 3× and attract collectors with rare trade goods.'},
+    ]},
+  wildcrafter:{id:'wildcrafter',name:'Wildcrafter',icon:'🌿',color:'#60a040',
+    req:{warden:3,alchemist:3},maxLv:5,
+    desc:'Brews potions in the field using fresh ingredients for bonus potency.',
+    features:[
+      {lv:1,name:'Field Alchemy',desc:'Brew 1 potion during foraging expeditions using just-gathered ingredients. +20% potency.'},
+      {lv:2,name:'Fresh Reagents',desc:'Field-brewed potions have +30% potency and 15% chance for double batch.'},
+      {lv:3,name:'Wilderness Recipes',desc:'Discover 3 field-only recipes that can\'t be brewed in the workshop. Powerful and unique.'},
+      {lv:4,name:'Master Fieldcrafter',desc:'Brew 2 potions per expedition. Field potency +50%. Field brews cost no hours.'},
+      {lv:5,name:'Living Apothecary',desc:'Auto-brew the optimal potion each expedition. Field-only legendaries unlock.'},
+    ]},
+  antiquarian:{id:'antiquarian',name:'Antiquarian',icon:'📖',color:'#c0a080',
+    req:{scholar:3,merchant:3},maxLv:5,
+    desc:'Discovers and appraises mysterious relics for massive profit or permanent bonuses.',
+    features:[
+      {lv:1,name:'Relic Sense',desc:'15% chance to find a mysterious relic during quests. Appraise to reveal value.'},
+      {lv:2,name:'Keen Appraisal',desc:'Appraisal checks get +3 bonus. Relics found more frequently (25%).'},
+      {lv:3,name:'Collector\'s Network',desc:'Sell appraised relics to collectors for 3× base value. Some relics grant permanent bonuses.'},
+      {lv:4,name:'Relic Expertise',desc:'Identify relics without a check. 35% find rate. Can commission specific relic hunts.'},
+      {lv:5,name:'Grand Collection',desc:'Completing relic sets grants legendary permanent bonuses. Museum display earns passive gold.'},
+    ]},
+  siegeengineer:{id:'siegeengineer',name:'Siege Engineer',icon:'🏗️',color:'#808060',
+    req:{warden:3,artificer:3},maxLv:5,
+    desc:'Builds permanent gathering outposts at discovered regions.',
+    features:[
+      {lv:1,name:'Field Outpost',desc:'Build an outpost at one region (3-day build). Passively gathers 2 ingredients/morning.'},
+      {lv:2,name:'Fortified Outpost',desc:'Outpost yield +2. Can build a second outpost.'},
+      {lv:3,name:'Processing Station',desc:'Outposts can auto-brew one recipe from gathered ingredients. Third outpost slot.'},
+      {lv:4,name:'Supply Depot',desc:'Outpost yield +3. Outpost-brewed potions auto-stock to shelves.'},
+      {lv:5,name:'Fortress Network',desc:'All outposts interconnected. Ingredients auto-transfer. Legendary outpost at Heartforge Rim.'},
+    ]},
+  arcanist:{id:'arcanist',name:'Arcanist',icon:'✨',color:'#8060c0',
+    req:{scholar:3,enchanter:3},maxLv:5,
+    desc:'Researches and designs entirely new custom enchantment patterns.',
+    features:[
+      {lv:1,name:'Pattern Research',desc:'Spend 2h to research a new enchantment pattern. Choose effect type and power level.'},
+      {lv:2,name:'Refined Patterns',desc:'Custom enchantments get +2 inscription bonus. Can name your creations.'},
+      {lv:3,name:'Dual-Effect Patterns',desc:'Design enchantments with two effects. Custom patterns sell at 2× value.'},
+      {lv:4,name:'Pattern Library',desc:'Store up to 10 custom patterns. Share patterns with staff for automated inscribing.'},
+      {lv:5,name:'Grand Theorem',desc:'Design legendary enchantments. Custom patterns can have 3 effects. Named masterworks.'},
+    ]},
+};
+
 const POT_LINES={
   'Thorek':['"The boys in Shaft Nine need salves after every shift. I\'m buying."','"Something for sore muscles and worse. Whatever you recommend."'],
   'Fiona':['"I\'ll take whatever you have. Potions sell for triple in the capital."','"My caravan leaves at dawn — what\'s ready?"'],
@@ -1832,6 +1916,7 @@ function CindervaleAlchemistInner(){
   const [caravanRuns,setCaravanRuns]=useState({}); // {cr_ashfield:2,cr_crystal:1}
   const [trainingSessions,setTrainingSessions]=useState({}); // {apprId: {stat:'tec', daysLeft:2}}
   const [factionHarmony,setFactionHarmony]=useState({}); // {fp_ash_cind: 2, fp_hk_vw: 1}
+  const [prestigeLevels,setPrestigeLevels]=useState({}); // {cartographer: 2, spellbrewer: 1}
   const [shelves,setShelves]=useState({});
   const [lastCheck,setLastCheck]=useState(null);
   const [resultPopup,setResultPopup]=useState(null); // {title,detail,type}
@@ -1917,9 +2002,9 @@ function CindervaleAlchemistInner(){
   const gatherState=useCallback(()=>({
     phase,charName,charRace,charGender,stats,ptsLeft,skRanks,skPts,skProgress,classLevels,specs,playerFeats,asiSpent,startingClass,
     screen,day,hours,xp,gold,inv,pots,known,aQ,doneQ,
-    log:log.slice(-30),milestones,fRep,factionAlign,upgrades,hiredAppr,apprTasks,apprXP,enchQ,potCustQ,clinicPatients,venomContracts,forgedWeapons,shieldCommissions,planarFocus,gadgets,blueprints,fieldJournal,loreFragments,companions,caravans,supplyChains,caravanRuns,trainingSessions,factionHarmony,shelves,dailyReport,
+    log:log.slice(-30),milestones,fRep,factionAlign,upgrades,hiredAppr,apprTasks,apprXP,enchQ,potCustQ,clinicPatients,venomContracts,forgedWeapons,shieldCommissions,planarFocus,gadgets,blueprints,fieldJournal,loreFragments,companions,caravans,supplyChains,caravanRuns,trainingSessions,factionHarmony,prestigeLevels,shelves,dailyReport,
     boardQ,activeBQ,doneBQCount,dayFlags,knownEnch,brewCounts,procureItems,pubPapers,selectedSite,constructProgress,
-  }),[phase,charName,charRace,charGender,stats,ptsLeft,skRanks,skPts,skProgress,classLevels,specs,playerFeats,asiSpent,startingClass,screen,day,hours,xp,gold,inv,pots,known,aQ,doneQ,log,milestones,fRep,factionAlign,upgrades,hiredAppr,apprTasks,apprXP,enchQ,potCustQ,clinicPatients,venomContracts,forgedWeapons,shieldCommissions,planarFocus,gadgets,blueprints,fieldJournal,loreFragments,companions,caravans,supplyChains,caravanRuns,trainingSessions,factionHarmony,shelves,dailyReport,boardQ,activeBQ,doneBQCount,dayFlags,knownEnch,brewCounts,procureItems,constructProgress,selectedSite]);
+  }),[phase,charName,charRace,charGender,stats,ptsLeft,skRanks,skPts,skProgress,classLevels,specs,playerFeats,asiSpent,startingClass,screen,day,hours,xp,gold,inv,pots,known,aQ,doneQ,log,milestones,fRep,factionAlign,upgrades,hiredAppr,apprTasks,apprXP,enchQ,potCustQ,clinicPatients,venomContracts,forgedWeapons,shieldCommissions,planarFocus,gadgets,blueprints,fieldJournal,loreFragments,companions,caravans,supplyChains,caravanRuns,trainingSessions,factionHarmony,prestigeLevels,shelves,dailyReport,boardQ,activeBQ,doneBQCount,dayFlags,knownEnch,brewCounts,procureItems,constructProgress,selectedSite]);
 
   const restoreState=useCallback((s)=>{
     if(!s)return;
@@ -1943,7 +2028,7 @@ function CindervaleAlchemistInner(){
     setUpgrades(s.upgrades||[]);setHiredAppr(s.hiredAppr||[]);
     setApprTasks(s.apprTasks||{});setApprXP(s.apprXP||{});
     prevLvl.current=getLvl(s.xp||0);
-    setDailyReport(s.dailyReport||[]);setEnchQ(s.enchQ||[]);setPotCustQ(s.potCustQ||[]);setClinicPatients(s.clinicPatients||[]);setVenomContracts(s.venomContracts||[]);setForgedWeapons(s.forgedWeapons||[]);setShieldCommissions(s.shieldCommissions||[]);setPlanarFocus(s.planarFocus||null);setGadgets(s.gadgets||[]);setBlueprints(s.blueprints||[]);setFieldJournal(s.fieldJournal||[]);setLoreFragments(s.loreFragments||[]);setCompanions(s.companions||[]);setCaravans(s.caravans||[]);setSupplyChains(s.supplyChains||[]);setCaravanRuns(s.caravanRuns||{});setTrainingSessions(s.trainingSessions||{});setFactionHarmony(s.factionHarmony||{});setShelves(s.shelves||{});setLastCheck(null);setNews([]);setMorningReport(null);
+    setDailyReport(s.dailyReport||[]);setEnchQ(s.enchQ||[]);setPotCustQ(s.potCustQ||[]);setClinicPatients(s.clinicPatients||[]);setVenomContracts(s.venomContracts||[]);setForgedWeapons(s.forgedWeapons||[]);setShieldCommissions(s.shieldCommissions||[]);setPlanarFocus(s.planarFocus||null);setGadgets(s.gadgets||[]);setBlueprints(s.blueprints||[]);setFieldJournal(s.fieldJournal||[]);setLoreFragments(s.loreFragments||[]);setCompanions(s.companions||[]);setCaravans(s.caravans||[]);setSupplyChains(s.supplyChains||[]);setCaravanRuns(s.caravanRuns||{});setTrainingSessions(s.trainingSessions||{});setFactionHarmony(s.factionHarmony||{});setPrestigeLevels(s.prestigeLevels||{});setShelves(s.shelves||{});setLastCheck(null);setNews([]);setMorningReport(null);
     setBoardQ(s.boardQ||[]);setActiveBQ(s.activeBQ||[]);setDoneBQCount(s.doneBQCount||0);setDayFlags(s.dayFlags||[]);setKnownEnch(s.knownEnch&&s.knownEnch.length>0?s.knownEnch:['e_sharp','e_glow','e_ironbark','e_feather','e_windwalk','e_rootbind']);
     setBrewCounts(s.brewCounts||{});setProcureItems(s.procureItems||[]);setPubPapers(s.pubPapers||[]);setConstructProgress(s.constructProgress||{});
     setSelHex(null);setVBuild('workshop');setDlgNpc(null);setShowShop(false);setQuestDlg(null);setPendingLevelUp(null);setSelectedSite(s.selectedSite||null);
@@ -2003,7 +2088,7 @@ function CindervaleAlchemistInner(){
   const snapshot=useCallback(()=>{
     const snap={day,hours,xp,gold,inv:{...inv},pots:{...pots},known:[...known],aQ:[...aQ],doneQ:[...doneQ],
       fRep:{...fRep},upgrades:[...upgrades],hiredAppr:hiredAppr.map(a=>({...a})),apprTasks:{...apprTasks},apprXP:{...apprXP},
-      skRanks:{...skRanks},skPts,skProgress:{...skProgress},enchQ:[...enchQ],potCustQ:[...potCustQ],clinicPatients:[...clinicPatients],venomContracts:[...venomContracts],forgedWeapons:[...forgedWeapons],shieldCommissions:[...shieldCommissions],planarFocus,gadgets:[...gadgets],blueprints:[...blueprints],fieldJournal:[...fieldJournal],loreFragments:[...loreFragments],companions:companions.map(c=>({...c})),caravans:[...caravans],supplyChains:[...supplyChains],caravanRuns:{...caravanRuns},trainingSessions:{...trainingSessions},factionHarmony:{...factionHarmony},gadgets,blueprints,fieldJournal,loreFragments,companions,caravans,supplyChains,caravanRuns,trainingSessions,factionHarmony,shelves:{...shelves},milestones:[...milestones],log:[...log],dailyReport:[...dailyReport],brewCounts:{...brewCounts},procureItems:[...procureItems],constructProgress:{...constructProgress}};
+      skRanks:{...skRanks},skPts,skProgress:{...skProgress},enchQ:[...enchQ],potCustQ:[...potCustQ],clinicPatients:[...clinicPatients],venomContracts:[...venomContracts],forgedWeapons:[...forgedWeapons],shieldCommissions:[...shieldCommissions],planarFocus,gadgets:[...gadgets],blueprints:[...blueprints],fieldJournal:[...fieldJournal],loreFragments:[...loreFragments],companions:companions.map(c=>({...c})),caravans:[...caravans],supplyChains:[...supplyChains],caravanRuns:{...caravanRuns},trainingSessions:{...trainingSessions},factionHarmony:{...factionHarmony},prestigeLevels:{...prestigeLevels},gadgets,blueprints,fieldJournal,loreFragments,companions,caravans,supplyChains,caravanRuns,trainingSessions,factionHarmony,prestigeLevels,shelves:{...shelves},milestones:[...milestones],log:[...log],dailyReport:[...dailyReport],brewCounts:{...brewCounts},procureItems:[...procureItems],constructProgress:{...constructProgress}};
     setUndoStack(p=>[...p.slice(-4),snap]);
   },[day,hours,xp,gold,inv,pots,known,aQ,doneQ,fRep,upgrades,hiredAppr,apprTasks,apprXP,skRanks,skPts,skProgress,enchQ,potCustQ,shelves,milestones,log,dailyReport,brewCounts,procureItems,constructProgress]);
 
@@ -2026,7 +2111,7 @@ function CindervaleAlchemistInner(){
     setInv(snap.inv);setPots(snap.pots);setKnown(snap.known);setAQ(snap.aQ);setDoneQ(snap.doneQ);
     setFRep(snap.fRep);setUpgrades(snap.upgrades);setHiredAppr(snap.hiredAppr);
     setApprTasks(snap.apprTasks);setApprXP(snap.apprXP);setSkRanks(snap.skRanks);setSkPts(snap.skPts);setSkProgress(snap.skProgress||{});
-    setEnchQ(snap.enchQ);setPotCustQ(snap.potCustQ||[]);setClinicPatients(snap.clinicPatients||[]);setVenomContracts(snap.venomContracts||[]);setForgedWeapons(snap.forgedWeapons||[]);setShieldCommissions(snap.shieldCommissions||[]);setPlanarFocus(snap.planarFocus||null);setGadgets(snap.gadgets||[]);setBlueprints(snap.blueprints||[]);setFieldJournal(snap.fieldJournal||[]);setLoreFragments(snap.loreFragments||[]);setCompanions(snap.companions||[]);setCaravans(snap.caravans||[]);setSupplyChains(snap.supplyChains||[]);setCaravanRuns(snap.caravanRuns||{});setTrainingSessions(snap.trainingSessions||{});setFactionHarmony(snap.factionHarmony||{});setShelves(snap.shelves||{});setMilestones(snap.milestones);setLog(snap.log);setDailyReport(snap.dailyReport);
+    setEnchQ(snap.enchQ);setPotCustQ(snap.potCustQ||[]);setClinicPatients(snap.clinicPatients||[]);setVenomContracts(snap.venomContracts||[]);setForgedWeapons(snap.forgedWeapons||[]);setShieldCommissions(snap.shieldCommissions||[]);setPlanarFocus(snap.planarFocus||null);setGadgets(snap.gadgets||[]);setBlueprints(snap.blueprints||[]);setFieldJournal(snap.fieldJournal||[]);setLoreFragments(snap.loreFragments||[]);setCompanions(snap.companions||[]);setCaravans(snap.caravans||[]);setSupplyChains(snap.supplyChains||[]);setCaravanRuns(snap.caravanRuns||{});setTrainingSessions(snap.trainingSessions||{});setFactionHarmony(snap.factionHarmony||{});setPrestigeLevels(snap.prestigeLevels||{});setShelves(snap.shelves||{});setMilestones(snap.milestones);setLog(snap.log);setDailyReport(snap.dailyReport);
     setBrewCounts(snap.brewCounts||{});setProcureItems(snap.procureItems||[]);setPubPapers(snap.pubPapers||[]);setConstructProgress(snap.constructProgress||{});
     setLastCheck(null);
     addLog('↩️ Time seems to blur — you find yourself a moment before, as if the last action never happened.','info');
@@ -5234,6 +5319,8 @@ function CindervaleAlchemistInner(){
               {Object.keys(CLASSES).map(cid=>{const c=CLASSES[cid];const curLv=classLevels[cid]||0;const nextLv=curLv+1;const isNew=curLv===0;
                 const nextFeature=c.features.find(f=>f.classLv===nextLv);
                 const selected=pendingLevelUp.chosenClass===cid;
+                const showProg=pendingLevelUp._showProg===cid;
+                const specId=specs[cid];const spec=specId?c.specs?.[specId]:null;
                 return(
                 <div key={cid} style={{padding:'8px 10px',background:selected?c.color+'18':TH.panelLight,borderRadius:6,border:`2px solid ${selected?c.color:TH.border}`,cursor:'pointer',transition:'all 0.15s'}}
                   onClick={()=>{
@@ -5244,6 +5331,7 @@ function CindervaleAlchemistInner(){
                     <div>
                       <span style={{fontSize:18,color:c.color,fontWeight:'bold'}}>{c.icon} {c.name}</span>
                       <span style={{fontSize:14,color:TH.textDim,marginLeft:6}}>{isNew?'NEW':'Lv '+curLv+' → '+nextLv}</span>
+                      {spec&&<span style={{fontSize:13,color:spec.color,marginLeft:6}}>{spec.icon} {spec.name}</span>}
                     </div>
                     <div style={{fontSize:13,color:STATS[c.primaryStat]?.color}}>{STATS[c.primaryStat]?.icon} {STATS[c.primaryStat]?.name}</div>
                   </div>
@@ -5252,16 +5340,118 @@ function CindervaleAlchemistInner(){
                     <b>Lv{nextLv}: {nextFeature.name}</b> — {nextFeature.desc}
                   </div>}
                   {nextLv===3&&!specs[cid]&&<div style={{fontSize:13,color:TH.purple,marginTop:2}}>⭐ Specialization choice at this level!</div>}
-                  {curLv>0&&<div style={{fontSize:13,color:TH.textDim,marginTop:2}}>
-                    {c.features.filter(f=>f.classLv>nextLv&&f.classLv<=nextLv+2).map(f=>
-                      <span key={f.name} style={{marginRight:8}}>Lv{f.classLv}: {f.name}</span>
-                    )}
+                  {/* View Full Progression toggle */}
+                  <div style={{marginTop:4}}>
+                    <button style={{background:'none',border:'none',color:TH.gold,fontSize:13,cursor:'pointer',padding:0,fontFamily:'inherit',textDecoration:'underline'}}
+                      onClick={e=>{e.stopPropagation();setPendingLevelUp(p=>({...p,_showProg:showProg?null:cid}));}}>
+                      {showProg?'▾ Hide Progression':'▸ View Full Progression'}
+                    </button>
+                  </div>
+                  {showProg&&<div style={{marginTop:4,padding:'6px 8px',background:TH.bg,borderRadius:4,border:'1px solid '+TH.border}} onClick={e=>e.stopPropagation()}>
+                    <div style={{fontSize:13,color:TH.gold,fontWeight:'bold',marginBottom:4}}>Class Features:</div>
+                    {c.features.map(f=>{
+                      const earned=f.classLv<=curLv;const isNext=f.classLv===nextLv;
+                      return <div key={f.name} style={{fontSize:12,padding:'2px 0',color:earned?TH.green:isNext?c.color:TH.textDim,opacity:earned?0.7:1}}>
+                        {earned?'✓':'◦'} <b>Lv{f.classLv}: {f.name}</b> — {f.desc}
+                      </div>;
+                    })}
+                    {spec&&<>
+                      <div style={{fontSize:13,color:spec.color,fontWeight:'bold',marginTop:6,marginBottom:4}}>{spec.icon} {spec.name} Features:</div>
+                      {spec.features.map(f=>{
+                        const earned=f.classLv<=curLv;const isNext=f.classLv===nextLv;
+                        return <div key={f.name} style={{fontSize:12,padding:'2px 0',color:earned?TH.green:isNext?spec.color:TH.textDim,opacity:earned?0.7:1}}>
+                          {earned?'✓':'◦'} <b>Lv{f.classLv}: {f.name}</b> — {f.desc}
+                        </div>;
+                      })}
+                    </>}
+                    {!spec&&curLv<3&&<div style={{fontSize:12,color:TH.purple,marginTop:4}}>⭐ Specialization unlocks at Lv3 — choose your path!</div>}
+                    {!spec&&curLv>=3&&<>
+                      <div style={{fontSize:13,color:TH.purple,fontWeight:'bold',marginTop:6,marginBottom:4}}>Available Specializations:</div>
+                      {Object.values(c.specs||{}).map(sp=>
+                        <div key={sp.id} style={{fontSize:12,padding:'2px 0'}}>
+                          <span style={{color:sp.color,fontWeight:'bold'}}>{sp.icon} {sp.name}</span>
+                          {sp.features.map(f=><div key={f.name} style={{fontSize:11,color:TH.textDim,paddingLeft:12}}>Lv{f.classLv}: {f.name}</div>)}
+                        </div>
+                      )}
+                    </>}
                   </div>}
                 </div>);})}
             </div>
+            {/* ═══ PRESTIGE CLASSES ═══ */}
+            {(()=>{
+              const available=Object.values(PRESTIGE_CLASSES).filter(pc=>{
+                const reqs=Object.entries(pc.req);
+                const meets=reqs.every(([cid,lv])=>(classLevels[cid]||0)>=lv);
+                const curLv=prestigeLevels[pc.id]||0;
+                return meets&&curLv<pc.maxLv;
+              });
+              if(available.length===0)return null;
+              return <div style={{marginTop:12}}>
+                <div style={{fontSize:16,color:TH.purple,fontWeight:'bold',marginBottom:6,borderTop:'1px solid '+TH.border,paddingTop:8}}>✨ Prestige Classes</div>
+                <div style={{fontSize:13,color:TH.textDim,marginBottom:6}}>Advance a prestige class AND gain a level in one parent class.</div>
+                {available.map(pc=>{
+                  const curLv=prestigeLevels[pc.id]||0;const nextLv=curLv+1;
+                  const nextFeature=pc.features.find(f=>f.lv===nextLv);
+                  const selected=pendingLevelUp.chosenClass==='prestige_'+pc.id;
+                  const showProg=pendingLevelUp._showProg==='prestige_'+pc.id;
+                  return <div key={pc.id} style={{padding:'8px 10px',background:selected?pc.color+'18':TH.panelLight,borderRadius:6,border:'2px solid '+(selected?pc.color:TH.border),cursor:'pointer',marginBottom:6}}
+                    onClick={()=>setPendingLevelUp(p=>({...p,chosenClass:'prestige_'+pc.id,needsSpec:false,chosenSpec:null,prestigeParentClass:null}))}>
+                    <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                      <span style={{fontSize:18,color:pc.color,fontWeight:'bold'}}>{pc.icon} {pc.name} <span style={{fontSize:14,color:TH.textDim}}>{curLv>0?'Lv '+curLv+' \u2192 '+nextLv:'NEW'}</span></span>
+                      <span style={{fontSize:12,color:TH.textDim}}>{Object.entries(pc.req).map(([cid,lv])=>CLASSES[cid]?.icon+lv).join('+')}</span>
+                    </div>
+                    <div style={{fontSize:13,color:TH.textDim,margin:'2px 0'}}>{pc.desc}</div>
+                    {nextFeature&&<div style={{fontSize:14,color:pc.color,marginTop:3,padding:'3px 6px',background:pc.color+'10',borderRadius:3}}>
+                      <b>Lv{nextLv}: {nextFeature.name}</b> {'\u2014'} {nextFeature.desc}
+                    </div>}
+                    {selected&&<div style={{marginTop:6,padding:'6px 8px',background:TH.bg,borderRadius:4,border:'1px solid '+TH.gold+'44'}} onClick={e=>e.stopPropagation()}>
+                      <div style={{fontSize:13,color:TH.gold,marginBottom:4}}>Also advance one parent class:</div>
+                      <div style={{display:'flex',gap:6}}>
+                        {Object.keys(pc.req).map(cid=>{const c=CLASSES[cid];const cLv=classLevels[cid]||0;
+                          const parentSel=pendingLevelUp.prestigeParentClass===cid;
+                          const nextF=c.features.find(f=>f.classLv===cLv+1);
+                          const needsNewSpec=cLv+1===3&&!specs[cid];
+                          return <div key={cid} style={{flex:1,padding:'6px 8px',borderRadius:4,cursor:'pointer',
+                            background:parentSel?c.color+'20':TH.panelLight,border:'2px solid '+(parentSel?c.color:TH.border)}}
+                            onClick={()=>setPendingLevelUp(p=>({...p,prestigeParentClass:cid,needsSpec:needsNewSpec}))}>
+                            <div style={{fontSize:14,color:c.color,fontWeight:'bold'}}>{c.icon} {c.name} Lv{cLv} {'\u2192'} {cLv+1}</div>
+                            {nextF&&<div style={{fontSize:11,color:TH.textDim}}>{nextF.name}</div>}
+                            {needsNewSpec&&<div style={{fontSize:11,color:TH.purple}}>+ Spec choice!</div>}
+                          </div>;
+                        })}
+                      </div>
+                    </div>}
+                    <button style={{background:'none',border:'none',color:pc.color,fontSize:12,cursor:'pointer',padding:0,fontFamily:'inherit',textDecoration:'underline',marginTop:3}}
+                      onClick={e=>{e.stopPropagation();setPendingLevelUp(p=>({...p,_showProg:showProg?null:'prestige_'+pc.id}));}}>
+                      {showProg?'\u25BE Hide':'\u25B8 View Progression'}
+                    </button>
+                    {showProg&&<div style={{marginTop:3,padding:'4px 8px',background:TH.bg,borderRadius:4,border:'1px solid '+TH.border}} onClick={e=>e.stopPropagation()}>
+                      {pc.features.map(f=>{const earned=f.lv<=curLv;return <div key={f.lv} style={{fontSize:12,padding:'1px 0',color:earned?TH.green:f.lv===nextLv?pc.color:TH.textDim}}>
+                        {earned?'\u2713':'\u25E6'} <b>Lv{f.lv}: {f.name}</b> {'\u2014'} {f.desc}
+                      </div>;})}
+                    </div>}
+                  </div>;
+                })}
+              </div>;
+            })()}
+            {(()=>{
+              const locked=Object.values(PRESTIGE_CLASSES).filter(pc=>{
+                const reqs=Object.entries(pc.req);return !reqs.every(([cid,lv])=>(classLevels[cid]||0)>=lv);
+              });
+              if(locked.length===0)return null;
+              return <div style={{marginTop:8}}>
+                <div style={{fontSize:13,color:TH.textDim,marginBottom:4}}>Locked Prestige Classes:</div>
+                <div style={{display:'flex',flexWrap:'wrap',gap:3}}>
+                  {locked.map(pc=><span key={pc.id} style={{padding:'2px 6px',fontSize:11,borderRadius:3,background:TH.bg,border:'1px solid '+TH.border,color:TH.textDim}}
+                    title={pc.desc+' | Requires: '+Object.entries(pc.req).map(([cid,lv])=>CLASSES[cid]?.name+' Lv'+lv).join(' + ')}>
+                    {pc.icon} {pc.name} ({Object.entries(pc.req).map(([cid,lv])=>CLASSES[cid]?.icon+lv).join('+')})</span>
+                  )}
+                </div>
+              </div>;
+            })()}
             <div style={{display:'flex',justifyContent:'space-between',marginTop:12}}>
               <button style={S.btn('dim')} onClick={()=>setPendingLevelUp(p=>({...p,step:'overview'}))}>← Back</button>
-              <button style={S.btn(pendingLevelUp.chosenClass?'gold':'dim')} disabled={!pendingLevelUp.chosenClass}
+              <button style={S.btn((pendingLevelUp.chosenClass&&(!pendingLevelUp.chosenClass.startsWith('prestige_')||pendingLevelUp.prestigeParentClass))?'gold':'dim')} disabled={!pendingLevelUp.chosenClass||(pendingLevelUp.chosenClass.startsWith('prestige_')&&!pendingLevelUp.prestigeParentClass)}
                 onClick={()=>{
                   const next=pendingLevelUp.needsSpec?'spec':pendingLevelUp.needsFeat?'feat':pendingLevelUp.needsASI?'asi':'skills';
                   setPendingLevelUp(p=>({...p,step:next}));
@@ -5273,9 +5463,9 @@ function CindervaleAlchemistInner(){
           {pendingLevelUp.step==='spec'&&<>
             <div style={{textAlign:'center',marginBottom:12}}>
               <div style={{fontSize:20,color:TH.gold}}>🎓 Choose Specialization</div>
-              <div style={{fontSize:14,color:TH.textDim}}>Your {CLASSES[pendingLevelUp.chosenClass]?.name} training has reached a crossroads. This choice is permanent.</div>
+              <div style={{fontSize:14,color:TH.textDim}}>Your {CLASSES[pendingLevelUp.chosenClass?.startsWith('prestige_')?pendingLevelUp.prestigeParentClass:pendingLevelUp.chosenClass]?.name} training has reached a crossroads. This choice is permanent.</div>
             </div>
-            {Object.values(CLASSES[pendingLevelUp.chosenClass]?.specs||{}).map(sp=>{
+            {Object.values(CLASSES[pendingLevelUp.chosenClass?.startsWith('prestige_')?pendingLevelUp.prestigeParentClass:pendingLevelUp.chosenClass]?.specs||{}).map(sp=>{
               const selected=pendingLevelUp.chosenSpec===sp.id;
               return(
               <div key={sp.id} style={{padding:'8px 10px',background:selected?sp.color+'15':TH.panelLight,borderRadius:6,marginBottom:6,border:`2px solid ${selected?sp.color:TH.border}`,cursor:'pointer'}}
@@ -5433,7 +5623,16 @@ function CindervaleAlchemistInner(){
                   {nextLv===1&&<div style={{fontSize:14,color:TH.textDim}}>New proficiencies: {c.profSkills.map(sk=>SKILLS[sk]?.name).join(', ')}</div>}
                 </div>
               );})()}
-              {pendingLevelUp.chosenSpec&&(()=>{const c=CLASSES[pendingLevelUp.chosenClass];const sp=c?.specs?.[pendingLevelUp.chosenSpec];return sp?(
+              {pendingLevelUp.chosenClass.startsWith('prestige_')&&(()=>{
+                const pcId=pendingLevelUp.chosenClass.replace('prestige_','');
+                const pc=PRESTIGE_CLASSES[pcId];const curLv=prestigeLevels[pcId]||0;const nextLv=curLv+1;
+                const feat=pc?.features.find(f=>f.lv===nextLv);
+                return pc?<div style={{padding:'6px 8px',background:pc.color+'10',borderRadius:4,marginBottom:6,border:'1px solid '+pc.color+'33'}}>
+                  <div style={{color:pc.color,fontWeight:'bold'}}>{pc.icon} Prestige: {pc.name} → Level {nextLv}</div>
+                  {feat&&<div style={{fontSize:14,color:TH.text}}>Gained: <b>{feat.name}</b> — {feat.desc}</div>}
+                </div>:null;
+              })()}
+              {pendingLevelUp.chosenSpec&&(()=>{const c=CLASSES[pendingLevelUp.chosenClass?.startsWith('prestige_')?pendingLevelUp.prestigeParentClass:pendingLevelUp.chosenClass];const sp=c?.specs?.[pendingLevelUp.chosenSpec];return sp?(
                 <div style={{padding:'6px 8px',background:sp.color+'10',borderRadius:4,marginBottom:6,border:'1px solid '+sp.color+'33'}}>
                   <div style={{color:sp.color,fontWeight:'bold'}}>{sp.icon} Specialization: {sp.name}</div>
                   <div style={{fontSize:14,color:TH.text}}>+2 {STATS[sp.bStat]?.name} · {sp.bSkills.map(sk=>SKILLS[sk]?.name).join(', ')}</div>
@@ -5466,10 +5665,21 @@ function CindervaleAlchemistInner(){
               <button style={S.btn('dim')} onClick={()=>setPendingLevelUp(p=>({...p,step:'skills'}))}>← Back</button>
               <button style={{...S.btn('gold'),fontSize:17,padding:'8px 24px'}} onClick={()=>{
                 // ── COMMIT ALL CHANGES ──
-                const cid=pendingLevelUp.chosenClass;
+                const isPrestige=pendingLevelUp.chosenClass.startsWith('prestige_');
+                const prestigeId=isPrestige?pendingLevelUp.chosenClass.replace('prestige_',''):null;
+                const parentCid=isPrestige?pendingLevelUp.prestigeParentClass:null;
+                const cid=isPrestige?parentCid:pendingLevelUp.chosenClass;
                 const c=CLASSES[cid];
                 const newClassLv=(classLevels[cid]||0)+1;
-                // Advance class level
+                // Advance prestige level if applicable
+                if(isPrestige&&prestigeId){
+                  setPrestigeLevels(p=>({...p,[prestigeId]:(p[prestigeId]||0)+1}));
+                  const pc=PRESTIGE_CLASSES[prestigeId];
+                  const newPLv=(prestigeLevels[prestigeId]||0)+1;
+                  const pFeat=pc?.features.find(f=>f.lv===newPLv);
+                  addLog('✨ Prestige: '+pc.icon+pc.name+' Level '+newPLv+'!'+(pFeat?' Gained: '+pFeat.name:''),'level');
+                }
+                // Advance parent/base class level
                 setClassLevels(p=>({...p,[cid]:(p[cid]||0)+1}));
                 // Grant proficiency skills if new class
                 if(newClassLv===1&&c){setSkRanks(p=>{const n={...p};c.profSkills.forEach(sk=>{n[sk]=Math.max(n[sk]||0,1);});return n;});}
@@ -7550,6 +7760,10 @@ function CindervaleAlchemistInner(){
                   <div key={cid} style={{padding:'3px 8px',background:c.color+'15',border:'1px solid '+c.color+'44',borderRadius:4,fontSize:15,color:c.color,fontWeight:'bold'}}>
                     {c.icon} {c.name} {lv}{specs[cid]?' · '+c.specs[specs[cid]]?.icon+c.specs[specs[cid]]?.name:''}
                   </div>);})}
+                {Object.entries(prestigeLevels).filter(([,lv])=>lv>0).map(([pid,lv])=>{const pc=PRESTIGE_CLASSES[pid];return pc?(
+                  <div key={pid} style={{padding:'3px 8px',background:pc.color+'15',border:'1px solid '+pc.color+'44',borderRadius:4,fontSize:15,color:pc.color,fontWeight:'bold'}}>
+                    {pc.icon} {pc.name} {lv}
+                  </div>):null;})}
               </div>
               <div style={{fontSize:14,color:TH.textDim}}>Character Level {level} · Proficiency +{pb}</div>
             </div>
