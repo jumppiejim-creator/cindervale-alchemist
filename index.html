@@ -1380,6 +1380,28 @@ const PRESTIGE_CLASSES={
     ]},
 };
 
+// ═══ ARCANIST CUSTOM PATTERNS ═══
+const PATTERN_EFFECTS=[
+  {id:'pe_dmg_fire',name:'Searing',icon:'🔥',cat:'weapon',desc:'+fire damage',power:[10,18,28],xpBase:30},
+  {id:'pe_dmg_ice',name:'Frostbite',icon:'❄️',cat:'weapon',desc:'+cold damage',power:[10,18,28],xpBase:30},
+  {id:'pe_dmg_shock',name:'Voltaic',icon:'⚡',cat:'weapon',desc:'+lightning damage',power:[10,18,28],xpBase:30},
+  {id:'pe_dmg_venom',name:'Toxic',icon:'☠️',cat:'weapon',desc:'+poison damage',power:[10,18,28],xpBase:30},
+  {id:'pe_lifesteal',name:'Vampiric',icon:'🩸',cat:'weapon',desc:'heals wielder on hit',power:[12,22,35],xpBase:40},
+  {id:'pe_armor',name:'Warding',icon:'🛡️',cat:'armor',desc:'+defense rating',power:[10,18,28],xpBase:30},
+  {id:'pe_regen',name:'Mending',icon:'💚',cat:'armor',desc:'passive regeneration',power:[12,22,35],xpBase:35},
+  {id:'pe_reflect',name:'Retaliation',icon:'🔄',cat:'armor',desc:'reflects damage to attacker',power:[14,24,38],xpBase:40},
+  {id:'pe_stealth',name:'Obscuring',icon:'🌑',cat:'armor',desc:'harder to detect',power:[10,18,28],xpBase:30},
+  {id:'pe_resist',name:'Warding Aura',icon:'✨',cat:'armor',desc:'magic resistance',power:[14,24,38],xpBase:40},
+  {id:'pe_speed',name:'Swiftness',icon:'💨',cat:'other',desc:'+movement speed',power:[8,16,24],xpBase:25},
+  {id:'pe_luck',name:'Fortune',icon:'🍀',cat:'other',desc:'+luck in all endeavors',power:[10,18,28],xpBase:30},
+  {id:'pe_sight',name:'Truesight',icon:'👁️',cat:'other',desc:'see hidden things',power:[12,22,35],xpBase:35},
+  {id:'pe_charisma',name:'Alluring',icon:'💎',cat:'other',desc:'+social influence',power:[10,18,28],xpBase:30},
+  {id:'pe_wisdom',name:'Sagacity',icon:'📖',cat:'other',desc:'+knowledge and insight',power:[10,18,28],xpBase:30},
+];
+const PATTERN_POWER_NAMES=['Minor','Greater','Supreme'];
+const PATTERN_PREFIXES=['Arcane','Ethereal','Prismatic','Resonant','Celestial','Abyssal','Runic','Eldritch','Mythic','Astral','Primordial','Radiant'];
+const PATTERN_SUFFIXES=['Pattern','Sigil','Glyph','Theorem','Formula','Matrix','Cipher','Weave','Array','Schema'];
+
 const POT_LINES={
   'Thorek':['"The boys in Shaft Nine need salves after every shift. I\'m buying."','"Something for sore muscles and worse. Whatever you recommend."'],
   'Fiona':['"I\'ll take whatever you have. Potions sell for triple in the capital."','"My caravan leaves at dawn — what\'s ready?"'],
@@ -1946,6 +1968,7 @@ function CindervaleAlchemistInner(){
   const [factionHarmony,setFactionHarmony]=useState({}); // {fp_ash_cind: 2, fp_hk_vw: 1}
   const [prestigeLevels,setPrestigeLevels]=useState({}); // {cartographer: 2, spellbrewer: 1}
   const [automata,setAutomata]=useState([]); // [{id:'auto_1',name:'Unit Alpha',task:{type:'brew',target:'healing_salve'},xp:0}]
+  const [customPatterns,setCustomPatterns]=useState([]); // [{id:'cp_1',name:'Arcane Sigil',effects:['pe_dmg_fire'],power:0,cat:'weapon',xp:30,dc:12}]
   const [shelves,setShelves]=useState({});
   const [lastCheck,setLastCheck]=useState(null);
   const [resultPopup,setResultPopup]=useState(null); // {title,detail,type}
@@ -2032,9 +2055,9 @@ function CindervaleAlchemistInner(){
   const gatherState=useCallback(()=>({
     phase,charName,charRace,charGender,stats,ptsLeft,skRanks,skPts,skProgress,classLevels,specs,playerFeats,asiSpent,startingClass,
     screen,day,hours,xp,gold,inv,pots,known,aQ,doneQ,
-    log:log.slice(-30),milestones,fRep,factionAlign,upgrades,hiredAppr,apprTasks,apprXP,enchQ,potCustQ,clinicPatients,venomContracts,forgedWeapons,shieldCommissions,planarFocus,gadgets,blueprints,fieldJournal,loreFragments,companions,caravans,supplyChains,caravanRuns,trainingSessions,factionHarmony,prestigeLevels,automata,shelves,dailyReport,
+    log:log.slice(-30),milestones,fRep,factionAlign,upgrades,hiredAppr,apprTasks,apprXP,enchQ,potCustQ,clinicPatients,venomContracts,forgedWeapons,shieldCommissions,planarFocus,gadgets,blueprints,fieldJournal,loreFragments,companions,caravans,supplyChains,caravanRuns,trainingSessions,factionHarmony,prestigeLevels,automata,customPatterns,shelves,dailyReport,
     boardQ,activeBQ,doneBQCount,dayFlags,knownEnch,brewCounts,procureItems,pubPapers,selectedSite,constructProgress,
-  }),[phase,charName,charRace,charGender,stats,ptsLeft,skRanks,skPts,skProgress,classLevels,specs,playerFeats,asiSpent,startingClass,screen,day,hours,xp,gold,inv,pots,known,aQ,doneQ,log,milestones,fRep,factionAlign,upgrades,hiredAppr,apprTasks,apprXP,enchQ,potCustQ,clinicPatients,venomContracts,forgedWeapons,shieldCommissions,planarFocus,gadgets,blueprints,fieldJournal,loreFragments,companions,caravans,supplyChains,caravanRuns,trainingSessions,factionHarmony,prestigeLevels,automata,shelves,dailyReport,boardQ,activeBQ,doneBQCount,dayFlags,knownEnch,brewCounts,procureItems,constructProgress,selectedSite]);
+  }),[phase,charName,charRace,charGender,stats,ptsLeft,skRanks,skPts,skProgress,classLevels,specs,playerFeats,asiSpent,startingClass,screen,day,hours,xp,gold,inv,pots,known,aQ,doneQ,log,milestones,fRep,factionAlign,upgrades,hiredAppr,apprTasks,apprXP,enchQ,potCustQ,clinicPatients,venomContracts,forgedWeapons,shieldCommissions,planarFocus,gadgets,blueprints,fieldJournal,loreFragments,companions,caravans,supplyChains,caravanRuns,trainingSessions,factionHarmony,prestigeLevels,automata,customPatterns,shelves,dailyReport,boardQ,activeBQ,doneBQCount,dayFlags,knownEnch,brewCounts,procureItems,constructProgress,selectedSite]);
 
   const restoreState=useCallback((s)=>{
     if(!s)return;
@@ -2059,7 +2082,7 @@ function CindervaleAlchemistInner(){
     setUpgrades(s.upgrades||[]);setHiredAppr(s.hiredAppr||[]);
     setApprTasks(s.apprTasks||{});setApprXP(s.apprXP||{});
     prevLvl.current=getLvl(s.xp||0);
-    setDailyReport(s.dailyReport||[]);setEnchQ(s.enchQ||[]);setPotCustQ(s.potCustQ||[]);setClinicPatients(s.clinicPatients||[]);setVenomContracts(s.venomContracts||[]);setForgedWeapons(s.forgedWeapons||[]);setShieldCommissions(s.shieldCommissions||[]);setPlanarFocus(s.planarFocus||null);setGadgets(s.gadgets||[]);setBlueprints(s.blueprints||[]);setFieldJournal(s.fieldJournal||[]);setLoreFragments(s.loreFragments||[]);setCompanions(s.companions||[]);setCaravans(s.caravans||[]);setSupplyChains(s.supplyChains||[]);setCaravanRuns(s.caravanRuns||{});setTrainingSessions(s.trainingSessions||{});setFactionHarmony(s.factionHarmony||{});setPrestigeLevels(s.prestigeLevels||{});setAutomata(s.automata||[]);setShelves(s.shelves||{});setLastCheck(null);setNews([]);setMorningReport(null);
+    setDailyReport(s.dailyReport||[]);setEnchQ(s.enchQ||[]);setPotCustQ(s.potCustQ||[]);setClinicPatients(s.clinicPatients||[]);setVenomContracts(s.venomContracts||[]);setForgedWeapons(s.forgedWeapons||[]);setShieldCommissions(s.shieldCommissions||[]);setPlanarFocus(s.planarFocus||null);setGadgets(s.gadgets||[]);setBlueprints(s.blueprints||[]);setFieldJournal(s.fieldJournal||[]);setLoreFragments(s.loreFragments||[]);setCompanions(s.companions||[]);setCaravans(s.caravans||[]);setSupplyChains(s.supplyChains||[]);setCaravanRuns(s.caravanRuns||{});setTrainingSessions(s.trainingSessions||{});setFactionHarmony(s.factionHarmony||{});setPrestigeLevels(s.prestigeLevels||{});setAutomata(s.automata||[]);setCustomPatterns(s.customPatterns||[]);setShelves(s.shelves||{});setLastCheck(null);setNews([]);setMorningReport(null);
     setBoardQ(s.boardQ||[]);setActiveBQ(s.activeBQ||[]);setDoneBQCount(s.doneBQCount||0);setDayFlags(s.dayFlags||[]);setKnownEnch(s.knownEnch&&s.knownEnch.length>0?s.knownEnch:['e_sharp','e_glow','e_ironbark','e_feather','e_windwalk','e_rootbind']);
     setBrewCounts(s.brewCounts||{});setProcureItems(s.procureItems||[]);setPubPapers(s.pubPapers||[]);setConstructProgress(s.constructProgress||{});
     setSelHex(null);setVBuild('workshop');setDlgNpc(null);setShowShop(false);setQuestDlg(null);setPendingLevelUp(null);setSelectedSite(s.selectedSite||null);
@@ -2119,7 +2142,7 @@ function CindervaleAlchemistInner(){
   const snapshot=useCallback(()=>{
     const snap={day,hours,xp,gold,inv:{...inv},pots:{...pots},known:[...known],aQ:[...aQ],doneQ:[...doneQ],
       fRep:{...fRep},upgrades:[...upgrades],hiredAppr:hiredAppr.map(a=>({...a})),apprTasks:{...apprTasks},apprXP:{...apprXP},
-      skRanks:{...skRanks},skPts,skProgress:{...skProgress},enchQ:[...enchQ],potCustQ:[...potCustQ],clinicPatients:[...clinicPatients],venomContracts:[...venomContracts],forgedWeapons:[...forgedWeapons],shieldCommissions:[...shieldCommissions],planarFocus,gadgets:[...gadgets],blueprints:[...blueprints],fieldJournal:[...fieldJournal],loreFragments:[...loreFragments],companions:companions.map(c=>({...c})),caravans:[...caravans],supplyChains:[...supplyChains],caravanRuns:{...caravanRuns},trainingSessions:{...trainingSessions},factionHarmony:{...factionHarmony},prestigeLevels:{...prestigeLevels},automata:automata.map(a=>({...a})),gadgets,blueprints,fieldJournal,loreFragments,companions,caravans,supplyChains,caravanRuns,trainingSessions,factionHarmony,prestigeLevels,automata,shelves:{...shelves},milestones:[...milestones],log:[...log],dailyReport:[...dailyReport],brewCounts:{...brewCounts},procureItems:[...procureItems],constructProgress:{...constructProgress}};
+      skRanks:{...skRanks},skPts,skProgress:{...skProgress},enchQ:[...enchQ],potCustQ:[...potCustQ],clinicPatients:[...clinicPatients],venomContracts:[...venomContracts],forgedWeapons:[...forgedWeapons],shieldCommissions:[...shieldCommissions],planarFocus,gadgets:[...gadgets],blueprints:[...blueprints],fieldJournal:[...fieldJournal],loreFragments:[...loreFragments],companions:companions.map(c=>({...c})),caravans:[...caravans],supplyChains:[...supplyChains],caravanRuns:{...caravanRuns},trainingSessions:{...trainingSessions},factionHarmony:{...factionHarmony},prestigeLevels:{...prestigeLevels},automata:automata.map(a=>({...a})),customPatterns:[...customPatterns],gadgets,blueprints,fieldJournal,loreFragments,companions,caravans,supplyChains,caravanRuns,trainingSessions,factionHarmony,prestigeLevels,automata,customPatterns,shelves:{...shelves},milestones:[...milestones],log:[...log],dailyReport:[...dailyReport],brewCounts:{...brewCounts},procureItems:[...procureItems],constructProgress:{...constructProgress}};
     setUndoStack(p=>[...p.slice(-4),snap]);
   },[day,hours,xp,gold,inv,pots,known,aQ,doneQ,fRep,upgrades,hiredAppr,apprTasks,apprXP,skRanks,skPts,skProgress,enchQ,potCustQ,shelves,milestones,log,dailyReport,brewCounts,procureItems,constructProgress]);
 
@@ -2142,7 +2165,7 @@ function CindervaleAlchemistInner(){
     setInv(snap.inv);setPots(snap.pots);setKnown(snap.known);setAQ(snap.aQ);setDoneQ(snap.doneQ);
     setFRep(snap.fRep);setUpgrades(snap.upgrades);setHiredAppr(snap.hiredAppr);
     setApprTasks(snap.apprTasks);setApprXP(snap.apprXP);setSkRanks(snap.skRanks);setSkPts(snap.skPts);setSkProgress(snap.skProgress||{});
-    setEnchQ(snap.enchQ);setPotCustQ(snap.potCustQ||[]);setClinicPatients(snap.clinicPatients||[]);setVenomContracts(snap.venomContracts||[]);setForgedWeapons(snap.forgedWeapons||[]);setShieldCommissions(snap.shieldCommissions||[]);setPlanarFocus(snap.planarFocus||null);setGadgets(snap.gadgets||[]);setBlueprints(snap.blueprints||[]);setFieldJournal(snap.fieldJournal||[]);setLoreFragments(snap.loreFragments||[]);setCompanions(snap.companions||[]);setCaravans(snap.caravans||[]);setSupplyChains(snap.supplyChains||[]);setCaravanRuns(snap.caravanRuns||{});setTrainingSessions(snap.trainingSessions||{});setFactionHarmony(snap.factionHarmony||{});setPrestigeLevels(snap.prestigeLevels||{});setAutomata(snap.automata||[]);setShelves(snap.shelves||{});setMilestones(snap.milestones);setLog(snap.log);setDailyReport(snap.dailyReport);
+    setEnchQ(snap.enchQ);setPotCustQ(snap.potCustQ||[]);setClinicPatients(snap.clinicPatients||[]);setVenomContracts(snap.venomContracts||[]);setForgedWeapons(snap.forgedWeapons||[]);setShieldCommissions(snap.shieldCommissions||[]);setPlanarFocus(snap.planarFocus||null);setGadgets(snap.gadgets||[]);setBlueprints(snap.blueprints||[]);setFieldJournal(snap.fieldJournal||[]);setLoreFragments(snap.loreFragments||[]);setCompanions(snap.companions||[]);setCaravans(snap.caravans||[]);setSupplyChains(snap.supplyChains||[]);setCaravanRuns(snap.caravanRuns||{});setTrainingSessions(snap.trainingSessions||{});setFactionHarmony(snap.factionHarmony||{});setPrestigeLevels(snap.prestigeLevels||{});setAutomata(snap.automata||[]);setCustomPatterns(snap.customPatterns||[]);setShelves(snap.shelves||{});setMilestones(snap.milestones);setLog(snap.log);setDailyReport(snap.dailyReport);
     setBrewCounts(snap.brewCounts||{});setProcureItems(snap.procureItems||[]);setPubPapers(snap.pubPapers||[]);setConstructProgress(snap.constructProgress||{});
     setLastCheck(null);
     addLog('↩️ Time seems to blur — you find yourself a moment before, as if the last action never happened.','info');
@@ -3272,6 +3295,68 @@ function CindervaleAlchemistInner(){
     const ids=getActivePlanes();
     if(ids.length<2)return null;
     return PLANAR_COMBOS[ids.sort().join('+')]||null;
+  };
+
+  // ═══ ARCANIST — CUSTOM ENCHANTMENT PATTERNS ═══
+  const getPatternSlots=()=>{const aLv=prestigeLevels.arcanist||0;return aLv>=4?10:aLv>=1?5:0;};
+  const getMaxEffects=()=>{const aLv=prestigeLevels.arcanist||0;return aLv>=5?3:aLv>=3?2:1;};
+  const getPatternInscBonus=()=>(prestigeLevels.arcanist||0)>=2?2:0;
+  const canNamePatterns=()=>(prestigeLevels.arcanist||0)>=2;
+  const getPatternSellMult=()=>(prestigeLevels.arcanist||0)>=3?2:1;
+
+  const researchPattern=(effectIds,powerLevel,cat,customName)=>{
+    const aLv=prestigeLevels.arcanist||0;
+    if(aLv<1){addLog('Requires Arcanist prestige class.','error');return;}
+    if(customPatterns.length>=getPatternSlots()){addLog(`Pattern library full (${getPatternSlots()} max).`,'error');return;}
+    if(effectIds.length>getMaxEffects()){addLog(`Can only combine ${getMaxEffects()} effects at your level.`,'error');return;}
+    if(effectIds.length<1){addLog('Select at least one effect.','error');return;}
+    if(hours<2){addLog('Pattern research takes 2 hours of focused study.','error');return;}
+    snapshot();setHours(h=>h-2);
+    // DC scales with power level and number of effects
+    const baseDC=10+powerLevel*3+effectIds.length*2;
+    const ch=doCheck('research',baseDC);
+    const arcB=getPatternInscBonus();if(arcB){ch.total+=arcB;ch.extras.push({label:'Arcanist',val:arcB});}
+    const cfb=getFeatureVal('craftBonus');if(cfb){ch.total+=cfb;ch.extras.push({label:'Mastery',val:cfb});}
+    ch.success=ch.total>=baseDC;
+    if(ch.success){
+      const effects=effectIds.map(eid=>PATTERN_EFFECTS.find(e=>e.id===eid)).filter(Boolean);
+      const totalXp=effects.reduce((s,e)=>s+e.power[powerLevel],0);
+      const dc=baseDC;
+      const prefix=PATTERN_PREFIXES[Math.floor(Math.random()*PATTERN_PREFIXES.length)];
+      const suffix=PATTERN_SUFFIXES[Math.floor(Math.random()*PATTERN_SUFFIXES.length)];
+      const autoName=prefix+' '+suffix;
+      const name=(customName&&canNamePatterns())?customName:autoName;
+      const newPattern={
+        id:'cp_'+Date.now(),name,effects:effectIds,power:powerLevel,cat,
+        xp:totalXp,dc,sellMult:getPatternSellMult(),
+        effectDescs:effects.map(e=>e.icon+' '+e.name+' ('+PATTERN_POWER_NAMES[powerLevel]+')').join(' + '),
+      };
+      setCustomPatterns(prev=>[...prev,newPattern]);
+      gainXP(totalXp);
+      const FLAVOR=['The runes align in a configuration never before recorded. You\\'ve created something entirely new.',
+        'Arcane energy flows through the pattern like water finding its channel. It works!',
+        'Your theoretical framework proves correct — the pattern crystallizes into a stable enchantment formula.',
+        'The symbols on the page begin to glow faintly. This is no mere recipe — it\\'s a theorem made real.'];
+      showResult('✨ Pattern Discovered! — '+name,'craft',
+        FLAVOR[Math.floor(Math.random()*FLAVOR.length)]+
+        '\n\nCategory: '+ENCH_CATS[cat]?.icon+' '+ENCH_CATS[cat]?.name+
+        '\nEffects: '+effects.map(e=>e.icon+' '+e.name+' — '+e.desc).join(', ')+
+        '\nPower: '+PATTERN_POWER_NAMES[powerLevel]+' · DC '+dc+
+        '\n+'+totalXp+' XP',ch);
+      addLog('✨ Arcanist: Designed new pattern — '+name+' ('+effects.map(e=>e.icon).join('')+')','quest');
+    } else {
+      gainXP(10);
+      const FAIL=['The runes destabilize and scatter. Your theory needs refinement.',
+        'The pattern almost holds... then collapses. You learned something from the failure.',
+        'Arcane feedback singes your notes. Back to the drawing board.'];
+      showResult('✨ Research Failed','info',
+        FAIL[Math.floor(Math.random()*FAIL.length)]+'\n+10 XP',ch);
+    }
+  };
+
+  const deletePattern=(patternId)=>{
+    setCustomPatterns(prev=>prev.filter(p=>p.id!==patternId));
+    addLog('Removed pattern from library.','info');
   };
 
   // ═══ MAGITECH ENGINEER — AUTOMATA ═══
@@ -6935,6 +7020,95 @@ function CindervaleAlchemistInner(){
           })()}
         </div>}
 
+        {/* ═══ ARCANIST — CUSTOM PATTERNS ═══ */}
+        {(prestigeLevels.arcanist||0)>=1&&(()=>{
+          const aLv=prestigeLevels.arcanist||0;
+          const maxEff=getMaxEffects();
+          const [selCat,setSelCatState]=typeof React.useState==='function'?React.useState('weapon'):[null,null];
+          // Use a ref-based approach for local UI state within the IIFE
+          return <div style={{...S.card,borderColor:'#8060c0',background:'linear-gradient(135deg,#1a1830,#22203a)'}}>
+            <div style={S.cT}>✨ Arcanist Pattern Workshop — {customPatterns.length}/{getPatternSlots()} patterns</div>
+            <div style={{fontSize:13,color:TH.textDim,marginBottom:8}}>
+              Design custom enchantments by combining effects. Max {maxEff} effect{maxEff>1?'s':''} per pattern.
+              {aLv>=2&&' · +2 inscription bonus on custom patterns'}
+              {aLv>=3&&' · Custom patterns sell at 2×'}
+            </div>
+            {/* Research new pattern */}
+            <div style={{padding:'10px 12px',background:'#8060c015',borderRadius:6,border:'1px solid #8060c033',marginBottom:8}}>
+              <div style={{fontSize:14,color:'#b090e0',fontWeight:'bold',marginBottom:6}}>🔬 Research New Pattern</div>
+              {/* Category selector */}
+              <div style={{display:'flex',gap:4,marginBottom:6}}>
+                {Object.entries(ENCH_CATS).map(([catId,cat])=>
+                  <button key={catId} id={'arc_cat_'+catId}
+                    style={{...S.btn('def'),fontSize:13,padding:'3px 10px',borderColor:'#8060c044'}}
+                    onClick={()=>{document.querySelectorAll('[id^=arc_cat_]').forEach(b=>b.style.background='');document.getElementById('arc_cat_'+catId).style.background='#8060c030';document.getElementById('arc_cat_val').value=catId;}}>
+                    {cat.icon} {cat.name}
+                  </button>
+                )}
+                <input type="hidden" id="arc_cat_val" defaultValue="weapon"/>
+              </div>
+              {/* Effect checkboxes */}
+              <div style={{fontSize:13,color:TH.textDim,marginBottom:3}}>Select up to {maxEff} effect{maxEff>1?'s':''}:</div>
+              <div style={{display:'flex',flexWrap:'wrap',gap:4,marginBottom:6}}>
+                {PATTERN_EFFECTS.map(eff=>
+                  <label key={eff.id} style={{display:'flex',alignItems:'center',gap:3,padding:'3px 8px',background:TH.panelLight,borderRadius:4,border:'1px solid '+TH.border,cursor:'pointer',fontSize:12}}>
+                    <input type="checkbox" className="arc_eff_cb" value={eff.id} style={{margin:0}}/>
+                    <span style={{color:'#b090e0'}}>{eff.icon}</span> <span style={{color:TH.text}}>{eff.name}</span>
+                    <span style={{color:TH.textDim,fontSize:11}}>({eff.desc})</span>
+                  </label>
+                )}
+              </div>
+              {/* Power level */}
+              <div style={{display:'flex',gap:4,alignItems:'center',marginBottom:6}}>
+                <span style={{fontSize:13,color:TH.textDim}}>Power:</span>
+                {PATTERN_POWER_NAMES.map((pn,i)=>
+                  <button key={i} id={'arc_pow_'+i}
+                    style={{...S.btn(i===0?'gold':'def'),fontSize:12,padding:'2px 10px',borderColor:'#8060c044'}}
+                    onClick={()=>{document.querySelectorAll('[id^=arc_pow_]').forEach(b=>{b.style.background='';b.style.color='';});const el=document.getElementById('arc_pow_'+i);el.style.background='#8060c030';el.style.color='#b090e0';document.getElementById('arc_pow_val').value=i;}}>
+                    {pn} (DC +{i*3})
+                  </button>
+                )}
+                <input type="hidden" id="arc_pow_val" defaultValue="0"/>
+              </div>
+              {/* Custom name (Lv2+) */}
+              {canNamePatterns()&&<div style={{marginBottom:6}}>
+                <input id="arc_name_input" placeholder="Name your creation (optional)" style={{width:'100%',padding:'4px 8px',background:TH.panelLight,border:'1px solid #8060c044',borderRadius:4,color:TH.textBright,fontFamily:'inherit',fontSize:13,boxSizing:'border-box'}}/>
+              </div>}
+              {/* Research button */}
+              <button style={{...S.btn(hours>=2?'gold':'dim'),fontSize:14,padding:'6px 16px'}} disabled={hours<2}
+                onClick={()=>{
+                  const checked=Array.from(document.querySelectorAll('.arc_eff_cb:checked')).map(cb=>cb.value);
+                  const power=parseInt(document.getElementById('arc_pow_val')?.value||'0');
+                  const cat=document.getElementById('arc_cat_val')?.value||'weapon';
+                  const name=document.getElementById('arc_name_input')?.value||'';
+                  researchPattern(checked,power,cat,name);
+                }}>
+                🔬 Research Pattern (2h)
+              </button>
+            </div>
+            {/* Pattern library */}
+            {customPatterns.length>0&&<div>
+              <div style={{fontSize:14,color:'#b090e0',fontWeight:'bold',marginBottom:4}}>📚 Pattern Library</div>
+              {customPatterns.map(pat=>{
+                const effObjs=pat.effects.map(eid=>PATTERN_EFFECTS.find(e=>e.id===eid)).filter(Boolean);
+                return <div key={pat.id} style={{padding:'6px 10px',background:'#8060c010',borderRadius:6,marginBottom:4,border:'1px solid #8060c033',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                  <div>
+                    <div style={{fontSize:15,color:'#c0a0e0',fontWeight:'bold'}}>{pat.name}</div>
+                    <div style={{fontSize:13,color:TH.textDim}}>
+                      {ENCH_CATS[pat.cat]?.icon} {ENCH_CATS[pat.cat]?.name} · {effObjs.map(e=>e.icon+' '+e.name).join(' + ')} · {PATTERN_POWER_NAMES[pat.power]} · DC {pat.dc}
+                    </div>
+                    <div style={{fontSize:12,color:TH.textDim}}>{effObjs.map(e=>e.desc).join(', ')} · {pat.xp} XP · Sell {pat.sellMult}×</div>
+                  </div>
+                  <button style={{...S.btn('dim'),fontSize:11,padding:'2px 6px'}} onClick={()=>deletePattern(pat.id)} title="Remove from library">✕</button>
+                </div>;
+              })}
+            </div>}
+            {aLv<2&&<div style={{fontSize:12,color:TH.textDim,marginTop:4}}>🔒 Named patterns & +2 inscription at Arcanist Lv2</div>}
+            {aLv>=2&&aLv<3&&<div style={{fontSize:12,color:TH.textDim,marginTop:4}}>🔒 Dual-effect patterns & 2× sell at Arcanist Lv3</div>}
+            {aLv>=3&&aLv<5&&<div style={{fontSize:12,color:TH.textDim,marginTop:4}}>🔒 Triple-effect legendary patterns at Arcanist Lv5</div>}
+          </div>;
+        })()}
+
         {/* ═══ MAGITECH ENGINEER — AUTOMATA ═══ */}
         {(prestigeLevels.magitech||0)>=1&&<div style={{...S.card,borderColor:'#a0a060',background:'#a0a00808'}}>
           <div style={S.cT}>🤖 Automata — {automata.length}/{getAutoSlots()} slots · Efficiency: {Math.round(getAutoEfficiency()*100)}%</div>
@@ -7146,6 +7320,9 @@ function CindervaleAlchemistInner(){
             </div>
             {ENCHANTMENTS.filter(e=>!knownEnch.includes(e.id)&&(!e.faction||getRL(e.faction)>=(e.fReq||0))).length>0&&
               <div style={{fontSize:13,color:TH.green,marginTop:4}}>✨ {ENCHANTMENTS.filter(e=>!knownEnch.includes(e.id)&&(!e.faction||getRL(e.faction)>=(e.fReq||0))).length} enchantment{ENCHANTMENTS.filter(e=>!knownEnch.includes(e.id)&&(!e.faction||getRL(e.faction)>=(e.fReq||0))).length>1?'s':''} available to discover</div>}
+            {customPatterns.length>0&&<div style={{marginTop:4}}>
+              <span style={{fontSize:13,color:'#b090e0'}}>✨ Custom Patterns: {customPatterns.map(p=>p.name).join(', ')}</span>
+            </div>}
           </div>}
         </div>
         {/* ── Experiment Bench ── */}
