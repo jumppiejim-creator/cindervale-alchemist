@@ -1706,50 +1706,78 @@ const MILESTONES={
 
 // ═══ TOWN EVENTS — random daily occurrences ═══
 const TOWN_EVENTS=[
-  {id:'te_merchant',prob:.15,minLv:0,text:'A traveling merchant arrives with a cart full of rare herbs.',
+  {id:'te_merchant',vibe:'trade',prob:.15,minLv:0,text:'A traveling merchant arrives with a cart full of rare herbs.',
     effect:(s)=>{const picks=['moonpetal','starwort','gloomcap','embervein'];const id=picks[Math.floor(Math.random()*picks.length)];return{items:{[id]:2},msg:`You barter for 2× ${INGR[id]?.icon}${INGR[id]?.name}.`};}},
-  {id:'te_tax',prob:.06,minLv:3,text:'The village council levies a small tax to fund road repairs.',
+  {id:'te_tax',vibe:'official',prob:.06,minLv:3,text:'The village council levies a small tax to fund road repairs.',
     effect:(s)=>{const amt=Math.min(s.gold,5+s.level*2);return{gold:-amt,msg:`You contribute ${amt}g to the village fund. (+5 rep with all factions)`,rep_all:5};}},
-  {id:'te_demand',prob:.10,minLv:2,text:'Word of your craft is spreading. A courier arrives with advance payment!',
+  {id:'te_demand',vibe:'trade',prob:.10,minLv:2,text:'Word of your craft is spreading. A courier arrives with advance payment!',
     effect:(s)=>{const g=10+s.level*3;return{gold:g,xp:20,msg:`+${g}g advance payment, +20 XP from the reputation boost.`};}},
-  {id:'te_bargain',prob:.08,minLv:1,text:'Brenna has surplus stock — she\'s selling ingredients at half price today.',
+  {id:'te_bargain',vibe:'trade',prob:.08,minLv:1,text:'Brenna has surplus stock — she\'s selling ingredients at half price today.',
     effect:()=>({flag:'bargain_day',msg:'Brenna\'s shop prices halved today! Visit the market.'})},
-  {id:'te_donation',prob:.05,minLv:4,text:'An anonymous benefactor leaves a pouch of gold at your workshop door.',
+  {id:'te_donation',vibe:'trade',prob:.05,minLv:4,text:'An anonymous benefactor leaves a pouch of gold at your workshop door.',
     effect:(s)=>{const g=15+s.level*2;return{gold:g,msg:`+${g}g found in the pouch.`};}},
-  {id:'te_ashstorm',prob:.08,minLv:0,text:'A heavy ash storm blankets Cindervale. The wilds will be treacherous today.',
+  {id:'te_ashstorm',vibe:'danger',prob:.08,minLv:0,text:'A heavy ash storm blankets Cindervale. The wilds will be treacherous today.',
     effect:()=>({flag:'ash_storm',msg:'Expedition travel times +1h today. Plan accordingly.'})},
-  {id:'te_clearsky',prob:.08,minLv:0,text:'Crystal-clear skies — perfect foraging weather.',
+  {id:'te_clearsky',vibe:'nature',prob:.08,minLv:0,text:'Crystal-clear skies — perfect foraging weather.',
     effect:()=>({flag:'clear_sky',msg:'Extraction DCs reduced by 2 today!'})},
-  {id:'te_bloom',prob:.06,minLv:2,text:'An unusual bloom event — wildflowers burst across the Ashfields overnight.',
+  {id:'te_bloom',vibe:'nature',prob:.06,minLv:2,text:'An unusual bloom event — wildflowers burst across the Ashfields overnight.',
     effect:()=>({items:{ashbloom:3,moonpetal:1},msg:`Free harvest: 3× 🌿Ashbloom + 1× 🌸Moonpetal`})},
-  {id:'te_feast',prob:.05,minLv:3,text:'The Hearthkeepers hold a communal feast in the village square.',
+  {id:'te_feast',vibe:'social',prob:.05,minLv:3,text:'The Hearthkeepers hold a communal feast in the village square.',
     effect:()=>({rep:{hearthkeepers:10},xp:30,msg:'+10 Hearthkeeper rep, +30 XP. Good food, good company.'})},
-  {id:'te_patrol',prob:.06,minLv:2,text:'Ashwarden patrols report all-clear — the village feels safer today.',
+  {id:'te_patrol',vibe:'military',prob:.06,minLv:2,text:'Ashwarden patrols report all-clear — the village feels safer today.',
     effect:()=>({rep:{ashwardens:8},msg:'+8 Ashwarden rep. The wardens appreciate your ongoing contributions.'})},
-  {id:'te_ritual',prob:.05,minLv:4,text:'Veilwalkers perform a dawn ritual at the standing stones. You observe quietly.',
+  {id:'te_ritual',vibe:'mystical',prob:.05,minLv:4,text:'Veilwalkers perform a dawn ritual at the standing stones. You observe quietly.',
     effect:()=>({rep:{veilwalkers:10},xp:25,msg:'+10 Veilwalker rep, +25 XP from the mystical insight.'})},
-  {id:'te_miners',prob:.05,minLv:3,text:'Cinderfolk miners celebrate a new seam discovery with ale and song.',
+  {id:'te_miners',vibe:'social',prob:.05,minLv:3,text:'Cinderfolk miners celebrate a new seam discovery with ale and song.',
     effect:()=>({rep:{cinderfolk:10},msg:'+10 Cinderfolk rep. You\'re invited to share a drink.'})},
-  {id:'te_gossip',prob:.18,minLv:0,text:'Marta shares village gossip over morning tea.',
+  {id:'te_gossip',vibe:'gossip',prob:.18,minLv:0,text:'Marta shares village gossip over morning tea.',
     flavor:['Apparently old Grum once blew up his workshop three times in one week.','The Ashwardens are debating whether to expand patrols eastward.','There\'s talk of a festival if the Heartforge is ever relit.','Someone saw strange lights near the Moonlit Glade.','Brenna says ingredient prices are rising across the region.','The Cinderfolk have been unusually quiet about their deep mine finds.','A pack of ash drakes was spotted near the Ironwood. Stay sharp.','They say a master alchemist once lived in your workshop. Wonder what happened to them.'],
     effect:()=>({msg:''})},
-  {id:'te_apprentice_v',prob:.04,minLv:3,text:'A young alchemist passes through, eager to trade knowledge.',
+  {id:'te_apprentice_v',vibe:'trade',prob:.04,minLv:3,text:'A young alchemist passes through, eager to trade knowledge.',
     effect:(s)=>{return{xp:40+s.level*5,msg:`+${40+s.level*5} XP from the exchange of techniques.`};}},
-  {id:'te_refugee',prob:.05,minLv:2,text:'Refugees from a distant village arrive seeking healing supplies.',
+  {id:'te_refugee',vibe:'social',prob:.05,minLv:2,text:'Refugees from a distant village arrive seeking healing supplies.',
     effect:(s)=>{if((s.pots.healing_salve||0)>0)return{pots:{healing_salve:-1},gold:20,xp:50,rep:{hearthkeepers:15},msg:'You donate a Healing Salve. +20g, +50 XP, +15 Hearthkeeper rep.'};return{msg:'They need healing salves, but you have none to spare. Perhaps tomorrow.'};}},
-  {id:'te_inspector',prob:.04,minLv:5,text:'A guild inspector from the capital evaluates your workshop.',
+  {id:'te_inspector',vibe:'official',prob:.04,minLv:5,text:'A guild inspector from the capital evaluates your workshop.',
     effect:(s)=>{const score=s.upgrades.length*5+s.level*3;if(score>=40)return{gold:30,xp:60,msg:`Rating: Excellent! +30g bonus, +60 XP. "Impressive operation."`};return{xp:20,msg:`Rating: Adequate. +20 XP. "Room for improvement."`};}},
-  {id:'te_thief',prob:.04,minLv:3,text:'You catch someone rifling through your ingredient stores!',
+  {id:'te_thief',vibe:'danger',prob:.04,minLv:3,text:'You catch someone rifling through your ingredient stores!',
     effect:(s)=>{const picks=Object.keys(s.inv).filter(k=>s.inv[k]>1);if(picks.length===0)return{msg:'Lucky — your stores are too bare to steal from.'};const id=picks[Math.floor(Math.random()*picks.length)];return{items:{[id]:-2},msg:`Lost 2× ${INGR[id]?.icon}${INGR[id]?.name}! You chase them off before they take more.`};}},
-  {id:'te_oldrecipe',prob:.03,minLv:4,text:'You find a faded recipe card stuck between the workshop floorboards.',
+  {id:'te_oldrecipe',vibe:'mystical',prob:.03,minLv:4,text:'You find a faded recipe card stuck between the workshop floorboards.',
     effect:()=>({xp:50,msg:'+50 XP. The handwriting is ancient — but the techniques are sound.'})},
-  {id:'te_ventsurge',prob:.05,minLv:5,text:'The volcanic vents rumble ominously. Tremors shake the village.',
+  {id:'te_ventsurge',vibe:'danger',prob:.05,minLv:5,text:'The volcanic vents rumble ominously. Tremors shake the village.',
     effect:()=>({items:{volcanic_essence:1,embervein:1},msg:'Shaken loose by the tremors: 1× 🔥Volcanic Ess. + 1× 🔶Embervein'})},
-  {id:'te_moonfull',prob:.04,minLv:4,text:'A rare full moon over Cindervale — moonlit herbs glow with extra potency.',
+  {id:'te_moonfull',vibe:'mystical',prob:.04,minLv:4,text:'A rare full moon over Cindervale — moonlit herbs glow with extra potency.',
     effect:()=>({items:{moonpetal:2,starwort:1},msg:'Moonlit harvest: 2× 🌸Moonpetal + 1× ⭐Starwort'})},
 ];
 
 // ═══ BOARD QUEST TEMPLATES — repeatable daily quests ═══
+// ═══ EVENT VIBE THEMES ═══
+const EVENT_VIBES={
+  danger:{icon:'🔥',title:'Danger in Cindervale',bg:'linear-gradient(180deg,#2a0a0a 0%,#4a1010 30%,#8a2020 60%,#c03020 100%)',
+    scene:'🐉',sceneSize:80,border:'#ff4030',text:'#ff8060',
+    particles:['🔥','💨','🌋','⚡'],ambiance:'The air crackles with tension...'},
+  nature:{icon:'☀️',title:'A Beautiful Day',bg:'linear-gradient(180deg,#0a1a2a 0%,#1a3a5a 20%,#4a8ab0 50%,#8ac0e0 80%,#c0e0f0 100%)',
+    scene:'🌄',sceneSize:80,border:'#60c0ff',text:'#90d0ff',
+    particles:['🌿','🌸','☀️','🦋'],ambiance:'The morning light sparkles across Cindervale...'},
+  trade:{icon:'💰',title:'Commerce & Trade',bg:'linear-gradient(180deg,#1a1808 0%,#2a2810 30%,#4a4020 50%,#6a5830 80%,#8a7040 100%)',
+    scene:'🏪',sceneSize:70,border:'#d0a040',text:'#e0c060',
+    particles:['💰','📦','🪙','⚖️'],ambiance:'The clatter of coins and rustle of goods...'},
+  social:{icon:'🎉',title:'Village Life',bg:'linear-gradient(180deg,#0a0a1a 0%,#1a1a3a 25%,#2a2a5a 50%,#4a3a6a 75%,#6a4a7a 100%)',
+    scene:'🏘️',sceneSize:70,border:'#a070c0',text:'#c090e0',
+    particles:['🍺','🎶','🤝','❤️'],ambiance:'Laughter and warmth fill the village square...'},
+  mystical:{icon:'✨',title:'Mystical Occurrence',bg:'linear-gradient(180deg,#0a0818 0%,#150a30 25%,#200a50 50%,#301070 75%,#401a90 100%)',
+    scene:'🌙',sceneSize:80,border:'#8060c0',text:'#b090ff',
+    particles:['✨','🌙','🔮','⭐'],ambiance:'The Veil shimmers at the edges of perception...'},
+  military:{icon:'⚔️',title:'Ashwarden Report',bg:'linear-gradient(180deg,#0a0a0a 0%,#1a1010 25%,#2a1818 50%,#3a2020 75%,#4a2828 100%)',
+    scene:'🛡️',sceneSize:70,border:'#c05040',text:'#e07060',
+    particles:['⚔️','🛡️','🏹','🗡️'],ambiance:'The wardens stand vigilant at the gates...'},
+  official:{icon:'📋',title:'Official Business',bg:'linear-gradient(180deg,#0a0a10 0%,#141420 25%,#1e1e30 50%,#282840 75%,#323250 100%)',
+    scene:'📜',sceneSize:70,border:'#6080a0',text:'#80a0c0',
+    particles:['📋','🏛️','⚖️','📜'],ambiance:'A knock at the workshop door — official business...'},
+  gossip:{icon:'💬',title:'Village Whispers',bg:'linear-gradient(180deg,#100a08 0%,#201810 25%,#302820 50%,#403830 75%,#504840 100%)',
+    scene:'☕',sceneSize:60,border:'#a08060',text:'#c0a080',
+    particles:['💬','☕','👀','🤫'],ambiance:'Marta leans in conspiratorially...'},
+};
+
 const BQ_GIVERS=['Farmer Aldric','Widow Maren','Trader Osric','Healer Senna','Guard Brennick','Smith Torva','Elder Yara','Prospector Jax','Herbalist Neve','Cook Brindle','Captain Voss','Pilgrim Elowen','Shepherd Grynn','Scribe Felton','Chandler Rue'];
 const BQ_TEMPLATES=[
   {type:'deliver',tier:1,pool:['healing_salve','windwalk_salve'],qtyR:[1,2],gPer:12,xPer:18,minLv:0,
@@ -1943,6 +1971,7 @@ function CindervaleAlchemistInner(){
   const [apprXP,setApprXP]=useState({});
   const [dailyReport,setDailyReport]=useState([]);
   const [morningReport,setMorningReport]=useState(null);
+  const [eventPopup,setEventPopup]=useState(null); // {events:[...], idx:0}
   const [undoStack,setUndoStack]=useState([]);
   const [musicOn,setMusicOn]=useState(false);
   const [sfxOn,setSfxOn]=useState(true);
@@ -3943,6 +3972,7 @@ function CindervaleAlchemistInner(){
     const halfPay=getFeatureVal('halfPayroll')?0.5:1;
     const sfBonus=1+getFeatureVal('staffForageBonus');
     const sxpMult=1+getFeatureVal('staffXPBonus');
+    const _xpAdded={}; // Track XP gains for level-up detection
     const dualTask=getFeatureVal('dualStaffTasks');
     // Process staff tasks synchronously (report entries must exist before morning report)
     const updatedAppr=hiredAppr.map(ap=>{
@@ -3984,7 +4014,7 @@ function CindervaleAlchemistInner(){
           Object.entries(g).forEach(([id,q])=>modInv(id,q));
           const yieldStr=Object.entries(g).map(([id,q])=>`${INGR[id]?.icon||''}${INGR[id]?.name||id} ×${q}`).join(', ');
           report.push({n:ap.name,i:ap.icon,r:`Foraged ${empGatherH}h at ${reg.icon}${reg.name}: ${yieldStr}`,t:'ok'});
-          setApprXP(p=>({...p,[ap.id]:(p[ap.id]||0)+Math.floor(15*axp)}));}
+          {const _xpGain=Math.floor(15*axp);_xpAdded[ap.id]=(_xpAdded[ap.id]||0)+_xpGain;setApprXP(p=>({...p,[ap.id]:(p[ap.id]||0)+_xpGain}));};}
       } else if(task.type==='brew'&&task.target){
         const recipe=RECIPES.find(r=>r.id===task.target);if(recipe){
           const cost={};recipe.ingr.forEach(id=>{cost[id]=(cost[id]||0)+1;});
@@ -3995,11 +4025,11 @@ function CindervaleAlchemistInner(){
               Object.entries(cost).forEach(([id,q])=>modInv(id,-q));modPot(recipe.id,1);
               report.push({n:ap.name,i:ap.icon,r:`Brewed ${recipe.icon}${recipe.name} (2nd try)`,t:'ok'});gainXP(Math.floor(recipe.xp*.3));
             } else{if(Math.random()<.5)Object.entries(cost).forEach(([id,q])=>modInv(id,-q));report.push({n:ap.name,i:ap.icon,r:`Failed ${recipe.name}`,t:'fail'});}
-            setApprXP(p=>({...p,[ap.id]:(p[ap.id]||0)+Math.floor(10*axp)}));
+            {const _xpGain=Math.floor(10*axp);_xpAdded[ap.id]=(_xpAdded[ap.id]||0)+_xpGain;setApprXP(p=>({...p,[ap.id]:(p[ap.id]||0)+_xpGain}));};
           } else report.push({n:ap.name,i:ap.icon,r:`No mats for ${recipe.name}`,t:'fail'});}
       } else if(task.type==='shopkeep'){
         const g=Math.floor((5+level*2+aLvl*3)*eff*(1+upEff('sellBonus')+getFeatureVal('sellBonus')));setGold(gg=>gg+g);
-        report.push({n:ap.name,i:ap.icon,r:`Shop: +${g}g`,t:'ok'});setApprXP(p=>({...p,[ap.id]:(p[ap.id]||0)+Math.floor(12*axp)}));
+        report.push({n:ap.name,i:ap.icon,r:`Shop: +${g}g`,t:'ok'});{const _xpGain=Math.floor(12*axp);_xpAdded[ap.id]=(_xpAdded[ap.id]||0)+_xpGain;setApprXP(p=>({...p,[ap.id]:(p[ap.id]||0)+_xpGain}));};
       } else if(task.type==='research_task'){
         const undP=RECIPES.filter(r=>!known.includes(r.id)&&level>=r.unlock&&(!r.faction||getRL(r.faction)>=(r.fReq||0)));
         const undE=ENCHANTMENTS.filter(e=>!knownEnch.includes(e.id)&&(!e.faction||getRL(e.faction)>=(e.fReq||0)));
@@ -4014,7 +4044,7 @@ function CindervaleAlchemistInner(){
             report.push({n:ap.name,i:ap.icon,r:`Inscription: ${d.icon}${d.name}!`,t:'ok'});
           }
         } else report.push({n:ap.name,i:ap.icon,r:'Studied. No breakthrough.',t:'idle'});
-        setApprXP(p=>({...p,[ap.id]:(p[ap.id]||0)+Math.floor(10*axp)}));
+        {const _xpGain=Math.floor(10*axp);_xpAdded[ap.id]=(_xpAdded[ap.id]||0)+_xpGain;setApprXP(p=>({...p,[ap.id]:(p[ap.id]||0)+_xpGain}));};
       } else if(task.type==='construct'&&task.target){
         const u=UPGRADES[task.target];
         if(u&&!hasUp(task.target)){
@@ -4023,7 +4053,7 @@ function CindervaleAlchemistInner(){
           const cur=constructProgress[task.target]||0;const next=Math.min(100,cur+progress);
           if(next>=100)report.push({n:ap.name,i:ap.icon,r:`🔨 ${u.icon}${u.name} prep complete! Gold -40%, 1 mat waived.`,t:'ok'});
           else report.push({n:ap.name,i:ap.icon,r:`🔨 ${u.icon}${u.name}: ${Math.min(100,next)}% (+${progress}%)`,t:'ok'});
-          setApprXP(p=>({...p,[ap.id]:(p[ap.id]||0)+Math.floor(8*axp)}));
+          {const _xpGain=Math.floor(8*axp);_xpAdded[ap.id]=(_xpAdded[ap.id]||0)+_xpGain;setApprXP(p=>({...p,[ap.id]:(p[ap.id]||0)+_xpGain}));};
         } else report.push({n:ap.name,i:ap.icon,r:`${u?'Already built':'Unknown upgrade'}`,t:'idle'});
       }
       const traitMorale=(ap.traits||[]).reduce((s,t)=>s+(TRAIT_FX[t]?.moraleDelta||0),0);
@@ -4163,6 +4193,8 @@ function CindervaleAlchemistInner(){
     if(firedEvents.length>0){
       const evtSummary=firedEvents.map(e=>e.text).join(' · ');
       nw.push({icon:'🏘️',text:'Town: '+evtSummary,to:'map',label:'📜 Journal',color:TH.orange});
+      // Queue dramatic event popup
+      setEventPopup({events:firedEvents.map(e=>({text:e.text,vibe:e.vibe||'social',result:e.result,flavor:e.flavor})),idx:0});
     }
     // ── Board Quests ──
     const newBQ=genBoardQuests(curLv,day+1,getFeatureVal('doubleQuestRefresh')?2:0);
@@ -4206,6 +4238,16 @@ function CindervaleAlchemistInner(){
     if(hiredAppr.length>0){
       const staffLines=staffEntries.length>0?staffEntries.map(r=>({icon:r.i,label:r.n,val:r.r,color:r.t==='ok'?TH.green:r.t==='fail'?TH.red:TH.textDim})):
         hiredAppr.map(a=>({icon:a.icon,label:a.name,val:'Idle',color:TH.textDim}));
+      // Detect level-ups from XP gained this morning
+      hiredAppr.forEach(ap=>{
+        const added=_xpAdded[ap.id]||0;if(added<=0)return;
+        const oldXp=(apprXP[ap.id]||0);const newXp=oldXp+added;
+        const oldLv=Math.min(5,Math.floor(oldXp/100));const newLv=Math.min(5,Math.floor(newXp/100));
+        if(newLv>oldLv){
+          staffLines.push({icon:'⭐',label:ap.name+' LEVELED UP!',val:'★'.repeat(newLv)+' Lv'+newLv+' (+10% efficiency)',color:TH.gold});
+          addLog('⭐ '+ap.name+' reached Level '+newLv+'! Efficiency improved.','quest');
+        }
+      });
       mrSections.push({title:'👥 Staff',lines:staffLines});
     }
     // Resources gained (garden, greenhouse, ley line, faction gifts)
@@ -5142,7 +5184,49 @@ function CindervaleAlchemistInner(){
       </div>}
 
       {/* ═══ NIGHT EXPEDITION REGION PICKER ═══ */}
-      {nightExpPending&&!morningReport&&(()=>{
+      {/* ═══ EVENT POPUP — Shows after morning report is dismissed ═══ */}
+      {!morningReport&&eventPopup&&(()=>{
+        const evt=eventPopup.events[eventPopup.idx];if(!evt)return null;
+        const vibe=EVENT_VIBES[evt.vibe]||EVENT_VIBES.social;
+        const isLast=eventPopup.idx>=eventPopup.events.length-1;
+        const particles=vibe.particles;
+        return <div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'#000000ee',display:'flex',alignItems:'center',justifyContent:'center',zIndex:999,padding:16}}
+          onClick={()=>{if(isLast)setEventPopup(null);else setEventPopup(p=>({...p,idx:p.idx+1}));}}>
+          <div style={{background:vibe.bg,border:'2px solid '+vibe.border,borderRadius:16,padding:'28px 24px',maxWidth:460,width:'100%',maxHeight:'85vh',overflowY:'auto',boxShadow:'0 0 80px '+vibe.border+'40',position:'relative',textAlign:'center'}} onClick={e=>e.stopPropagation()}>
+            {/* Floating particles */}
+            <div style={{position:'absolute',top:0,left:0,right:0,bottom:0,overflow:'hidden',borderRadius:14,pointerEvents:'none'}}>
+              {particles.map((p,i)=><div key={i} style={{position:'absolute',fontSize:20+Math.random()*16,opacity:0.15+Math.random()*0.15,
+                left:Math.random()*80+'%',top:Math.random()*80+'%'}}>{p}</div>)}
+            </div>
+            {/* Main scene icon */}
+            <div style={{fontSize:vibe.sceneSize,lineHeight:1,marginBottom:12,filter:'drop-shadow(0 0 20px '+vibe.border+'80)'}}>{vibe.scene}</div>
+            {/* Title */}
+            <div style={{fontSize:20,color:vibe.text,fontWeight:'bold',letterSpacing:2,marginBottom:8,textShadow:'0 0 20px '+vibe.border+'60'}}>{vibe.title}</div>
+            {/* Ambiance text */}
+            <div style={{fontSize:14,color:vibe.text+'aa',fontStyle:'italic',marginBottom:12}}>{vibe.ambiance}</div>
+            {/* Event description */}
+            <div style={{fontSize:17,color:'#e0d8d0',lineHeight:1.5,padding:'12px 16px',background:'#00000040',borderRadius:8,marginBottom:10,textAlign:'left',border:'1px solid '+vibe.border+'33'}}>
+              {evt.text}
+            </div>
+            {/* Result */}
+            {evt.result&&evt.result.msg&&evt.result.msg!==''&&<div style={{fontSize:15,color:vibe.text,padding:'8px 12px',background:vibe.border+'15',borderRadius:6,marginBottom:10,border:'1px solid '+vibe.border+'33'}}>
+              {evt.result.msg}
+            </div>}
+            {/* Flavor text for gossip */}
+            {evt.flavor&&<div style={{fontSize:15,color:'#c0b8a8',fontStyle:'italic',padding:'6px 12px',background:'#ffffff08',borderRadius:6,marginBottom:10}}>
+              "{evt.flavor}"
+            </div>}
+            {/* Continue button */}
+            <button style={{fontSize:16,padding:'8px 32px',background:vibe.border+'30',border:'2px solid '+vibe.border,borderRadius:8,color:vibe.text,cursor:'pointer',fontFamily:'inherit',fontWeight:'bold',marginTop:4}}
+              onClick={()=>{if(isLast)setEventPopup(null);else setEventPopup(p=>({...p,idx:p.idx+1}));}}>
+              {isLast?'Continue to Day':'Next Event →'}
+            </button>
+            {eventPopup.events.length>1&&<div style={{fontSize:12,color:vibe.text+'66',marginTop:6}}>{eventPopup.idx+1} of {eventPopup.events.length}</div>}
+          </div>
+        </div>;
+      })()}
+
+      {nightExpPending&&!morningReport&&!eventPopup&&(()=>{
         const nightRegs=REGIONS.filter(r=>level>=regUnlock(r)&&(!r.faction||getRL(r.faction)>=(r.fReq||0)));
         const nightH=getFeatureVal('nightBonusHours')||3;
         const nightDR=getFeatureVal('nightDangerReduction');
