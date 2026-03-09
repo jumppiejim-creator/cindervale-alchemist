@@ -7913,6 +7913,85 @@ function CindervaleAlchemistInner(){
             ...Object.entries(classLevels).flatMap(([cid,lv])=>CLASSES[cid]?.features?.filter(f=>f.classLv<=lv).map(f=>f.name)||[]),
             ...Object.entries(specs).flatMap(([cid,specId])=>CLASSES[cid]?.specs?.[specId]?.features?.filter(f=>f.classLv<=classLevels[cid]).map(f=>f.name)||[]),
           ])].length===0&&<div style={{fontSize:14,color:TH.textDim,textAlign:'center',padding:6}}>Choose a class to unlock bonuses!</div>}
+          {/* Equipped Gadgets */}
+          {gadgets.filter(g=>g.equipped).length>0&&<div style={{marginTop:8,borderTop:'1px solid '+TH.border,paddingTop:6}}>
+            <div style={{fontSize:14,color:'#c0a040',fontWeight:'bold',marginBottom:4}}>⚙️ Equipped Gadgets</div>
+            <div style={{display:'grid',gridTemplateColumns:'repeat(2,1fr)',gap:3,fontSize:13}}>
+              {gadgets.filter(g=>g.equipped).map(g=>{
+                const bp=GADGET_BLUEPRINTS.find(b=>b.id===g.blueprintId);if(!bp)return null;
+                return <div key={g.id} style={{padding:'2px 6px',background:'#c0a04010',borderRadius:3,border:'1px solid #c0a04033'}}>
+                  <span style={{color:'#c0a040'}}>{bp.icon} {bp.name} Mk{['I','II','III'][g.mk-1]}</span>
+                  <div style={{fontSize:11,color:TH.textDim}}>{bp.effectDesc[g.mk-1]}</div>
+                </div>;
+              })}
+            </div>
+          </div>}
+          {/* Active Companions */}
+          {companions.filter(c=>c.active).length>0&&<div style={{marginTop:8,borderTop:'1px solid '+TH.border,paddingTop:6}}>
+            <div style={{fontSize:14,color:'#40a060',fontWeight:'bold',marginBottom:4}}>🦊 Active Companions</div>
+            <div style={{display:'grid',gridTemplateColumns:'repeat(2,1fr)',gap:3,fontSize:13}}>
+              {companions.filter(c=>c.active).map(c=>{
+                const comp=RANGER_COMPANIONS.find(r=>r.id===c.compId);if(!comp)return null;
+                return <div key={c.compId} style={{padding:'2px 6px',background:comp.color+'10',borderRadius:3,border:'1px solid '+comp.color+'33'}}>
+                  <span style={{color:comp.color}}>{comp.icon} {comp.name} {'★'.repeat(c.loyalty)}</span>
+                  <div style={{fontSize:11,color:TH.textDim}}>{comp.role}</div>
+                </div>;
+              })}
+            </div>
+          </div>}
+          {/* Completed Blueprints */}
+          {blueprints.filter(b=>b.complete).length>0&&<div style={{marginTop:8,borderTop:'1px solid '+TH.border,paddingTop:6}}>
+            <div style={{fontSize:14,color:'#8090a0',fontWeight:'bold',marginBottom:4}}>🏗️ Active Structures</div>
+            <div style={{display:'grid',gridTemplateColumns:'repeat(2,1fr)',gap:3,fontSize:13}}>
+              {blueprints.filter(b=>b.complete).map(b=>{
+                const bp=CONSTRUCTOR_BPS.find(x=>x.id===b.bpId);if(!bp)return null;
+                return <div key={b.id} style={{padding:'2px 6px',background:'#8090a010',borderRadius:3,border:'1px solid #8090a033'}}>
+                  <span style={{color:'#8090a0'}}>{bp.icon} {bp.name}</span>
+                  <div style={{fontSize:11,color:TH.textDim}}>{bp.effectDesc}</div>
+                </div>;
+              })}
+            </div>
+          </div>}
+          {/* Supply Chains */}
+          {supplyChains.length>0&&<div style={{marginTop:8,borderTop:'1px solid '+TH.border,paddingTop:6}}>
+            <div style={{fontSize:14,color:'#6080a0',fontWeight:'bold',marginBottom:4}}>🚚 Supply Chains</div>
+            <div style={{display:'grid',gridTemplateColumns:'repeat(2,1fr)',gap:3,fontSize:13}}>
+              {supplyChains.map(sc=>{
+                const partner=SUPPLY_PARTNERS.find(p=>p.id===sc.partnerId);if(!partner)return null;
+                return <div key={sc.partnerId} style={{padding:'2px 6px',background:partner.color+'10',borderRadius:3,border:'1px solid '+partner.color+'33'}}>
+                  <span style={{color:partner.color}}>{partner.icon} {partner.name} T{sc.tier}</span>
+                  <div style={{fontSize:11,color:TH.textDim}}>{partner.maint}g/day</div>
+                </div>;
+              })}
+            </div>
+          </div>}
+          {/* Faction Harmony */}
+          {Object.values(factionHarmony).some(h=>h>0)&&<div style={{marginTop:8,borderTop:'1px solid '+TH.border,paddingTop:6}}>
+            <div style={{fontSize:14,color:'#4090c0',fontWeight:'bold',marginBottom:4}}>🤝 Faction Harmony</div>
+            <div style={{display:'grid',gridTemplateColumns:'repeat(2,1fr)',gap:3,fontSize:13}}>
+              {FACTION_PAIRS.filter(fp=>(factionHarmony[fp.id]||0)>0).map(fp=>{
+                const h=factionHarmony[fp.id];
+                return <div key={fp.id} style={{padding:'2px 6px',background:'#4090c010',borderRadius:3,border:'1px solid #4090c033'}}>
+                  <span style={{color:'#4090c0'}}>{fp.icon} {'★'.repeat(h)}</span>
+                  <div style={{fontSize:11,color:TH.textDim}}>{fp.rewards[h-1]?.split(',')[0]}</div>
+                </div>;
+              })}
+            </div>
+          </div>}
+          {/* Prestige Classes */}
+          {Object.values(prestigeLevels).some(v=>v>0)&&<div style={{marginTop:8,borderTop:'1px solid '+TH.border,paddingTop:6}}>
+            <div style={{fontSize:14,color:TH.purple,fontWeight:'bold',marginBottom:4}}>✨ Prestige Classes</div>
+            <div style={{display:'grid',gridTemplateColumns:'repeat(2,1fr)',gap:3,fontSize:13}}>
+              {Object.entries(prestigeLevels).filter(([,lv])=>lv>0).map(([pid,lv])=>{
+                const pc=PRESTIGE_CLASSES[pid];if(!pc)return null;
+                const feat=pc.features.filter(f=>f.lv<=lv).pop();
+                return <div key={pid} style={{padding:'2px 6px',background:pc.color+'10',borderRadius:3,border:'1px solid '+pc.color+'33'}}>
+                  <span style={{color:pc.color}}>{pc.icon} {pc.name} Lv{lv}</span>
+                  {feat&&<div style={{fontSize:11,color:TH.textDim}}>{feat.name}</div>}
+                </div>;
+              })}
+            </div>
+          </div>}
         </div>}
         {/* Pack inline */}
         <div style={S.card}><div style={S.cT}>🎒 Pack</div>
