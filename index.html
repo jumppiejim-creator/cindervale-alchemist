@@ -1945,6 +1945,7 @@ function CindervaleAlchemistInner(){
   const [trainingSessions,setTrainingSessions]=useState({}); // {apprId: {stat:'tec', daysLeft:2}}
   const [factionHarmony,setFactionHarmony]=useState({}); // {fp_ash_cind: 2, fp_hk_vw: 1}
   const [prestigeLevels,setPrestigeLevels]=useState({}); // {cartographer: 2, spellbrewer: 1}
+  const [automata,setAutomata]=useState([]); // [{id:'auto_1',name:'Unit Alpha',task:{type:'brew',target:'healing_salve'},xp:0}]
   const [shelves,setShelves]=useState({});
   const [lastCheck,setLastCheck]=useState(null);
   const [resultPopup,setResultPopup]=useState(null); // {title,detail,type}
@@ -2031,9 +2032,9 @@ function CindervaleAlchemistInner(){
   const gatherState=useCallback(()=>({
     phase,charName,charRace,charGender,stats,ptsLeft,skRanks,skPts,skProgress,classLevels,specs,playerFeats,asiSpent,startingClass,
     screen,day,hours,xp,gold,inv,pots,known,aQ,doneQ,
-    log:log.slice(-30),milestones,fRep,factionAlign,upgrades,hiredAppr,apprTasks,apprXP,enchQ,potCustQ,clinicPatients,venomContracts,forgedWeapons,shieldCommissions,planarFocus,gadgets,blueprints,fieldJournal,loreFragments,companions,caravans,supplyChains,caravanRuns,trainingSessions,factionHarmony,prestigeLevels,shelves,dailyReport,
+    log:log.slice(-30),milestones,fRep,factionAlign,upgrades,hiredAppr,apprTasks,apprXP,enchQ,potCustQ,clinicPatients,venomContracts,forgedWeapons,shieldCommissions,planarFocus,gadgets,blueprints,fieldJournal,loreFragments,companions,caravans,supplyChains,caravanRuns,trainingSessions,factionHarmony,prestigeLevels,automata,shelves,dailyReport,
     boardQ,activeBQ,doneBQCount,dayFlags,knownEnch,brewCounts,procureItems,pubPapers,selectedSite,constructProgress,
-  }),[phase,charName,charRace,charGender,stats,ptsLeft,skRanks,skPts,skProgress,classLevels,specs,playerFeats,asiSpent,startingClass,screen,day,hours,xp,gold,inv,pots,known,aQ,doneQ,log,milestones,fRep,factionAlign,upgrades,hiredAppr,apprTasks,apprXP,enchQ,potCustQ,clinicPatients,venomContracts,forgedWeapons,shieldCommissions,planarFocus,gadgets,blueprints,fieldJournal,loreFragments,companions,caravans,supplyChains,caravanRuns,trainingSessions,factionHarmony,prestigeLevels,shelves,dailyReport,boardQ,activeBQ,doneBQCount,dayFlags,knownEnch,brewCounts,procureItems,constructProgress,selectedSite]);
+  }),[phase,charName,charRace,charGender,stats,ptsLeft,skRanks,skPts,skProgress,classLevels,specs,playerFeats,asiSpent,startingClass,screen,day,hours,xp,gold,inv,pots,known,aQ,doneQ,log,milestones,fRep,factionAlign,upgrades,hiredAppr,apprTasks,apprXP,enchQ,potCustQ,clinicPatients,venomContracts,forgedWeapons,shieldCommissions,planarFocus,gadgets,blueprints,fieldJournal,loreFragments,companions,caravans,supplyChains,caravanRuns,trainingSessions,factionHarmony,prestigeLevels,automata,shelves,dailyReport,boardQ,activeBQ,doneBQCount,dayFlags,knownEnch,brewCounts,procureItems,constructProgress,selectedSite]);
 
   const restoreState=useCallback((s)=>{
     if(!s)return;
@@ -2058,7 +2059,7 @@ function CindervaleAlchemistInner(){
     setUpgrades(s.upgrades||[]);setHiredAppr(s.hiredAppr||[]);
     setApprTasks(s.apprTasks||{});setApprXP(s.apprXP||{});
     prevLvl.current=getLvl(s.xp||0);
-    setDailyReport(s.dailyReport||[]);setEnchQ(s.enchQ||[]);setPotCustQ(s.potCustQ||[]);setClinicPatients(s.clinicPatients||[]);setVenomContracts(s.venomContracts||[]);setForgedWeapons(s.forgedWeapons||[]);setShieldCommissions(s.shieldCommissions||[]);setPlanarFocus(s.planarFocus||null);setGadgets(s.gadgets||[]);setBlueprints(s.blueprints||[]);setFieldJournal(s.fieldJournal||[]);setLoreFragments(s.loreFragments||[]);setCompanions(s.companions||[]);setCaravans(s.caravans||[]);setSupplyChains(s.supplyChains||[]);setCaravanRuns(s.caravanRuns||{});setTrainingSessions(s.trainingSessions||{});setFactionHarmony(s.factionHarmony||{});setPrestigeLevels(s.prestigeLevels||{});setShelves(s.shelves||{});setLastCheck(null);setNews([]);setMorningReport(null);
+    setDailyReport(s.dailyReport||[]);setEnchQ(s.enchQ||[]);setPotCustQ(s.potCustQ||[]);setClinicPatients(s.clinicPatients||[]);setVenomContracts(s.venomContracts||[]);setForgedWeapons(s.forgedWeapons||[]);setShieldCommissions(s.shieldCommissions||[]);setPlanarFocus(s.planarFocus||null);setGadgets(s.gadgets||[]);setBlueprints(s.blueprints||[]);setFieldJournal(s.fieldJournal||[]);setLoreFragments(s.loreFragments||[]);setCompanions(s.companions||[]);setCaravans(s.caravans||[]);setSupplyChains(s.supplyChains||[]);setCaravanRuns(s.caravanRuns||{});setTrainingSessions(s.trainingSessions||{});setFactionHarmony(s.factionHarmony||{});setPrestigeLevels(s.prestigeLevels||{});setAutomata(s.automata||[]);setShelves(s.shelves||{});setLastCheck(null);setNews([]);setMorningReport(null);
     setBoardQ(s.boardQ||[]);setActiveBQ(s.activeBQ||[]);setDoneBQCount(s.doneBQCount||0);setDayFlags(s.dayFlags||[]);setKnownEnch(s.knownEnch&&s.knownEnch.length>0?s.knownEnch:['e_sharp','e_glow','e_ironbark','e_feather','e_windwalk','e_rootbind']);
     setBrewCounts(s.brewCounts||{});setProcureItems(s.procureItems||[]);setPubPapers(s.pubPapers||[]);setConstructProgress(s.constructProgress||{});
     setSelHex(null);setVBuild('workshop');setDlgNpc(null);setShowShop(false);setQuestDlg(null);setPendingLevelUp(null);setSelectedSite(s.selectedSite||null);
@@ -2118,7 +2119,7 @@ function CindervaleAlchemistInner(){
   const snapshot=useCallback(()=>{
     const snap={day,hours,xp,gold,inv:{...inv},pots:{...pots},known:[...known],aQ:[...aQ],doneQ:[...doneQ],
       fRep:{...fRep},upgrades:[...upgrades],hiredAppr:hiredAppr.map(a=>({...a})),apprTasks:{...apprTasks},apprXP:{...apprXP},
-      skRanks:{...skRanks},skPts,skProgress:{...skProgress},enchQ:[...enchQ],potCustQ:[...potCustQ],clinicPatients:[...clinicPatients],venomContracts:[...venomContracts],forgedWeapons:[...forgedWeapons],shieldCommissions:[...shieldCommissions],planarFocus,gadgets:[...gadgets],blueprints:[...blueprints],fieldJournal:[...fieldJournal],loreFragments:[...loreFragments],companions:companions.map(c=>({...c})),caravans:[...caravans],supplyChains:[...supplyChains],caravanRuns:{...caravanRuns},trainingSessions:{...trainingSessions},factionHarmony:{...factionHarmony},prestigeLevels:{...prestigeLevels},gadgets,blueprints,fieldJournal,loreFragments,companions,caravans,supplyChains,caravanRuns,trainingSessions,factionHarmony,prestigeLevels,shelves:{...shelves},milestones:[...milestones],log:[...log],dailyReport:[...dailyReport],brewCounts:{...brewCounts},procureItems:[...procureItems],constructProgress:{...constructProgress}};
+      skRanks:{...skRanks},skPts,skProgress:{...skProgress},enchQ:[...enchQ],potCustQ:[...potCustQ],clinicPatients:[...clinicPatients],venomContracts:[...venomContracts],forgedWeapons:[...forgedWeapons],shieldCommissions:[...shieldCommissions],planarFocus,gadgets:[...gadgets],blueprints:[...blueprints],fieldJournal:[...fieldJournal],loreFragments:[...loreFragments],companions:companions.map(c=>({...c})),caravans:[...caravans],supplyChains:[...supplyChains],caravanRuns:{...caravanRuns},trainingSessions:{...trainingSessions},factionHarmony:{...factionHarmony},prestigeLevels:{...prestigeLevels},automata:automata.map(a=>({...a})),gadgets,blueprints,fieldJournal,loreFragments,companions,caravans,supplyChains,caravanRuns,trainingSessions,factionHarmony,prestigeLevels,automata,shelves:{...shelves},milestones:[...milestones],log:[...log],dailyReport:[...dailyReport],brewCounts:{...brewCounts},procureItems:[...procureItems],constructProgress:{...constructProgress}};
     setUndoStack(p=>[...p.slice(-4),snap]);
   },[day,hours,xp,gold,inv,pots,known,aQ,doneQ,fRep,upgrades,hiredAppr,apprTasks,apprXP,skRanks,skPts,skProgress,enchQ,potCustQ,shelves,milestones,log,dailyReport,brewCounts,procureItems,constructProgress]);
 
@@ -2141,7 +2142,7 @@ function CindervaleAlchemistInner(){
     setInv(snap.inv);setPots(snap.pots);setKnown(snap.known);setAQ(snap.aQ);setDoneQ(snap.doneQ);
     setFRep(snap.fRep);setUpgrades(snap.upgrades);setHiredAppr(snap.hiredAppr);
     setApprTasks(snap.apprTasks);setApprXP(snap.apprXP);setSkRanks(snap.skRanks);setSkPts(snap.skPts);setSkProgress(snap.skProgress||{});
-    setEnchQ(snap.enchQ);setPotCustQ(snap.potCustQ||[]);setClinicPatients(snap.clinicPatients||[]);setVenomContracts(snap.venomContracts||[]);setForgedWeapons(snap.forgedWeapons||[]);setShieldCommissions(snap.shieldCommissions||[]);setPlanarFocus(snap.planarFocus||null);setGadgets(snap.gadgets||[]);setBlueprints(snap.blueprints||[]);setFieldJournal(snap.fieldJournal||[]);setLoreFragments(snap.loreFragments||[]);setCompanions(snap.companions||[]);setCaravans(snap.caravans||[]);setSupplyChains(snap.supplyChains||[]);setCaravanRuns(snap.caravanRuns||{});setTrainingSessions(snap.trainingSessions||{});setFactionHarmony(snap.factionHarmony||{});setPrestigeLevels(snap.prestigeLevels||{});setShelves(snap.shelves||{});setMilestones(snap.milestones);setLog(snap.log);setDailyReport(snap.dailyReport);
+    setEnchQ(snap.enchQ);setPotCustQ(snap.potCustQ||[]);setClinicPatients(snap.clinicPatients||[]);setVenomContracts(snap.venomContracts||[]);setForgedWeapons(snap.forgedWeapons||[]);setShieldCommissions(snap.shieldCommissions||[]);setPlanarFocus(snap.planarFocus||null);setGadgets(snap.gadgets||[]);setBlueprints(snap.blueprints||[]);setFieldJournal(snap.fieldJournal||[]);setLoreFragments(snap.loreFragments||[]);setCompanions(snap.companions||[]);setCaravans(snap.caravans||[]);setSupplyChains(snap.supplyChains||[]);setCaravanRuns(snap.caravanRuns||{});setTrainingSessions(snap.trainingSessions||{});setFactionHarmony(snap.factionHarmony||{});setPrestigeLevels(snap.prestigeLevels||{});setAutomata(snap.automata||[]);setShelves(snap.shelves||{});setMilestones(snap.milestones);setLog(snap.log);setDailyReport(snap.dailyReport);
     setBrewCounts(snap.brewCounts||{});setProcureItems(snap.procureItems||[]);setPubPapers(snap.pubPapers||[]);setConstructProgress(snap.constructProgress||{});
     setLastCheck(null);
     addLog('↩️ Time seems to blur — you find yourself a moment before, as if the last action never happened.','info');
@@ -3273,6 +3274,41 @@ function CindervaleAlchemistInner(){
     return PLANAR_COMBOS[ids.sort().join('+')]||null;
   };
 
+  // ═══ MAGITECH ENGINEER — AUTOMATA ═══
+  const AUTOMATON_NAMES=['Alpha','Beta','Gamma','Delta','Epsilon','Zeta'];
+  const getAutoSlots=()=>{const mLv=prestigeLevels.magitech||0;return mLv>=5?3:mLv>=3?2:mLv>=1?1:0;};
+  const getAutoEfficiency=()=>{const mLv=prestigeLevels.magitech||0;return mLv>=4?1.0:mLv>=2?0.8:0.6;};
+  const getAutoLvl=(autoId)=>Math.min(5,Math.floor((automata.find(a=>a.id===autoId)?.xp||0)/80));
+  const canAutoEnchant=()=>(prestigeLevels.magitech||0)>=4;
+  const buildAutomaton=()=>{
+    if(automata.length>=getAutoSlots()){addLog('Maximum automaton slots reached.','error');return;}
+    if(hours<2){addLog('Building an automaton frame takes 2 hours.','error');return;}
+    const matCost={ironroot_bark:3,hearthstone:2};
+    if(!Object.entries(matCost).every(([id,q])=>(inv[id]||0)>=q)){addLog('Need 3× Ironroot Bark + 2× Hearthstone to build an automaton.','error');return;}
+    snapshot();setHours(h=>h-2);
+    Object.entries(matCost).forEach(([id,q])=>modInv(id,-q));
+    const ch=doCheck('precision',12);
+    const cfb=getFeatureVal('craftBonus');if(cfb){ch.total+=cfb;ch.extras.push({label:'Craft',val:cfb});}
+    ch.success=ch.total>=12;
+    if(ch.success){
+      const name='Unit '+AUTOMATON_NAMES[automata.length]||('Auto-'+(automata.length+1));
+      const newAuto={id:'auto_'+Date.now(),name,task:null,xp:0};
+      setAutomata(prev=>[...prev,newAuto]);
+      gainXP(40);
+      showResult('🔧 Automaton Built!','craft','🤖 '+name+' is ready for duty.\nAssign a task to begin autonomous operations.\n+40 XP',ch);
+      addLog('🤖 Built automaton: '+name,'quest');
+    } else {
+      // Partial refund
+      modInv('ironroot_bark',1);modInv('hearthstone',1);
+      showResult('🔧 Construction Failed','error','The frame didn\'t hold together. Some materials salvaged.\n+1 Ironroot Bark, +1 Hearthstone returned.',ch);
+    }
+  };
+  const assignAutoTask=(autoId,type,target)=>{
+    setAutomata(prev=>prev.map(a=>a.id===autoId?{...a,task:type?{type,target}:null}:a));
+    const auto=automata.find(a=>a.id===autoId);
+    if(type)addLog('🤖 '+auto?.name+' assigned to '+(type==='brew'?'brewing':type==='forage'?'foraging':type==='shopkeep'?'shopkeeping':type==='enchant'?'enchanting':'idle'),'info');
+  };
+
   // ═══ DIPLOMAT EMBASSY ═══
   const getMaxEnvoys=()=>{const dLv=classLevels.merchant||0;return dLv>=10?3:dLv>=6?2:1;};
   const getHarmonyCap=()=>{const dLv=classLevels.merchant||0;return dLv>=10?3:dLv>=6?2:1;};
@@ -4357,6 +4393,70 @@ function CindervaleAlchemistInner(){
       const train=completedBPs.find(b=>b.bpId==='bp_training');
       if(train)bpLines.push({icon:'🎓',label:'Training Room',val:'Staff XP ×'+Math.floor(2*mult),color:TH.gold});
       if(bpLines.length>0)mrSections.push({title:'🏗️ Constructor Projects',lines:bpLines});
+    }
+    // ═══ MAGITECH AUTOMATA MORNING ═══
+    if(automata.length>0&&(prestigeLevels.magitech||0)>=1){
+      const autoLines=[];
+      const autoEff=getAutoEfficiency();
+      const mLv=prestigeLevels.magitech||0;
+      automata.filter(a=>a.task).forEach(auto=>{
+        const task=auto.task;const aLvl=getAutoLvl(auto.id);
+        const effBonus=aLvl*0.05; // +5% per automaton level
+        const totalEff=Math.min(1.2,autoEff+effBonus);
+        const autoXpGain=10;
+        if(task.type==='brew'&&task.target){
+          const recipe=RECIPES.find(r=>r.id===task.target);
+          if(recipe){
+            const cost={};recipe.ingr.forEach(id=>{cost[id]=(cost[id]||0)+1;});
+            const hasMats=Object.entries(cost).every(([id,q])=>(inv[id]||0)>=q);
+            if(hasMats&&Math.random()<totalEff){
+              Object.entries(cost).forEach(([id,q])=>modInv(id,-q));modPot(recipe.id,1);
+              autoLines.push({icon:'🤖',label:auto.name+' brewed '+recipe.icon+recipe.name,val:'✓',color:TH.green});
+            } else if(!hasMats){
+              autoLines.push({icon:'🤖',label:auto.name,val:'No materials for '+recipe.name,color:TH.red});
+            } else {
+              autoLines.push({icon:'🤖',label:auto.name+' failed '+recipe.name,val:'Efficiency: '+Math.round(totalEff*100)+'%',color:TH.orange});
+            }
+          }
+        } else if(task.type==='forage'&&task.target){
+          const reg=REGIONS.find(r=>r.id===task.target);
+          if(reg&&Math.random()<totalEff){
+            const items={};const n=2+aLvl;
+            for(let i=0;i<n;i++){const id=reg.ingr[Math.floor(Math.random()*reg.ingr.length)];items[id]=(items[id]||0)+1;}
+            setInv(p=>{const nn={...p};Object.entries(items).forEach(([id,q])=>{nn[id]=(nn[id]||0)+q;});return nn;});
+            autoLines.push({icon:'🤖',label:auto.name+' foraged '+reg.icon+reg.name,val:Object.entries(items).map(([id,q])=>(INGR[id]?.icon||'')+'×'+q).join(' '),color:TH.green});
+          } else {
+            autoLines.push({icon:'🤖',label:auto.name+' foraged (failed)',val:reg?.name||'?',color:TH.orange});
+          }
+        } else if(task.type==='shopkeep'){
+          if(Math.random()<totalEff){
+            const g=5+aLvl*3+Math.floor(Math.random()*8);setGold(gg=>gg+g);
+            autoLines.push({icon:'🤖',label:auto.name+' tended shop',val:'+'+g+'g',color:TH.gold});
+          } else {
+            autoLines.push({icon:'🤖',label:auto.name+' shop (slow day)',val:'+0g',color:TH.textDim});
+          }
+        } else if(task.type==='enchant'&&canAutoEnchant()){
+          if(Math.random()<totalEff){
+            const g=8+aLvl*4+Math.floor(Math.random()*12);setGold(gg=>gg+g);
+            autoLines.push({icon:'🤖',label:auto.name+' inscribed enchantments',val:'+'+g+'g',color:TH.purple});
+          } else {
+            autoLines.push({icon:'🤖',label:auto.name+' enchanting (failed)',val:'Misaligned runes',color:TH.orange});
+          }
+        }
+        // XP gain for automata (Lv3+)
+        if(mLv>=3){setAutomata(prev=>prev.map(a=>a.id===auto.id?{...a,xp:(a.xp||0)+autoXpGain}:a));
+          const oldLv=getAutoLvl(auto.id);const newLv=Math.min(5,Math.floor(((auto.xp||0)+autoXpGain)/80));
+          if(newLv>oldLv)autoLines.push({icon:'⭐',label:auto.name+' LEVELED UP!',val:'★'.repeat(newLv)+' Lv'+newLv,color:TH.gold});
+        }
+      });
+      // Self-repairing at Lv5: automata that failed still produce something small
+      if(mLv>=5){
+        automata.filter(a=>a.task&&!autoLines.some(l=>l.label.includes(a.name)&&l.color===TH.green)).forEach(auto=>{
+          autoLines.push({icon:'🔧',label:auto.name+' self-repair',val:'Minor output recovered',color:TH.textDim});
+          setGold(g=>g+2);
+        });
+      }
+      if(autoLines.length>0)mrSections.push({title:'🤖 Automata',lines:autoLines});
     }
     // ═══ GUILDMASTER ACADEMY MORNING ═══
     if(specs.merchant==='guildmaster'){
@@ -6827,6 +6927,64 @@ function CindervaleAlchemistInner(){
           })()}
         </div>}
 
+        {/* ═══ MAGITECH ENGINEER — AUTOMATA ═══ */}
+        {(prestigeLevels.magitech||0)>=1&&<div style={{...S.card,borderColor:'#a0a060',background:'#a0a00808'}}>
+          <div style={S.cT}>🤖 Automata — {automata.length}/{getAutoSlots()} slots · Efficiency: {Math.round(getAutoEfficiency()*100)}%</div>
+          {automata.length===0&&<div style={{fontSize:14,color:TH.textDim,marginBottom:6}}>
+            No automata built yet. Build one to start autonomous operations.
+          </div>}
+          {/* Built automata */}
+          {automata.map(auto=>{
+            const aLvl=getAutoLvl(auto.id);
+            const xp=auto.xp||0;const curLvXp=aLvl*80;const nextLvXp=(aLvl+1)*80;
+            const prog=xp-curLvXp;const needed=nextLvXp-curLvXp;const pct=Math.min(100,Math.round(prog/needed*100));
+            const mLv=prestigeLevels.magitech||0;
+            return <div key={auto.id} style={{padding:'6px 10px',background:TH.panelLight,borderRadius:6,marginBottom:5,border:'1px solid '+(auto.task?'#a0a06066':TH.border)}}>
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                <div>
+                  <span style={{fontSize:16}}>🤖</span>
+                  <span style={{fontSize:15,color:'#a0a060',fontWeight:'bold',marginLeft:4}}>{auto.name}</span>
+                  <span style={{color:TH.gold,marginLeft:6}}>{'★'.repeat(aLvl)}{'☆'.repeat(5-aLvl)}</span>
+                </div>
+                <span style={{fontSize:13,color:auto.task?TH.green:TH.textDim}}>{auto.task?'⚡ Active':'💤 Idle'}</span>
+              </div>
+              {/* XP bar (if Lv3+ magitech) */}
+              {mLv>=3&&aLvl<5&&<div style={{display:'flex',alignItems:'center',gap:4,margin:'3px 0'}}>
+                <span style={{fontSize:11,color:TH.textDim,minWidth:55}}>XP {prog}/{needed}</span>
+                <div style={{flex:1,height:4,background:TH.panel,borderRadius:2}}><div style={{height:'100%',width:pct+'%',background:'#a0a060',borderRadius:2}}/></div>
+                <span style={{fontSize:11,color:'#a0a060'}}>→ Lv{aLvl+1}</span>
+              </div>}
+              {/* Task assignment */}
+              <div style={{display:'flex',flexWrap:'wrap',gap:3,marginTop:4}}>
+                <select value={auto.task?.type==='brew'?'brew_'+auto.task.target:auto.task?.type||''} onChange={e=>{
+                  const v=e.target.value;
+                  if(!v){assignAutoTask(auto.id,null,null);return;}
+                  if(v.startsWith('brew_')){assignAutoTask(auto.id,'brew',v.replace('brew_',''));return;}
+                  if(v.startsWith('forage_')){assignAutoTask(auto.id,'forage',v.replace('forage_',''));return;}
+                  assignAutoTask(auto.id,v,null);
+                }} style={{padding:'3px 6px',background:TH.panelLight,color:TH.text,border:'1px solid '+TH.border,borderRadius:4,fontFamily:'inherit',fontSize:13,flex:1}}>
+                  <option value="">-- Assign Task --</option>
+                  <optgroup label="⚗️ Brew">
+                    {RECIPES.filter(r=>known.includes(r.id)).map(r=><option key={r.id} value={'brew_'+r.id}>{r.icon} {r.name}</option>)}
+                  </optgroup>
+                  <optgroup label="⛏️ Forage">
+                    {REGIONS.filter(r=>level>=regUnlock(r)).map(r=><option key={r.id} value={'forage_'+r.id}>{r.icon} {r.name}</option>)}
+                  </optgroup>
+                  <option value="shopkeep">🏪 Shopkeep</option>
+                  {canAutoEnchant()&&<option value="enchant">✨ Enchant</option>}
+                </select>
+              </div>
+            </div>;
+          })}
+          {/* Build button */}
+          {automata.length<getAutoSlots()&&<button style={{...S.btn(hours>=2?'gold':'dim'),fontSize:14,padding:'6px 12px',marginTop:4}} disabled={hours<2}
+            onClick={()=>buildAutomaton()}>
+            🔨 Build Automaton (2h · 3× Ironroot Bark + 2× Hearthstone · DC 12)
+          </button>}
+          {(prestigeLevels.magitech||0)<3&&<div style={{fontSize:12,color:TH.textDim,marginTop:4}}>🔒 Automata gain XP at Magitech Lv3</div>}
+          {(prestigeLevels.magitech||0)>=3&&(prestigeLevels.magitech||0)<4&&<div style={{fontSize:12,color:TH.textDim,marginTop:4}}>🔒 Enchanting task at Magitech Lv4</div>}
+        </div>}
+
         <div style={S.card}><div style={S.cT}>⚗️ Recipes ({known.length}/{RECIPES.length})</div>
         {RECIPES.filter(r=>known.includes(r.id)).map(r=>{
           const cost={};r.ingr.forEach(id=>{cost[id]=(cost[id]||0)+1;});const can=Object.entries(cost).every(([id,q])=>(inv[id]||0)>=q);
@@ -7964,6 +8122,22 @@ function CindervaleAlchemistInner(){
             </div>
           );})}
         </div>
+        {/* Prestige Class Features */}
+        {Object.entries(prestigeLevels).filter(([,lv])=>lv>0).length>0&&<div style={S.card}><div style={S.cT}>✨ Prestige Classes</div>
+          {Object.entries(prestigeLevels).filter(([,lv])=>lv>0).map(([pid,lv])=>{const pc=PRESTIGE_CLASSES[pid];if(!pc)return null;
+            const reqText=Object.entries(pc.req).map(([cid,rlv])=>CLASSES[cid]?.icon+' '+CLASSES[cid]?.name+' '+rlv).join(' + ');
+            return(
+            <div key={pid} style={{marginBottom:8,padding:'6px 8px',background:pc.color+'08',borderRadius:6,border:'1px solid '+pc.color+'33'}}>
+              <div style={{fontSize:16,color:pc.color,fontWeight:'bold',marginBottom:2}}>{pc.icon} {pc.name} — Level {lv}/5</div>
+              <div style={{fontSize:13,color:TH.textDim,marginBottom:4}}>Requires: {reqText}</div>
+              <div style={{fontSize:13,color:TH.textDim,fontStyle:'italic',marginBottom:4}}>{pc.desc}</div>
+              {pc.features.map(f=>(
+                <div key={f.lv} style={{fontSize:14,color:f.lv<=lv?pc.color:TH.textDim,opacity:f.lv<=lv?1:.35,marginBottom:1}}>
+                  {f.lv<=lv?'✓':'○'} Lv{f.lv}: <b>{f.name}</b> — {f.desc}
+                </div>
+              ))}
+            </div>
+          );})}</div>}
         {/* Feats */}
         {playerFeats.length>0&&<div style={S.card}><div style={S.cT}>🌟 Feats</div>
           {playerFeats.map(fid=>{const f=FEATS[fid];if(!f)return null;const cat=FEAT_CATEGORIES[f.cat];return(
@@ -8085,16 +8259,15 @@ function CindervaleAlchemistInner(){
           {/* Prestige Classes */}
           {Object.values(prestigeLevels).some(v=>v>0)&&<div style={{marginTop:8,borderTop:'1px solid '+TH.border,paddingTop:6}}>
             <div style={{fontSize:14,color:TH.purple,fontWeight:'bold',marginBottom:4}}>✨ Prestige Classes</div>
-            <div style={{display:'grid',gridTemplateColumns:'repeat(2,1fr)',gap:3,fontSize:13}}>
               {Object.entries(prestigeLevels).filter(([,lv])=>lv>0).map(([pid,lv])=>{
                 const pc=PRESTIGE_CLASSES[pid];if(!pc)return null;
-                const feat=pc.features.filter(f=>f.lv<=lv).pop();
-                return <div key={pid} style={{padding:'2px 6px',background:pc.color+'10',borderRadius:3,border:'1px solid '+pc.color+'33'}}>
-                  <span style={{color:pc.color}}>{pc.icon} {pc.name} Lv{lv}</span>
-                  {feat&&<div style={{fontSize:11,color:TH.textDim}}>{feat.name}</div>}
+                const earned=pc.features.filter(f=>f.lv<=lv);
+                return <div key={pid} style={{padding:'4px 8px',background:pc.color+'10',borderRadius:4,border:'1px solid '+pc.color+'33',marginBottom:4}}>
+                  <div style={{fontSize:14,color:pc.color,fontWeight:'bold'}}>{pc.icon} {pc.name} Lv{lv}/5</div>
+                  {earned.map(f=><div key={f.lv} style={{fontSize:12,color:TH.text,marginTop:1}}>✓ <b>{f.name}</b> — {f.desc}</div>)}
+                  {lv<5&&(()=>{const next=pc.features.find(f=>f.lv===lv+1);return next?<div style={{fontSize:11,color:TH.textDim,marginTop:2}}>Next (Lv{lv+1}): {next.name}</div>:null;})()}
                 </div>;
               })}
-            </div>
           </div>}
         </div>}
         {/* Pack inline */}
