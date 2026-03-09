@@ -2806,35 +2806,40 @@ function CindervaleAlchemistInner(){
     if(!isFree&&hours<resCost){addLog(`Research takes ${resCost} hour${resCost>1?'s':''} of focused study.${freeResPerDay>0?' (free attempts used today)':''}`,'error');return;}
     snapshot();
     if(isFree){setDayFlags(f=>[...f,'free_research_used']);}else{setHours(h=>h-resCost);}
-    const innovB=getSkMod('innovation');const resB=getSkMod('research');
     const discBonus=getFeatureVal('discoveryChanceBonus');
-    const chance=0.2+innovB*0.06+resB*0.04+discBonus; // ~20-60% depending on skills+features
     const resXpMult=1+getFeatureVal('researchXPMulti');
-    gainXP(Math.floor((15+level*2)*resXpMult));
     const resXpAmt=Math.floor((15+level*2)*resXpMult);
+    gainXP(resXpAmt);
+    // Visible d20 skill check — Research vs DC
+    const baseDC=14-Math.floor(discBonus*10); // Higher discovery bonus = lower DC
+    const dc=Math.max(8,Math.min(18,baseDC));
+    const ch=doCheck('research',dc);
+    const innovB=getSkMod('innovation');if(innovB>0){ch.total+=innovB;ch.extras.push({label:'Innovation',val:innovB});}
+    const cfb=getFeatureVal('craftBonus');if(cfb){ch.total+=cfb;ch.extras.push({label:'Class Mastery',val:cfb});}
+    ch.success=ch.total>=dc;
     if(type==='potion'){
       const undiscovered=RECIPES.filter(r=>!known.includes(r.id)&&level>=r.unlock&&(!r.faction||getRL(r.faction)>=(r.fReq||0)));
       if(undiscovered.length===0){addLog('📚 You spend two hours poring over your notes, but you already know every recipe available to you.','info');return;}
-      if(Math.random()<chance){
+      if(ch.success){
         const found=undiscovered[Math.floor(Math.random()*undiscovered.length)];
         setKnown(p=>[...p,found.id]);
-        showResult('📚 Research Breakthrough!','craft',`You discovered ${found.icon} ${found.name}!\n"${found.desc}"\n+${resXpAmt} XP`);
+        showResult('📚 Research Breakthrough!','craft',`You discovered ${found.icon} ${found.name}!\n"${found.desc}"\n+${resXpAmt} XP`,ch);
         addLog(`📚 After hours of study, you discover the formula for ${found.icon}${found.name}!`,'quest');
       } else {
         const RESEARCH_FAIL=['Your notes blur together. No breakthrough today, but the work isn\'t wasted.','You follow a promising lead but it dead-ends. The knowledge will come.','Hours of careful study yield incremental understanding, not revelation.'];
-        showResult('📚 Study Session','info',RESEARCH_FAIL[Math.floor(Math.random()*RESEARCH_FAIL.length)]+'\n+'+resXpAmt+' XP');
+        showResult('📚 Study Session','info',RESEARCH_FAIL[Math.floor(Math.random()*RESEARCH_FAIL.length)]+'\n+'+resXpAmt+' XP',ch);
       }
     } else {
       const undiscovered=ENCHANTMENTS.filter(e=>!knownEnch.includes(e.id)&&(!e.faction||getRL(e.faction)>=(e.fReq||0)));
       if(undiscovered.length===0){addLog('📚 You study your inscription notes, but you\'ve mastered every enchantment available to you.','info');return;}
-      if(Math.random()<chance){
+      if(ch.success){
         const found=undiscovered[Math.floor(Math.random()*undiscovered.length)];
         setKnownEnch(p=>[...p,found.id]);
         const catName=ENCH_CATS[found.cat]?.name||'';
-        showResult('📚 Inscription Discovered!','craft',`You learned ${found.icon} ${found.name} (${catName})!\n"${found.desc}"\n+${resXpAmt} XP`);
+        showResult('📚 Inscription Discovered!','craft',`You learned ${found.icon} ${found.name} (${catName})!\n"${found.desc}"\n+${resXpAmt} XP`,ch);
         addLog(`📚 A flash of insight — you unlock the secret of ${found.icon}${found.name} inscription!`,'quest');
       } else {
-        showResult('📚 Study Session','info','The arcane symbols resist interpretation. Keep studying.\n+'+resXpAmt+' XP');
+        showResult('📚 Study Session','info','The arcane symbols resist interpretation. Keep studying.\n+'+resXpAmt+' XP',ch);
       }
     }
   };
