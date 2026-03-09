@@ -4664,6 +4664,26 @@ function CindervaleAlchemistInner(){
                 <div style={{fontSize:13,color:c.color,marginTop:4}}>Specs: {Object.values(c.specs).map(s=>s.name).join(', ')}</div>
               </div>);})}
           </div>
+          {/* ═══ PRESTIGE CLASS PREVIEW ═══ */}
+          <div style={{...S.card,marginTop:12,borderColor:TH.purple+'66'}}>
+            <div style={{fontSize:17,color:TH.purple,fontWeight:'bold',marginBottom:6}}>✨ Prestige Classes — Multiclass Rewards</div>
+            <div style={{fontSize:13,color:TH.textDim,marginBottom:8}}>Reach level 3 in two different classes to unlock powerful prestige paths. Prestige levels advance BOTH the prestige class and one parent class simultaneously.</div>
+            <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(220px,1fr))',gap:6}}>
+              {Object.values(PRESTIGE_CLASSES).map(pc=>{
+                const reqs=Object.entries(pc.req);
+                const reqText=reqs.map(([cid,lv])=>CLASSES[cid]?.icon+' '+CLASSES[cid]?.name+' '+lv).join(' + ');
+                const involves=reqs.some(([cid])=>cid===startingClass);
+                return <div key={pc.id} style={{padding:'6px 8px',borderRadius:4,
+                  background:involves?pc.color+'12':TH.panelLight,
+                  border:'1px solid '+(involves?pc.color+'44':TH.border),
+                  opacity:involves?1:0.7}}>
+                  <div style={{fontSize:14,color:pc.color,fontWeight:'bold'}}>{pc.icon} {pc.name}</div>
+                  <div style={{fontSize:11,color:involves?TH.text:TH.textDim,marginBottom:2}}>Requires: {reqText}</div>
+                  <div style={{fontSize:12,color:TH.textDim}}>{pc.desc}</div>
+                </div>;
+              })}
+            </div>
+          </div>
           <div style={{textAlign:'center',marginTop:8}}>
             <button style={S.btn(startingClass?'gold':'dim')} disabled={!startingClass} onClick={()=>setPhase('stats')}>Continue →</button>
             <button style={{...S.btn('dim'),marginLeft:8}} onClick={()=>setPhase('identity')}>← Back</button>
