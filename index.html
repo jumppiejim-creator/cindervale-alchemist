@@ -101,7 +101,7 @@ const computeRankProg=(curRank,curProg,added)=>{let r=curRank,p=curProg+added;wh
 const rankB=(r,pb)=>[0,pb,Math.floor(pb*1.5),pb*2][r]||0;
 
 // ═══ SAVE HELPERS ═══
-const SAVE_VERSION=2;const BUILD_VERSION='2026.03.08.B';const SP='cindervale-save';const AK=`${SP}:auto`;const sK=n=>`${SP}:slot-${n}`;
+const SAVE_VERSION=2;const BUILD_VERSION='2026.03.08.C';const SP='cindervale-save';const AK=`${SP}:auto`;const sK=n=>`${SP}:slot-${n}`;
 const _useArtifactStorage=(()=>{try{return typeof window!=='undefined'&&window.storage&&typeof window.storage.get==='function';}catch(e){return false;}})();
 const _useLocalStorage=(()=>{try{localStorage.setItem('_test','1');localStorage.removeItem('_test');return true;}catch(e){return false;}})();
 const hasStorage=()=>_useArtifactStorage||_useLocalStorage;
@@ -1216,6 +1216,60 @@ const RANGER_COMPANIONS=[
     legendary:'Passively generates 1 Heartforge ingredient every morning'},
 ];
 
+// ═══ QUARTERMASTER SUPPLY CHAIN NETWORK ═══
+const CARAVAN_ROUTES=[
+  {id:'cr_ashfield',name:'Ashfield Road',icon:'🏜️',region:'ashfields',tier:1,roundTrip:3,dc:10,
+    desc:'A well-trodden path through the ash flats. Safe but modest returns.',
+    tradeIngr:['ashbloom','char_root','ash_salt'],tradeGold:15},
+  {id:'cr_ironwood',name:'Ironwood Trail',icon:'🌲',region:'ironwood',tier:1,roundTrip:3,dc:11,
+    desc:'Winding forest paths where bark and resin traders gather.',
+    tradeIngr:['ironroot_bark','bark_resin','amber_sap'],tradeGold:18},
+  {id:'cr_fungal',name:'Cavern Run',icon:'🍄',region:'fungal_caves',tier:1,roundTrip:3,dc:11,
+    desc:'A damp tunnel route favored by fungal foragers.',
+    tradeIngr:['embercap','gloomcap','echo_fungus'],tradeGold:18},
+  {id:'cr_crystal',name:'Crystal Pass',icon:'💎',region:'crystal_hollow',tier:2,roundTrip:2,dc:14,
+    desc:'A dangerous mountain pass where mineral traders hawk rare geodes.',
+    tradeIngr:['hearthstone','ashite','crystal_shard'],tradeGold:30},
+  {id:'cr_moonlit',name:'Moonlit Path',icon:'🌙',region:'moonlit_glade',tier:2,roundTrip:2,dc:13,
+    desc:'A silvery trail that only experienced traders can navigate safely.',
+    tradeIngr:['moonpetal','starwort','nightdew'],tradeGold:28},
+  {id:'cr_volcanic',name:'Volcanic Corridor',icon:'🌋',region:'volcanic_vents',tier:3,roundTrip:2,dc:17,
+    desc:'A scorching path through active vents. Only the bravest caravans attempt it.',
+    tradeIngr:['volcanic_essence','embervein','magma_salt'],tradeGold:50},
+];
+const SUPPLY_PARTNERS=[
+  {id:'sp_hunters',name:'Boarback Hunters',icon:'🐗',color:'#8a6040',
+    route:'cr_ironwood',runsNeeded:3,setupCost:50,maint:3,
+    desc:'Hardy hunters who provide animal by-products from the deep forest.',
+    output:{t1:['ironroot_bark','bark_resin'],t2:['ironroot_bark','bark_resin','amber_sap'],t3:['ironroot_bark','bark_resin','amber_sap','moss_amber']},
+    outputQty:{t1:[1,1],t2:[1,1,1],t3:[2,1,1,1]},goldOutput:{t1:0,t2:3,t3:8}},
+  {id:'sp_miners',name:'Deep Drift Miners',icon:'⛏️',color:'#607090',
+    route:'cr_crystal',runsNeeded:3,setupCost:75,maint:5,
+    desc:'An independent mining crew working seams the Cinderfolk don\'t claim.',
+    output:{t1:['hearthstone','ashite'],t2:['hearthstone','ashite','crystal_shard'],t3:['hearthstone','ashite','crystal_shard','resonance_ore']},
+    outputQty:{t1:[1,1],t2:[1,1,1],t3:[2,1,1,1]},goldOutput:{t1:0,t2:5,t3:12}},
+  {id:'sp_herbalists',name:'Glade Herbalists',icon:'🌿',color:'#60a060',
+    route:'cr_moonlit',runsNeeded:3,setupCost:60,maint:4,
+    desc:'A circle of herb-women who tend secret moonlit gardens.',
+    output:{t1:['moonpetal','starwort'],t2:['moonpetal','starwort','nightdew'],t3:['moonpetal','starwort','nightdew','dew_crystal']},
+    outputQty:{t1:[1,1],t2:[1,1,1],t3:[2,1,1,1]},goldOutput:{t1:0,t2:4,t3:10}},
+  {id:'sp_nomads',name:'Ashwalker Nomads',icon:'🔥',color:'#c06040',
+    route:'cr_volcanic',runsNeeded:3,setupCost:100,maint:6,
+    desc:'Fire-resistant wanderers who harvest from active volcanic vents.',
+    output:{t1:['volcanic_essence','embervein'],t2:['volcanic_essence','embervein','magma_salt'],t3:['volcanic_essence','embervein','magma_salt','obsidian_flake']},
+    outputQty:{t1:[1,1],t2:[1,1,1],t3:[2,1,1,1]},goldOutput:{t1:0,t2:6,t3:15}},
+  {id:'sp_traders',name:'Coastal Traders',icon:'📦',color:'#5080a0',
+    route:'cr_ashfield',runsNeeded:3,setupCost:80,maint:5,
+    desc:'Merchants from the coast with exotic goods unavailable in Cindervale.',
+    output:{t1:['ghost_silk','beetle_shell'],t2:['ghost_silk','beetle_shell','moth_scale'],t3:['ghost_silk','beetle_shell','moth_scale','dream_pollen']},
+    outputQty:{t1:[1,1],t2:[1,1,1],t3:[2,1,1,1]},goldOutput:{t1:2,t2:8,t3:18}},
+  {id:'sp_hermits',name:'Mountain Hermits',icon:'🏔️',color:'#8090a0',legendary:true,
+    route:'cr_volcanic',runsNeeded:5,setupCost:120,maint:8,
+    desc:'Reclusive sages who trade in materials found nowhere else.',
+    output:{t1:['deep_crystal','embervein'],t2:['deep_crystal','embervein','mithril_dust'],t3:['deep_crystal','embervein','mithril_dust','void_salt']},
+    outputQty:{t1:[1,1],t2:[1,1,1],t3:[2,2,1,1]},goldOutput:{t1:0,t2:10,t3:25}},
+];
+
 const POT_LINES={
   'Thorek':['"The boys in Shaft Nine need salves after every shift. I\'m buying."','"Something for sore muscles and worse. Whatever you recommend."'],
   'Fiona':['"I\'ll take whatever you have. Potions sell for triple in the capital."','"My caravan leaves at dawn — what\'s ready?"'],
@@ -1747,6 +1801,9 @@ function CindervaleAlchemistInner(){
   const [fieldJournal,setFieldJournal]=useState([]); // ['fd_ash_bloom_cycle','fd_cinder_beetle',...]
   const [loreFragments,setLoreFragments]=useState([]); // ['lf_hf1','lf_vw2',...]
   const [companions,setCompanions]=useState([]); // [{compId:'rc_fox',loyalty:1,active:true}]
+  const [caravans,setCaravans]=useState([]); // [{routeId:'cr_ashfield',sentDay:1,returnDay:4,cargo:{}}]
+  const [supplyChains,setSupplyChains]=useState([]); // [{partnerId:'sp_hunters',tier:1,runsCompleted:3}]
+  const [caravanRuns,setCaravanRuns]=useState({}); // {cr_ashfield:2,cr_crystal:1}
   const [shelves,setShelves]=useState({});
   const [lastCheck,setLastCheck]=useState(null);
   const [resultPopup,setResultPopup]=useState(null); // {title,detail,type}
@@ -1832,9 +1889,9 @@ function CindervaleAlchemistInner(){
   const gatherState=useCallback(()=>({
     phase,charName,charRace,charGender,stats,ptsLeft,skRanks,skPts,skProgress,classLevels,specs,playerFeats,asiSpent,startingClass,
     screen,day,hours,xp,gold,inv,pots,known,aQ,doneQ,
-    log:log.slice(-30),milestones,fRep,factionAlign,upgrades,hiredAppr,apprTasks,apprXP,enchQ,potCustQ,clinicPatients,venomContracts,forgedWeapons,shieldCommissions,planarFocus,gadgets,blueprints,fieldJournal,loreFragments,companions,shelves,dailyReport,
+    log:log.slice(-30),milestones,fRep,factionAlign,upgrades,hiredAppr,apprTasks,apprXP,enchQ,potCustQ,clinicPatients,venomContracts,forgedWeapons,shieldCommissions,planarFocus,gadgets,blueprints,fieldJournal,loreFragments,companions,caravans,supplyChains,caravanRuns,shelves,dailyReport,
     boardQ,activeBQ,doneBQCount,dayFlags,knownEnch,brewCounts,procureItems,pubPapers,selectedSite,constructProgress,
-  }),[phase,charName,charRace,charGender,stats,ptsLeft,skRanks,skPts,skProgress,classLevels,specs,playerFeats,asiSpent,startingClass,screen,day,hours,xp,gold,inv,pots,known,aQ,doneQ,log,milestones,fRep,factionAlign,upgrades,hiredAppr,apprTasks,apprXP,enchQ,potCustQ,clinicPatients,venomContracts,forgedWeapons,shieldCommissions,planarFocus,gadgets,blueprints,fieldJournal,loreFragments,companions,shelves,dailyReport,boardQ,activeBQ,doneBQCount,dayFlags,knownEnch,brewCounts,procureItems,constructProgress,selectedSite]);
+  }),[phase,charName,charRace,charGender,stats,ptsLeft,skRanks,skPts,skProgress,classLevels,specs,playerFeats,asiSpent,startingClass,screen,day,hours,xp,gold,inv,pots,known,aQ,doneQ,log,milestones,fRep,factionAlign,upgrades,hiredAppr,apprTasks,apprXP,enchQ,potCustQ,clinicPatients,venomContracts,forgedWeapons,shieldCommissions,planarFocus,gadgets,blueprints,fieldJournal,loreFragments,companions,caravans,supplyChains,caravanRuns,shelves,dailyReport,boardQ,activeBQ,doneBQCount,dayFlags,knownEnch,brewCounts,procureItems,constructProgress,selectedSite]);
 
   const restoreState=useCallback((s)=>{
     if(!s)return;
@@ -1858,7 +1915,7 @@ function CindervaleAlchemistInner(){
     setUpgrades(s.upgrades||[]);setHiredAppr(s.hiredAppr||[]);
     setApprTasks(s.apprTasks||{});setApprXP(s.apprXP||{});
     prevLvl.current=getLvl(s.xp||0);
-    setDailyReport(s.dailyReport||[]);setEnchQ(s.enchQ||[]);setPotCustQ(s.potCustQ||[]);setClinicPatients(s.clinicPatients||[]);setVenomContracts(s.venomContracts||[]);setForgedWeapons(s.forgedWeapons||[]);setShieldCommissions(s.shieldCommissions||[]);setPlanarFocus(s.planarFocus||null);setGadgets(s.gadgets||[]);setBlueprints(s.blueprints||[]);setFieldJournal(s.fieldJournal||[]);setLoreFragments(s.loreFragments||[]);setCompanions(s.companions||[]);setShelves(s.shelves||{});setLastCheck(null);setNews([]);setMorningReport(null);
+    setDailyReport(s.dailyReport||[]);setEnchQ(s.enchQ||[]);setPotCustQ(s.potCustQ||[]);setClinicPatients(s.clinicPatients||[]);setVenomContracts(s.venomContracts||[]);setForgedWeapons(s.forgedWeapons||[]);setShieldCommissions(s.shieldCommissions||[]);setPlanarFocus(s.planarFocus||null);setGadgets(s.gadgets||[]);setBlueprints(s.blueprints||[]);setFieldJournal(s.fieldJournal||[]);setLoreFragments(s.loreFragments||[]);setCompanions(s.companions||[]);setCaravans(s.caravans||[]);setSupplyChains(s.supplyChains||[]);setCaravanRuns(s.caravanRuns||{});setShelves(s.shelves||{});setLastCheck(null);setNews([]);setMorningReport(null);
     setBoardQ(s.boardQ||[]);setActiveBQ(s.activeBQ||[]);setDoneBQCount(s.doneBQCount||0);setDayFlags(s.dayFlags||[]);setKnownEnch(s.knownEnch&&s.knownEnch.length>0?s.knownEnch:['e_sharp','e_glow','e_ironbark','e_feather','e_windwalk','e_rootbind']);
     setBrewCounts(s.brewCounts||{});setProcureItems(s.procureItems||[]);setPubPapers(s.pubPapers||[]);setConstructProgress(s.constructProgress||{});
     setSelHex(null);setVBuild('workshop');setDlgNpc(null);setShowShop(false);setQuestDlg(null);setPendingLevelUp(null);setSelectedSite(s.selectedSite||null);
@@ -1918,7 +1975,7 @@ function CindervaleAlchemistInner(){
   const snapshot=useCallback(()=>{
     const snap={day,hours,xp,gold,inv:{...inv},pots:{...pots},known:[...known],aQ:[...aQ],doneQ:[...doneQ],
       fRep:{...fRep},upgrades:[...upgrades],hiredAppr:hiredAppr.map(a=>({...a})),apprTasks:{...apprTasks},apprXP:{...apprXP},
-      skRanks:{...skRanks},skPts,skProgress:{...skProgress},enchQ:[...enchQ],potCustQ:[...potCustQ],clinicPatients:[...clinicPatients],venomContracts:[...venomContracts],forgedWeapons:[...forgedWeapons],shieldCommissions:[...shieldCommissions],planarFocus,gadgets:[...gadgets],blueprints:[...blueprints],fieldJournal:[...fieldJournal],loreFragments:[...loreFragments],companions:companions.map(c=>({...c})),gadgets,blueprints,fieldJournal,loreFragments,companions,shelves:{...shelves},milestones:[...milestones],log:[...log],dailyReport:[...dailyReport],brewCounts:{...brewCounts},procureItems:[...procureItems],constructProgress:{...constructProgress}};
+      skRanks:{...skRanks},skPts,skProgress:{...skProgress},enchQ:[...enchQ],potCustQ:[...potCustQ],clinicPatients:[...clinicPatients],venomContracts:[...venomContracts],forgedWeapons:[...forgedWeapons],shieldCommissions:[...shieldCommissions],planarFocus,gadgets:[...gadgets],blueprints:[...blueprints],fieldJournal:[...fieldJournal],loreFragments:[...loreFragments],companions:companions.map(c=>({...c})),caravans:[...caravans],supplyChains:[...supplyChains],caravanRuns:{...caravanRuns},gadgets,blueprints,fieldJournal,loreFragments,companions,caravans,supplyChains,caravanRuns,shelves:{...shelves},milestones:[...milestones],log:[...log],dailyReport:[...dailyReport],brewCounts:{...brewCounts},procureItems:[...procureItems],constructProgress:{...constructProgress}};
     setUndoStack(p=>[...p.slice(-4),snap]);
   },[day,hours,xp,gold,inv,pots,known,aQ,doneQ,fRep,upgrades,hiredAppr,apprTasks,apprXP,skRanks,skPts,skProgress,enchQ,potCustQ,shelves,milestones,log,dailyReport,brewCounts,procureItems,constructProgress]);
 
@@ -1941,7 +1998,7 @@ function CindervaleAlchemistInner(){
     setInv(snap.inv);setPots(snap.pots);setKnown(snap.known);setAQ(snap.aQ);setDoneQ(snap.doneQ);
     setFRep(snap.fRep);setUpgrades(snap.upgrades);setHiredAppr(snap.hiredAppr);
     setApprTasks(snap.apprTasks);setApprXP(snap.apprXP);setSkRanks(snap.skRanks);setSkPts(snap.skPts);setSkProgress(snap.skProgress||{});
-    setEnchQ(snap.enchQ);setPotCustQ(snap.potCustQ||[]);setClinicPatients(snap.clinicPatients||[]);setVenomContracts(snap.venomContracts||[]);setForgedWeapons(snap.forgedWeapons||[]);setShieldCommissions(snap.shieldCommissions||[]);setPlanarFocus(snap.planarFocus||null);setGadgets(snap.gadgets||[]);setBlueprints(snap.blueprints||[]);setFieldJournal(snap.fieldJournal||[]);setLoreFragments(snap.loreFragments||[]);setCompanions(snap.companions||[]);setShelves(snap.shelves||{});setMilestones(snap.milestones);setLog(snap.log);setDailyReport(snap.dailyReport);
+    setEnchQ(snap.enchQ);setPotCustQ(snap.potCustQ||[]);setClinicPatients(snap.clinicPatients||[]);setVenomContracts(snap.venomContracts||[]);setForgedWeapons(snap.forgedWeapons||[]);setShieldCommissions(snap.shieldCommissions||[]);setPlanarFocus(snap.planarFocus||null);setGadgets(snap.gadgets||[]);setBlueprints(snap.blueprints||[]);setFieldJournal(snap.fieldJournal||[]);setLoreFragments(snap.loreFragments||[]);setCompanions(snap.companions||[]);setCaravans(snap.caravans||[]);setSupplyChains(snap.supplyChains||[]);setCaravanRuns(snap.caravanRuns||{});setShelves(snap.shelves||{});setMilestones(snap.milestones);setLog(snap.log);setDailyReport(snap.dailyReport);
     setBrewCounts(snap.brewCounts||{});setProcureItems(snap.procureItems||[]);setPubPapers(snap.pubPapers||[]);setConstructProgress(snap.constructProgress||{});
     setLastCheck(null);
     addLog('↩️ Time seems to blur — you find yourself a moment before, as if the last action never happened.','info');
@@ -3065,6 +3122,62 @@ function CindervaleAlchemistInner(){
     return PLANAR_COMBOS[ids.sort().join('+')]||null;
   };
 
+  // ═══ QUARTERMASTER SUPPLY NETWORK ═══
+  const getMaxCaravans=()=>{const qLv=classLevels.warden||0;return qLv>=10?3:qLv>=6?2:1;};
+  const getMaxChains=()=>{const qLv=classLevels.warden||0;return qLv>=10?6:qLv>=6?4:2;};
+  const getMaxChainTier=()=>{const qLv=classLevels.warden||0;return qLv>=10?3:qLv>=6?2:1;};
+  const dispatchCaravan=(routeId,cargo)=>{
+    const route=CARAVAN_ROUTES.find(r=>r.id===routeId);if(!route)return;
+    const activeCaravans=caravans.filter(c=>c.returnDay>day);
+    if(activeCaravans.length>=getMaxCaravans()){addLog(`Maximum ${getMaxCaravans()} active caravans.`,'error');return;}
+    // Cargo: player loads potions or ingredients
+    const totalCargo=Object.values(cargo).reduce((s,v)=>s+v,0);
+    if(totalCargo<1){addLog('Load at least 1 item as cargo.','error');return;}
+    if(hours<1){addLog('Dispatching a caravan takes 1 hour.','error');return;}
+    // Verify cargo exists in inventory
+    const isPotion=Object.keys(cargo).some(id=>RECIPES.find(r=>r.id===id));
+    const hasAll=Object.entries(cargo).every(([id,q])=>isPotion?(pots[id]||0)>=q:(inv[id]||0)>=q);
+    if(!hasAll){addLog('Not enough items to load.','error');return;}
+    snapshot();setHours(h=>h-1);
+    // Consume cargo
+    if(isPotion)setPots(p=>{const n={...p};Object.entries(cargo).forEach(([id,q])=>{n[id]=Math.max(0,(n[id]||0)-q);});return n;});
+    else setInv(p=>{const n={...p};Object.entries(cargo).forEach(([id,q])=>{n[id]=Math.max(0,(n[id]||0)-q);});return n;});
+    const qLv=classLevels.warden||0;
+    const tripDays=qLv>=6?Math.max(1,route.roundTrip-1):route.roundTrip;
+    setCaravans(prev=>[...prev,{id:'cv_'+Math.random().toString(36).slice(2),routeId,sentDay:day,returnDay:day+tripDays,cargo:{...cargo},resolved:false}]);
+    setCaravanRuns(prev=>({...prev,[routeId]:(prev[routeId]||0)+1}));
+    const cargoStr=Object.entries(cargo).map(([id,q])=>(INGR[id]?.icon||RECIPES.find(r=>r.id===id)?.icon||'')+(INGR[id]?.name||RECIPES.find(r=>r.id===id)?.name||id)+'×'+q).join(', ');
+    showResult('🚚 Caravan Dispatched!','craft',route.icon+' '+route.name+'\nCargo: '+cargoStr+'\nReturns in '+tripDays+' day'+(tripDays>1?'s':''));
+    addLog(`🚚 Caravan sent on ${route.icon}${route.name}. Returns day ${day+tripDays}.`,'quest');
+  };
+  const establishChain=(partnerId)=>{
+    const partner=SUPPLY_PARTNERS.find(p=>p.id===partnerId);if(!partner)return;
+    if(supplyChains.find(sc=>sc.partnerId===partnerId)){addLog('Already established this supply chain.','error');return;}
+    if(supplyChains.length>=getMaxChains()){addLog(`Maximum ${getMaxChains()} supply chains.`,'error');return;}
+    if(partner.legendary&&(classLevels.warden||0)<10){addLog('Legendary partners require Warden Lv10.','error');return;}
+    const runs=caravanRuns[partner.route]||0;
+    if(runs<partner.runsNeeded){addLog(`Need ${partner.runsNeeded} caravan runs on ${CARAVAN_ROUTES.find(r=>r.id===partner.route)?.name||'this route'} (${runs}/${partner.runsNeeded}).`,'error');return;}
+    if(gold<partner.setupCost){addLog(`Need ${partner.setupCost}g to establish this supply chain.`,'error');return;}
+    snapshot();
+    setGold(g=>g-partner.setupCost);
+    setSupplyChains(prev=>[...prev,{partnerId,tier:1}]);
+    gainXP(partner.setupCost);
+    showResult('🤝 Supply Chain Established!','craft',partner.icon+' '+partner.name+'\n'+partner.desc+'\nTier 1 — delivers daily for '+partner.maint+'g/day maintenance.');
+    addLog(`🤝 Established supply chain with ${partner.icon}${partner.name}!`,'quest');
+  };
+  const upgradeChain=(partnerId)=>{
+    const sc=supplyChains.find(s=>s.partnerId===partnerId);if(!sc)return;
+    const partner=SUPPLY_PARTNERS.find(p=>p.id===partnerId);if(!partner)return;
+    const maxTier=getMaxChainTier();
+    if(sc.tier>=maxTier){addLog('Max tier for current Warden level.','error');return;}
+    const upgCost=partner.setupCost*sc.tier;
+    if(gold<upgCost){addLog(`Upgrade costs ${upgCost}g.`,'error');return;}
+    snapshot();setGold(g=>g-upgCost);
+    setSupplyChains(prev=>prev.map(s=>s.partnerId===partnerId?{...s,tier:s.tier+1}:s));
+    gainXP(upgCost);
+    showResult('📈 Supply Chain Upgraded!','craft',partner.icon+' '+partner.name+' → Tier '+(sc.tier+1)+'\nIncreased output and '+(['','','rare ingredients','rare ingredients + passive gold'][sc.tier+1]||'bonuses'));
+  };
+
   // ═══ CONSTRUCTOR BLUEPRINTS ═══
   const getBPSlots=()=>{const cLv=classLevels.artificer||0;return cLv>=10?6:cLv>=6?4:2;};
   const hasSanctum=()=>blueprints.some(b=>b.bpId==='bp_sanctum'&&b.complete);
@@ -3928,6 +4041,49 @@ function CindervaleAlchemistInner(){
       if(train)bpLines.push({icon:'🎓',label:'Training Room',val:'Staff XP ×'+Math.floor(2*mult),color:TH.gold});
       if(bpLines.length>0)mrSections.push({title:'🏗️ Constructor Projects',lines:bpLines});
     }
+    // ═══ QUARTERMASTER SUPPLY NETWORK MORNING ═══
+    if(specs.warden==='quartermaster'){
+      const qmLines=[];
+      // Resolve returning caravans
+      caravans.filter(c=>!c.resolved&&c.returnDay<=day+1).forEach(c=>{
+        const route=CARAVAN_ROUTES.find(r=>r.id===c.routeId);if(!route)return;
+        const ch=pureCheck('endurance',route.dc);
+        const cargoValue=Object.values(c.cargo).reduce((s,v)=>s+v,0);
+        if(ch.total>=route.dc){
+          // Success — trade goods returned
+          const tradeItems={};const n=1+Math.floor(cargoValue/2);
+          for(let i=0;i<n;i++){const id=route.tradeIngr[Math.floor(Math.random()*route.tradeIngr.length)];tradeItems[id]=(tradeItems[id]||0)+1;}
+          setInv(p=>{const nn={...p};Object.entries(tradeItems).forEach(([id,q])=>{nn[id]=(nn[id]||0)+q;});return nn;});
+          const tradeGold=Math.floor(route.tradeGold*(1+cargoValue*0.2));setGold(g=>g+tradeGold);
+          qmLines.push({icon:'🚚',label:route.name+' returned!',val:Object.entries(tradeItems).map(([id,q])=>(INGR[id]?.icon||id)+'×'+q).join(' ')+' +'+tradeGold+'g',color:TH.green});
+        } else {
+          // Partial loss
+          const partialGold=Math.floor(route.tradeGold*0.4);setGold(g=>g+partialGold);
+          qmLines.push({icon:'🚚',label:route.name+' — rough trip',val:'Partial cargo lost. +'+partialGold+'g',color:TH.orange});
+        }
+      });
+      setCaravans(prev=>prev.map(c=>c.returnDay<=day+1?{...c,resolved:true}:c));
+      // Supply chain deliveries
+      let totalMaint=0;
+      supplyChains.forEach(sc=>{
+        const partner=SUPPLY_PARTNERS.find(p=>p.id===sc.partnerId);if(!partner)return;
+        totalMaint+=partner.maint;
+        const tierKey='t'+sc.tier;
+        const outIngr=partner.output[tierKey]||[];
+        const outQty=partner.outputQty[tierKey]||[];
+        const items={};outIngr.forEach((id,i)=>{const q=outQty[i]||1;items[id]=(items[id]||0)+q;});
+        setInv(p=>{const nn={...p};Object.entries(items).forEach(([id,q])=>{nn[id]=(nn[id]||0)+q;});return nn;});
+        const gOut=partner.goldOutput[tierKey]||0;if(gOut>0)setGold(g=>g+gOut);
+        qmLines.push({icon:partner.icon,label:partner.name+' (T'+sc.tier+')',val:Object.entries(items).map(([id,q])=>(INGR[id]?.icon||id)+'×'+q).join(' ')+(gOut>0?' +'+gOut+'g':''),color:partner.color});
+      });
+      if(totalMaint>0){setGold(g=>g-totalMaint);qmLines.push({icon:'💰',label:'Maintenance',val:'-'+totalMaint+'g',color:TH.red});}
+      // Show active caravans
+      caravans.filter(c=>!c.resolved&&c.returnDay>day+1).forEach(c=>{
+        const route=CARAVAN_ROUTES.find(r=>r.id===c.routeId);
+        qmLines.push({icon:'🚚',label:route?.name||'Caravan',val:'Returns day '+c.returnDay,color:TH.textDim});
+      });
+      if(qmLines.length>0)mrSections.push({title:'🚚 Supply Network',lines:qmLines});
+    }
     // ═══ RANGER COMPANION MORNING EFFECTS ═══
     if(companions.length>0){
       const compLines=[];
@@ -4046,7 +4202,7 @@ function CindervaleAlchemistInner(){
         <div style={{maxWidth:500,padding:'60px 20px',width:'100%',textAlign:'center'}}>
           <div style={{fontSize:32,color:TH.gold,letterSpacing:4,marginBottom:4,textShadow:`0 0 20px ${TH.goldDim}`}}>⚗️</div>
           <div style={{fontSize:32,color:TH.gold,letterSpacing:3,marginBottom:2}}>Cindervale Alchemist</div>
-          <div style={{fontSize:12,color:TH.textDim}}>Build {BUILD_VERSION}</div>
+          <div style={{fontSize:14,color:'#d4a420',marginTop:4}}>Build {BUILD_VERSION}</div>
           <div style={{color:TH.textDim,fontSize:16,marginBottom:30}}>Crafting · Enchanting · Community</div>
           {loadingSlots?<div style={{color:TH.textDim}}>Loading...</div>:<>
           {autoSaveData&&<div style={{...S.card,borderColor:TH.green,textAlign:'left',cursor:'pointer'}} onClick={()=>loadSave(autoSaveData)}>
@@ -4496,7 +4652,7 @@ function CindervaleAlchemistInner(){
       <div style={{width:'100%',maxWidth:1200,padding:'6px 16px',borderBottom:`1px solid ${TH.border}`,position:'relative'}}>
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
           <div style={{fontSize:20,color:TH.gold,letterSpacing:2,cursor:'pointer'}} onClick={()=>{setScreen('map');handleDevTap();}}>⚗️ Cindervale</div>
-          <div style={{fontSize:9,color:TH.textDim,position:'absolute',right:8,top:2}}>{BUILD_VERSION}</div>
+          <div style={{fontSize:11,color:TH.gold,position:'absolute',right:8,top:2}}>{BUILD_VERSION}</div>
           <div style={{display:'flex',gap:4}}>
             <button style={{...S.btn('gold'),fontSize:14,padding:'3px 10px'}} onClick={()=>setConfirmRest(true)}>🌙 Rest ({hours}h)</button>
             {undoStack.length>0&&<button style={{...S.btn('def'),fontSize:14,padding:'3px 8px'}} onClick={undo}>↩️ Undo</button>}
@@ -5962,6 +6118,83 @@ function CindervaleAlchemistInner(){
             </div>;
           })}
           {(classLevels.warden||0)<6&&<div style={{fontSize:12,color:TH.textDim,marginTop:4}}>🔒 More slots at Warden Lv6</div>}
+        </div>}
+
+        {/* ═══ QUARTERMASTER SUPPLY NETWORK ═══ */}
+        {specs.warden==='quartermaster'&&<div style={{...S.card,borderColor:'#6080a0',background:'#6080a008'}}>
+          <div style={S.cT}>🚚 Supply Network</div>
+          {(()=>{
+            const qLv=classLevels.warden||0;
+            const maxTier=qLv>=10?3:qLv>=6?2:1;
+            const maxRoutes=qLv>=10?6:qLv>=6?5:3;
+            const activeCaravans=caravans.filter(c=>!c.resolved&&c.returnDay>day);
+            const maxCar=getMaxCaravans();
+            const availRoutes=CARAVAN_ROUTES.filter((r,i)=>i<maxRoutes);
+            return <>
+              {/* Active caravans */}
+              <div style={{fontSize:14,color:'#6080a0',fontWeight:'bold',marginBottom:4}}>🚚 Caravans ({activeCaravans.length}/{maxCar} active)</div>
+              {activeCaravans.length>0&&<div style={{marginBottom:6}}>
+                {activeCaravans.map(c=>{const route=CARAVAN_ROUTES.find(r=>r.id===c.routeId);const daysLeft=c.returnDay-day;
+                  return <div key={c.id} style={{padding:'3px 8px',background:TH.panelLight,borderRadius:4,marginBottom:2,border:'1px solid '+TH.border,fontSize:13}}>
+                    {route?.icon} {route?.name} — <span style={{color:TH.gold}}>returns in {daysLeft} day{daysLeft!==1?'s':''}</span>
+                  </div>;
+                })}
+              </div>}
+              {/* Dispatch new caravan */}
+              {activeCaravans.length<maxCar&&<div style={{marginBottom:8}}>
+                <div style={{fontSize:13,color:TH.textDim,marginBottom:3}}>Dispatch caravan (load ingredients as cargo):</div>
+                <div style={{display:'flex',flexWrap:'wrap',gap:3}}>
+                  {availRoutes.map(route=>{
+                    const runs=caravanRuns[route.id]||0;
+                    const partner=SUPPLY_PARTNERS.find(p=>p.route===route.id);
+                    return <button key={route.id} style={{...S.btn(hours>=1?'gold':'dim'),fontSize:12,padding:'3px 8px'}} disabled={hours<1}
+                      onClick={()=>{
+                        // Quick dispatch: send 3 of a common ingredient as cargo
+                        const common=Object.entries(inv).filter(([,q])=>q>=3).sort((a,b)=>b[1]-a[1]);
+                        if(common.length===0){addLog('Need at least 3 of any ingredient to load.','error');return;}
+                        dispatchCaravan(route.id,{[common[0][0]]:3});
+                      }}
+                      title={route.desc+'\nRuns completed: '+runs+(partner?' — '+partner.runsNeeded+' needed for supply chain':'')}>
+                      {route.icon} {route.name} (DC{route.dc} · {qLv>=6?Math.max(1,route.roundTrip-1):route.roundTrip}d)
+                      {partner&&runs<partner.runsNeeded&&<span style={{color:TH.textDim,marginLeft:3}}>{runs}/{partner.runsNeeded}</span>}
+                    </button>;
+                  })}
+                </div>
+              </div>}
+              {/* Supply Chains */}
+              <div style={{fontSize:14,color:'#6080a0',fontWeight:'bold',marginTop:6,marginBottom:4}}>🤝 Supply Chains ({supplyChains.length}/{getMaxChains()})</div>
+              {/* Established chains */}
+              {supplyChains.map(sc=>{
+                const partner=SUPPLY_PARTNERS.find(p=>p.id===sc.partnerId);if(!partner)return null;
+                const tierKey='t'+sc.tier;
+                const outDesc=(partner.output[tierKey]||[]).map((id,i)=>(INGR[id]?.icon||'')+(INGR[id]?.name||id)+'×'+(partner.outputQty[tierKey]?.[i]||1)).join(', ');
+                return <div key={sc.partnerId} style={{padding:'5px 8px',background:partner.color+'10',borderRadius:4,marginBottom:3,border:'1px solid '+partner.color+'44'}}>
+                  <div style={{...S.row,justifyContent:'space-between'}}>
+                    <span style={{fontSize:14,color:partner.color,fontWeight:'bold'}}>{partner.icon} {partner.name} <span style={{color:TH.gold}}>T{sc.tier}</span></span>
+                    {sc.tier<maxTier&&<button style={{...S.btn('gold'),fontSize:11,padding:'1px 6px'}}
+                      onClick={()=>upgradeChain(sc.partnerId)}>↑ T{sc.tier+1} ({partner.setupCost*sc.tier}g)</button>}
+                  </div>
+                  <div style={{fontSize:12,color:TH.textDim}}>Daily: {outDesc}{partner.goldOutput[tierKey]>0?' +'+partner.goldOutput[tierKey]+'g':''} · Maint: {partner.maint}g/day</div>
+                </div>;
+              })}
+              {/* Available to establish */}
+              {SUPPLY_PARTNERS.filter(p=>!supplyChains.find(sc=>sc.partnerId===p.id)&&(!p.legendary||qLv>=10)).map(partner=>{
+                const runs=caravanRuns[partner.route]||0;
+                const canEstablish=runs>=partner.runsNeeded&&gold>=partner.setupCost&&supplyChains.length<getMaxChains();
+                const routeName=CARAVAN_ROUTES.find(r=>r.id===partner.route)?.name||'';
+                return <div key={partner.id} style={{padding:'5px 8px',background:TH.panelLight,borderRadius:4,marginBottom:3,border:'1px solid '+TH.border,opacity:runs>=partner.runsNeeded?1:0.7}}>
+                  <div style={{...S.row,justifyContent:'space-between'}}>
+                    <span style={{fontSize:14,color:TH.textBright}}>{partner.icon} {partner.name} {partner.legendary&&<span style={{color:'#d4a420',fontSize:11}}>★</span>}</span>
+                    {canEstablish?<button style={{...S.btn('gold'),fontSize:12,padding:'2px 8px'}}
+                      onClick={()=>establishChain(partner.id)}>🤝 Establish ({partner.setupCost}g)</button>
+                      :<span style={{fontSize:12,color:TH.textDim}}>{runs}/{partner.runsNeeded} runs on {routeName}</span>}
+                  </div>
+                  <div style={{fontSize:12,color:TH.textDim}}>{partner.desc}</div>
+                </div>;
+              })}
+              {qLv<6&&<div style={{fontSize:12,color:TH.textDim,marginTop:4}}>🔒 More caravans & chains at Warden Lv6</div>}
+            </>;
+          })()}
         </div>}
 
         <div style={S.card}><div style={S.cT}>⚗️ Recipes ({known.length}/{RECIPES.length})</div>
