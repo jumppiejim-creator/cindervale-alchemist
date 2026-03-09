@@ -3333,10 +3333,10 @@ function CindervaleAlchemistInner(){
       };
       setCustomPatterns(prev=>[...prev,newPattern]);
       gainXP(totalXp);
-      const FLAVOR=['The runes align in a configuration never before recorded. You\\'ve created something entirely new.',
+      const FLAVOR=['The runes align in a configuration never before recorded. You have created something entirely new.',
         'Arcane energy flows through the pattern like water finding its channel. It works!',
         'Your theoretical framework proves correct — the pattern crystallizes into a stable enchantment formula.',
-        'The symbols on the page begin to glow faintly. This is no mere recipe — it\\'s a theorem made real.'];
+        'The symbols on the page begin to glow faintly. This is no mere recipe — it is a theorem made real.'];
       showResult('✨ Pattern Discovered! — '+name,'craft',
         FLAVOR[Math.floor(Math.random()*FLAVOR.length)]+
         '\n\nCategory: '+ENCH_CATS[cat]?.icon+' '+ENCH_CATS[cat]?.name+
