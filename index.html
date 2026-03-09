@@ -2057,6 +2057,7 @@ function CindervaleAlchemistInner(){
   const [customPatterns,setCustomPatterns]=useState([]); // [{id:'cp_1',name:'Arcane Sigil',effects:['pe_dmg_fire'],power:0,cat:'weapon',xp:30,dc:12}]
   const [mappedRegions,setMappedRegions]=useState([]); // ['hr_ash_geysers','hr_iron_canopy',...]
   const [activeBuffs,setActiveBuffs]=useState({}); // {prismatic_elixir: {daysLeft:3}, canopy_draught: {daysLeft:2}}
+  const [pendingCompDec,setPendingCompDec]=useState([]); // [{comp:{id,name,icon,...},check:{roll,total,...}}]
   const [shelves,setShelves]=useState({});
   const [lastCheck,setLastCheck]=useState(null);
   const [resultPopup,setResultPopup]=useState(null); // {title,detail,type}
@@ -2488,7 +2489,7 @@ function CindervaleAlchemistInner(){
     const curSiteName=selectedSite?.regId===reg.id?reg.sites?.find(s=>s.id===selectedSite.siteId)?.name:null;
     if(curSiteName)addLog(`📍 Foraging at ${curSiteName}.`,'info');
     // Pre-compute all hours
-    const queue=[];
+    const queue=[];const localNewDiscs=[];const localNewComps=[];
     const cumG={};let cumXp=0;let hoursLeft=info.gatherHours;let h=0;
     while(h<hoursLeft){
       h++;
@@ -2614,7 +2615,7 @@ function CindervaleAlchemistInner(){
         const discChance=natLv>=10?0.40:natLv>=6?0.30:0.20;
         const canGeo=natLv>=6;
         const regionDiscs=FIELD_DISCOVERIES[reg.id]||[];
-        const undiscovered=regionDiscs.filter(d=>!fieldJournal.includes(d.id)&&(d.type!=='geological'||canGeo));
+        const undiscovered=regionDiscs.filter(d=>!fieldJournal.includes(d.id)&&!localNewDiscs.includes(d.id)&&(d.type!=='geological'||canGeo));
         if(undiscovered.length>0&&Math.random()<discChance){
           const disc=undiscovered[Math.floor(Math.random()*undiscovered.length)];
           // Research check to document it — Lv10 auto-succeeds
@@ -2623,7 +2624,7 @@ function CindervaleAlchemistInner(){
           let documented=autoDoc;
           if(!autoDoc){const docCh=pureCheck('research',docDC);const rb=getFeatureVal('craftBonus');if(rb)docCh.total+=rb;documented=docCh.total>=docDC;}
           if(documented){
-            fieldJournal.push(disc.id); // mutate for this loop; state update below
+            localNewDiscs.push(disc.id); // track locally, state update after loop
             discovery={...disc,documented:true};
             // Apply bonus yield immediately for this hour
             if(disc.bonus.extraYield&&disc.bonus.ingredient&&hourG[disc.bonus.ingredient]!==undefined){
@@ -2673,19 +2674,19 @@ function CindervaleAlchemistInner(){
       if(isRanger&&ext.success){
         const rngLv=classLevels.warden||0;
         const encChance=rngLv>=10?0.35:rngLv>=6?0.25:0.15;
-        const maxSlots=rngLv>=10?3:rngLv>=6?2:1;
-        const owned=companions.map(c=>c.compId);
+        const owned=[...companions.map(c=>c.compId),...localNewComps.map(c=>c.compId)];
         const regionComps=RANGER_COMPANIONS.filter(c=>c.region===reg.id&&!owned.includes(c.id)&&(!c.legendary_only||rngLv>=10));
-        if(regionComps.length>0&&companions.length<maxSlots&&Math.random()<encChance){
+        if(regionComps.length>0&&Math.random()<encChance){
           const comp=regionComps[Math.floor(Math.random()*regionComps.length)];
-          // Attunement check to tame
+          // Attunement check to approach
           const tameDC=10+reg.diff*2;
           const tameCh=pureCheck('attunement',tameDC);
           if(tameCh.total>=tameDC){
-            companions.push({compId:comp.id,loyalty:1,active:true,tamedDay:day});
-            companionEnc={...comp,tamed:true,check:tameCh};
+            // Approachable! Store for post-expedition decision (don't auto-tame)
+            localNewComps.push({compId:comp.id});
+            companionEnc={...comp,approachable:true,check:tameCh};
           } else {
-            companionEnc={...comp,tamed:false,check:tameCh};
+            companionEnc={...comp,approachable:false,check:tameCh};
           }
         }
       }
@@ -2724,9 +2725,9 @@ function CindervaleAlchemistInner(){
     // Update field journal with any discoveries made during expedition
     const newDiscs=queue.filter(q=>q.discovery?.documented).map(q=>q.discovery.id);
     if(newDiscs.length>0)setFieldJournal(prev=>[...new Set([...prev,...newDiscs])]);
-    // Update companions with any tamed during expedition
-    const newComps=queue.filter(q=>q.companionEnc?.tamed).map(q=>({compId:q.companionEnc.id,loyalty:1,active:true,tamedDay:day}));
-    if(newComps.length>0)setCompanions(prev=>[...prev,...newComps]);
+    // Queue companion decisions for post-expedition popup (instead of auto-taming)
+    const approachableComps=queue.filter(q=>q.companionEnc?.approachable).map(q=>q.companionEnc);
+    if(approachableComps.length>0)setPendingCompDec(approachableComps);
     // Update mapped regions with any hidden areas discovered during expedition
     const newMaps=queue.filter(q=>q.hiddenDisc?.mapped).map(q=>q.hiddenDisc.id);
     if(newMaps.length>0)setMappedRegions(prev=>[...new Set([...prev,...newMaps])]);
@@ -2739,7 +2740,7 @@ function CindervaleAlchemistInner(){
     Object.entries(hr.gathered).forEach(([id,q])=>{if(q>0)modInv(id,q);});
     gainXP(hr.xp);
     if(hr.event?.effectRep)addRep(hr.event.effectRep.faction,hr.event.effectRep.amount);
-    addLog(`⛏️ Hour ${hr.hourNum}: ${hr.ext.success?'✅':'❌'} ${Object.entries(hr.gathered).filter(([,q])=>q>0).map(([id,q])=>INGR[id]?.icon+INGR[id]?.name+' ×'+q).join(', ')||'nothing'}${hr.divBonus?' | 👁️ Divination: +1 '+hr.divBonus.icon+hr.divBonus.name:''}${hr.luckyBonus?' | 🍀 Lucky: +1 '+hr.luckyBonus.icon+hr.luckyBonus.name:''}${hr.attuneBonus?' | 🎯 Attuned: +1 '+hr.attuneBonus.icon+hr.attuneBonus.name:''}${hr.effBonus?' | ⏱️ Efficiency: bonus hour!':''}${hr.discovery?(hr.discovery.documented?' | 🌿 Discovered: '+hr.discovery.icon+' '+hr.discovery.name+'!':' | 🌿 Noticed something, but couldn\'t document it...'):''}${hr.companionEnc?(hr.companionEnc.tamed?' | 🦊 Tamed: '+hr.companionEnc.icon+' '+hr.companionEnc.name+'!':' | 🦊 Spotted '+hr.companionEnc.icon+' '+hr.companionEnc.name+' but it fled...'):''}${hr.hiddenDisc?(hr.hiddenDisc.mapped?' | 🗺️ MAPPED: '+hr.hiddenDisc.icon+' '+hr.hiddenDisc.name+'!':' | 🗺️ Glimpsed a hidden path...'):''}${hr.event?(hr.event.dangerSensed?' | ⚠️ Danger Sense saved you!':' | '+hr.event.text):''}`,'harvest');
+    addLog(`⛏️ Hour ${hr.hourNum}: ${hr.ext.success?'✅':'❌'} ${Object.entries(hr.gathered).filter(([,q])=>q>0).map(([id,q])=>INGR[id]?.icon+INGR[id]?.name+' ×'+q).join(', ')||'nothing'}${hr.divBonus?' | 👁️ Divination: +1 '+hr.divBonus.icon+hr.divBonus.name:''}${hr.luckyBonus?' | 🍀 Lucky: +1 '+hr.luckyBonus.icon+hr.luckyBonus.name:''}${hr.attuneBonus?' | 🎯 Attuned: +1 '+hr.attuneBonus.icon+hr.attuneBonus.name:''}${hr.effBonus?' | ⏱️ Efficiency: bonus hour!':''}${hr.discovery?(hr.discovery.documented?' | 🌿 Discovered: '+hr.discovery.icon+' '+hr.discovery.name+'!':' | 🌿 Noticed something, but couldn\'t document it...'):''}${hr.companionEnc?(hr.companionEnc.approachable?' | 🦊 Approached: '+hr.companionEnc.icon+' '+hr.companionEnc.name+'!':' | 🦊 Spotted '+hr.companionEnc.icon+' '+hr.companionEnc.name+' but it fled...'):''}${hr.hiddenDisc?(hr.hiddenDisc.mapped?' | 🗺️ MAPPED: '+hr.hiddenDisc.icon+' '+hr.hiddenDisc.name+'!':' | 🗺️ Glimpsed a hidden path...'):''}${hr.event?(hr.event.dangerSensed?' | ⚠️ Danger Sense saved you!':' | '+hr.event.text):''}`,'harvest');
     const rest=expQ.slice(1);
     setExpQ(rest);
     if(rest.length===0){
@@ -8753,6 +8754,27 @@ function CindervaleAlchemistInner(){
 
       {/* ═══ EXPEDITION HOUR POPUP ═══ */}
       {expQ.length>0&&<ExpeditionHourPopup hr={expQ[0]} TH={TH} S={S} LC={LC} INGR={INGR} FACTIONS={FACTIONS} onOk={advanceExpedition} onSkipAll={skipAllExpedition} remaining={expQ.length} playSfx={playSfx}/>}
+      {pendingCompDec.length>0&&expQ.length===0&&<CompanionDecisionPopup
+        comps={pendingCompDec}
+        companions={companions}
+        maxSlots={(classLevels.warden||0)>=10?3:(classLevels.warden||0)>=6?2:1}
+        RANGER_COMPANIONS={RANGER_COMPANIONS}
+        TH={TH} S={S}
+        onDecide={(comp,accept,replaceIdx)=>{
+          if(accept){
+            if(replaceIdx!=null){
+              setCompanions(prev=>{const n=[...prev];n.splice(replaceIdx,1);return[...n,{compId:comp.id,loyalty:1,active:true,tamedDay:day}];});
+              addLog('🦊 Released '+RANGER_COMPANIONS.find(r=>r.id===companions[replaceIdx]?.compId)?.name+' and tamed '+comp.icon+' '+comp.name+'!','quest');
+            } else {
+              setCompanions(prev=>[...prev,{compId:comp.id,loyalty:1,active:true,tamedDay:day}]);
+              addLog('🦊 Tamed '+comp.icon+' '+comp.name+'!','quest');
+            }
+          } else {
+            addLog('🦊 Let '+comp.icon+' '+comp.name+' go free.','info');
+          }
+          setPendingCompDec(prev=>{const n=[...prev];n.shift();return n;});
+        }}
+      />}
 
       {/* Journal fallback for narrow screens */}
       <div className="cv-journal-mobile" style={{display:'none'}}>
@@ -9251,6 +9273,60 @@ function DicePopup({popup,LC,TH,S,onClose,playSfx}){
 }
 
 // ═══════ EXPEDITION HOUR-BY-HOUR POPUP ═══════
+function CompanionDecisionPopup({comps,companions,maxSlots,RANGER_COMPANIONS,TH,S,onDecide}){
+  const [swapTarget,setSwapTarget]=useState(null);
+  const comp=comps[0];if(!comp)return null;
+  const compData=RANGER_COMPANIONS.find(c=>c.id===comp.id)||comp;
+  const atMax=companions.length>=maxSlots;
+  const doTame=(replaceIdx)=>{
+    setSwapTarget(null);
+    onDecide(comp,true,replaceIdx!=null?replaceIdx:null);
+  };
+  const doSkip=()=>{
+    setSwapTarget(null);
+    onDecide(comp,false,null);
+  };
+  return(
+    <div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'rgba(0,0,0,0.7)',zIndex:100,display:'flex',alignItems:'center',justifyContent:'center',padding:12}}>
+      <div style={{background:TH.panel,border:'2px solid #60a060',borderRadius:12,padding:'20px 24px',maxWidth:420,width:'100%',boxShadow:'0 4px 30px rgba(0,0,0,0.6)'}}>
+        <div style={{fontSize:13,color:TH.textDim,marginBottom:6,textAlign:'center'}}>Companion Encounter {comps.length>1?'('+comps.length+' remaining)':''}</div>
+        <div style={{textAlign:'center',marginBottom:8}}>
+          <div style={{fontSize:48,marginBottom:4}}>{compData.icon}</div>
+          <div style={{fontSize:22,color:'#60a060',fontWeight:'bold'}}>{compData.name}</div>
+          <div style={{fontSize:14,color:TH.textDim,fontStyle:'italic',margin:'4px 0'}}>{compData.desc||'A wild creature approaches cautiously.'}</div>
+          <div style={{fontSize:14,color:TH.textDim}}>Role: <b style={{color:TH.textBright}}>{compData.primary?.type||'companion'}</b></div>
+        </div>
+        <div style={{fontSize:14,color:TH.text,lineHeight:1.5,marginBottom:10,textAlign:'center'}}>
+          The creature seems to trust you. Do you want to tame it as a companion?
+        </div>
+        {atMax&&<div style={{background:'#c0404015',border:'1px solid #c0404044',borderRadius:6,padding:'8px 10px',marginBottom:10}}>
+          <div style={{fontSize:14,color:'#c04040',fontWeight:'bold',marginBottom:4}}>Companion slots full ({companions.length}/{maxSlots})</div>
+          <div style={{fontSize:13,color:TH.textDim,marginBottom:6}}>Choose a companion to release:</div>
+          {companions.map((c,i)=>{
+            const cd=RANGER_COMPANIONS.find(r=>r.id===c.compId);
+            return <button key={i} style={{display:'block',width:'100%',textAlign:'left',padding:'6px 10px',marginBottom:3,
+              background:swapTarget===i?'#c0404020':TH.panelLight,border:'1px solid '+(swapTarget===i?'#c0404066':TH.border),
+              borderRadius:4,cursor:'pointer',fontFamily:'inherit',fontSize:14,color:swapTarget===i?'#c04040':TH.text}}
+              onClick={()=>setSwapTarget(i)}>
+              {cd?.icon||''} {cd?.name||c.compId} (Loyalty {'\u2605'.repeat(c.loyalty)}) {swapTarget===i&&'\u2190 Release this one'}
+            </button>;
+          })}
+        </div>}
+        <div style={{display:'flex',gap:8,justifyContent:'center'}}>
+          <button style={{...S.btn(atMax&&swapTarget==null?'dim':'gold'),fontSize:16,padding:'8px 24px'}}
+            disabled={atMax&&swapTarget==null}
+            onClick={()=>doTame(atMax?swapTarget:null)}>
+            {atMax?'Tame (Release Selected)':'Tame Companion'}
+          </button>
+          <button style={{...S.btn('dim'),fontSize:16,padding:'8px 24px'}} onClick={doSkip}>
+            Let It Go
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ExpeditionHourPopup({hr,TH,S,LC,INGR,FACTIONS,onOk,onSkipAll,remaining,playSfx}){
   // Phases: ext_roll → ext_reveal → (evt_roll → evt_reveal →) done
   const [phase,setPhase]=useState('ext_roll');
@@ -9381,6 +9457,53 @@ function ExpeditionHourPopup({hr,TH,S,LC,INGR,FACTIONS,onOk,onSkipAll,remaining,
               </span>))}
           </div>
           <div style={{fontSize:14,color:TH.gold,marginTop:3}}>+{hr.xp-(hr.event?.effectXp||0)} XP</div>
+        </div>}
+
+        {/* Naturalist Discovery */}
+        {hr.discovery&&past&&<div style={{background:hr.discovery.documented?TH.green+'08':'#a0a0a008',borderRadius:6,padding:'8px 10px',marginBottom:8,
+          border:'1px solid '+(hr.discovery.documented?TH.green+'44':'#a0a0a044')}}>
+          <div style={{fontSize:14,color:hr.discovery.documented?TH.green:'#a0a0a0',fontWeight:'bold',marginBottom:3}}>
+            {hr.discovery.documented?'🌿 Field Discovery!':'🌿 Something Interesting...'}
+          </div>
+          <div style={{fontSize:16,color:TH.textBright,marginBottom:2}}>{hr.discovery.icon} {hr.discovery.name}</div>
+          <div style={{fontSize:14,color:TH.textDim,fontStyle:'italic',lineHeight:1.4}}>{hr.discovery.desc||''}</div>
+          {hr.discovery.documented?
+            <div style={{fontSize:14,color:TH.green,marginTop:4}}>Documented in your Field Journal! Permanent bonus unlocked.</div>:
+            <div style={{fontSize:14,color:'#a0a0a0',marginTop:4}}>You noticed it, but could not document it in time.</div>}
+        </div>}
+
+        {/* Companion Encounter */}
+        {hr.companionEnc&&past&&<div style={{background:hr.companionEnc.approachable?'#60a06008':'#a0606008',borderRadius:6,padding:'8px 10px',marginBottom:8,
+          border:'1px solid '+(hr.companionEnc.approachable?'#60a06044':'#a0606044')}}>
+          <div style={{fontSize:14,color:hr.companionEnc.approachable?'#60a060':'#a06060',fontWeight:'bold',marginBottom:3}}>
+            {hr.companionEnc.approachable?'🐾 Creature Approached!':'🐾 Creature Spotted!'}
+          </div>
+          <div style={{fontSize:18,textAlign:'center',margin:'6px 0'}}>{hr.companionEnc.icon}</div>
+          <div style={{fontSize:16,color:TH.textBright,textAlign:'center',marginBottom:2}}>{hr.companionEnc.name}</div>
+          <div style={{fontSize:13,color:TH.textDim,textAlign:'center',fontStyle:'italic'}}>{hr.companionEnc.desc||''}</div>
+          {hr.companionEnc.check&&<div style={{textAlign:'center',marginTop:6}}>
+            <div style={{fontSize:13,color:TH.textDim}}>Attunement Check vs DC {hr.companionEnc.check.dc}</div>
+            <div style={{fontSize:15,fontWeight:'bold',color:hr.companionEnc.approachable?TH.green:TH.red}}>
+              Roll: {hr.companionEnc.check.roll} + {hr.companionEnc.check.total-hr.companionEnc.check.roll} = {hr.companionEnc.check.total}
+              {hr.companionEnc.approachable?' — The creature trusts you!':' — It fled into the undergrowth.'}
+            </div>
+          </div>}
+          {hr.companionEnc.approachable&&<div style={{fontSize:13,color:'#60a060',marginTop:4,textAlign:'center'}}>
+            You will be able to tame this creature after the expedition.
+          </div>}
+        </div>}
+
+        {/* Cartographer Hidden Region */}
+        {hr.hiddenDisc&&past&&<div style={{background:hr.hiddenDisc.mapped?'#50a0a008':'#a0a06008',borderRadius:6,padding:'8px 10px',marginBottom:8,
+          border:'1px solid '+(hr.hiddenDisc.mapped?'#50a0a044':'#a0a06044')}}>
+          <div style={{fontSize:14,color:hr.hiddenDisc.mapped?'#50a0a0':'#a0a060',fontWeight:'bold',marginBottom:3}}>
+            {hr.hiddenDisc.mapped?'🗺️ Hidden Area Mapped!':'🗺️ Hidden Path Glimpsed'}
+          </div>
+          <div style={{fontSize:16,color:TH.textBright,marginBottom:2}}>{hr.hiddenDisc.icon} {hr.hiddenDisc.name}</div>
+          <div style={{fontSize:14,color:TH.textDim,fontStyle:'italic'}}>{hr.hiddenDisc.desc||''}</div>
+          {hr.hiddenDisc.mapped?
+            <div style={{fontSize:14,color:'#50a0a0',marginTop:4}}>Added to your Atlas! Unique ingredients now available when foraging here.</div>:
+            <div style={{fontSize:14,color:'#a0a060',marginTop:4}}>You sensed a hidden path but could not map it. Try again next expedition.</div>}
         </div>}
 
         {/* Random Event */}
