@@ -5728,7 +5728,7 @@ function CindervaleAlchemistInner(){
               <div style={{fontSize:15,color:TH.textDim}}>Review your choices before committing.</div>
             </div>
             <div style={{fontSize:15,lineHeight:1.6,marginBottom:12}}>
-              {(()=>{const cid=pendingLevelUp.chosenClass;const c=CLASSES[cid];const nextLv=(classLevels[cid]||0)+1;const feat=c.features.find(f=>f.classLv===nextLv);return(
+              {(()=>{const rawCid=pendingLevelUp.chosenClass;const isP=rawCid.startsWith('prestige_');const cid=isP?pendingLevelUp.prestigeParentClass:rawCid;const c=CLASSES[cid];if(!c)return null;const nextLv=(classLevels[cid]||0)+1;const feat=c.features.find(f=>f.classLv===nextLv);return(
                 <div style={{padding:'6px 8px',background:c.color+'10',borderRadius:4,marginBottom:6,border:'1px solid '+c.color+'33'}}>
                   <div style={{color:c.color,fontWeight:'bold'}}>{c.icon} {c.name} → Level {nextLv}</div>
                   {feat&&<div style={{fontSize:14,color:TH.text}}>Gained: <b>{feat.name}</b> — {feat.desc}</div>}
@@ -6845,6 +6845,7 @@ function CindervaleAlchemistInner(){
             <div style={{display:'flex',justifyContent:'space-between'}}><span style={{fontSize:16,color:TH.textBright}}>{r.icon}{r.name}</span>
               <span style={{fontSize:14}}><span style={{color:TH.textDim}}>DC{adjDC}</span> <span style={{color:successPct>=70?TH.green:successPct>=40?TH.gold:TH.red,fontSize:13}}>{successPct}%</span></span></div>
             {r.desc&&<div style={{fontSize:14,color:TH.textDim,fontStyle:'italic',margin:'2px 0'}}>{r.desc}</div>}
+            {!fOk&&<div style={{fontSize:13,color:TH.red,fontWeight:'bold',margin:'3px 0',padding:'2px 6px',background:TH.red+'12',borderRadius:3,border:'1px solid '+TH.red+'33'}}>🔒 Requires {FACTIONS[r.faction]?.icon} {FACTIONS[r.faction]?.name} reputation: {REP_LVS[r.fReq]||'Lv'+r.fReq} (currently: {REP_LVS[getRL(r.faction)]||'Unknown'})</div>}
             <div style={S.row}>{Object.entries(cost).map(([id,q])=>{
               const have=(inv[id]||0)>=q;
               return <span key={id} style={{...S.tag,borderColor:have?TH.green:TH.red}}>
