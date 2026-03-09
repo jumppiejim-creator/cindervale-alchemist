@@ -1270,6 +1270,32 @@ const SUPPLY_PARTNERS=[
     outputQty:{t1:[1,1],t2:[1,1,1],t3:[2,2,1,1]},goldOutput:{t1:0,t2:10,t3:25}},
 ];
 
+// ═══ GUILDMASTER ACADEMY ═══
+const TRAINABLE_STATS=['tec','inu','acu','com','dis','cre'];
+const TEACHABLE_TRAITS=['Quick Learner','Keen Senses','Tireless','Organized','Creative','Methodical','Inventive','Insightful','Numerate','Fleet-Footed'];
+
+// ═══ DIPLOMAT EMBASSY & ENVOY SYSTEM ═══
+const FACTION_PAIRS=[
+  {id:'fp_ash_cind',factions:['ashwardens','cinderfolk'],name:'Ashwardens ↔ Cinderfolk',icon:'⚔️⛏️',dc:11,
+    desc:'The soldiers and the miners — united by the mountain but divided by pride.',
+    rewards:['Both shops +2 items','Cross-faction quests, 15% vendor discount','Merged recipes: Forgeheart Tincture bonus, +25% rep both']},
+  {id:'fp_ash_hk',factions:['ashwardens','hearthkeepers'],name:'Ashwardens ↔ Hearthkeepers',icon:'⚔️🕯️',dc:10,
+    desc:'The protectors and the healers — natural allies who sometimes forget it.',
+    rewards:['Both shops +2 items','Cross-faction quests, 15% vendor discount','Healing potions worth 2× to Ashwardens, +25% rep both']},
+  {id:'fp_ash_vw',factions:['ashwardens','veilwalkers'],name:'Ashwardens ↔ Veilwalkers',icon:'⚔️🌀',dc:13,
+    desc:'Steel and sorcery — the hardest alliance to forge, but the most powerful.',
+    rewards:['Both shops +2 items','Cross-faction quests, 15% vendor discount','Enchanted weapons sell 2×, +25% rep both']},
+  {id:'fp_cind_hk',factions:['cinderfolk','hearthkeepers'],name:'Cinderfolk ↔ Hearthkeepers',icon:'⛏️🕯️',dc:10,
+    desc:'The workers and the community — the backbone of Cindervale.',
+    rewards:['Both shops +2 items','Cross-faction quests, 15% vendor discount','Forage yield +1 in mines/ashfields, +25% rep both']},
+  {id:'fp_cind_vw',factions:['cinderfolk','veilwalkers'],name:'Cinderfolk ↔ Veilwalkers',icon:'⛏️🌀',dc:12,
+    desc:'Deep stone and deep magic — the miners distrust what they can\'t dig.',
+    rewards:['Both shops +2 items','Cross-faction quests, 15% vendor discount','Research discovers mine recipes, +25% rep both']},
+  {id:'fp_hk_vw',factions:['hearthkeepers','veilwalkers'],name:'Hearthkeepers ↔ Veilwalkers',icon:'🕯️🌀',dc:11,
+    desc:'Faith and arcana — two paths to the same truth about the Heartforge.',
+    rewards:['Both shops +2 items','Cross-faction quests, 15% vendor discount','Celestial Balm brews at -2 DC, +25% rep both']},
+];
+
 const POT_LINES={
   'Thorek':['"The boys in Shaft Nine need salves after every shift. I\'m buying."','"Something for sore muscles and worse. Whatever you recommend."'],
   'Fiona':['"I\'ll take whatever you have. Potions sell for triple in the capital."','"My caravan leaves at dawn — what\'s ready?"'],
@@ -1804,6 +1830,8 @@ function CindervaleAlchemistInner(){
   const [caravans,setCaravans]=useState([]); // [{routeId:'cr_ashfield',sentDay:1,returnDay:4,cargo:{}}]
   const [supplyChains,setSupplyChains]=useState([]); // [{partnerId:'sp_hunters',tier:1,runsCompleted:3}]
   const [caravanRuns,setCaravanRuns]=useState({}); // {cr_ashfield:2,cr_crystal:1}
+  const [trainingSessions,setTrainingSessions]=useState({}); // {apprId: {stat:'tec', daysLeft:2}}
+  const [factionHarmony,setFactionHarmony]=useState({}); // {fp_ash_cind: 2, fp_hk_vw: 1}
   const [shelves,setShelves]=useState({});
   const [lastCheck,setLastCheck]=useState(null);
   const [resultPopup,setResultPopup]=useState(null); // {title,detail,type}
@@ -1889,9 +1917,9 @@ function CindervaleAlchemistInner(){
   const gatherState=useCallback(()=>({
     phase,charName,charRace,charGender,stats,ptsLeft,skRanks,skPts,skProgress,classLevels,specs,playerFeats,asiSpent,startingClass,
     screen,day,hours,xp,gold,inv,pots,known,aQ,doneQ,
-    log:log.slice(-30),milestones,fRep,factionAlign,upgrades,hiredAppr,apprTasks,apprXP,enchQ,potCustQ,clinicPatients,venomContracts,forgedWeapons,shieldCommissions,planarFocus,gadgets,blueprints,fieldJournal,loreFragments,companions,caravans,supplyChains,caravanRuns,shelves,dailyReport,
+    log:log.slice(-30),milestones,fRep,factionAlign,upgrades,hiredAppr,apprTasks,apprXP,enchQ,potCustQ,clinicPatients,venomContracts,forgedWeapons,shieldCommissions,planarFocus,gadgets,blueprints,fieldJournal,loreFragments,companions,caravans,supplyChains,caravanRuns,trainingSessions,factionHarmony,shelves,dailyReport,
     boardQ,activeBQ,doneBQCount,dayFlags,knownEnch,brewCounts,procureItems,pubPapers,selectedSite,constructProgress,
-  }),[phase,charName,charRace,charGender,stats,ptsLeft,skRanks,skPts,skProgress,classLevels,specs,playerFeats,asiSpent,startingClass,screen,day,hours,xp,gold,inv,pots,known,aQ,doneQ,log,milestones,fRep,factionAlign,upgrades,hiredAppr,apprTasks,apprXP,enchQ,potCustQ,clinicPatients,venomContracts,forgedWeapons,shieldCommissions,planarFocus,gadgets,blueprints,fieldJournal,loreFragments,companions,caravans,supplyChains,caravanRuns,shelves,dailyReport,boardQ,activeBQ,doneBQCount,dayFlags,knownEnch,brewCounts,procureItems,constructProgress,selectedSite]);
+  }),[phase,charName,charRace,charGender,stats,ptsLeft,skRanks,skPts,skProgress,classLevels,specs,playerFeats,asiSpent,startingClass,screen,day,hours,xp,gold,inv,pots,known,aQ,doneQ,log,milestones,fRep,factionAlign,upgrades,hiredAppr,apprTasks,apprXP,enchQ,potCustQ,clinicPatients,venomContracts,forgedWeapons,shieldCommissions,planarFocus,gadgets,blueprints,fieldJournal,loreFragments,companions,caravans,supplyChains,caravanRuns,trainingSessions,factionHarmony,shelves,dailyReport,boardQ,activeBQ,doneBQCount,dayFlags,knownEnch,brewCounts,procureItems,constructProgress,selectedSite]);
 
   const restoreState=useCallback((s)=>{
     if(!s)return;
@@ -1915,7 +1943,7 @@ function CindervaleAlchemistInner(){
     setUpgrades(s.upgrades||[]);setHiredAppr(s.hiredAppr||[]);
     setApprTasks(s.apprTasks||{});setApprXP(s.apprXP||{});
     prevLvl.current=getLvl(s.xp||0);
-    setDailyReport(s.dailyReport||[]);setEnchQ(s.enchQ||[]);setPotCustQ(s.potCustQ||[]);setClinicPatients(s.clinicPatients||[]);setVenomContracts(s.venomContracts||[]);setForgedWeapons(s.forgedWeapons||[]);setShieldCommissions(s.shieldCommissions||[]);setPlanarFocus(s.planarFocus||null);setGadgets(s.gadgets||[]);setBlueprints(s.blueprints||[]);setFieldJournal(s.fieldJournal||[]);setLoreFragments(s.loreFragments||[]);setCompanions(s.companions||[]);setCaravans(s.caravans||[]);setSupplyChains(s.supplyChains||[]);setCaravanRuns(s.caravanRuns||{});setShelves(s.shelves||{});setLastCheck(null);setNews([]);setMorningReport(null);
+    setDailyReport(s.dailyReport||[]);setEnchQ(s.enchQ||[]);setPotCustQ(s.potCustQ||[]);setClinicPatients(s.clinicPatients||[]);setVenomContracts(s.venomContracts||[]);setForgedWeapons(s.forgedWeapons||[]);setShieldCommissions(s.shieldCommissions||[]);setPlanarFocus(s.planarFocus||null);setGadgets(s.gadgets||[]);setBlueprints(s.blueprints||[]);setFieldJournal(s.fieldJournal||[]);setLoreFragments(s.loreFragments||[]);setCompanions(s.companions||[]);setCaravans(s.caravans||[]);setSupplyChains(s.supplyChains||[]);setCaravanRuns(s.caravanRuns||{});setTrainingSessions(s.trainingSessions||{});setFactionHarmony(s.factionHarmony||{});setShelves(s.shelves||{});setLastCheck(null);setNews([]);setMorningReport(null);
     setBoardQ(s.boardQ||[]);setActiveBQ(s.activeBQ||[]);setDoneBQCount(s.doneBQCount||0);setDayFlags(s.dayFlags||[]);setKnownEnch(s.knownEnch&&s.knownEnch.length>0?s.knownEnch:['e_sharp','e_glow','e_ironbark','e_feather','e_windwalk','e_rootbind']);
     setBrewCounts(s.brewCounts||{});setProcureItems(s.procureItems||[]);setPubPapers(s.pubPapers||[]);setConstructProgress(s.constructProgress||{});
     setSelHex(null);setVBuild('workshop');setDlgNpc(null);setShowShop(false);setQuestDlg(null);setPendingLevelUp(null);setSelectedSite(s.selectedSite||null);
@@ -1975,7 +2003,7 @@ function CindervaleAlchemistInner(){
   const snapshot=useCallback(()=>{
     const snap={day,hours,xp,gold,inv:{...inv},pots:{...pots},known:[...known],aQ:[...aQ],doneQ:[...doneQ],
       fRep:{...fRep},upgrades:[...upgrades],hiredAppr:hiredAppr.map(a=>({...a})),apprTasks:{...apprTasks},apprXP:{...apprXP},
-      skRanks:{...skRanks},skPts,skProgress:{...skProgress},enchQ:[...enchQ],potCustQ:[...potCustQ],clinicPatients:[...clinicPatients],venomContracts:[...venomContracts],forgedWeapons:[...forgedWeapons],shieldCommissions:[...shieldCommissions],planarFocus,gadgets:[...gadgets],blueprints:[...blueprints],fieldJournal:[...fieldJournal],loreFragments:[...loreFragments],companions:companions.map(c=>({...c})),caravans:[...caravans],supplyChains:[...supplyChains],caravanRuns:{...caravanRuns},gadgets,blueprints,fieldJournal,loreFragments,companions,caravans,supplyChains,caravanRuns,shelves:{...shelves},milestones:[...milestones],log:[...log],dailyReport:[...dailyReport],brewCounts:{...brewCounts},procureItems:[...procureItems],constructProgress:{...constructProgress}};
+      skRanks:{...skRanks},skPts,skProgress:{...skProgress},enchQ:[...enchQ],potCustQ:[...potCustQ],clinicPatients:[...clinicPatients],venomContracts:[...venomContracts],forgedWeapons:[...forgedWeapons],shieldCommissions:[...shieldCommissions],planarFocus,gadgets:[...gadgets],blueprints:[...blueprints],fieldJournal:[...fieldJournal],loreFragments:[...loreFragments],companions:companions.map(c=>({...c})),caravans:[...caravans],supplyChains:[...supplyChains],caravanRuns:{...caravanRuns},trainingSessions:{...trainingSessions},factionHarmony:{...factionHarmony},gadgets,blueprints,fieldJournal,loreFragments,companions,caravans,supplyChains,caravanRuns,trainingSessions,factionHarmony,shelves:{...shelves},milestones:[...milestones],log:[...log],dailyReport:[...dailyReport],brewCounts:{...brewCounts},procureItems:[...procureItems],constructProgress:{...constructProgress}};
     setUndoStack(p=>[...p.slice(-4),snap]);
   },[day,hours,xp,gold,inv,pots,known,aQ,doneQ,fRep,upgrades,hiredAppr,apprTasks,apprXP,skRanks,skPts,skProgress,enchQ,potCustQ,shelves,milestones,log,dailyReport,brewCounts,procureItems,constructProgress]);
 
@@ -1998,7 +2026,7 @@ function CindervaleAlchemistInner(){
     setInv(snap.inv);setPots(snap.pots);setKnown(snap.known);setAQ(snap.aQ);setDoneQ(snap.doneQ);
     setFRep(snap.fRep);setUpgrades(snap.upgrades);setHiredAppr(snap.hiredAppr);
     setApprTasks(snap.apprTasks);setApprXP(snap.apprXP);setSkRanks(snap.skRanks);setSkPts(snap.skPts);setSkProgress(snap.skProgress||{});
-    setEnchQ(snap.enchQ);setPotCustQ(snap.potCustQ||[]);setClinicPatients(snap.clinicPatients||[]);setVenomContracts(snap.venomContracts||[]);setForgedWeapons(snap.forgedWeapons||[]);setShieldCommissions(snap.shieldCommissions||[]);setPlanarFocus(snap.planarFocus||null);setGadgets(snap.gadgets||[]);setBlueprints(snap.blueprints||[]);setFieldJournal(snap.fieldJournal||[]);setLoreFragments(snap.loreFragments||[]);setCompanions(snap.companions||[]);setCaravans(snap.caravans||[]);setSupplyChains(snap.supplyChains||[]);setCaravanRuns(snap.caravanRuns||{});setShelves(snap.shelves||{});setMilestones(snap.milestones);setLog(snap.log);setDailyReport(snap.dailyReport);
+    setEnchQ(snap.enchQ);setPotCustQ(snap.potCustQ||[]);setClinicPatients(snap.clinicPatients||[]);setVenomContracts(snap.venomContracts||[]);setForgedWeapons(snap.forgedWeapons||[]);setShieldCommissions(snap.shieldCommissions||[]);setPlanarFocus(snap.planarFocus||null);setGadgets(snap.gadgets||[]);setBlueprints(snap.blueprints||[]);setFieldJournal(snap.fieldJournal||[]);setLoreFragments(snap.loreFragments||[]);setCompanions(snap.companions||[]);setCaravans(snap.caravans||[]);setSupplyChains(snap.supplyChains||[]);setCaravanRuns(snap.caravanRuns||{});setTrainingSessions(snap.trainingSessions||{});setFactionHarmony(snap.factionHarmony||{});setShelves(snap.shelves||{});setMilestones(snap.milestones);setLog(snap.log);setDailyReport(snap.dailyReport);
     setBrewCounts(snap.brewCounts||{});setProcureItems(snap.procureItems||[]);setPubPapers(snap.pubPapers||[]);setConstructProgress(snap.constructProgress||{});
     setLastCheck(null);
     addLog('↩️ Time seems to blur — you find yourself a moment before, as if the last action never happened.','info');
@@ -3122,6 +3150,159 @@ function CindervaleAlchemistInner(){
     return PLANAR_COMBOS[ids.sort().join('+')]||null;
   };
 
+  // ═══ DIPLOMAT EMBASSY ═══
+  const getMaxEnvoys=()=>{const dLv=classLevels.merchant||0;return dLv>=10?3:dLv>=6?2:1;};
+  const getHarmonyCap=()=>{const dLv=classLevels.merchant||0;return dLv>=10?3:dLv>=6?2:1;};
+  const dispatchEnvoy=(pairId)=>{
+    const pair=FACTION_PAIRS.find(p=>p.id===pairId);if(!pair)return;
+    const currentHarmony=factionHarmony[pairId]||0;
+    if(currentHarmony>=getHarmonyCap()){addLog(`${pair.name} is already at max Harmony for your level.`,'error');return;}
+    const envoysToday=dayFlags.filter(f=>f==='envoy_sent').length;
+    if(envoysToday>=getMaxEnvoys()){addLog(`Maximum ${getMaxEnvoys()} envoys per day.`,'error');return;}
+    if(hours<1){addLog('Dispatching an envoy takes 1 hour.','error');return;}
+    snapshot();setHours(h=>h-1);
+    setDayFlags(f=>[...f,'envoy_sent']);
+    const ch=doCheck('persuasion',pair.dc+currentHarmony*2);
+    const netMod=getSkMod('networking');if(netMod>0){ch.total+=netMod;ch.extras.push({label:'Networking',val:netMod});}
+    ch.success=ch.total>=(pair.dc+currentHarmony*2);
+    if(ch.success){
+      const newHarmony=currentHarmony+1;
+      setFactionHarmony(prev=>({...prev,[pairId]:newHarmony}));
+      // Lv6+: envoys also grant personal rep
+      const dLv=classLevels.merchant||0;
+      if(dLv>=6){pair.factions.forEach(fid=>addRep(fid,5));}
+      gainXP(20+newHarmony*10);
+      const SUCC=['The factions find common ground. A small step toward unity.','Your words bridge old grudges. Both sides leave with new respect.','"Perhaps we have more in common than we thought," they agree.'];
+      showResult('🤝 Envoy Successful! — Harmony '+newHarmony,'craft',
+        pair.icon+' '+pair.name+'\n'+SUCC[Math.floor(Math.random()*SUCC.length)]+
+        '\n\n'+pair.rewards[newHarmony-1]+
+        (dLv>=6?'\n+5 rep with both factions':''),ch);
+      addLog(`🤝 ${pair.name} Harmony → ${newHarmony}. ${pair.rewards[newHarmony-1]}`,'quest');
+      // Check for Grand Alliance
+      if(dLv>=10){
+        const allMax=FACTION_PAIRS.every(fp=>(fp.id===pairId?newHarmony:(factionHarmony[fp.id]||0))>=3);
+        if(allMax){
+          showResult('🏛️ Grand Alliance Achieved!','craft',
+            '✨ All factions united under your diplomacy!\n+50% all reputation gains\nAll vendors stock everything\nCindervale has never been stronger.');
+          addLog('🏛️ GRAND ALLIANCE! All faction pairs at Harmony 3. Cindervale is united!','level');
+        }
+      }
+    } else {
+      gainXP(5);
+      const FAIL=['Old grudges run deep. The envoy returns without progress.','Both sides dig in. Diplomacy takes patience.','"Not today, alchemist. Some wounds need more time."'];
+      showResult('🤝 Envoy — No Progress','info',
+        pair.icon+' '+pair.name+'\n'+FAIL[Math.floor(Math.random()*FAIL.length)]+'\n+5 XP (for the effort)',ch);
+    }
+  };
+  const getHarmonyBonus=(effectKey)=>{
+    let total=0;
+    FACTION_PAIRS.forEach(pair=>{
+      const h=factionHarmony[pair.id]||0;
+      if(h>=1&&effectKey==='shopRestockBonus')total+=2;
+      if(h>=2&&effectKey==='buyDiscount')total+=0.15;
+      if(h>=3&&effectKey==='repGainBonus')total+=0.25;
+    });
+    // Grand Alliance bonus
+    const allMax=FACTION_PAIRS.every(fp=>(factionHarmony[fp.id]||0)>=3);
+    if(allMax){
+      if(effectKey==='repGainBonus')total+=0.50;
+      if(effectKey==='sellBonus')total+=0.25;
+    }
+    return total;
+  };
+
+  // ═══ GUILDMASTER ACADEMY ═══
+  const trainApprentice=(apprId,statId)=>{
+    const ap=hiredAppr.find(a=>a.id===apprId);if(!ap)return;
+    if(hours<1){addLog('Training takes 1 hour.','error');return;}
+    const gmLv=classLevels.merchant||0;
+    // Lv10: passive training costs 0 hours
+    const hourCost=gmLv>=10?0:1;
+    if(hourCost>0&&hours<hourCost){addLog('Training takes 1 hour.','error');return;}
+    snapshot();
+    if(hourCost>0)setHours(h=>h-hourCost);
+    // COM-based instruction check
+    const dc=10+Math.floor((ap.baseStat[statId]||10)/3);
+    const ch=doCheck('persuasion',dc);
+    const comMod=getSkMod('networking');if(comMod>0){ch.total+=comMod;ch.extras.push({label:'Networking',val:comMod});}
+    ch.success=ch.total>=dc;
+    const statName=STATS[statId]?.name||statId;
+    if(ch.success){
+      const gain=ch.total>=dc+5?2:1;
+      // Lv6: +1 morale from training
+      const moraleBump=gmLv>=6?10:0;
+      setHiredAppr(prev=>prev.map(a=>{
+        if(a.id!==apprId)return a;
+        return{...a,baseStat:{...a.baseStat,[statId]:(a.baseStat[statId]||10)+gain},morale:Math.min(100,(a.morale||50)+moraleBump)};
+      }));
+      gainXP(15+gain*5);
+      const SUCC=['Your instruction clicks — you can see the understanding dawn in their eyes.','A breakthrough session. The apprentice is visibly more capable.','"I think I get it now!" they exclaim, practicing the technique.'];
+      showResult('🎓 Training — '+ap.name,'craft',
+        statName+' +'+(gain>1?gain+'! (Excellent instruction)':gain)+
+        (moraleBump>0?'\n♥ Morale +'+moraleBump:'')+ 
+        '\n'+SUCC[Math.floor(Math.random()*SUCC.length)],ch);
+      addLog(`🎓 Trained ${ap.name}: ${statName} +${gain}${gain>1?' (great success!)':''}`,'quest');
+    } else {
+      // Lv6: training still gives +1 morale even on failure
+      if(gmLv>=6)setHiredAppr(prev=>prev.map(a=>a.id===apprId?{...a,morale:Math.min(100,(a.morale||50)+5)}:a));
+      showResult('🎓 Training — '+ap.name,'info',
+        statName+' — the lesson didn\'t quite land today. Try again tomorrow.'+(gmLv>=6?'\n♥ Morale +5 (appreciated the effort)':''),ch);
+    }
+  };
+  const teachTrait=(apprId,traitId)=>{
+    const ap=hiredAppr.find(a=>a.id===apprId);if(!ap)return;
+    if((classLevels.merchant||0)<10){addLog('Teaching traits requires Guildmaster Lv10.','error');return;}
+    if((ap.traits||[]).includes(traitId)){addLog(ap.name+' already has this trait.','error');return;}
+    if((ap.traits||[]).length>=4){addLog(ap.name+' has too many traits (max 4).','error');return;}
+    if(hours<2){addLog('Teaching a trait takes 2 hours of intensive training.','error');return;}
+    snapshot();setHours(h=>h-2);
+    const dc=15;
+    const ch=doCheck('persuasion',dc);ch.success=ch.total>=dc;
+    if(ch.success){
+      setHiredAppr(prev=>prev.map(a=>a.id===apprId?{...a,traits:[...(a.traits||[]),traitId]}:a));
+      gainXP(50);
+      showResult('🎓 Trait Taught! — '+ap.name,'craft',
+        '✨ Learned: '+traitId+'\n"'+ap.name+' has developed a new aptitude under your guidance."',ch);
+      addLog(`🎓 ${ap.name} learned trait: ${traitId}!`,'quest');
+    } else {
+      showResult('🎓 Trait Training Failed — '+ap.name,'info',
+        traitId+' — the concept is too advanced for now. Try again later.',ch);
+    }
+  };
+  // Process curriculum (auto-training over multiple days)
+  const processCurriculum=()=>{
+    const gmLv=classLevels.merchant||0;
+    if(gmLv<6)return[];
+    const results=[];
+    Object.entries(trainingSessions).forEach(([apId,session])=>{
+      if(!session||session.daysLeft<=0)return;
+      const ap=hiredAppr.find(a=>a.id===apId);if(!ap)return;
+      const gain=1;
+      setHiredAppr(prev=>prev.map(a=>{
+        if(a.id!==apId)return a;
+        return{...a,baseStat:{...a.baseStat,[session.stat]:(a.baseStat[session.stat]||10)+gain}};
+      }));
+      const newDays=session.daysLeft-1;
+      if(newDays<=0){
+        setTrainingSessions(prev=>{const n={...prev};delete n[apId];return n;});
+        results.push({icon:'🎓',label:ap.name+' curriculum complete',val:STATS[session.stat]?.name+' +3 total',color:TH.green});
+      } else {
+        setTrainingSessions(prev=>({...prev,[apId]:{...session,daysLeft:newDays}}));
+        results.push({icon:'🎓',label:ap.name+' training',val:STATS[session.stat]?.name+' +1 ('+newDays+' days left)',color:TH.gold});
+      }
+    });
+    return results;
+  };
+  const startCurriculum=(apprId,statId)=>{
+    if((classLevels.merchant||0)<6){addLog('Curricula require Guildmaster Lv6.','error');return;}
+    if(trainingSessions[apprId]){addLog('This apprentice is already in a curriculum.','error');return;}
+    setTrainingSessions(prev=>({...prev,[apprId]:{stat:statId,daysLeft:3}}));
+    const ap=hiredAppr.find(a=>a.id===apprId);
+    addLog(`🎓 Started 3-day ${STATS[statId]?.name} curriculum for ${ap?.name||'apprentice'}.`,'info');
+    showResult('🎓 Curriculum Started','craft',
+      (ap?.name||'Apprentice')+' begins intensive '+STATS[statId]?.name+' training.\n+1 per day for 3 days (auto-applied each morning).');
+  };
+
   // ═══ QUARTERMASTER SUPPLY NETWORK ═══
   const getMaxCaravans=()=>{const qLv=classLevels.warden||0;return qLv>=10?3:qLv>=6?2:1;};
   const getMaxChains=()=>{const qLv=classLevels.warden||0;return qLv>=10?6:qLv>=6?4:2;};
@@ -4040,6 +4221,11 @@ function CindervaleAlchemistInner(){
       const train=completedBPs.find(b=>b.bpId==='bp_training');
       if(train)bpLines.push({icon:'🎓',label:'Training Room',val:'Staff XP ×'+Math.floor(2*mult),color:TH.gold});
       if(bpLines.length>0)mrSections.push({title:'🏗️ Constructor Projects',lines:bpLines});
+    }
+    // ═══ GUILDMASTER ACADEMY MORNING ═══
+    if(specs.merchant==='guildmaster'){
+      const currResults=processCurriculum();
+      if(currResults.length>0)mrSections.push({title:'🎓 Academy',lines:currResults});
     }
     // ═══ QUARTERMASTER SUPPLY NETWORK MORNING ═══
     if(specs.warden==='quartermaster'){
@@ -6193,6 +6379,125 @@ function CindervaleAlchemistInner(){
                 </div>;
               })}
               {qLv<6&&<div style={{fontSize:12,color:TH.textDim,marginTop:4}}>🔒 More caravans & chains at Warden Lv6</div>}
+            </>;
+          })()}
+        </div>}
+
+        {/* ═══ GUILDMASTER ACADEMY ═══ */}
+        {specs.merchant==='guildmaster'&&<div style={{...S.card,borderColor:'#d0a030',background:'#d0a03008'}}>
+          <div style={S.cT}>🎓 Staff Academy</div>
+          {(()=>{
+            const gmLv=classLevels.merchant||0;
+            const canCurriculum=gmLv>=6;
+            const canTeachTraits=gmLv>=10;
+            const passiveTraining=gmLv>=10;
+            return <>
+              {hiredAppr.length===0&&<div style={{fontSize:14,color:TH.textDim}}>Hire staff first, then train them here.</div>}
+              {hiredAppr.map(ap=>{
+                const aLvl=getApprLvl(ap.id);
+                const inCurriculum=trainingSessions[ap.id];
+                return <div key={ap.id} style={{padding:'6px 10px',background:TH.panelLight,borderRadius:6,marginBottom:5,border:'1px solid '+TH.border}}>
+                  <div style={{fontSize:15,color:TH.textBright,marginBottom:3}}>
+                    {ap.icon} {ap.name} {'★'.repeat(aLvl)||'☆'}
+                    <span style={{fontSize:12,color:TH.textDim,marginLeft:6}}>
+                      {Object.entries(ap.baseStat).map(([s,v])=><span key={s} style={{marginRight:4,color:STATS[s]?.color||TH.text}}>{STATS[s]?.icon||s}{v}</span>)}
+                    </span>
+                  </div>
+                  {inCurriculum&&<div style={{fontSize:13,color:TH.gold,marginBottom:3,padding:'2px 6px',background:TH.gold+'10',borderRadius:3}}>
+                    📚 Curriculum: {STATS[inCurriculum.stat]?.name} — {inCurriculum.daysLeft} day{inCurriculum.daysLeft!==1?'s':''} remaining
+                  </div>}
+                  {/* Train individual stat */}
+                  <div style={{display:'flex',flexWrap:'wrap',gap:3,marginBottom:3}}>
+                    <span style={{fontSize:12,color:TH.textDim,alignSelf:'center'}}>Train{passiveTraining?' (free)':''}:</span>
+                    {TRAINABLE_STATS.map(sid=>
+                      <button key={sid} style={{...S.btn(hours>=1||passiveTraining?'gold':'dim'),fontSize:11,padding:'2px 6px'}}
+                        disabled={!passiveTraining&&hours<1}
+                        onClick={()=>trainApprentice(ap.id,sid)}
+                        title={'Train '+STATS[sid]?.name+' (DC '+(10+Math.floor((ap.baseStat[sid]||10)/3))+')'}>
+                        {STATS[sid]?.icon||sid} {STATS[sid]?.name}
+                      </button>
+                    )}
+                  </div>
+                  {/* Curriculum (Lv6+) */}
+                  {canCurriculum&&!inCurriculum&&<div style={{display:'flex',flexWrap:'wrap',gap:3,marginBottom:3}}>
+                    <span style={{fontSize:12,color:TH.gold,alignSelf:'center'}}>📚 Curriculum (3 days):</span>
+                    {TRAINABLE_STATS.map(sid=>
+                      <button key={sid} style={{...S.btn('def'),fontSize:11,padding:'2px 5px'}}
+                        onClick={()=>startCurriculum(ap.id,sid)}>
+                        {STATS[sid]?.icon||sid}
+                      </button>
+                    )}
+                  </div>}
+                  {/* Teach trait (Lv10) */}
+                  {canTeachTraits&&<div style={{display:'flex',flexWrap:'wrap',gap:3}}>
+                    <span style={{fontSize:12,color:'#d0a030',alignSelf:'center'}}>✨ Teach:</span>
+                    {TEACHABLE_TRAITS.filter(t=>!(ap.traits||[]).includes(t)).slice(0,5).map(t=>
+                      <button key={t} style={{...S.btn(hours>=2?'gold':'dim'),fontSize:11,padding:'2px 5px'}}
+                        disabled={hours<2||(ap.traits||[]).length>=4}
+                        onClick={()=>teachTrait(ap.id,t)}
+                        title={t+' — 2h, DC 15 Persuasion check'}>
+                        {t}
+                      </button>
+                    )}
+                  </div>}
+                </div>;
+              })}
+              {gmLv<6&&<div style={{fontSize:12,color:TH.textDim,marginTop:4}}>🔒 Curricula at Merchant Lv6</div>}
+              {gmLv>=6&&gmLv<10&&<div style={{fontSize:12,color:TH.textDim,marginTop:4}}>🔒 Teach traits & free training at Merchant Lv10</div>}
+            </>;
+          })()}
+        </div>}
+
+        {/* ═══ DIPLOMAT EMBASSY ═══ */}
+        {specs.merchant==='diplomat'&&<div style={{...S.card,borderColor:'#4090c0',background:'#4090c008'}}>
+          <div style={S.cT}>🤝 Embassy — Faction Harmony</div>
+          {(()=>{
+            const dLv=classLevels.merchant||0;
+            const maxHarmony=getHarmonyCap();
+            const envoysToday=dayFlags.filter(f=>f==='envoy_sent').length;
+            const maxEnvoys=getMaxEnvoys();
+            const allMax=FACTION_PAIRS.every(fp=>(factionHarmony[fp.id]||0)>=3);
+            return <>
+              <div style={{fontSize:13,color:TH.textDim,marginBottom:6}}>
+                Envoys: {maxEnvoys-envoysToday}/{maxEnvoys} remaining today · Harmony cap: {maxHarmony}
+                {dLv>=6&&' · +5 rep per successful envoy'}
+              </div>
+              {allMax&&<div style={{padding:'8px 12px',background:'#d4a42015',borderRadius:6,border:'2px solid #d4a42066',textAlign:'center',marginBottom:8}}>
+                <div style={{fontSize:16,color:'#d4a420',fontWeight:'bold'}}>🏛️ Grand Alliance Active!</div>
+                <div style={{fontSize:14,color:TH.text}}>All factions united. +50% rep gains, +25% sell bonus</div>
+              </div>}
+              {FACTION_PAIRS.map(pair=>{
+                const h=factionHarmony[pair.id]||0;
+                const atCap=h>=maxHarmony;
+                const canSend=envoysToday<maxEnvoys&&hours>=1&&!atCap;
+                return <div key={pair.id} style={{padding:'6px 10px',background:h>=3?'#4090c015':TH.panelLight,borderRadius:6,marginBottom:4,border:'1px solid '+(h>=3?'#4090c066':h>0?'#4090c033':TH.border)}}>
+                  <div style={{...S.row,justifyContent:'space-between'}}>
+                    <div>
+                      <span style={{fontSize:15,color:h>=3?'#4090c0':TH.textBright}}>{pair.icon} {pair.name}</span>
+                      <span style={{color:TH.gold,marginLeft:6,fontSize:13}}>{'★'.repeat(h)}{'☆'.repeat(3-h)}</span>
+                    </div>
+                    {!atCap&&<button style={{...S.btn(canSend?'gold':'dim'),fontSize:12,padding:'2px 8px'}} disabled={!canSend}
+                      onClick={()=>dispatchEnvoy(pair.id)}>
+                      🕊️ Send Envoy (DC{pair.dc+h*2} · 1h)
+                    </button>}
+                    {atCap&&h<3&&<span style={{fontSize:12,color:TH.textDim}}>🔒 Lv{h>=2?10:6} to advance</span>}
+                  </div>
+                  <div style={{fontSize:12,color:TH.textDim,margin:'2px 0'}}>{pair.desc}</div>
+                  {/* Harmony rewards display */}
+                  <div style={{display:'flex',gap:4,marginTop:3}}>
+                    {[0,1,2].map(lvl=>{
+                      const active=h>lvl;
+                      return <span key={lvl} style={{padding:'1px 6px',fontSize:11,borderRadius:3,
+                        background:active?'#4090c020':'#33333380',border:'1px solid '+(active?'#4090c044':TH.border),
+                        color:active?'#4090c0':TH.textDim}}>
+                        {'★'.repeat(lvl+1)} {pair.rewards[lvl]?.split(',')[0]||''}
+                      </span>;
+                    })}
+                  </div>
+                </div>;
+              })}
+              {dLv<6&&<div style={{fontSize:12,color:TH.textDim,marginTop:4}}>🔒 More envoys & Harmony 2 at Merchant Lv6</div>}
+              {dLv>=6&&dLv<10&&<div style={{fontSize:12,color:TH.textDim,marginTop:4}}>🔒 Harmony 3 & Grand Alliance at Merchant Lv10</div>}
             </>;
           })()}
         </div>}
