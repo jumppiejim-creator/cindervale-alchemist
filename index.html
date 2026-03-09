@@ -4456,7 +4456,14 @@ function CindervaleAlchemistInner(){
           setGold(g=>g+2);
         });
       }
-      if(autoLines.length>0)mrSections.push({title:'🤖 Automata',lines:autoLines});
+      // Store last report on each automaton for UI display
+      if(autoLines.length>0){
+        setAutomata(prev=>prev.map(a=>{
+          const myLine=autoLines.find(l=>l.label&&l.label.includes(a.name));
+          return myLine?{...a,lastReport:{text:myLine.label.replace(a.name+' ',''),val:myLine.val,color:myLine.color,day:day+1}}:a;
+        }));
+        mrSections.push({title:'🤖 Automata',lines:autoLines});
+      }
     }
     // ═══ GUILDMASTER ACADEMY MORNING ═══
     if(specs.merchant==='guildmaster'){
@@ -6955,8 +6962,17 @@ function CindervaleAlchemistInner(){
                 <span style={{fontSize:11,color:'#a0a060'}}>→ Lv{aLvl+1}</span>
               </div>}
               {/* Task assignment */}
+              {auto.task&&<div style={{fontSize:13,color:TH.textDim,margin:'3px 0',padding:'2px 6px',background:TH.bg,borderRadius:3,border:'1px solid '+TH.border}}>
+                📋 Assigned: {auto.task.type==='brew'?'⚗️ Brew '+(RECIPES.find(r=>r.id===auto.task.target)?.icon||'')+(RECIPES.find(r=>r.id===auto.task.target)?.name||auto.task.target)
+                  :auto.task.type==='forage'?'⛏️ Forage '+(REGIONS.find(r=>r.id===auto.task.target)?.icon||'')+(REGIONS.find(r=>r.id===auto.task.target)?.name||auto.task.target)
+                  :auto.task.type==='shopkeep'?'🏪 Shopkeeping'
+                  :auto.task.type==='enchant'?'✨ Enchanting':'❓ Unknown'}
+              </div>}
+              {auto.lastReport&&<div style={{fontSize:12,margin:'2px 0',padding:'2px 6px',background:auto.lastReport.color+'10',borderRadius:3,border:'1px solid '+auto.lastReport.color+'22',color:auto.lastReport.color}}>
+                📊 Day {auto.lastReport.day}: {auto.lastReport.text} — {auto.lastReport.val}
+              </div>}
               <div style={{display:'flex',flexWrap:'wrap',gap:3,marginTop:4}}>
-                <select value={auto.task?.type==='brew'?'brew_'+auto.task.target:auto.task?.type||''} onChange={e=>{
+                <select value={auto.task?.type==='brew'?'brew_'+auto.task.target:auto.task?.type==='forage'?'forage_'+auto.task.target:auto.task?.type||''} onChange={e=>{
                   const v=e.target.value;
                   if(!v){assignAutoTask(auto.id,null,null);return;}
                   if(v.startsWith('brew_')){assignAutoTask(auto.id,'brew',v.replace('brew_',''));return;}
