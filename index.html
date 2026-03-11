@@ -7783,6 +7783,20 @@ function CindervaleAlchemistInner(){
                   </span>;
                 })}
               </div>
+              {/* Show what's needed if can't brew ×1 */}
+              {(()=>{
+                const can1=fOk&&hours>=1&&Object.entries(selCost).every(([id,q])=>(inv[id]||0)>=q);
+                if(can1)return null;
+                const reasons=[];
+                if(!fOk)reasons.push('Faction reputation too low');
+                if(hours<1)reasons.push('No Energy');
+                const missing=Object.entries(selCost).filter(([id,q])=>(inv[id]||0)<q).map(([id,q])=>(INGR[id]?.icon||'')+INGR[id]?.name+' ('+(inv[id]||0)+'/'+q+')');
+                if(missing.length>0)reasons.push('Need: '+missing.join(', '));
+                return reasons.length>0?<div style={{fontSize:11,color:'#c06040',marginTop:2}}>{reasons.join(' · ')}</div>:null;
+              })()}
+              {selTier!=='std'&&<div style={{fontSize:11,color:TH.textDim,marginTop:2}}>
+                {selQT.icon} {selQT.name}: +{selQT.extraIngr} extra ingredient{selQT.extraIngr>1?'s':''}, DC+{selQT.dcMod}, {selQT.sellMult}× sell/{selQT.xpMult}× XP
+              </div>}
               </>;
             })()}</div>
           </div>);})}
@@ -8160,24 +8174,30 @@ function CindervaleAlchemistInner(){
                 </div>
                 {hours<1?<div style={{fontSize:14,color:TH.textDim,textAlign:'center',padding:4}}>No Energy</div>
                 :!can?<div style={{fontSize:14,color:TH.textDim,textAlign:'center',padding:4}}>Gather Materials First</div>
-                :<div style={{display:'flex',gap:4,marginTop:4}}>
+                :<div style={{display:'flex',flexDirection:'column',gap:3,marginTop:4}}>
                   {['std','fine','mw'].map(eq=>{
                     const eqT=QUALITY[eq];
                     const eqCost={};ench.ingr.forEach(id=>{eqCost[id]=(eqCost[id]||0)+1;});
                     if(eqT.extraIngr>=1&&ench.ingr.length>0)eqCost[ench.ingr[0]]=(eqCost[ench.ingr[0]]||0)+1;
                     if(eqT.extraIngr>=2&&ench.ingr.length>1)eqCost[ench.ingr[1]]=(eqCost[ench.ingr[1]]||0)+1;
                     const canQ=Object.entries(eqCost).every(([id,qq])=>(inv[id]||0)>=qq)||Object.keys(eqCost).length===0;
+                    const missingMats=Object.entries(eqCost).filter(([id,qq])=>(inv[id]||0)<qq).map(([id,qq])=>(INGR[id]?.icon||'')+INGR[id]?.name+' ('+(inv[id]||0)+'/'+qq+')');
                     let eqDC=Math.max(5,ench.dc+eqT.dcMod);
                     if(eq==='fine')eqDC+=upEff('fineEnchDC');
                     if(eq==='mw'){eqDC+=upEff('fineEnchDC');eqDC+=upEff('mwEnchDC');}
                     const eqPct=Math.min(95,Math.max(5,Math.floor((21-(eqDC-hintMod))/20*100)));
                     const meetsReq=!cust.reqQuality||cust.reqQuality==='std'||['std','fine','mw'].indexOf(eq)>=(['std','fine','mw'].indexOf(cust.reqQuality));
-                    return <button key={eq} style={{...S.btn(canQ?eq==='mw'?'gold':eq==='fine'?'green':'def':'dim'),flex:1,fontSize:13,padding:'5px 4px',opacity:canQ?1:0.5}}
-                      onClick={()=>canQ&&doEnchant(ench.id,cust,eq)} disabled={!canQ}>
-                      {eq==='std'?'✨':''+eqT.icon} {eqT.name}
-                      <span style={{display:'block',fontSize:11,color:canQ?(eqPct>=60?TH.green:eqPct>=30?TH.gold:TH.red):TH.textDim}}>DC{eqDC} {eqPct}% {eqT.sellMult}×</span>
-                      {!meetsReq&&<span style={{display:'block',fontSize:10,color:TH.red}}>Below request</span>}
-                    </button>;
+                    return <div key={eq} style={{display:'flex',alignItems:'center',gap:4}}>
+                      <button style={{...S.btn(canQ?eq==='mw'?'gold':eq==='fine'?'green':'def':'dim'),flex:1,fontSize:13,padding:'5px 6px',opacity:canQ?1:0.5,textAlign:'left'}}
+                        onClick={()=>canQ&&doEnchant(ench.id,cust,eq)} disabled={!canQ}>
+                        <span style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                          <span>{eq==='std'?'✨':''+eqT.icon} {eqT.name}</span>
+                          <span style={{fontSize:11,color:canQ?(eqPct>=60?TH.green:eqPct>=30?TH.gold:TH.red):TH.textDim}}>DC{eqDC} {eqPct}% · {eqT.sellMult}× pay</span>
+                        </span>
+                        {!canQ&&missingMats.length>0&&<span style={{display:'block',fontSize:10,color:'#c06040',marginTop:1}}>Need: {missingMats.join(', ')}</span>}
+                        {!meetsReq&&<span style={{display:'block',fontSize:10,color:TH.red}}>Below customer request</span>}
+                      </button>
+                    </div>;
                   })}
                 </div>}
               </div>);})}
