@@ -231,7 +231,7 @@ const SKILLS={
     mech:'+rank bonus to craft checks on recipes you\'ve brewed 5 or fewer times. Also +rank to Experiment Bench checks. Rewards trying new recipes.'},
   attunement:{id:'attunement',name:'Attunement',stat:'inu',icon:'🌿',uses:'Craft check for Intuition-based recipes',
     mech:'Adds to your d20 craft roll for INU-based recipes (Healing Salve, Ashveil Tonic, Celestial Balm, etc). Each rank adds your proficiency bonus.'},
-  danger_sense:{id:'danger_sense',name:'Danger Sense',stat:'inu',icon:'⚠️',uses:'Chance to avoid bad foraging events',
+  danger_sense:{id:'danger_sense',name:'Danger Sense',stat:'inu',icon:'⚠️',uses:'Avoid expedition injuries and pack loss',
     mech:'Rank×12% chance to completely avoid negative expedition events (item loss, time loss). The event still narrates but you dodge the penalty.'},
   arcane_sense:{id:'arcane_sense',name:'Arcane Sensitivity',stat:'inu',icon:'🔮',uses:'Bonus to enchanting checks',
     mech:'Full rank modifier added to your Inscription check when enchanting customer items. Stacks with Focus and Inscription skill.'},
@@ -1807,6 +1807,25 @@ const H_EVENTS=[
   {prob:0.01,text:'You discover ancient alchemical carvings on a cave wall.',check:{skill:'research',dc:11},
     successText:'You study the carvings carefully — the knowledge within is invaluable!',successEffect:'bonus_xp',
     failText:'Fascinating, but you can\'t quite decipher their meaning.',failEffect:'none'},
+  // ─── DANGEROUS EVENTS (scale with region diff) ───
+  {prob:0.02,text:'A rockslide cascades down the passage!',check:{skill:'endurance',dc:14},minDiff:3,
+    successText:'You dodge the falling rocks — close call!',successEffect:'none',
+    failText:'Rocks slam into your pack. You\'re bruised and bleeding, but alive.',failEffect:'injury_light',failLoot:'lose_pack'},
+  {prob:0.015,text:'You disturb a nest of ash vipers coiled among the stones.',check:{skill:'danger_sense',dc:13},minDiff:2,
+    successText:'You sense the danger and back away slowly. The vipers settle.',successEffect:'none',
+    failText:'A viper strikes! The venom burns. You\'ll feel this tomorrow.',failEffect:'injury_light'},
+  {prob:0.012,text:'The ground gives way beneath you — a sinkhole!',check:{skill:'endurance',dc:15},minDiff:4,
+    successText:'You catch the edge and haul yourself up. Heart pounding, but safe.',successEffect:'bonus_xp',
+    failText:'You tumble hard. Your pack scatters and your body aches. This will set you back.',failEffect:'injury_heavy',failLoot:'lose_pack'},
+  {prob:0.01,text:'A territorial cave troll blocks the passage, bellowing with rage.',check:{skill:'endurance',dc:16},minDiff:4,
+    successText:'You stand your ground and the troll backs off, impressed by your nerve.',successEffect:'bonus_xp',
+    failText:'The troll charges! You escape, but not unscathed. Several items are crushed.',failEffect:'injury_heavy',failLoot:'lose_pack'},
+  {prob:0.015,text:'Toxic crystalline dust fills the air as you disturb a mineral vein.',check:{skill:'endurance',dc:12},minDiff:3,
+    successText:'You cover your face quickly — no ill effects.',successEffect:'none',
+    failText:'You inhale the dust. Your lungs burn and your hands tremble. Working tomorrow will be difficult.',failEffect:'injury_light'},
+  {prob:0.01,text:'An unstable ledge collapses as you cross. Your equipment takes the hit.',check:{skill:'precision',dc:14},minDiff:3,
+    successText:'Quick reflexes save your gear.',successEffect:'none',
+    failText:'Your pack catches on the rubble. Some equipment is damaged.',failEffect:'gadget_damage'},
 ];
 
 // ═══ MILESTONES ═══
@@ -2077,6 +2096,8 @@ function CindervaleAlchemistInner(){
   const [debt,setDebt]=useState(0); // Accumulated debt when gold < 0
   const [disabledUpgrades,setDisabledUpgrades]=useState([]); // Upgrades repossessed due to debt
   const [shopLocked,setShopLocked]=useState(false); // Shop padlocked at debt > 200
+  const [injuryPenalty,setInjuryPenalty]=useState(0); // Energy penalty from expedition injuries (applied next morning)
+  const [staffInjuries,setStaffInjuries]=useState({}); // {ap_korrin: {daysLeft:2}}
   const [pendingCompDec,setPendingCompDec]=useState([]); // [{comp:{id,name,icon,...},check:{roll,total,...}}]
   const [shelves,setShelves]=useState({});
   const [lastCheck,setLastCheck]=useState(null);
@@ -2168,9 +2189,9 @@ function CindervaleAlchemistInner(){
   const gatherState=useCallback(()=>({
     phase,charName,charRace,charGender,stats,ptsLeft,skRanks,skPts,skProgress,classLevels,specs,playerFeats,asiSpent,startingClass,
     screen,day,hours,xp,gold,inv,pots,known,aQ,doneQ,
-    log:log.slice(-30),milestones,fRep,factionAlign,upgrades,hiredAppr,apprTasks,apprXP,enchQ,potCustQ,clinicPatients,venomContracts,forgedWeapons,shieldCommissions,planarFocus,gadgets,blueprints,fieldJournal,loreFragments,companions,caravans,supplyChains,caravanRuns,trainingSessions,factionHarmony,prestigeLevels,automata,customPatterns,mappedRegions,activeBuffs,debt,disabledUpgrades,shopLocked,shelves,dailyReport,
+    log:log.slice(-30),milestones,fRep,factionAlign,upgrades,hiredAppr,apprTasks,apprXP,enchQ,potCustQ,clinicPatients,venomContracts,forgedWeapons,shieldCommissions,planarFocus,gadgets,blueprints,fieldJournal,loreFragments,companions,caravans,supplyChains,caravanRuns,trainingSessions,factionHarmony,prestigeLevels,automata,customPatterns,mappedRegions,activeBuffs,debt,disabledUpgrades,shopLocked,injuryPenalty,staffInjuries,shelves,dailyReport,
     boardQ,activeBQ,doneBQCount,dayFlags,knownEnch,brewCounts,procureItems,pubPapers,selectedSite,constructProgress,
-  }),[phase,charName,charRace,charGender,stats,ptsLeft,skRanks,skPts,skProgress,classLevels,specs,playerFeats,asiSpent,startingClass,screen,day,hours,xp,gold,inv,pots,known,aQ,doneQ,log,milestones,fRep,factionAlign,upgrades,hiredAppr,apprTasks,apprXP,enchQ,potCustQ,clinicPatients,venomContracts,forgedWeapons,shieldCommissions,planarFocus,gadgets,blueprints,fieldJournal,loreFragments,companions,caravans,supplyChains,caravanRuns,trainingSessions,factionHarmony,prestigeLevels,automata,customPatterns,mappedRegions,activeBuffs,debt,disabledUpgrades,shopLocked,shelves,dailyReport,boardQ,activeBQ,doneBQCount,dayFlags,knownEnch,brewCounts,procureItems,constructProgress,selectedSite]);
+  }),[phase,charName,charRace,charGender,stats,ptsLeft,skRanks,skPts,skProgress,classLevels,specs,playerFeats,asiSpent,startingClass,screen,day,hours,xp,gold,inv,pots,known,aQ,doneQ,log,milestones,fRep,factionAlign,upgrades,hiredAppr,apprTasks,apprXP,enchQ,potCustQ,clinicPatients,venomContracts,forgedWeapons,shieldCommissions,planarFocus,gadgets,blueprints,fieldJournal,loreFragments,companions,caravans,supplyChains,caravanRuns,trainingSessions,factionHarmony,prestigeLevels,automata,customPatterns,mappedRegions,activeBuffs,debt,disabledUpgrades,shopLocked,injuryPenalty,staffInjuries,shelves,dailyReport,boardQ,activeBQ,doneBQCount,dayFlags,knownEnch,brewCounts,procureItems,constructProgress,selectedSite]);
 
   const restoreState=useCallback((s)=>{
     if(!s)return;
@@ -2195,7 +2216,7 @@ function CindervaleAlchemistInner(){
     setUpgrades(s.upgrades||[]);setHiredAppr(s.hiredAppr||[]);
     setApprTasks(s.apprTasks||{});setApprXP(s.apprXP||{});
     prevLvl.current=getLvl(s.xp||0);
-    setDailyReport(s.dailyReport||[]);setEnchQ(s.enchQ||[]);setPotCustQ(s.potCustQ||[]);setClinicPatients(s.clinicPatients||[]);setVenomContracts(s.venomContracts||[]);setForgedWeapons(s.forgedWeapons||[]);setShieldCommissions(s.shieldCommissions||[]);setPlanarFocus(s.planarFocus||null);setGadgets(s.gadgets||[]);setBlueprints(s.blueprints||[]);setFieldJournal(s.fieldJournal||[]);setLoreFragments(s.loreFragments||[]);setCompanions(s.companions||[]);setCaravans(s.caravans||[]);setSupplyChains(s.supplyChains||[]);setCaravanRuns(s.caravanRuns||{});setTrainingSessions(s.trainingSessions||{});setFactionHarmony(s.factionHarmony||{});setPrestigeLevels(s.prestigeLevels||{});setAutomata(s.automata||[]);setCustomPatterns(s.customPatterns||[]);setMappedRegions(s.mappedRegions||[]);setActiveBuffs(s.activeBuffs||{});setDebt(s.debt||0);setDisabledUpgrades(s.disabledUpgrades||[]);setShopLocked(s.shopLocked||false);setShelves(s.shelves||{});setLastCheck(null);setNews([]);setMorningReport(null);
+    setDailyReport(s.dailyReport||[]);setEnchQ(s.enchQ||[]);setPotCustQ(s.potCustQ||[]);setClinicPatients(s.clinicPatients||[]);setVenomContracts(s.venomContracts||[]);setForgedWeapons(s.forgedWeapons||[]);setShieldCommissions(s.shieldCommissions||[]);setPlanarFocus(s.planarFocus||null);setGadgets(s.gadgets||[]);setBlueprints(s.blueprints||[]);setFieldJournal(s.fieldJournal||[]);setLoreFragments(s.loreFragments||[]);setCompanions(s.companions||[]);setCaravans(s.caravans||[]);setSupplyChains(s.supplyChains||[]);setCaravanRuns(s.caravanRuns||{});setTrainingSessions(s.trainingSessions||{});setFactionHarmony(s.factionHarmony||{});setPrestigeLevels(s.prestigeLevels||{});setAutomata(s.automata||[]);setCustomPatterns(s.customPatterns||[]);setMappedRegions(s.mappedRegions||[]);setActiveBuffs(s.activeBuffs||{});setDebt(s.debt||0);setDisabledUpgrades(s.disabledUpgrades||[]);setShopLocked(s.shopLocked||false);setInjuryPenalty(s.injuryPenalty||0);setStaffInjuries(s.staffInjuries||{});setShelves(s.shelves||{});setLastCheck(null);setNews([]);setMorningReport(null);
     setBoardQ(s.boardQ||[]);setActiveBQ(s.activeBQ||[]);setDoneBQCount(s.doneBQCount||0);setDayFlags(s.dayFlags||[]);setKnownEnch(s.knownEnch&&s.knownEnch.length>0?s.knownEnch:['e_sharp','e_glow','e_ironbark','e_feather','e_windwalk','e_rootbind']);
     setBrewCounts(s.brewCounts||{});setProcureItems(s.procureItems||[]);setPubPapers(s.pubPapers||[]);setConstructProgress(s.constructProgress||{});
     setSelHex(null);setVBuild('workshop');setDlgNpc(null);setShowShop(false);setQuestDlg(null);setPendingLevelUp(null);setSelectedSite(s.selectedSite||null);
@@ -2255,7 +2276,7 @@ function CindervaleAlchemistInner(){
   const snapshot=useCallback(()=>{
     const snap={day,hours,xp,gold,inv:{...inv},pots:{...pots},known:[...known],aQ:[...aQ],doneQ:[...doneQ],
       fRep:{...fRep},upgrades:[...upgrades],hiredAppr:hiredAppr.map(a=>({...a})),apprTasks:{...apprTasks},apprXP:{...apprXP},
-      skRanks:{...skRanks},skPts,skProgress:{...skProgress},enchQ:[...enchQ],potCustQ:[...potCustQ],clinicPatients:[...clinicPatients],venomContracts:[...venomContracts],forgedWeapons:[...forgedWeapons],shieldCommissions:[...shieldCommissions],planarFocus,gadgets:[...gadgets],blueprints:[...blueprints],fieldJournal:[...fieldJournal],loreFragments:[...loreFragments],companions:companions.map(c=>({...c})),caravans:[...caravans],supplyChains:[...supplyChains],caravanRuns:{...caravanRuns},trainingSessions:{...trainingSessions},factionHarmony:{...factionHarmony},prestigeLevels:{...prestigeLevels},automata:automata.map(a=>({...a})),customPatterns:[...customPatterns],mappedRegions:[...mappedRegions],activeBuffs:{...activeBuffs},debt,disabledUpgrades:[...disabledUpgrades],shopLocked,gadgets,blueprints,fieldJournal,loreFragments,companions,caravans,supplyChains,caravanRuns,trainingSessions,factionHarmony,prestigeLevels,automata,customPatterns,mappedRegions,activeBuffs,debt,disabledUpgrades,shopLocked,shelves:{...shelves},milestones:[...milestones],log:[...log],dailyReport:[...dailyReport],brewCounts:{...brewCounts},procureItems:[...procureItems],constructProgress:{...constructProgress}};
+      skRanks:{...skRanks},skPts,skProgress:{...skProgress},enchQ:[...enchQ],potCustQ:[...potCustQ],clinicPatients:[...clinicPatients],venomContracts:[...venomContracts],forgedWeapons:[...forgedWeapons],shieldCommissions:[...shieldCommissions],planarFocus,gadgets:[...gadgets],blueprints:[...blueprints],fieldJournal:[...fieldJournal],loreFragments:[...loreFragments],companions:companions.map(c=>({...c})),caravans:[...caravans],supplyChains:[...supplyChains],caravanRuns:{...caravanRuns},trainingSessions:{...trainingSessions},factionHarmony:{...factionHarmony},prestigeLevels:{...prestigeLevels},automata:automata.map(a=>({...a})),customPatterns:[...customPatterns],mappedRegions:[...mappedRegions],activeBuffs:{...activeBuffs},debt,disabledUpgrades:[...disabledUpgrades],shopLocked,injuryPenalty,staffInjuries:{...staffInjuries},gadgets,blueprints,fieldJournal,loreFragments,companions,caravans,supplyChains,caravanRuns,trainingSessions,factionHarmony,prestigeLevels,automata,customPatterns,mappedRegions,activeBuffs,debt,disabledUpgrades,shopLocked,injuryPenalty,staffInjuries,shelves:{...shelves},milestones:[...milestones],log:[...log],dailyReport:[...dailyReport],brewCounts:{...brewCounts},procureItems:[...procureItems],constructProgress:{...constructProgress}};
     setUndoStack(p=>[...p.slice(-4),snap]);
   },[day,hours,xp,gold,inv,pots,known,aQ,doneQ,fRep,upgrades,hiredAppr,apprTasks,apprXP,skRanks,skPts,skProgress,enchQ,potCustQ,shelves,milestones,log,dailyReport,brewCounts,procureItems,constructProgress]);
 
@@ -2278,7 +2299,7 @@ function CindervaleAlchemistInner(){
     setInv(snap.inv);setPots(snap.pots);setKnown(snap.known);setAQ(snap.aQ);setDoneQ(snap.doneQ);
     setFRep(snap.fRep);setUpgrades(snap.upgrades);setHiredAppr(snap.hiredAppr);
     setApprTasks(snap.apprTasks);setApprXP(snap.apprXP);setSkRanks(snap.skRanks);setSkPts(snap.skPts);setSkProgress(snap.skProgress||{});
-    setEnchQ(snap.enchQ);setPotCustQ(snap.potCustQ||[]);setClinicPatients(snap.clinicPatients||[]);setVenomContracts(snap.venomContracts||[]);setForgedWeapons(snap.forgedWeapons||[]);setShieldCommissions(snap.shieldCommissions||[]);setPlanarFocus(snap.planarFocus||null);setGadgets(snap.gadgets||[]);setBlueprints(snap.blueprints||[]);setFieldJournal(snap.fieldJournal||[]);setLoreFragments(snap.loreFragments||[]);setCompanions(snap.companions||[]);setCaravans(snap.caravans||[]);setSupplyChains(snap.supplyChains||[]);setCaravanRuns(snap.caravanRuns||{});setTrainingSessions(snap.trainingSessions||{});setFactionHarmony(snap.factionHarmony||{});setPrestigeLevels(snap.prestigeLevels||{});setAutomata(snap.automata||[]);setCustomPatterns(snap.customPatterns||[]);setMappedRegions(snap.mappedRegions||[]);setActiveBuffs(snap.activeBuffs||{});setDebt(snap.debt||0);setDisabledUpgrades(snap.disabledUpgrades||[]);setShopLocked(snap.shopLocked||false);setShelves(snap.shelves||{});setMilestones(snap.milestones);setLog(snap.log);setDailyReport(snap.dailyReport);
+    setEnchQ(snap.enchQ);setPotCustQ(snap.potCustQ||[]);setClinicPatients(snap.clinicPatients||[]);setVenomContracts(snap.venomContracts||[]);setForgedWeapons(snap.forgedWeapons||[]);setShieldCommissions(snap.shieldCommissions||[]);setPlanarFocus(snap.planarFocus||null);setGadgets(snap.gadgets||[]);setBlueprints(snap.blueprints||[]);setFieldJournal(snap.fieldJournal||[]);setLoreFragments(snap.loreFragments||[]);setCompanions(snap.companions||[]);setCaravans(snap.caravans||[]);setSupplyChains(snap.supplyChains||[]);setCaravanRuns(snap.caravanRuns||{});setTrainingSessions(snap.trainingSessions||{});setFactionHarmony(snap.factionHarmony||{});setPrestigeLevels(snap.prestigeLevels||{});setAutomata(snap.automata||[]);setCustomPatterns(snap.customPatterns||[]);setMappedRegions(snap.mappedRegions||[]);setActiveBuffs(snap.activeBuffs||{});setDebt(snap.debt||0);setDisabledUpgrades(snap.disabledUpgrades||[]);setShopLocked(snap.shopLocked||false);setInjuryPenalty(snap.injuryPenalty||0);setStaffInjuries(snap.staffInjuries||{});setShelves(snap.shelves||{});setMilestones(snap.milestones);setLog(snap.log);setDailyReport(snap.dailyReport);
     setBrewCounts(snap.brewCounts||{});setProcureItems(snap.procureItems||[]);setPubPapers(snap.pubPapers||[]);setConstructProgress(snap.constructProgress||{});
     setLastCheck(null);
     addLog('↩️ Time seems to blur — you find yourself a moment before, as if the last action never happened.','info');
@@ -2566,6 +2587,7 @@ function CindervaleAlchemistInner(){
       const riskReduc=getFeatureVal('reducedRisk');
       const posMulti=1+getFeatureVal('positiveEventMulti');
       for(const ev of H_EVENTS){
+        if(ev.minDiff&&reg.diff<ev.minDiff)continue; // Skip events above region danger level
         let evProb=ev.prob;
         if(riskReduc>0&&ev.good===false)evProb*=(1-riskReduc);
         // Field Journal fauna discoveries reduce danger in this region
@@ -2622,6 +2644,51 @@ function CindervaleAlchemistInner(){
         } else if(event.effect==='rep'&&ev.faction){
           event.effectRep={faction:ev.faction,amount:15};
           event.effectDetail='+15 '+FACTIONS[ev.faction]?.name+' reputation';
+        }
+        // ─── NEW DANGER EFFECTS ───
+        if(event.effect==='injury_light'){
+          // Light injury: -1 energy tomorrow
+          event.effectDetail='🩹 Light injury: -1 Energy tomorrow';
+          event.injuryPenalty=1;
+        } else if(event.effect==='injury_heavy'){
+          // Heavy injury: -2 energy tomorrow
+          event.effectDetail='🩹 Heavy injury: -2 Energy tomorrow';
+          event.injuryPenalty=2;
+        }
+        if(event.effect==='gadget_damage'){
+          event.effectDetail='🔧 Equipment damaged: a gadget may need repair';
+          event.gadgetDamage=true;
+        }
+        // Lose pack: lose 1-3 items from cumulative gathered this expedition
+        if(ev.failLoot==='lose_pack'&&!event.good){
+          const lostItems={};
+          const cumKeys=Object.keys(cumG).filter(k=>cumG[k]>0);
+          if(cumKeys.length>0){
+            const lossCount=Math.min(cumKeys.length,1+Math.floor(Math.random()*3));
+            for(let li=0;li<lossCount;li++){
+              const lk=cumKeys[Math.floor(Math.random()*cumKeys.length)];
+              const lossAmt=Math.min(cumG[lk],1+Math.floor(Math.random()*2));
+              cumG[lk]=Math.max(0,cumG[lk]-lossAmt);
+              hourG[lk]=Math.max(0,(hourG[lk]||0)-lossAmt);
+              lostItems[lk]=(lostItems[lk]||0)+lossAmt;
+            }
+            event.lostItems=lostItems;
+            const lostDesc=Object.entries(lostItems).map(([id,q])=>(INGR[id]?.icon||'')+INGR[id]?.name+' ×'+q).join(', ');
+            event.effectDetail=(event.effectDetail||'')+' | Lost from pack: '+lostDesc;
+          }
+        }
+        // Companion loyalty loss on failed dangerous events (diff 3+)
+        if(!event.good&&reg.diff>=3&&companions.filter(c=>c.active).length>0){
+          const activeComps=companions.filter(c=>c.active);
+          if(activeComps.length>0&&Math.random()<0.3){
+            const comp=activeComps[Math.floor(Math.random()*activeComps.length)];
+            const compData=RANGER_COMPANIONS.find(r=>r.id===comp.compId);
+            if(comp.loyalty>1){
+              comp.loyalty=Math.max(1,comp.loyalty-1);
+              event.companionLoss={name:compData?.name||'Companion',icon:compData?.icon||'🐾'};
+              event.effectDetail=(event.effectDetail||'')+' | '+compData?.icon+' '+compData?.name+' loyalty -1 (frightened)';
+            }
+          }
         }
         break;
       }
@@ -2751,6 +2818,28 @@ function CindervaleAlchemistInner(){
     const approachableComps=queue.filter(q=>q.companionEnc?.approachable).map(q=>q.companionEnc);
     if(approachableComps.length>0)setPendingCompDec(approachableComps);
     // Update mapped regions with any hidden areas discovered during expedition
+    // Apply expedition injuries
+    const totalInjury=queue.reduce((s,q)=>s+(q.event?.injuryPenalty||0),0);
+    if(totalInjury>0){setInjuryPenalty(prev=>prev+totalInjury);addLog('🩹 Expedition injury: -'+totalInjury+' Energy tomorrow.','error');}
+    // Gadget damage
+    const hadGadgetDmg=queue.some(q=>q.event?.gadgetDamage);
+    if(hadGadgetDmg&&gadgets.length>0){
+      const activeG=gadgets.filter(g=>g.equipped!==false);
+      if(activeG.length>0){
+        const victim=activeG[Math.floor(Math.random()*activeG.length)];
+        setGadgets(prev=>prev.map(g=>g.id===victim.id?{...g,damaged:true,equipped:false}:g));
+        addLog('🔧 '+victim.name+' was damaged! Unequipped until repaired.','error');
+      }
+    }
+    // Companion loyalty losses (already applied to local state in loop, need to commit)
+    const compLosses=queue.filter(q=>q.event?.companionLoss);
+    if(compLosses.length>0){
+      setCompanions(prev=>prev.map(c=>{
+        const loss=compLosses.find(q=>q.event.companionLoss);
+        // The loyalty was already decremented on the local object during the loop
+        return c;
+      }));
+    }
     const newMaps=queue.filter(q=>q.hiddenDisc?.mapped).map(q=>q.hiddenDisc.id);
     if(newMaps.length>0)setMappedRegions(prev=>[...new Set([...prev,...newMaps])]);
     setExpQ(queue);
@@ -4307,7 +4396,9 @@ function CindervaleAlchemistInner(){
   const newDay=()=>{
     snapshot();
     const enduranceBonus=getSkMod('endurance')>=3?1:0;
-    const baseH=8+upEff('bonusEnergy')+getFeatureVal('bonusEnergyPerDay')+enduranceBonus+(getFeatureVal('freeAction')?1:0);
+    const injPen=injuryPenalty||0;
+    if(injPen>0)setInjuryPenalty(0); // Clear after applying
+    const baseH=Math.max(3,8+upEff('bonusEnergy')+getFeatureVal('bonusEnergyPerDay')+enduranceBonus+(getFeatureVal('freeAction')?1:0)-injPen);
     setDay(d=>d+1);setHours(baseH);setLastCheck(null);const report=[];let totalSal=0;
     const staffEffBonus=getFeatureVal('staffEfficiencyBonus');
     const payrollDisc=getFeatureVal('payrollDiscount');
@@ -4320,6 +4411,8 @@ function CindervaleAlchemistInner(){
     const updatedAppr=hiredAppr.map(ap=>{
       const apSalary=Math.max(1,Math.floor(ap.salary*(1-payrollDisc)*halfPay));
       totalSal+=apSalary;const task=apprTasks[ap.id];
+      // Skip injured staff
+      if(staffInjuries[ap.id]&&staffInjuries[ap.id].daysLeft>0){report.push({n:ap.name,i:ap.icon,r:'🩹 Injured ('+staffInjuries[ap.id].daysLeft+'d recovery)',t:'fail'});return{...ap};}
       if(!task){report.push({n:ap.name,i:ap.icon,r:'Idle',t:'idle'});return{...ap,morale:Math.max(40,ap.morale-5)};}
       const aLvl=getApprLvl(ap.id);
       // Base efficiency from stat + level + upgrades + class bonuses
@@ -4356,6 +4449,12 @@ function CindervaleAlchemistInner(){
           Object.entries(g).forEach(([id,q])=>modInv(id,q));
           const yieldStr=Object.entries(g).map(([id,q])=>`${INGR[id]?.icon||''}${INGR[id]?.name||id} ×${q}`).join(', ');
           report.push({n:ap.name,i:ap.icon,r:`Foraged ${empGatherH}h at ${reg.icon}${reg.name}: ${yieldStr}`,t:'ok'});
+          // Staff injury chance in dangerous regions
+          if(reg.diff>=3&&Math.random()<0.08*reg.diff){
+            const injDays=reg.diff>=4?2:1;
+            setStaffInjuries(prev=>({...prev,[ap.id]:{daysLeft:injDays}}));
+            report.push({n:ap.name,i:ap.icon,r:`🩹 Injured foraging in ${reg.name}! (${injDays}d recovery)`,t:'fail'});
+          }
           {const _xpGain=Math.floor(15*axp);_xpAdded[ap.id]=(_xpAdded[ap.id]||0)+_xpGain;setApprXP(p=>({...p,[ap.id]:(p[ap.id]||0)+_xpGain}));};}
       } else if(task.type==='brew'&&task.target){
         const recipe=RECIPES.find(r=>r.id===task.target);if(recipe){
@@ -4615,6 +4714,11 @@ function CindervaleAlchemistInner(){
     firedEvents.forEach(e=>{if(e.result?.gold){
       if(e.result.gold>0){goldIn+=e.result.gold;goldLines.push({icon:'🏘️',label:e.text,val:'+'+e.result.gold+'g',color:TH.green});}
       else{goldOut+=Math.abs(e.result.gold);goldLines.push({icon:'🏘️',label:e.text,val:e.result.gold+'g',color:TH.red});}}});
+    // Injury report
+    if(injPen>0){mrSections.push({title:'🩹 Injuries',lines:[
+      {icon:'🩹',label:'You are injured from yesterday\'s expedition',val:'-'+injPen+' Energy today',color:'#c06040'},
+      {icon:'⚡',label:'Available Energy',val:baseH+' (normally '+(baseH+injPen)+')',color:TH.textDim}
+    ]});}
     if(goldLines.length>0)mrSections.push({title:'💰 Gold',net:goldIn-goldOut,lines:goldLines});
     // Shelf Sales detail
     if(Object.keys(shelfSold).length>0){
@@ -4623,6 +4727,17 @@ function CindervaleAlchemistInner(){
         const price=Math.floor(basePrice*(1+getFeatureVal('sellBonus')+getFeatureVal('customerPayBonus')+getFeatureVal('potionValueBonus')));
         return{icon:r?.icon||'🧪',label:(r?.name||id)+' ×'+q,val:'+'+price*q+'g',color:TH.gold};});
       mrSections.push({title:'🏪 Shelf Sales',lines:sLines});}
+    // Staff injury recovery
+    const updatedInjuries={...staffInjuries};
+    Object.entries(updatedInjuries).forEach(([apId,inj])=>{
+      if(inj.daysLeft>1){updatedInjuries[apId]={...inj,daysLeft:inj.daysLeft-1};}
+      else{delete updatedInjuries[apId];staffLines.push({icon:'🩹',label:(APPRENTICES.find(a=>a.id===apId)?.name||apId)+' recovered from injury!',val:'Ready to work',color:TH.green});}
+    });
+    setStaffInjuries(updatedInjuries);
+    // Show injured staff
+    Object.entries(updatedInjuries).forEach(([apId,inj])=>{
+      staffLines.push({icon:'🩹',label:(APPRENTICES.find(a=>a.id===apId)?.name||apId)+' injured',val:inj.daysLeft+'d recovery',color:'#c06040'});
+    });
     // Staff results
     const staffEntries=report.filter(r=>{const names=hiredAppr.map(a=>a.name);return names.includes(r.n);});
     if(hiredAppr.length>0){
@@ -8303,6 +8418,7 @@ function CindervaleAlchemistInner(){
                 <span style={{fontSize:14}}>
                   <span style={{color:TH.gold,cursor:'help'}} title={'Daily salary paid each morning. Signing fee: '+ap.salary*5+'g'}>{ap.salary}g/d</span>
                   {' '}<span style={{color:ap.morale>=70?TH.green:ap.morale>=40?TH.orange:TH.red}}>♥{ap.morale}%</span>
+                  {staffInjuries[ap.id]&&staffInjuries[ap.id].daysLeft>0&&<span style={{color:'#c06040',marginLeft:4}}>🩹{staffInjuries[ap.id].daysLeft}d</span>}
                   <span style={{fontSize:12,color:ap.morale>=80?TH.green:ap.morale>=50?TH.textDim:ap.morale>=30?TH.orange:TH.red,marginLeft:2}}>({ap.morale>=80?'+10% eff':ap.morale>=50?'normal':ap.morale>=30?'-20% eff':'-40% eff'})</span>
                 </span></div>
               {/* XP Progress bar */}
@@ -9725,6 +9841,18 @@ function ExpeditionHourPopup({hr,TH,S,LC,INGR,FACTIONS,onOk,onSkipAll,remaining,
           {(hr.event.check?evtPast:past)&&<>
             {hr.event.resultText&&<div style={{fontSize:15,color:hr.event.good?TH.green:TH.red,marginTop:4,lineHeight:1.4}}>{hr.event.resultText}</div>}
             {hr.event.effectDetail&&<div style={{fontSize:14,color:TH.orange,marginTop:2}}>→ {hr.event.effectDetail}</div>}
+            {hr.event.injuryPenalty>0&&<div style={{fontSize:14,color:'#c04040',marginTop:3,padding:'3px 8px',background:'#c0404010',borderRadius:4,border:'1px solid #c0404033'}}>
+              🩹 You are injured! -{hr.event.injuryPenalty} Energy tomorrow.
+            </div>}
+            {hr.event.lostItems&&Object.keys(hr.event.lostItems).length>0&&<div style={{fontSize:14,color:'#c06040',marginTop:3,padding:'3px 8px',background:'#c0604010',borderRadius:4,border:'1px solid #c0604033'}}>
+              💥 Lost from pack: {Object.entries(hr.event.lostItems).map(([id,q])=>(INGR[id]?.icon||'')+INGR[id]?.name+' ×'+q).join(', ')}
+            </div>}
+            {hr.event.companionLoss&&<div style={{fontSize:14,color:'#c0a040',marginTop:3,padding:'3px 8px',background:'#c0a04010',borderRadius:4,border:'1px solid #c0a04033'}}>
+              {hr.event.companionLoss.icon} {hr.event.companionLoss.name} loyalty dropped! The danger frightened your companion.
+            </div>}
+            {hr.event.gadgetDamage&&<div style={{fontSize:14,color:'#a06040',marginTop:3,padding:'3px 8px',background:'#a0604010',borderRadius:4,border:'1px solid #a0604033'}}>
+              🔧 Equipment damaged! A gadget may need repair.
+            </div>}
             {hr.event.effectXp>0&&<div style={{fontSize:14,color:TH.gold,marginTop:1}}>+{hr.event.effectXp} bonus XP</div>}
           </>}
         </div>}
