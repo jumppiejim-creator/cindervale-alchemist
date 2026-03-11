@@ -261,8 +261,8 @@ const SKILLS={
     mech:'Increases the number of potion orders and enchantment customers generated each morning. More customers = more gold opportunities.'},
   procurement:{id:'procurement',name:'Procurement',stat:'com',icon:'📦',uses:'Rare ingredients appear in shop daily',
     mech:'Each morning, rank×5% chance per rare ingredient (from tier 3+ regions) to appear in the shop at 2× base price. Pay premium to skip expeditions.'},
-  endurance:{id:'endurance',name:'Endurance',stat:'dis',icon:'💪',uses:'More hours per day',
-    mech:'+rank/2 (rounded down) bonus hours per day. At rank 4: +2 extra hours. Very powerful — more hours means more of everything.'},
+  endurance:{id:'endurance',name:'Endurance',stat:'dis',icon:'💪',uses:'Chance to save Energy on actions',
+    mech:'Rank×5% chance that any action costs 0 Energy. At rank 3: also +1 Energy/day. Rewards investment in stamina without breaking the economy.'},
   efficiency:{id:'efficiency',name:'Efficiency',stat:'dis',icon:'⏱️',uses:'-travel time, bonus gather hours',
     mech:'-1 expedition travel hour at rank 2+ (minimum 1h). Additionally rank×3% chance per foraging hour to gain a bonus gathering hour.'},
   stockpiling:{id:'stockpiling',name:'Stockpiling',stat:'dis',icon:'🏗️',uses:'+shelf capacity, saves ingredients on failure',
@@ -457,10 +457,10 @@ const CLASSES={
   warden:{id:'warden',name:'Warden',icon:'🛡️',color:TH.teal,primaryStat:'dis',
     profSkills:['extraction','endurance'],
     desc:'Masters of wilderness and expedition. Make foraging dramatically more productive.',
-    shortDesc:'Foraging mastery, extra hours, endurance',
+    shortDesc:'Foraging mastery, energy efficiency, endurance',
     features:[
       {classLv:1,name:'Trailblazer',desc:'-1 travel time to all regions (min 0). Gain proficiency in Extraction and Endurance.',effects:{travelReduction:1}},
-      {classLv:2,name:'Enduring Spirit',desc:'+1 hour per day. Weather penalties halved.',effects:{bonusHoursPerDay:1,weatherReduction:0.5}},
+      {classLv:2,name:'Enduring Spirit',desc:'+1 Energy per day. Weather penalties halved.',effects:{bonusEnergyPerDay:1,weatherReduction:0.5}},
       {classLv:3,name:'Specialization',desc:'Choose a specialization path. +1 extraction bonus.',effects:{extractionBonus:1}},
       {classLv:4,name:'Iron Constitution',desc:'Immune to expedition events that cost time. Power through danger.',effects:{immuneTimeLossEvents:true}},
       {classLv:5,name:'Expert Forager',desc:'Critical extraction (nat 20) yields 3× ingredients. Successes yield +1 bonus.',effects:{critExtractionMulti:3,bonusPerSuccess:1}},
@@ -475,12 +475,12 @@ const CLASSES={
         features:[
           {classLv:3,name:'Tracker',desc:'Can target specific ingredients during foraging. Befriend wild creatures.',effects:{luckyFindChance:0.20,extractionBonus:2}},
           {classLv:6,name:'Pathfinder',desc:'Discover hidden sub-regions with unique ingredients. Creature bonuses grow.',effects:{yieldMultiplier:0.50,critExtractionMulti:2}},
-          {classLv:10,name:'Apex Predator',desc:'Legendary expedition zones. Guaranteed rare finds every expedition.',effects:{bonusHoursPerDay:1,guaranteedRare:true}},
+          {classLv:10,name:'Apex Predator',desc:'Legendary expedition zones. Guaranteed rare finds. Companions perform a second daily action.',effects:{companionDualAction:true,guaranteedRare:true}},
         ]},
       quartermaster:{id:'quartermaster',name:'Quartermaster',icon:'📋',color:'#6080a0',bStat:'dis',bSkills:['stockpiling','efficiency'],
         features:[
           {classLv:3,name:'Supply Chain',desc:'Workshop storage doubled. Ingredient efficiency +25% on all crafts.',effects:{doubleStorage:true,ingredientEfficiency:0.25}},
-          {classLv:6,name:'Logistics Master',desc:'Auto-sort ingredients. Batch foraging: send expedition to multiple regions at once.',effects:{staffForageBonus:0.25,bonusHoursPerDay:1}},
+          {classLv:6,name:'Logistics Master',desc:'Auto-sort ingredients. Batch foraging: send expedition to multiple regions at once. Supply chain maintenance is free.',effects:{staffForageBonus:0.25,freeSupplyMaint:true}},
           {classLv:10,name:'War Room',desc:'Fully automated ingredient management. Foraging yield +100%.',effects:{staffEfficiencyBonus:0.30,yieldMultiplier:1}},
         ]},
       sentinel:{id:'sentinel',name:'Sentinel',icon:'🗼',color:'#a07040',bStat:'tec',bSkills:['extraction','precision'],
@@ -528,11 +528,11 @@ const FEATS={
   supply_lines:{id:'supply_lines',name:'Supply Lines',icon:'🚚',cat:'commerce',desc:'Procurement finds 2× rare items. +2 shelf capacity. Shop restock is cheaper.',effects:{shopRestockBonus:1,buyDiscount:0.10,shelfCapacity:2}},
   penny_pincher:{id:'penny_pincher',name:'Penny Pincher',icon:'🪙',cat:'commerce',desc:'All gold costs (purchases, upgrades, hiring, payroll) -10%.',effects:{upgradeCostReduction:0.15,buyDiscount:0.10}},
   // ── General ──
-  early_riser:{id:'early_riser',name:'Early Riser',icon:'🌅',cat:'general',desc:'+1 hour per day.',effects:{bonusHoursPerDay:1}},
+  early_riser:{id:'early_riser',name:'Early Riser',icon:'🌅',cat:'general',desc:'First action each day costs 0 Energy.',effects:{firstActionFree:true}},
   multitasker:{id:'multitasker',name:'Multitasker',icon:'🔀',cat:'general',desc:'One free 0-hour action per day.',effects:{freeAction:1}},
   jack_of_all:{id:'jack_of_all',name:'Jack of All Trades',icon:'🃏',cat:'general',desc:'+1 to all skill checks where you have 0 ranks.',effects:{bonusSkillPerLevel:1,xpMultiplier:0.05}},
-  prodigy:{id:'prodigy',name:'Prodigy',icon:'⭐',cat:'general',desc:'+1 to all six stats (can exceed soft cap).',effects:{craftBonus:1,enchantBonus:1,extractionBonus:1,sellBonus:0.10,xpMultiplier:0.05,bonusHoursPerDay:1}},
-  tough:{id:'tough',name:'Tough',icon:'💪',cat:'general',desc:'Once per day, reroll a failed check. +1h/day. Negative town events halved.',effects:{bonusHoursPerDay:1,eventDamageReduction:0.5,checkReroll:1}},
+  prodigy:{id:'prodigy',name:'Prodigy',icon:'⭐',cat:'general',desc:'+1 to all six stats (can exceed soft cap).',effects:{craftBonus:1,enchantBonus:1,extractionBonus:1,sellBonus:0.10,xpMultiplier:0.05}},
+  tough:{id:'tough',name:'Tough',icon:'💪',cat:'general',desc:'Once per day, reroll a failed check. Negative town events halved.',effects:{eventDamageReduction:0.5,checkReroll:1}},
   focused_mind:{id:'focused_mind',name:'Focused Mind',icon:'🧠',cat:'general',desc:'+1 skill point per level (retroactive).',effects:{bonusSkillPerLevel:1}},
   lorekeeper:{id:'lorekeeper',name:'Lorekeeper',icon:'📚',cat:'general',desc:'+25% XP from quests/board requests. Quest completion +5 faction rep.',effects:{questXPBonus:0.25,questRepBonus:5}},
   relentless:{id:'relentless',name:'Relentless',icon:'🔥',cat:'general',desc:'After a failed check, +2 to next check of same type. Stacks to +6.',effects:{failStreakBonus:2,failStreakCap:6}},
@@ -560,8 +560,8 @@ const UPGRADES={
   display:{id:'display',name:'Display Cases',icon:'🏪',cat:'Business',desc:'+15% sell.',cost:{gold:70,hearthstone:2},effect:{sellBonus:0.15},tier:1,req:'shopfront'},
   rep_board:{id:'rep_board',name:'Rep Board',icon:'📋',cat:'Business',desc:'+5 all rep/day.',cost:{gold:50},effect:{dailyRep:5},tier:1,req:'signage'},
   ledger:{id:'ledger',name:'Ledger',icon:'📒',cat:'Business',desc:'+1 staff, +20% eff.',cost:{gold:40},effect:{apprenticeEff:0.2},tier:1,req:null},
-  quarters:{id:'quarters',name:'Beds',icon:'🛏️',cat:'Comfort',desc:'+1h/day. Upgrade from bedrolls.',cost:{gold:35,ironroot_bark:3},effect:{bonusHours:1},tier:1,req:null},
-  hearth:{id:'hearth',name:'Hearth',icon:'🔥',cat:'Comfort',desc:'+2h, morale.',cost:{gold:100,hearthstone:3},effect:{bonusHours:2,morale:10},tier:2,req:'quarters'},
+  quarters:{id:'quarters',name:'Beds',icon:'🛏️',cat:'Comfort',desc:'+1 Energy/day. Upgrade from bedrolls.',cost:{gold:35,ironroot_bark:3},effect:{bonusEnergy:1},tier:1,req:null},
+  hearth:{id:'hearth',name:'Hearth',icon:'🔥',cat:'Comfort',desc:'+1 Energy, +morale.',cost:{gold:100,hearthstone:3},effect:{bonusEnergy:1,morale:10},tier:2,req:'quarters'},
   garden:{id:'garden',name:'Garden',icon:'🌱',cat:'Comfort',desc:'Free daily herbs.',cost:{gold:45,ashbloom:5},effect:{dailyHerbs:true},tier:1,req:null},
   garden_2:{id:'garden_2',name:'Greenhouse',icon:'🌿',cat:'Comfort',desc:'Free rare herbs.',cost:{gold:150,moonpetal:3,sacred_ember:1},effect:{dailyRareHerbs:true},tier:2,req:'garden'},
   library:{id:'library',name:'Library',icon:'📚',cat:'Advanced',desc:'Research/Lore +2.',cost:{gold:120,veil_shard:1},effect:{researchBonus:2},tier:2,req:null},
@@ -1512,12 +1512,12 @@ const FACTIONS={ashwardens:{id:'ashwardens',name:'Ashwardens',icon:'🛡️',col
     {name:'Elite Contracts',desc:'+20% gold from all quest rewards.',effects:{questGoldBonus:0.20}},
     {name:'Defender',desc:'+1 to all craft checks. Protection enchants cost -1 ingredient.',effects:{craftBonus:1}},
   ]},hearthkeepers:{id:'hearthkeepers',name:'Hearthkeepers',icon:'🔥',color:TH.fHearth,res:'sacred_ember',
-  alignBonus:{name:'Hearthkeeper Devotee',desc:'+15% potion value, +15% XP from all sources, +1 bonus hour/day.',effects:{potionValueBonus:0.15,xpMultiplier:0.15,bonusHoursPerDay:1}},
+  alignBonus:{name:'Hearthkeeper Devotee',desc:'+15% potion value, +15% XP from all sources, +15% staff efficiency.',effects:{potionValueBonus:0.15,xpMultiplier:0.15,staffEfficiencyBonus:0.15}},
   tierBonuses:[
     {name:'Purification',desc:'+10% potion sale value.',effects:{potionValueBonus:0.10}},
     {name:'Holy Recipes',desc:'Unlock Hearthkeeper holy recipes.',effects:{}},
     {name:'Sacred Embers',desc:'Quests occasionally reward bonus Sacred Embers.',effects:{factionBonusDrop_sacred_ember:0.25}},
-    {name:'Temple Healing',desc:'+1 bonus work hour each day from temple rest.',effects:{bonusHoursPerDay:1}},
+    {name:'Temple Healing',desc:'Restore 1 Energy when completing a quest.',effects:{questEnergyRestore:1}},
     {name:'Keeper',desc:'+10% XP from all sources.',effects:{xpMultiplier:0.10}},
   ]},veilwalkers:{id:'veilwalkers',name:'Veilwalkers',icon:'👁️',color:TH.fVeil,res:'veil_shard',
   alignBonus:{name:'Veilseer',desc:'+25% enchant success, +20% discovery chance, research -1h.',effects:{enchantSuccessFlat:25,discoveryChanceBonus:0.20,researchCostReduction:1}},
@@ -2773,14 +2773,14 @@ function CindervaleAlchemistInner(){
   const doCraft=r=>{
     // firstBrewFree: first brew of each day costs no hours
     const fbf=getFeatureVal('firstBrewFree')&&!dayFlags.includes('first_brew_used');
-    if(!fbf&&hours<1){addLog('The day is spent — no time left to brew. Rest and try tomorrow.','error');return;}
+    if(!fbf&&hours<1){addLog('Not enough Energy to brew. Rest and try tomorrow.','error');return;}
     const cost={};r.ingr.forEach(id=>{cost[id]=(cost[id]||0)+1;});
     // freeCraft: one daily free craft (no ingredients consumed)
     const fc=getFeatureVal('freeCraft')&&!dayFlags.includes('free_craft_used');
     if(!fc&&!Object.entries(cost).every(([id,q])=>(inv[id]||0)>=q)){addLog(`You reach for ingredients but come up short. Not enough materials for ${r.icon}${r.name}.`,'error');return;}
     if(r.faction&&getRL(r.faction)<(r.fReq||0)){addLog(`This recipe requires deeper trust with the ${FACTIONS[r.faction]?.name||'faction'}. Keep building your reputation.`,'error');return;}
     snapshot();
-    if(fbf)setDayFlags(f=>[...f,'first_brew_used']);else setHours(h=>h-1);
+    if(fbf)setDayFlags(f=>[...f,'first_brew_used']);else spendEnergy(1);
     const adjDC=Math.max(5,r.dc+upEff('craftDC')+upEff('allDC'));
     const sk=r.stat==='inu'?'attunement':r.stat==='tec'?'precision':r.stat==='acu'?'research':'improvisation';
     // Analysis: auto-succeed chance
@@ -2869,13 +2869,13 @@ function CindervaleAlchemistInner(){
   const addToExp=(id)=>{if(expBench.length<4&&(inv[id]||0)>expBench.filter(x=>x===id).length)setExpBench(p=>[...p,id]);};
   const rmFromExp=(idx)=>setExpBench(p=>p.filter((_,i)=>i!==idx));
   const doExperiment=()=>{
-    if(hours<1){addLog('The day is spent — no time left to experiment. Rest and try tomorrow.','error');return;}
+    if(hours<1){addLog('Not enough Energy to experiment. Rest and try tomorrow.','error');return;}
     if(expBench.length<2){addLog('You need at least 2 ingredients on the bench to experiment.','error');return;}
     // Check inventory has enough
     const need={};expBench.forEach(id=>{need[id]=(need[id]||0)+1;});
     if(!Object.entries(need).every(([id,q])=>(inv[id]||0)>=q)){addLog('You don\'t have enough ingredients for this combination.','error');return;}
     snapshot();
-    setHours(h=>h-1);
+    spendEnergy(1);
     // Sort bench to match recipes (recipes store ingredients as sorted arrays)
     const sorted=[...expBench].sort();
     // Search all recipes for a match
@@ -2962,9 +2962,9 @@ function CindervaleAlchemistInner(){
     const freeResPerDay=getFeatureVal('freeResearchPerDay');
     const freeUsed=dayFlags.filter(f=>f==='free_research_used').length;
     const isFree=freeResPerDay>freeUsed;
-    if(!isFree&&hours<resCost){addLog(`Research takes ${resCost} hour${resCost>1?'s':''} of focused study.${freeResPerDay>0?' (free attempts used today)':''}`,'error');return;}
+    if(!isFree&&hours<resCost){addLog(`Research takes ⚡${resCost} Energy.${freeResPerDay>0?' (free attempts used today)':''}`,'error');return;}
     snapshot();
-    if(isFree){setDayFlags(f=>[...f,'free_research_used']);}else{setHours(h=>h-resCost);}
+    if(isFree){setDayFlags(f=>[...f,'free_research_used']);}else{spendEnergy(resCost);}
     const discBonus=getFeatureVal('discoveryChanceBonus');
     const resXpMult=1+getFeatureVal('researchXPMulti');
     const baseResXp=15+level*2;
@@ -3011,7 +3011,7 @@ function CindervaleAlchemistInner(){
     if(hours<1){addLog('Publishing requires 1 hour of careful writing.','error');return;}
     if(pubPapers.find(p=>p.id===id&&p.type===type)){addLog('You\'ve already published a paper on this topic.','info');return;}
     snapshot();
-    setHours(h=>h-1);
+    spendEnergy(1);
     setPubPapers(p=>[...p,{id,type,day}]);
     const baseXp=type==='recipe'?25:35;
     gainXP(baseXp);
@@ -3023,6 +3023,15 @@ function CindervaleAlchemistInner(){
 
   // ─── TRANSMUTATION ───
   // ─── CONSUME ELIXIR (activate buff) ───
+  // ─── ENERGY COST HELPER ───
+  const spendEnergy=(cost=1)=>{
+    const earlyR=getFeatureVal('firstActionFree')&&!dayFlags.includes('first_action_used');
+    const endSave=getSkMod('endurance')>0&&Math.random()<getSkMod('endurance')*0.05;
+    if(earlyR){setDayFlags(f=>[...f,'first_action_used']);addLog('\U0001f305 Early Riser: First action free!','info');return true;}
+    if(endSave){addLog('\U0001f4aa Endurance: Energy preserved!','info');return true;}
+    setHours(h=>h-cost);return false;
+  };
+
   const consumeElixir=(potionId)=>{
     const buff=ELIXIR_BUFFS[potionId];if(!buff)return;
     if((pots[potionId]||0)<1){addLog('You don\'t have any '+buff.name+' to drink.','error');return;}
@@ -3047,7 +3056,7 @@ function CindervaleAlchemistInner(){
     if((inv[srcId]||0)<srcNeed){addLog(`Need ${srcNeed}× ${INGR[srcId]?.icon||''}${INGR[srcId]?.name||srcId} to transmute ${qty}× ${INGR[tgtId]?.icon||''}${INGR[tgtId]?.name||tgtId}.`,'error');return;}
     if(!free&&hours<1){addLog('Transmutation requires 1 hour of focused work.','error');return;}
     snapshot();
-    if(!free)setHours(h=>h-1);
+    if(!free)spendEnergy(1);
     modInv(srcId,-srcNeed);modInv(tgtId,qty);
     gainXP(10*qty);
     const FLAVOR=['The ingredients shimmer and reform into something new.','Alchemical bonds dissolve and reconstitute — transmutation complete.','The essence shifts, matter transforms, and new reagents emerge.'];
@@ -3056,12 +3065,12 @@ function CindervaleAlchemistInner(){
 
   // ─── BATCH BREW ───
   const doBatchCraft=(r,qty)=>{
-    if(hours<qty){addLog(`Need ${qty} hours to brew ${qty}×${r.icon}${r.name}. You have ${hours}h left.`,'error');return;}
+    if(hours<qty){addLog(`Need ${qty} Energy to brew ${qty}×${r.icon}${r.name}. You have ⚡${hours} Energy.`,'error');return;}
     const cost={};r.ingr.forEach(id=>{cost[id]=(cost[id]||0)+qty;});
     if(!Object.entries(cost).every(([id,q])=>(inv[id]||0)>=q)){addLog(`Not enough ingredients for ${qty}× ${r.icon}${r.name}.`,'error');return;}
     if(r.faction&&getRL(r.faction)<(r.fReq||0)){addLog('Not enough faction reputation for this recipe.','error');return;}
     snapshot();
-    setHours(h=>h-qty);
+    spendEnergy(qty);
     Object.entries(cost).forEach(([id,q])=>modInv(id,-q));
     const adjDC=Math.max(5,r.dc+upEff('craftDC')+upEff('allDC'));
     const sk=r.stat==='inu'?'attunement':r.stat==='tec'?'precision':r.stat==='acu'?'research':'improvisation';
@@ -3113,7 +3122,7 @@ function CindervaleAlchemistInner(){
   const doEnchant=(eId,cust)=>{
     // dualInscription: do 2 enchants per hour slot
     const dualInsc=getFeatureVal('dualInscription');
-    if(hours<1){addLog('The day is spent — no time left to enchant. Rest and try tomorrow.','error');return;}
+    if(hours<1){addLog('Not enough Energy to enchant. Rest and try tomorrow.','error');return;}
     // Resolve enchantment — check base enchantments first, then custom patterns
     let ench=ENCHANTMENTS.find(e=>e.id===eId);
     let isCustomEnch=false;let customSellMult=1;
@@ -3129,7 +3138,7 @@ function CindervaleAlchemistInner(){
     const effCost={};Object.entries(cost).forEach(([id,q])=>{effCost[id]=discounted?Math.max(1,Math.ceil(q/2)):q;});
     if(Object.keys(effCost).length>0&&!Object.entries(effCost).every(([id,q])=>(inv[id]||0)>=q)){addLog(`You lay out the inscription tools, but realize you're missing key materials for ${ench.icon}${ench.name}.`,'error');return;}
     snapshot();
-    setHours(h=>h-1);
+    spendEnergy(1);
     // enchantMatSave: chance to preserve materials
     const matSaveChance=getFeatureVal('enchantMatSave');
     const matSaved=matSaveChance>0&&Math.random()<matSaveChance;
@@ -3258,7 +3267,7 @@ function CindervaleAlchemistInner(){
     if(!hasIngr){addLog('Not enough ingredients to brew this poison.','error');return;}
     if(hours<1){addLog('Brewing a contract poison takes 1 hour.','error');return;}
     snapshot();
-    setHours(h=>h-1);
+    spendEnergy(1);
     // Consume ingredients
     setInv(p=>{const n={...p};contract.ingredients.forEach((id,i)=>{n[id]=Math.max(0,(n[id]||0)-(contract.ingredientQty[i]||0));});return n;});
     // Craft check using improvisation
@@ -3300,7 +3309,7 @@ function CindervaleAlchemistInner(){
     if(!hasMats){addLog('Not enough materials to forge this weapon.','error');return;}
     if(hours<2){addLog('Forging a weapon takes 2 hours.','error');return;}
     snapshot();
-    setHours(h=>h-2);
+    spendEnergy(2);
     setDayFlags(f=>[...f,'forge_used']);
     // Consume materials
     setInv(p=>{const n={...p};Object.entries(weapon.matCost).forEach(([id,q])=>{n[id]=Math.max(0,(n[id]||0)-q);});return n;});
@@ -3355,7 +3364,7 @@ function CindervaleAlchemistInner(){
     const enchant=ENCHANTMENTS.find(e=>e.id===enchId);if(!enchant)return;
     if(hours<1){addLog('Each inscription layer takes 1 hour.','error');return;}
     snapshot();
-    setHours(h=>h-1);
+    spendEnergy(1);
     // Inscription check
     const dc=enchant.dc||12;
     const ch=doCheck('inscription',dc);
@@ -3473,7 +3482,7 @@ function CindervaleAlchemistInner(){
     if(effectIds.length>getMaxEffects()){addLog(`Can only combine ${getMaxEffects()} effects at your level.`,'error');return;}
     if(effectIds.length<1){addLog('Select at least one effect.','error');return;}
     if(hours<2){addLog('Pattern research takes 2 hours of focused study.','error');return;}
-    snapshot();setHours(h=>h-2);
+    snapshot();spendEnergy(2);
     // DC scales with power level and number of effects
     const baseDC=10+powerLevel*3+effectIds.length*2;
     const ch=doCheck('research',baseDC);
@@ -3533,7 +3542,7 @@ function CindervaleAlchemistInner(){
     if(hours<2){addLog('Building an automaton frame takes 2 hours.','error');return;}
     const matCost={ironroot_bark:3,hearthstone:2};
     if(!Object.entries(matCost).every(([id,q])=>(inv[id]||0)>=q)){addLog('Need 3× Ironroot Bark + 2× Hearthstone to build an automaton.','error');return;}
-    snapshot();setHours(h=>h-2);
+    snapshot();spendEnergy(2);
     Object.entries(matCost).forEach(([id,q])=>modInv(id,-q));
     const ch=doCheck('precision',12);
     const cfb=getFeatureVal('craftBonus');if(cfb){ch.total+=cfb;ch.extras.push({label:'Craft',val:cfb});}
@@ -3567,7 +3576,7 @@ function CindervaleAlchemistInner(){
     const envoysToday=dayFlags.filter(f=>f==='envoy_sent').length;
     if(envoysToday>=getMaxEnvoys()){addLog(`Maximum ${getMaxEnvoys()} envoys per day.`,'error');return;}
     if(hours<1){addLog('Dispatching an envoy takes 1 hour.','error');return;}
-    snapshot();setHours(h=>h-1);
+    snapshot();spendEnergy(1);
     setDayFlags(f=>[...f,'envoy_sent']);
     const ch=doCheck('persuasion',pair.dc+currentHarmony*2);
     const netMod=getSkMod('networking');if(netMod>0){ch.total+=netMod;ch.extras.push({label:'Networking',val:netMod});}
@@ -3627,7 +3636,7 @@ function CindervaleAlchemistInner(){
     const hourCost=gmLv>=10?0:1;
     if(hourCost>0&&hours<hourCost){addLog('Training takes 1 hour.','error');return;}
     snapshot();
-    if(hourCost>0)setHours(h=>h-hourCost);
+    if(hourCost>0)spendEnergy(hourCost);
     // COM-based instruction check
     const dc=10+Math.floor((ap.baseStat[statId]||10)/3);
     const ch=doCheck('persuasion',dc);
@@ -3662,7 +3671,7 @@ function CindervaleAlchemistInner(){
     if((ap.traits||[]).includes(traitId)){addLog(ap.name+' already has this trait.','error');return;}
     if((ap.traits||[]).length>=4){addLog(ap.name+' has too many traits (max 4).','error');return;}
     if(hours<2){addLog('Teaching a trait takes 2 hours of intensive training.','error');return;}
-    snapshot();setHours(h=>h-2);
+    snapshot();spendEnergy(2);
     const dc=15;
     const ch=doCheck('persuasion',dc);ch.success=ch.total>=dc;
     if(ch.success){
@@ -3726,7 +3735,7 @@ function CindervaleAlchemistInner(){
     const isPotion=Object.keys(cargo).some(id=>RECIPES.find(r=>r.id===id));
     const hasAll=Object.entries(cargo).every(([id,q])=>isPotion?(pots[id]||0)>=q:(inv[id]||0)>=q);
     if(!hasAll){addLog('Not enough items to load.','error');return;}
-    snapshot();setHours(h=>h-1);
+    snapshot();spendEnergy(1);
     // Consume cargo
     if(isPotion)setPots(p=>{const n={...p};Object.entries(cargo).forEach(([id,q])=>{n[id]=Math.max(0,(n[id]||0)-q);});return n;});
     else setInv(p=>{const n={...p};Object.entries(cargo).forEach(([id,q])=>{n[id]=Math.max(0,(n[id]||0)-q);});return n;});
@@ -3778,7 +3787,7 @@ function CindervaleAlchemistInner(){
     if(bp.legendary&&(classLevels.artificer||0)<10){addLog('Legendary blueprints require Artificer Lv10.','error');return;}
     if(hours<1){addLog('Drafting a blueprint takes 1 hour.','error');return;}
     snapshot();
-    setHours(h=>h-1);
+    spendEnergy(1);
     const ch=doCheck('research',bp.draftDC);
     const cfb=getFeatureVal('craftBonus');if(cfb){ch.total+=cfb;ch.extras.push({label:'Craft',val:cfb});}
     ch.success=ch.total>=bp.draftDC;
@@ -3804,7 +3813,7 @@ function CindervaleAlchemistInner(){
     const hasMats=Object.entries(matCheck).every(([id,q])=>(inv[id]||0)>=q);
     if(!hasMats){addLog('Not enough materials for this build session.','error');return;}
     snapshot();
-    setHours(h=>h-hourCost);
+    spendEnergy(hourCost);
     setInv(p=>{const n={...p};Object.entries(matCheck).forEach(([id,q])=>{n[id]=Math.max(0,(n[id]||0)-q);});return n;});
     const ch=doCheck('precision',bp.draftDC-2);
     const cfb=getFeatureVal('craftBonus');if(cfb){ch.total+=cfb;ch.extras.push({label:'Craft',val:cfb});}
@@ -3832,7 +3841,7 @@ function CindervaleAlchemistInner(){
     if((pots[potionId]||0)<1){addLog('No potions of that type in stock.','error');return;}
     const recipe=RECIPES.find(r=>r.id===potionId);if(!recipe)return;
     if(hours<1){addLog('Breaking down a potion takes 1 hour.','error');return;}
-    snapshot();setHours(h=>h-1);
+    snapshot();spendEnergy(1);
     setPots(p=>({...p,[potionId]:Math.max(0,(p[potionId]||0)-1)}));
     const rcLv=classLevels.artificer||0;
     // Lv6+ = 100% recovery, else precision check determines yield
@@ -3859,7 +3868,7 @@ function CindervaleAlchemistInner(){
     const ratio=rcLv>=6?2:3;
     if((inv[srcId]||0)<ratio){addLog(`Need ${ratio} of that ingredient to transmute.`,'error');return;}
     if(hours<1){addLog('Transmutation takes 1 hour.','error');return;}
-    snapshot();setHours(h=>h-1);
+    snapshot();spendEnergy(1);
     setInv(p=>({...p,[srcId]:Math.max(0,(p[srcId]||0)-ratio),[tgtId]:(p[tgtId]||0)+1}));
     gainXP(8);
     showResult('♻️ Transmuted!','craft',(INGR[srcId]?.icon||srcId)+'×'+ratio+' → '+(INGR[tgtId]?.icon||tgtId)+'×1\n+8 XP');
@@ -3911,7 +3920,7 @@ function CindervaleAlchemistInner(){
     if(!hasMats){addLog('Not enough materials to craft '+bp.name+'.','error');return;}
     if(hours<2){addLog('Crafting a gadget takes 2 hours.','error');return;}
     snapshot();
-    setHours(h=>h-2);
+    spendEnergy(2);
     setInv(p=>{const n={...p};Object.entries(bp.matCost).forEach(([id,q])=>{n[id]=Math.max(0,(n[id]||0)-q);});return n;});
     const ch=doCheck('precision',bp.dc);
     const cfb=getFeatureVal('craftBonus');if(cfb){ch.total+=cfb;ch.extras.push({label:'Craft',val:cfb});}
@@ -3937,7 +3946,7 @@ function CindervaleAlchemistInner(){
     if(!hasMats){addLog(`Upgrading to Mk ${g.mk+1} requires ${costMult}× base materials.`,'error');return;}
     if(hours<1){addLog('Upgrading a gadget takes 1 hour.','error');return;}
     snapshot();
-    setHours(h=>h-1);
+    spendEnergy(1);
     setInv(p=>{const n={...p};Object.entries(bp.matCost).forEach(([id,q])=>{n[id]=Math.max(0,(n[id]||0)-q*costMult);});return n;});
     const newMk=g.mk+1;
     setGadgets(prev=>prev.map(x=>x.id===gadgetId?{...x,mk:newMk}:x));
@@ -4039,6 +4048,8 @@ function CindervaleAlchemistInner(){
     const qGold=Math.floor(q.gold*qGoldB);
     gainXP(Math.floor((q.xp+loreXp)*qXpB));setGold(g=>g+qGold);
     if(q.items?.length)q.items.forEach(id=>modInv(id,1));if(q.faction&&q.fRep)addRep(q.faction,Math.floor(q.fRep*qRepB));
+    // Temple Healing: restore 1 energy on quest completion
+    const questER=getFeatureVal('questEnergyRestore');if(questER>0){setHours(h=>h+questER);addLog('\u26a1 Temple Healing: +'+questER+' Energy restored!','info');}
     // Faction tier 3 bonus: chance for bonus faction resource on quest complete
     if(q.faction){const fRes=FACTIONS[q.faction]?.res;if(fRes){const dropChance=getFeatureVal('factionBonusDrop_'+fRes);if(dropChance>0&&Math.random()<dropChance){modInv(fRes,1);addLog(`✨ Faction bonus: +1 ${INGR[fRes]?.icon||''} ${INGR[fRes]?.name||fRes} from ${FACTIONS[q.faction].name} reputation!`,'info');}}}
     addLog(`✅ "${q.name}" complete! ${q.giver} rewards you with ${qGold}g and grateful thanks. (+${q.xp+loreXp}XP${loreXp>0?' incl. 📖Lore +'+loreXp:''}${qGoldB>1?' +Scholar bonus':''}${q.faction?' | '+FACTIONS[q.faction]?.icon+'+'+Math.floor(q.fRep*qRepB)+' rep':''})`,'quest');
@@ -4099,6 +4110,7 @@ function CindervaleAlchemistInner(){
     const bqGold=Math.floor(bq.gold*bqGoldB);
     gainXP(Math.floor((bq.xp+bqLoreXp)*bqXpB));setGold(g=>g+bqGold);
     if(bq.faction&&bq.fRep)addRep(bq.faction,Math.floor(bq.fRep*bqRepB));
+    const bqER=getFeatureVal('questEnergyRestore');if(bqER>0){setHours(h=>h+bqER);addLog('\u26a1 Temple Healing: +'+bqER+' Energy restored!','info');}
     if(bq.faction){const fRes=FACTIONS[bq.faction]?.res;if(fRes){const dropChance=getFeatureVal('factionBonusDrop_'+fRes);if(dropChance>0&&Math.random()<dropChance){modInv(fRes,1);addLog(`✨ Faction bonus: +1 ${INGR[fRes]?.icon||''} ${INGR[fRes]?.name||fRes} from ${FACTIONS[bq.faction].name} reputation!`,'info');}}}
     addLog(`✅ Board request complete: ${bq.name} — +${bq.gold}g, +${bq.xp}XP${bq.faction?' | '+FACTIONS[bq.faction]?.icon+'+'+Math.floor(bq.fRep*bqRepB)+' rep':''}`,'quest');
     if(doneBQCount+1>=20)earnMilestone('board_veteran');
@@ -4258,7 +4270,8 @@ function CindervaleAlchemistInner(){
   // ─── NEW DAY ───
   const newDay=()=>{
     snapshot();
-    const baseH=8+Math.floor(level/4)+Math.floor(getSkMod('endurance')/2)+upEff('bonusHours')+getFeatureVal('bonusHoursPerDay')+(getFeatureVal('freeAction')?1:0);
+    const enduranceBonus=getSkMod('endurance')>=3?1:0;
+    const baseH=8+upEff('bonusEnergy')+getFeatureVal('bonusEnergyPerDay')+enduranceBonus+(getFeatureVal('freeAction')?1:0);
     setDay(d=>d+1);setHours(baseH);setLastCheck(null);const report=[];let totalSal=0;
     const staffEffBonus=getFeatureVal('staffEfficiencyBonus');
     const payrollDisc=getFeatureVal('payrollDiscount');
@@ -5738,7 +5751,7 @@ function CindervaleAlchemistInner(){
                   🎲 Random
                 </button>}
                 {!canGo&&<div style={{flex:1,fontSize:15,color:TH.red,textAlign:'center',padding:6}}>
-                  {locked?`🔒 Requires Lv${reg.unlock}${reg.faction?' + '+FACTIONS[reg.faction]?.name+' rep':''}`:hours<1?'⏳ No time left today':`⏳ Need ${reg.time+1}h+ (have ${hours}h)`}
+                  {locked?`🔒 Requires Lv${reg.unlock}${reg.faction?' + '+FACTIONS[reg.faction]?.name+' rep':''}`:hours<1?'⚡ No Energy':`⚡ Need ${reg.time+1}+ (have ⚡${hours})`}
                 </div>}
                 <button style={S.btn('dim')} onClick={()=>setZonePopup(null)}>Close</button>
               </div>
@@ -6256,7 +6269,7 @@ function CindervaleAlchemistInner(){
 
           <div style={{textAlign:'center',marginBottom:12,position:'relative',zIndex:1}}>
             <div style={{fontSize:18,color:TH.gold,letterSpacing:4}}>— CINDERVALE —</div>
-            <div style={{fontSize:14,color:TH.textDim}}>{hours>4?'The day stretches ahead.':hours>1?'Shadows lengthen across the village.':hours>0?'The last light fades.':'Night has fallen.'} Day {day} · {hours}h remaining</div>
+            <div style={{fontSize:14,color:TH.textDim}}>{hours>4?'The day stretches ahead.':hours>1?'Shadows lengthen across the village.':hours>0?'The last light fades.':'Night has fallen.'} Day {day} · ⚡{hours} Energy</div>
           </div>
 
           {/* Buildings — 4×2 grid */}
@@ -6411,7 +6424,7 @@ function CindervaleAlchemistInner(){
       {/* ═══════════ WORLD MAP ═══════════ */}
       {screen==='worldmap'&&<>
         <BackBar title="The Wilds" icon="🗺️"/>
-        <div style={S.card}><div style={S.cT}>Expeditions — {hours}h remaining today</div>
+        <div style={S.card}><div style={S.cT}>Expeditions — ⚡{hours} Energy remaining</div>
           {dayFlags.includes('ash_storm')&&<div style={{fontSize:14,color:TH.red,marginBottom:4,padding:'3px 6px',background:`${TH.red}10`,borderRadius:3}}>⚠️ Ash Storm — travel times +1h today</div>}
           {dayFlags.includes('clear_sky')&&<div style={{fontSize:14,color:TH.green,marginBottom:4,padding:'3px 6px',background:`${TH.green}10`,borderRadius:3}}>☀️ Clear Skies — extraction DCs reduced by 2 today</div>}
           <div style={{fontSize:14,color:TH.textDim,marginBottom:6}}>Expeditions use your remaining hours. Travel takes time — leave earlier to gather more.</div>
@@ -6462,7 +6475,7 @@ function CindervaleAlchemistInner(){
             <div style={{marginBottom:8}}>{reg.ingr.map(id=><span key={id} style={{...S.tag,padding:'3px 6px'}}>{INGR[id]?.icon} {INGR[id]?.name} <span style={{color:TH.textDim,fontSize:13}}>(have {inv[id]||0})</span></span>)}</div>
             <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
               <button style={S.btn(canGo?'gold':'dim')} onClick={()=>setZonePopup(reg.id)} disabled={!canGo}>
-                {canGo?`📍 Choose Forage Site in ${reg.name}`:hours<1?'No time left today':`Need ${reg.time+1}h+ (have ${hours}h)`}
+                {canGo?`📍 Choose Forage Site in ${reg.name}`:hours<1?'No Energy':`Need ⚡${reg.time+1}+ (have ⚡${hours})`}
               </button>
               {canGo&&selectedSite?.regId===reg.id&&<button style={{...S.btn('green'),fontSize:14}} onClick={doHarvest}>
                 ⛏️ Quick Forage ({reg.sites?.find(s=>s.id===selectedSite.siteId)?.name||'selected'})
@@ -7455,7 +7468,7 @@ function CindervaleAlchemistInner(){
               {(()=>{const bsb=getFeatureVal('batchSizeBonus');const sizes=[1,2,3,5];if(bsb>0)sizes.push(5+bsb);return sizes;})().map(n=>{const canN=fOk&&hours>=n&&Object.entries(cost).every(([id,q])=>(inv[id]||0)>=q*n);const bc=buyCalc(n);
                 return <span key={n} style={{display:'inline-flex',gap:2,alignItems:'center'}}>
                   <button style={S.btn(canN?n===1?'gold':'def':'dim')} onClick={()=>n===1?doCraft(r):doBatchCraft(r,n)} disabled={!canN||hours<n}
-                    >{n===1?(hours>=1?'×1 (1h)':'No time'):'×'+n}</button>
+                    >{n===1?(hours>=1?'×1 (⚡1)':'No Energy'):'×'+n}</button>
                   {!canN&&bc.canBuy&&fOk&&hours>=n&&<button style={{fontSize:12,padding:'1px 4px',background:TH.gold,color:TH.bg,border:'none',borderRadius:2,cursor:'pointer',fontFamily:'inherit'}}
                     onClick={(e)=>{e.stopPropagation();doBuy(n);}}>Buy {bc.total}g</button>}
                 </span>;})}</div>
@@ -7605,7 +7618,7 @@ function CindervaleAlchemistInner(){
           })()}
           <div style={S.row}>
             <button style={S.btn(expBench.length>=2&&hours>=1?'gold':'dim')} disabled={expBench.length<2||hours<1} onClick={doExperiment}>
-              🧪 {hours<1?'No time':'Experiment (1h)'}
+              🧪 {hours<1?'No Energy':'Experiment (⚡1)'}
             </button>
             {expBench.length>0&&<button style={S.btn('dim')} onClick={()=>setExpBench([])}>Clear</button>}
           </div>
@@ -7825,7 +7838,7 @@ function CindervaleAlchemistInner(){
                   </>:<div style={{fontSize:14,color:'#b090e0'}}>✨ No materials needed — pure arcane knowledge</div>}
                 </div>
                 <button style={{...S.btn(can&&hours>=1?'gold':'dim'),width:'100%',padding:'6px',fontSize:16}} onClick={()=>can&&hours>=1&&doEnchant(ench.id,cust)} disabled={!can||hours<1}>
-                  {hours<1?'No time left':(can?'✨ Apply '+ench.name+' to '+cust.icon+cust.name:'Gather Materials First')}
+                  {hours<1?'No Energy':(can?'✨ Apply '+ench.name+' to '+cust.icon+cust.name:'Gather Materials First')}
                 </button>
               </div>);})}
             {requested.length===0&&<div style={{fontSize:15,color:TH.textDim}}>No known enchantments match this item. Research new inscriptions!</div>}
@@ -8615,7 +8628,7 @@ function CindervaleAlchemistInner(){
               ['buyDiscount','🏷️ Buy Discount','','% off'],
               ['shelfSaleBonus','🏪 Shelf Sale','+',' chance'],
               ['travelReduction','🏕️ Travel','-','h travel'],
-              ['bonusHoursPerDay','⏰ Hours','+','/day'],
+              ['bonusEnergyPerDay','⚡ Energy','+','/day'],
               ['questGoldBonus','📜 Quest Gold','+','% bonus'],
               ['repGainBonus','🤝 Rep Bonus','×',' multi'],
               ['craftFloor','🎯 Min Roll','','+ on d20'],
