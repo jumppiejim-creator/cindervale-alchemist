@@ -2326,6 +2326,27 @@ function CindervaleAlchemistInner(){
   const upEff=key=>{let v=0;upgrades.filter(uid=>!disabledUpgrades.includes(uid)).forEach(uid=>{const u=UPGRADES[uid];if(u?.effect?.[key])v+=typeof u.effect[key]==='number'?u.effect[key]:(u.effect[key]?1:0);});return v;};
   const modInv=(id,a)=>setInv(p=>{const n={...p};n[id]=(n[id]||0)+a;if(n[id]<=0)delete n[id];return n;});
   const modPot=(id,a)=>setPots(p=>{const n={...p};n[id]=(n[id]||0)+a;if(n[id]<=0)delete n[id];return n;});
+  // Count potions across inventory AND shelves (all quality variants)
+  const countAllPots=(baseId)=>{
+    let total=0;
+    [baseId,baseId+'_F',baseId+'_M'].forEach(pid=>{total+=(pots[pid]||0)+(shelves[pid]||0);});
+    return total;
+  };
+  // Consume potions: inventory first (std→fine→mw), then shelves (std→fine→mw)
+  const consumePots=(baseId,qty)=>{
+    let rem=qty;
+    // From inventory first
+    [baseId,baseId+'_F',baseId+'_M'].forEach(pid=>{
+      const have=pots[pid]||0;if(rem>0&&have>0){const take=Math.min(rem,have);modPot(pid,-take);rem-=take;}
+    });
+    // Then from shelves
+    if(rem>0){
+      [baseId,baseId+'_F',baseId+'_M'].forEach(pid=>{
+        const have=shelves[pid]||0;if(rem>0&&have>0){const take=Math.min(rem,have);
+          setShelves(p=>{const n={...p};n[pid]=(n[pid]||0)-take;if(n[pid]<=0)delete n[pid];return n;});rem-=take;}
+      });
+    }
+  };
   const gainXP=(base)=>{const mult=1+getFeatureVal('xpMultiplier');setXp(x=>x+Math.floor(base*mult));};
   const getBuyPrice=(basePrice)=>{const disc=getFeatureVal('buyDiscount');return Math.max(1,Math.floor(basePrice*(1-disc)));};
   const regUnlock=(reg)=>Math.max(0,reg.unlock-getFeatureVal('bonusRegionSlot'));
@@ -3326,9 +3347,9 @@ function CindervaleAlchemistInner(){
 
     // ─── POTION ORDERS ───
   const doFillOrder=(cust)=>{
-    const have=pots[cust.potionId]||0;if(have<cust.qty){addLog('Not enough '+cust.potionIcon+cust.potionName+' to fill this order.','error');return;}
+    const have=countAllPots(getBaseRecipeId(cust.potionId));if(have<cust.qty){addLog('Not enough '+cust.potionIcon+cust.potionName+' to fill this order.','error');return;}
     snapshot();
-    modPot(cust.potionId,-cust.qty);
+    consumePots(getBaseRecipeId(cust.potionId),cust.qty);
     const totalPay=cust.payPer*cust.qty;const totalXp=cust.xpPer*cust.qty;
     setGold(g=>g+totalPay);gainXP(totalXp);
     setPotCustQ(p=>p.filter(c=>c!==cust));
@@ -4121,7 +4142,7 @@ function CindervaleAlchemistInner(){
     const obj=qObj(q);const navTo=q.type==='gather'?'worldmap':'workshop';const navLabel=q.type==='gather'?'🗺️ Go Forage':'⚗️ Go to Workshop';
     setNews(p=>[...p,{icon:'📜',text:`New quest: ${obj}`,to:navTo,label:navLabel,color:TH.cyan}]);
   }};
-  const qP=q=>{if(q.type==='deliver'){const allQ=Object.entries(pots).filter(([pid])=>getBaseRecipeId(pid)===q.target).reduce((s,[,c])=>s+c,0);return{c:allQ,n:q.count};}if(q.type==='gather')return{c:inv[q.target]||0,n:q.count};if(q.type==='multi')return{c:q.targets.every(t=>(pots[t]||0)>=1)?1:0,n:1};return{c:0,n:1};};
+  const qP=q=>{if(q.type==='deliver'){return{c:countAllPots(q.target),n:q.count};}if(q.type==='gather')return{c:inv[q.target]||0,n:q.count};if(q.type==='multi')return{c:q.targets.every(t=>countAllPots(t)>=1)?1:0,n:1};return{c:0,n:1};};
   // Quest objective description
   const qObj=q=>{
     if(q.type==='deliver'){const r=RECIPES.find(r=>r.id===q.target);return r?`Craft and deliver ${q.count}× ${r.icon}${r.name} to ${q.giver}`:`Deliver ${q.count}× ${q.target}`;}
@@ -4137,7 +4158,7 @@ function CindervaleAlchemistInner(){
     if(q.type==='deliver'){
       const r=RECIPES.find(r=>r.id===q.target);
       if(r){
-        const have=Object.entries(pots).filter(([pid])=>getBaseRecipeId(pid)===q.target).reduce((s,[,c])=>s+c,0);
+        const have=countAllPots(q.target);
         if(have<q.count){
           const need=q.count-have;
           steps.push({done:false,text:`Brew ${need} more ${r.icon}${r.name}`,nav:{to:'workshop',label:'⚗️ Go to Workshop'}});
@@ -4179,7 +4200,7 @@ function CindervaleAlchemistInner(){
   };
   const compQ=q=>{
     snapshot();
-    if(q.type==='deliver'){let rem=q.count;[q.target,q.target+'_F',q.target+'_M'].forEach(pid=>{const have=pots[pid]||0;if(rem>0&&have>0){const take=Math.min(rem,have);modPot(pid,-take);rem-=take;}});}else if(q.type==='gather')modInv(q.target,-q.count);else if(q.type==='multi')q.targets.forEach(t=>{let done=false;[t,t+'_F',t+'_M'].forEach(pid=>{if(!done&&(pots[pid]||0)>=1){modPot(pid,-1);done=true;}});});
+    if(q.type==='deliver')consumePots(q.target,q.count);else if(q.type==='gather')modInv(q.target,-q.count);else if(q.type==='multi')q.targets.forEach(t=>consumePots(t,1));
     setAQ(p=>p.filter(a=>a.id!==q.id));setDoneQ(p=>[...p,q.id]);const loreXp=getSkMod('lore')*4;
     const qGoldB=1+getFeatureVal('questGoldBonus');const qRepB=1+getFeatureVal('questRepBonus');const qXpB=1+getFeatureVal('questXPBonus');
     const qGold=Math.floor(q.gold*qGoldB);
@@ -4232,13 +4253,13 @@ function CindervaleAlchemistInner(){
     addLog(`📌 Accepted board request: ${bq.name}`,'quest');
   };
   const bqProgress=(bq)=>{
-    if(bq.type==='deliver'){const allQ=Object.entries(pots).filter(([pid])=>getBaseRecipeId(pid)===bq.target).reduce((s,[,c])=>s+c,0);return{c:allQ,n:bq.count};}
+    if(bq.type==='deliver'){return{c:countAllPots(bq.target),n:bq.count};}
     if(bq.type==='gather')return{c:inv[bq.target]||0,n:bq.count};
     return{c:0,n:bq.count};
   };
   const completeBQ=(bq)=>{
     snapshot();
-    if(bq.type==='deliver'){let rem=bq.count;[bq.target,bq.target+'_F',bq.target+'_M'].forEach(pid=>{const have=pots[pid]||0;if(rem>0&&have>0){const take=Math.min(rem,have);modPot(pid,-take);rem-=take;}});}
+    if(bq.type==='deliver')consumePots(bq.target,bq.count);
     else if(bq.type==='gather')modInv(bq.target,-bq.count);
     setActiveBQ(p=>p.filter(q=>q.id!==bq.id));
     setDoneBQCount(c=>c+1);
@@ -8110,7 +8131,7 @@ function CindervaleAlchemistInner(){
         {potCustQ.length>0&&<div style={S.card}>
           <div style={S.cT}>🧪 Potion Orders ({potCustQ.length})</div>
           {potCustQ.map(cust=>{
-            const have=(pots[cust.potionId]||0)>=cust.qty;
+            const have=countAllPots(getBaseRecipeId(cust.potionId))>=cust.qty;
             return(
             <div key={cust.id} style={{padding:'8px 10px',background:have?TH.gold+'08':TH.panelLight,borderRadius:6,marginBottom:6,border:'1px solid '+(have?TH.borderGold:TH.border)}}>
               <div style={{display:'flex',gap:8,marginBottom:6}}>
@@ -8124,7 +8145,7 @@ function CindervaleAlchemistInner(){
               </div>
               <div style={{display:'flex',gap:6}}>
                 <button style={{...S.btn(have?'gold':'dim'),flex:1,fontSize:15}} onClick={()=>doFillOrder(cust)} disabled={!have}>
-                  {have?'Fill Order ('+cust.qty+'× '+cust.potionIcon+')':'Need '+(cust.qty-(pots[cust.potionId]||0))+' more'}
+                  {have?'Fill Order ('+cust.qty+'× '+cust.potionIcon+')':'Need '+(cust.qty-countAllPots(getBaseRecipeId(cust.potionId)))+' more'}
                 </button>
                 <button style={{...S.btn('dim'),fontSize:14,padding:'2px 8px'}} onClick={()=>dismissPotCust(cust)} title="Turn away customer">✕</button>
               </div>
@@ -8221,11 +8242,14 @@ function CindervaleAlchemistInner(){
                     const eqPct=Math.min(95,Math.max(5,Math.floor((21-(eqDC-hintMod))/20*100)));
                     const meetsReq=!cust.reqQuality||cust.reqQuality==='std'||['std','fine','mw'].indexOf(eq)>=(['std','fine','mw'].indexOf(cust.reqQuality));
                     return <div key={eq} style={{display:'flex',alignItems:'center',gap:4}}>
-                      <button style={{...S.btn(canQ?eq==='mw'?'gold':eq==='fine'?'green':'def':'dim'),flex:1,fontSize:13,padding:'5px 6px',opacity:canQ?1:0.5,textAlign:'left'}}
+                      <button style={{flex:1,fontSize:13,padding:'5px 8px',textAlign:'left',borderRadius:4,cursor:canQ?'pointer':'default',fontFamily:"'Almendra',serif",
+                        background:canQ?TH.panel:TH.border,opacity:canQ?1:0.5,
+                        border:'2px solid '+(canQ?eq==='mw'?TH.gold:eq==='fine'?TH.green:TH.borderLight:TH.border),
+                        color:canQ?TH.textBright:TH.textDim}}
                         onClick={()=>canQ&&doEnchant(ench.id,cust,eq)} disabled={!canQ}>
                         <span style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-                          <span>{eq==='std'?'✨':''+eqT.icon} {eqT.name}</span>
-                          <span style={{fontSize:11,color:canQ?(eqPct>=60?TH.green:eqPct>=30?TH.gold:TH.red):TH.textDim}}>DC{eqDC} {eqPct}% · {eqT.sellMult}× pay</span>
+                          <span style={{fontWeight:'bold',color:canQ?eq==='mw'?TH.gold:eq==='fine'?TH.green:TH.textBright:TH.textDim}}>{eq==='std'?'✨':''+eqT.icon} {eqT.name}</span>
+                          <span style={{fontSize:11,color:canQ?(eqPct>=60?'#80d080':eqPct>=30?'#d0b060':'#d06060'):TH.textDim}}>DC{eqDC} {eqPct}% · {eqT.sellMult}× pay</span>
                         </span>
                         {!canQ&&missingMats.length>0&&<span style={{display:'block',fontSize:10,color:'#c06040',marginTop:1}}>Need: {missingMats.join(', ')}</span>}
                         {!meetsReq&&<span style={{display:'block',fontSize:10,color:TH.red}}>Below customer request</span>}
