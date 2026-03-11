@@ -891,10 +891,11 @@ const QUALITY={
   std:{id:'std',name:'Standard',icon:'',color:'#aaaaaa',dcMod:0,sellMult:1,xpMult:1,extraIngr:0},
   fine:{id:'fine',name:'Fine',icon:'★',color:'#50c070',dcMod:3,sellMult:1.5,xpMult:1.5,extraIngr:1},
   mw:{id:'mw',name:'Masterwork',icon:'★★',color:'#d4a420',dcMod:6,sellMult:3,xpMult:2.5,extraIngr:2},
+  gm:{id:'gm',name:'Grandmaster',icon:'★★★',color:'#c050e0',dcMod:10,sellMult:5,xpMult:4,extraIngr:3},
 };
-const getBaseRecipeId=(potId)=>potId.replace(/_[FM]$/,'');
-const getPotQuality=(potId)=>potId.endsWith('_M')?'mw':potId.endsWith('_F')?'fine':'std';
-const qualPotId=(recipeId,q)=>q==='fine'?recipeId+'_F':q==='mw'?recipeId+'_M':recipeId;
+const getBaseRecipeId=(potId)=>potId.replace(/_[FMG]$/,'');
+const getPotQuality=(potId)=>potId.endsWith('_G')?'gm':potId.endsWith('_M')?'mw':potId.endsWith('_F')?'fine':'std';
+const qualPotId=(recipeId,q)=>q==='fine'?recipeId+'_F':q==='mw'?recipeId+'_M':q==='gm'?recipeId+'_G':recipeId;
 const getMasteryDiscount=(brewCounts,recipeId)=>{const bc=brewCounts[recipeId]||0;return bc>=25?2:bc>=10?1:0;};
 
 // Spoilage color coding for inventory display
@@ -2329,19 +2330,19 @@ function CindervaleAlchemistInner(){
   // Count potions across inventory AND shelves (all quality variants)
   const countAllPots=(baseId)=>{
     let total=0;
-    [baseId,baseId+'_F',baseId+'_M'].forEach(pid=>{total+=(pots[pid]||0)+(shelves[pid]||0);});
+    [baseId,baseId+'_F',baseId+'_M',baseId+'_G'].forEach(pid=>{total+=(pots[pid]||0)+(shelves[pid]||0);});
     return total;
   };
   // Consume potions: inventory first (std→fine→mw), then shelves (std→fine→mw)
   const consumePots=(baseId,qty)=>{
     let rem=qty;
     // From inventory first
-    [baseId,baseId+'_F',baseId+'_M'].forEach(pid=>{
+    [baseId,baseId+'_F',baseId+'_M',baseId+'_G'].forEach(pid=>{
       const have=pots[pid]||0;if(rem>0&&have>0){const take=Math.min(rem,have);modPot(pid,-take);rem-=take;}
     });
     // Then from shelves
     if(rem>0){
-      [baseId,baseId+'_F',baseId+'_M'].forEach(pid=>{
+      [baseId,baseId+'_F',baseId+'_M',baseId+'_G'].forEach(pid=>{
         const have=shelves[pid]||0;if(rem>0&&have>0){const take=Math.min(rem,have);
           setShelves(p=>{const n={...p};n[pid]=(n[pid]||0)-take;if(n[pid]<=0)delete n[pid];return n;});rem-=take;}
       });
@@ -2407,7 +2408,7 @@ function CindervaleAlchemistInner(){
         const reqCount=Math.min(fbEnchs.length,1+Math.floor(Math.random()*(level>=6?3:level>=3?2:1)));
         const shuffledE=[...fbEnchs].sort(()=>Math.random()-0.5);
         const reqEnch=shuffledE.slice(0,reqCount).map(e=>e.id);
-        const reqQual1=day>=26&&Math.random()<0.20?'mw':day>=11&&Math.random()<0.30?'fine':'std';
+        const reqQual1=day>=40&&Math.random()<0.10?'gm':day>=26&&Math.random()<0.20?'mw':day>=11&&Math.random()<0.30?'fine':'std';
         q.push({...fbItem,customer:name,title:cd.title,
           line:cd.lines[Math.floor(Math.random()*cd.lines.length)],
           reqEnch,reqQuality:reqQual1,id:Math.random().toString(36).slice(2)});
@@ -2416,7 +2417,7 @@ function CindervaleAlchemistInner(){
       const reqCount=Math.min(allCatEnchs.length,1+Math.floor(Math.random()*(level>=6?3:level>=3?2:1)));
       const shuffledE=[...allCatEnchs].sort(()=>Math.random()-0.5);
       const reqEnch=shuffledE.slice(0,reqCount).map(e=>e.id);
-      const reqQual2=day>=26&&Math.random()<0.20?'mw':day>=11&&Math.random()<0.30?'fine':'std';
+      const reqQual2=day>=40&&Math.random()<0.10?'gm':day>=26&&Math.random()<0.20?'mw':day>=11&&Math.random()<0.30?'fine':'std';
       q.push({...item,customer:name,title:cd.title,
         line:cd.lines[Math.floor(Math.random()*cd.lines.length)],
         reqEnch,reqQuality:reqQual2,
@@ -2923,6 +2924,7 @@ function CindervaleAlchemistInner(){
     // Quality tier extra ingredients
     if(qT.extraIngr>=1){const firstIngr=r.ingr[0];cost[firstIngr]=(cost[firstIngr]||0)+1;}
     if(qT.extraIngr>=2&&r.ingr.length>1){const secondIngr=r.ingr[1];cost[secondIngr]=(cost[secondIngr]||0)+1;}
+    if(qT.extraIngr>=3){const thirdIngr=r.ingr[Math.min(2,r.ingr.length-1)];cost[thirdIngr]=(cost[thirdIngr]||0)+1;}
     // freeCraft: one daily free craft (no ingredients consumed)
     const fc=getFeatureVal('freeCraft')&&!dayFlags.includes('free_craft_used');
     if(!fc&&!Object.entries(cost).every(([id,q])=>(inv[id]||0)>=q)){addLog('Not enough materials for '+(qT.name!=='Standard'?qT.name+' ':'')+r.icon+r.name+'.','error');return;}
@@ -2935,6 +2937,7 @@ function CindervaleAlchemistInner(){
     let qualDCMod=qT.dcMod;
     if(quality==='fine')qualDCMod+=upEff('fineDCBonus');
     if(quality==='mw'){qualDCMod+=upEff('fineDCBonus');qualDCMod+=upEff('mwDCBonus');}
+    if(quality==='gm'){qualDCMod+=upEff('fineDCBonus');qualDCMod+=upEff('mwDCBonus');}
     const adjDC=Math.max(5,r.dc+qualDCMod-masteryDisc);
     const sk=r.stat==='inu'?'attunement':r.stat==='tec'?'precision':r.stat==='acu'?'research':'improvisation';
     // Analysis: auto-succeed chance
@@ -3206,12 +3209,12 @@ function CindervaleAlchemistInner(){
   const consumeElixir=(potionId)=>{
     const buff=ELIXIR_BUFFS[potionId];if(!buff)return;
     // Find any quality version of this potion
-    const availPot=[potionId,potionId+'_F',potionId+'_M'].find(pid=>(pots[pid]||0)>=1);
+    const availPot=[potionId,potionId+'_F',potionId+'_M',potionId+'_G'].find(pid=>(pots[pid]||0)>=1);
     if(!availPot){addLog('You don\'t have any '+buff.name+' to drink.','error');return;}
     if(activeBuffs[potionId]&&activeBuffs[potionId].daysLeft>0){addLog(buff.name+' is already active ('+activeBuffs[potionId].daysLeft+' days remaining).','error');return;}
     snapshot();
     const potQual=getPotQuality(availPot);
-    const bonusDays=potQual==='mw'?1:0;
+    const bonusDays=potQual==='gm'?2:potQual==='mw'?1:0;
     const totalDuration=buff.duration+bonusDays;
     modPot(availPot,-1);
     setActiveBuffs(prev=>({...prev,[potionId]:{daysLeft:totalDuration}}));
@@ -3255,6 +3258,7 @@ function CindervaleAlchemistInner(){
     // Quality tier extra inscription materials
     if(eqT.extraIngr>=1&&ench.ingr.length>0){cost[ench.ingr[0]]=(cost[ench.ingr[0]]||0)+1;}
     if(eqT.extraIngr>=2&&ench.ingr.length>1){cost[ench.ingr[1]]=(cost[ench.ingr[1]]||0)+1;}
+    if(eqT.extraIngr>=3&&ench.ingr.length>0){cost[ench.ingr[Math.min(2,ench.ingr.length-1)]]=(cost[ench.ingr[Math.min(2,ench.ingr.length-1)]]||0)+1;}
     const matDisc=getFeatureVal('enchantMatDiscount');
     const discounted=matDisc>0&&Object.keys(cost).length>0&&Math.random()<matDisc;
     const effCost={};Object.entries(cost).forEach(([id,q])=>{effCost[id]=discounted?Math.max(1,Math.ceil(q/2)):q;});
@@ -3268,6 +3272,7 @@ function CindervaleAlchemistInner(){
     let enchQualDCMod=eqT.dcMod;
     if(quality==='fine')enchQualDCMod+=upEff('fineEnchDC');
     if(quality==='mw'){enchQualDCMod+=upEff('fineEnchDC');enchQualDCMod+=upEff('mwEnchDC');}
+    if(quality==='gm'){enchQualDCMod+=upEff('fineEnchDC');enchQualDCMod+=upEff('mwEnchDC');}
     const adjDC=Math.max(5,ench.dc+enchQualDCMod);
     const ch=doCheck('inscription',adjDC);
     const arcB=getSkMod('arcane_sense');const focB=Math.floor(getSkMod('focus')/2);const csb=upEff('craftSkillBonus');
@@ -3312,6 +3317,7 @@ function CindervaleAlchemistInner(){
     const cost={};r.ingr.forEach(id=>{cost[id]=(cost[id]||0)+qty;});
     if(qT.extraIngr>=1){const firstIngr=r.ingr[0];cost[firstIngr]=(cost[firstIngr]||0)+qty;}
     if(qT.extraIngr>=2&&r.ingr.length>1){const secondIngr=r.ingr[1];cost[secondIngr]=(cost[secondIngr]||0)+qty;}
+    if(qT.extraIngr>=3){const thirdIngr=r.ingr[Math.min(2,r.ingr.length-1)];cost[thirdIngr]=(cost[thirdIngr]||0)+qty;}
     if(hours<qty){addLog('Need ⚡'+qty+' Energy to brew '+qty+'×'+r.icon+r.name+'. You have ⚡'+hours+' Energy.','error');return;}
     if(!Object.entries(cost).every(([id,q])=>(inv[id]||0)>=q)){addLog('Not enough ingredients for '+qty+'× '+(qT.name!=='Standard'?qT.name+' ':'')+r.icon+r.name+'.','error');return;}
     if(r.faction&&getRL(r.faction)<(r.fReq||0)){addLog('Not enough faction reputation for this recipe.','error');return;}
@@ -3322,6 +3328,7 @@ function CindervaleAlchemistInner(){
     let qualDCMod=qT.dcMod;
     if(quality==='fine')qualDCMod+=upEff('fineDCBonus');
     if(quality==='mw'){qualDCMod+=upEff('fineDCBonus');qualDCMod+=upEff('mwDCBonus');}
+    if(quality==='gm'){qualDCMod+=upEff('fineDCBonus');qualDCMod+=upEff('mwDCBonus');}
     const adjDC=Math.max(5,r.dc+qualDCMod-masteryDisc);
     const sk=r.stat==='inu'?'attunement':r.stat==='tec'?'precision':r.stat==='acu'?'research':'improvisation';
     const batchBonus=getFeatureVal('batchSuccessBonus');
@@ -7788,9 +7795,11 @@ function CindervaleAlchemistInner(){
               const selCost={};r.ingr.forEach(id=>{selCost[id]=(selCost[id]||0)+1;});
               if(selQT.extraIngr>=1)selCost[r.ingr[0]]=(selCost[r.ingr[0]]||0)+1;
               if(selQT.extraIngr>=2&&r.ingr.length>1)selCost[r.ingr[1]]=(selCost[r.ingr[1]]||0)+1;
+              if(selQT.extraIngr>=3)selCost[r.ingr[Math.min(2,r.ingr.length-1)]]=(selCost[r.ingr[Math.min(2,r.ingr.length-1)]]||0)+1;
               let selDC=Math.max(5,r.dc+selQT.dcMod-masteryDisc);
               if(selTier==='fine')selDC+=upEff('fineDCBonus');
               if(selTier==='mw'){selDC+=upEff('fineDCBonus');selDC+=upEff('mwDCBonus');}
+              if(selTier==='gm'){selDC+=upEff('fineDCBonus');selDC+=upEff('mwDCBonus');}
               const selNeeded=selDC-totalMod;
               const selPct=Math.min(95,Math.max(5,Math.floor((21-selNeeded)/20*100)));
               // Buy calc for selected tier
@@ -7805,17 +7814,18 @@ function CindervaleAlchemistInner(){
               {/* Tier selector (toggle, doesn't brew) */}
               <div style={{display:'flex',gap:2,marginBottom:4}}>
                 <span style={{fontSize:12,color:TH.textDim,alignSelf:'center',marginRight:2}}>Quality:</span>
-                {['std','fine','mw'].map(q=>{
+                {['std','fine','mw','gm'].map(q=>{
                   const qT=QUALITY[q];const isSel=selTier===q;
                   let qDC=Math.max(5,r.dc+qT.dcMod-masteryDisc);
                   if(q==='fine')qDC+=upEff('fineDCBonus');
                   if(q==='mw'){qDC+=upEff('fineDCBonus');qDC+=upEff('mwDCBonus');}
+                  if(q==='gm'){qDC+=upEff('fineDCBonus');qDC+=upEff('mwDCBonus');}
                   const qNeeded=qDC-totalMod;
                   const qPct=Math.min(95,Math.max(5,Math.floor((21-qNeeded)/20*100)));
                   return <button key={q} style={{padding:'3px 8px',fontSize:12,borderRadius:4,cursor:'pointer',fontFamily:'inherit',
-                    background:isSel?(q==='mw'?TH.gold:q==='fine'?TH.greenDim:TH.borderLight):'transparent',
-                    color:isSel?(q==='mw'?TH.bg:TH.text):TH.textDim,
-                    border:'1px solid '+(isSel?q==='mw'?TH.gold:q==='fine'?TH.green:TH.border:TH.border+'66'),
+                    background:isSel?(q==='gm'?'#c050e030':q==='mw'?TH.gold:q==='fine'?TH.greenDim:TH.borderLight):'transparent',
+                    color:isSel?(q==='gm'?'#c050e0':q==='mw'?TH.bg:TH.text):TH.textDim,
+                    border:'1px solid '+(isSel?q==='gm'?'#c050e0':q==='mw'?TH.gold:q==='fine'?TH.green:TH.border:TH.border+'66'),
                     fontWeight:isSel?'bold':'normal'}}
                     onClick={()=>setBrewTierSel(p=>({...p,[r.id]:q}))}>
                     {q==='std'?'⚗️':qT.icon} {qT.name} <span style={{fontSize:10,color:isSel?'inherit':TH.textDim}}>DC{qDC} {qPct}% {qT.sellMult}×</span>
@@ -8229,26 +8239,28 @@ function CindervaleAlchemistInner(){
                 {hours<1?<div style={{fontSize:14,color:TH.textDim,textAlign:'center',padding:4}}>No Energy</div>
                 :!can?<div style={{fontSize:14,color:TH.textDim,textAlign:'center',padding:4}}>Gather Materials First</div>
                 :<div style={{display:'flex',flexDirection:'column',gap:3,marginTop:4}}>
-                  {['std','fine','mw'].map(eq=>{
+                  {['std','fine','mw','gm'].map(eq=>{
                     const eqT=QUALITY[eq];
                     const eqCost={};ench.ingr.forEach(id=>{eqCost[id]=(eqCost[id]||0)+1;});
                     if(eqT.extraIngr>=1&&ench.ingr.length>0)eqCost[ench.ingr[0]]=(eqCost[ench.ingr[0]]||0)+1;
                     if(eqT.extraIngr>=2&&ench.ingr.length>1)eqCost[ench.ingr[1]]=(eqCost[ench.ingr[1]]||0)+1;
+                    if(eqT.extraIngr>=3&&ench.ingr.length>0)eqCost[ench.ingr[Math.min(2,ench.ingr.length-1)]]=(eqCost[ench.ingr[Math.min(2,ench.ingr.length-1)]]||0)+1;
                     const canQ=Object.entries(eqCost).every(([id,qq])=>(inv[id]||0)>=qq)||Object.keys(eqCost).length===0;
                     const missingMats=Object.entries(eqCost).filter(([id,qq])=>(inv[id]||0)<qq).map(([id,qq])=>(INGR[id]?.icon||'')+INGR[id]?.name+' ('+(inv[id]||0)+'/'+qq+')');
                     let eqDC=Math.max(5,ench.dc+eqT.dcMod);
                     if(eq==='fine')eqDC+=upEff('fineEnchDC');
                     if(eq==='mw'){eqDC+=upEff('fineEnchDC');eqDC+=upEff('mwEnchDC');}
+                    if(eq==='gm'){eqDC+=upEff('fineEnchDC');eqDC+=upEff('mwEnchDC');}
                     const eqPct=Math.min(95,Math.max(5,Math.floor((21-(eqDC-hintMod))/20*100)));
-                    const meetsReq=!cust.reqQuality||cust.reqQuality==='std'||['std','fine','mw'].indexOf(eq)>=(['std','fine','mw'].indexOf(cust.reqQuality));
+                    const meetsReq=!cust.reqQuality||cust.reqQuality==='std'||['std','fine','mw','gm'].indexOf(eq)>=(['std','fine','mw','gm'].indexOf(cust.reqQuality));
                     return <div key={eq} style={{display:'flex',alignItems:'center',gap:4}}>
                       <button style={{flex:1,fontSize:13,padding:'5px 8px',textAlign:'left',borderRadius:4,cursor:canQ?'pointer':'default',fontFamily:"'Almendra',serif",
                         background:canQ?TH.panel:TH.border,opacity:canQ?1:0.5,
-                        border:'2px solid '+(canQ?eq==='mw'?TH.gold:eq==='fine'?TH.green:TH.borderLight:TH.border),
+                        border:'2px solid '+(canQ?eq==='gm'?'#c050e0':eq==='mw'?TH.gold:eq==='fine'?TH.green:TH.borderLight:TH.border),
                         color:canQ?TH.textBright:TH.textDim}}
                         onClick={()=>canQ&&doEnchant(ench.id,cust,eq)} disabled={!canQ}>
                         <span style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-                          <span style={{fontWeight:'bold',color:canQ?eq==='mw'?TH.gold:eq==='fine'?TH.green:TH.textBright:TH.textDim}}>{eq==='std'?'✨':''+eqT.icon} {eqT.name}</span>
+                          <span style={{fontWeight:'bold',color:canQ?eq==='gm'?'#c050e0':eq==='mw'?TH.gold:eq==='fine'?TH.green:TH.textBright:TH.textDim}}>{eq==='std'?'✨':''+eqT.icon} {eqT.name}</span>
                           <span style={{fontSize:11,color:canQ?(eqPct>=60?'#80d080':eqPct>=30?'#d0b060':'#d06060'):TH.textDim}}>DC{eqDC} {eqPct}% · {eqT.sellMult}× pay</span>
                         </span>
                         {!canQ&&missingMats.length>0&&<span style={{display:'block',fontSize:10,color:'#c06040',marginTop:1}}>Need: {missingMats.join(', ')}</span>}
