@@ -474,7 +474,7 @@ const CLASSES={
     specs:{
       ranger:{id:'ranger',name:'Ranger',icon:'🏹',color:'#40a060',bStat:'inu',bSkills:['danger_sense','divination'],
         features:[
-          {classLv:3,name:'Tracker',desc:'Can target specific ingredients during foraging. Befriend wild creatures.',effects:{luckyFindChance:0.20,extractionBonus:2}},
+          {classLv:3,name:'Tracker',desc:'Target ingredients without yield penalty. Befriend wild creatures.',effects:{luckyFindChance:0.20,extractionBonus:2,targetNoYieldPenalty:true}},
           {classLv:6,name:'Pathfinder',desc:'Discover hidden sub-regions with unique ingredients. Creature bonuses grow.',effects:{yieldMultiplier:0.50,critExtractionMulti:2}},
           {classLv:10,name:'Apex Predator',desc:'Legendary expedition zones. Guaranteed rare finds. Companions perform a second daily action.',effects:{companionDualAction:true,guaranteedRare:true}},
         ]},
@@ -2057,6 +2057,7 @@ function CindervaleAlchemistInner(){
   const [selHex,setSelHex]=useState(null);
   const [zonePopup,setZonePopup]=useState(null); // region id for zone detail popup
   const [selectedSite,setSelectedSite]=useState(null); // {regId, siteId} for weighted foraging
+  const [targetIngr,setTargetIngr]=useState(null); // ingredient id to target during foraging
   const [selFlavor,setSelFlavor]=useState('');
   const [expBench,setExpBench]=useState([]);  // ingredients on experiment bench
   const [brewTierSel,setBrewTierSel]=useState({}); // {healing_salve:'fine', firebrew:'mw'}
@@ -2533,6 +2534,7 @@ function CindervaleAlchemistInner(){
     if(fl)addLog(fl,'story');
     const curSiteName=selectedSite?.regId===reg.id?reg.sites?.find(s=>s.id===selectedSite.siteId)?.name:null;
     if(curSiteName)addLog(`📍 Foraging at ${curSiteName}.`,'info');
+    if(targetIngr&&reg.ingr.includes(targetIngr))addLog(`🎯 Targeting ${INGR[targetIngr]?.icon||''}${INGR[targetIngr]?.name||targetIngr}${getFeatureVal('targetNoYieldPenalty')?' (Tracker: no penalty!)':' (-25% yield)'}.`,'info');
     // Pre-compute all hours
     const queue=[];const localNewDiscs=[];const localNewComps=[];
     const cumG={};let cumXp=0;let hoursLeft=info.gatherHours;let h=0;
@@ -2545,8 +2547,16 @@ function CindervaleAlchemistInner(){
       const hourG={};
       const pickN=reg.pick||reg.ingr.length;
       const curSite=selectedSite?.regId===reg.id?reg.sites?.find(s=>s.id===selectedSite.siteId):null;
-      const picked=curSite?weightedPick(curSite.weights,pickN):[...reg.ingr].sort(()=>Math.random()-0.5).slice(0,Math.min(pickN,reg.ingr.length));
-      const yieldMult=1+Math.min(getFeatureVal('yieldMultiplier'),2);
+      // Targeted foraging: build weighted pick with 2x target, 0.5x others
+      let picked;
+      if(curSite){picked=weightedPick(curSite.weights,pickN);}
+      else if(targetIngr&&reg.ingr.includes(targetIngr)){
+        const tgtWeights={};reg.ingr.forEach(id=>{tgtWeights[id]=id===targetIngr?40:10;});
+        picked=weightedPick(tgtWeights,pickN);
+      } else {picked=[...reg.ingr].sort(()=>Math.random()-0.5).slice(0,Math.min(pickN,reg.ingr.length));}
+      // Targeting yield penalty (-25% unless Tracker)
+      const tgtPenalty=(targetIngr&&reg.ingr.includes(targetIngr)&&!getFeatureVal('targetNoYieldPenalty'))?0.75:1;
+      const yieldMult=(1+Math.min(getFeatureVal('yieldMultiplier'),2))*tgtPenalty;
       const critMult=isCrit?(1+getFeatureVal('critExtractionMulti')):1;
       if(ext.success){
         const baseTotal=isCrit?(10+Math.floor(Math.random()*4)):(4+Math.floor(Math.random()*6));
@@ -5958,6 +5968,29 @@ function CindervaleAlchemistInner(){
                 <div style={{display:'flex',flexWrap:'wrap',gap:2}}>{reg.ingr.map(id=><span key={id} style={{...S.tag,fontSize:14,padding:'2px 5px'}}>{INGR[id]?.icon} {INGR[id]?.name} <span style={{color:TH.textDim}}>({inv[id]||0})</span></span>)}</div>
               </div>
 
+              {/* Targeted Foraging */}
+              <div style={{marginBottom:12,padding:'8px 10px',background:TH.bg,borderRadius:6,border:'1px solid '+TH.border}}>
+                <div style={{fontSize:14,color:TH.gold,marginBottom:5}}>{'🎯'} Target Ingredient <span style={{fontSize:12,color:TH.textDim}}>(optional)</span></div>
+                <div style={{display:'flex',flexWrap:'wrap',gap:3}}>
+                  {reg.ingr.map(id=>{
+                    const isTgt=targetIngr===id;
+                    return <button key={id} style={{padding:'4px 8px',fontSize:13,borderRadius:4,cursor:'pointer',fontFamily:'inherit',
+                      background:isTgt?TH.gold+'25':'transparent',
+                      color:isTgt?TH.goldBright:TH.text,
+                      border:'1px solid '+(isTgt?TH.gold:TH.border+'66'),
+                      fontWeight:isTgt?'bold':'normal'}}
+                      onClick={()=>setTargetIngr(isTgt?null:id)}>
+                      {isTgt&&'🎯 '}{INGR[id]?.icon} {INGR[id]?.name}
+                    </button>;
+                  })}
+                </div>
+                {targetIngr&&<div style={{fontSize:12,marginTop:4,color:'#c0a040',lineHeight:1.4}}>
+                  {'🎯'} Targeting {INGR[targetIngr]?.icon}{INGR[targetIngr]?.name}: 2{'\u00d7'} drop rate, others 0.5{'\u00d7'}
+                  {getFeatureVal('targetNoYieldPenalty')?<span style={{color:TH.green}}> {'\u00b7'} {'🐾'} Tracker: no yield penalty!</span>
+                  :<span> {'\u00b7'} -25% total yield</span>}
+                </div>}
+              </div>
+
               {/* Sites */}
               {reg.sites&&reg.sites.length>0&&<>
                 <div style={{fontSize:16,color:TH.goldBright,fontWeight:'bold',marginBottom:8,borderTop:`1px solid ${TH.border}`,paddingTop:10}}>📍 Foraging Sites</div>
@@ -5998,15 +6031,15 @@ function CindervaleAlchemistInner(){
               {/* Action buttons */}
               <div style={{display:'flex',gap:6,flexWrap:'wrap',alignItems:'center'}}>
                 {canGo&&selectedSite?.regId===reg.id&&<button style={{...S.btn('gold'),flex:1,fontSize:16}} onClick={()=>{setZonePopup(null);doHarvest();}}>
-                  ⛏️ Forage at {reg.sites?.find(s=>s.id===selectedSite.siteId)?.name||'selected site'}
+                  ⛏️ Forage at {reg.sites?.find(s=>s.id===selectedSite.siteId)?.name||'selected site'}{targetIngr&&reg.ingr.includes(targetIngr)?' 🎯 '+INGR[targetIngr]?.icon:''}
                 </button>}
                 {canGo&&<button style={{...S.btn(selectedSite?.regId===reg.id?'def':'gold'),flex:selectedSite?.regId===reg.id?0:1,fontSize:14}} onClick={()=>{setSelectedSite(null);setZonePopup(null);doHarvest();}}>
-                  🎲 Random
+                  🎲 Random{targetIngr&&reg.ingr.includes(targetIngr)?' 🎯 '+INGR[targetIngr]?.icon:''}
                 </button>}
                 {!canGo&&<div style={{flex:1,fontSize:15,color:TH.red,textAlign:'center',padding:6}}>
                   {locked?`🔒 Requires Lv${reg.unlock}${reg.faction?' + '+FACTIONS[reg.faction]?.name+' rep':''}`:hours<1?'⚡ No Energy':`⚡ Need ${reg.time+1}+ (have ⚡${hours})`}
                 </div>}
-                <button style={S.btn('dim')} onClick={()=>setZonePopup(null)}>Close</button>
+                <button style={S.btn('dim')} onClick={()=>{setZonePopup(null);setTargetIngr(null);}}>Close</button>
               </div>
               {canGo&&<div style={{fontSize:13,color:TH.textDim,marginTop:4,textAlign:'center'}}>⚠️ This uses all remaining ⚡{hours} Energy</div>}
             </div>
