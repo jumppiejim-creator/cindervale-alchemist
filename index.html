@@ -4815,10 +4815,10 @@ function CindervaleAlchemistInner(){
     else mrSections.push({title:'🛒 Customers',lines:[{icon:'😴',label:'No customers today',val:'',color:TH.textDim}]});
     // Shelf inventory
     const shelfEntries=Object.entries(shelves).filter(([,q])=>q>0);
-    const shelfCap=6+getFeatureVal('shelfCapacity')+(getSkMod('stockpiling')||0)*2;
+    const shelfCap=SHELF_MAX;
     const shelfTotal=shelfEntries.reduce((s,[,q])=>s+q,0);
     if(shelfEntries.length>0){
-      const sLines=shelfEntries.map(([id,q])=>{const r=RECIPES.find(x=>x.id===id);return{icon:r?.icon||'🧪',label:r?.name||id,val:'×'+q,color:TH.gold};});
+      const sLines=shelfEntries.map(([id,q])=>{const baseId=getBaseRecipeId(id);const r=RECIPES.find(x=>x.id===baseId);const sq=QUALITY[getPotQuality(id)]||QUALITY.std;return{icon:r?.icon||'🧪',label:(r?.name||id)+(sq.icon?' '+sq.icon:''),val:'×'+q,color:TH.gold};});
       sLines.push({icon:'📊',label:'Shelf capacity',val:shelfTotal+'/'+shelfCap,color:shelfTotal>=shelfCap?TH.red:TH.textDim});
       mrSections.push({title:'🏪 Shelf Stock',lines:sLines});
     } else {mrSections.push({title:'🏪 Shelf Stock',lines:[{icon:'📊',label:'Shelves empty',val:'0/'+shelfCap,color:TH.textDim}]});}
