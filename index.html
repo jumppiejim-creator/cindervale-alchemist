@@ -3218,6 +3218,7 @@ function CindervaleAlchemistInner(){
       if(cp){ench={id:eId,name:cp.name,icon:'\u2728',cat:cp.cat,ingr:[],xp:cp.xp,dc:cp.dc,desc:cp.effectDescs};isCustomEnch=true;customSellMult=cp.sellMult||1;}
     }
     if(!ench)return;
+    const eqT=QUALITY[quality]||QUALITY.std;
     const cost={};ench.ingr.forEach(id=>{cost[id]=(cost[id]||0)+1;});
     // Quality tier extra inscription materials
     if(eqT.extraIngr>=1&&ench.ingr.length>0){cost[ench.ingr[0]]=(cost[ench.ingr[0]]||0)+1;}
@@ -3232,7 +3233,6 @@ function CindervaleAlchemistInner(){
     if(!matSaved&&Object.keys(effCost).length>0)Object.entries(effCost).forEach(([id,q])=>modInv(id,-q));
     else if(matSaved)addLog('\u2728 Inscription mastery: materials preserved!','info');
     if(discounted&&!matSaved)addLog('🏷\ufe0f Enchant discount: reduced material cost!','info');
-    const eqT=QUALITY[quality]||QUALITY.std;
     let enchQualDCMod=eqT.dcMod;
     if(quality==='fine')enchQualDCMod+=upEff('fineEnchDC');
     if(quality==='mw'){enchQualDCMod+=upEff('fineEnchDC');enchQualDCMod+=upEff('mwEnchDC');}
