@@ -2551,7 +2551,7 @@ function CindervaleAlchemistInner(){
       let picked;
       if(curSite){picked=weightedPick(curSite.weights,pickN);}
       else if(targetIngr&&reg.ingr.includes(targetIngr)){
-        const tgtWeights={};reg.ingr.forEach(id=>{tgtWeights[id]=id===targetIngr?40:10;});
+        const tgtWeights={};reg.ingr.forEach(id=>{tgtWeights[id]=id===targetIngr?60:10;});
         picked=weightedPick(tgtWeights,pickN);
       } else {picked=[...reg.ingr].sort(()=>Math.random()-0.5).slice(0,Math.min(pickN,reg.ingr.length));}
       // Targeting yield penalty (-25% unless Tracker)
@@ -5985,7 +5985,7 @@ function CindervaleAlchemistInner(){
                   })}
                 </div>
                 {targetIngr&&<div style={{fontSize:12,marginTop:4,color:'#c0a040',lineHeight:1.4}}>
-                  {'🎯'} Targeting {INGR[targetIngr]?.icon}{INGR[targetIngr]?.name}: 2{'\u00d7'} drop rate, others 0.5{'\u00d7'}
+                  {'🎯'} Targeting {INGR[targetIngr]?.icon}{INGR[targetIngr]?.name}: 3{'\u00d7'} drop rate, others reduced
                   {getFeatureVal('targetNoYieldPenalty')?<span style={{color:TH.green}}> {'\u00b7'} {'🐾'} Tracker: no yield penalty!</span>
                   :<span> {'\u00b7'} -25% total yield</span>}
                 </div>}
