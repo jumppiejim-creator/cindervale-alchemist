@@ -2539,7 +2539,7 @@ function CindervaleAlchemistInner(){
       h++;
       const ext=pureCheck('extraction',reg.dc);
       const extB=getFeatureVal('extractionBonus');
-      if(extB){ext.total+=extB;ext.success=ext.total>=ext.dc;ext.extras.push({label:'🌿 Warden',val:extB});}
+      if(extB){ext.total+=extB;ext.success=ext.total>=ext.dc;ext.extras.push({label:'🌿 Extraction',val:extB});}
       const isCrit=ext.roll===20;
       const hourG={};
       const pickN=reg.pick||reg.ingr.length;
@@ -4287,7 +4287,7 @@ function CindervaleAlchemistInner(){
     while(h<hoursLeft){
       h++;
       const ext=pureCheck('extraction',nightDC);
-      if(extB){ext.total+=extB;ext.success=ext.total>=ext.dc;ext.extras.push({label:'🌿 Warden',val:extB});}
+      if(extB){ext.total+=extB;ext.success=ext.total>=ext.dc;ext.extras.push({label:'🌿 Extraction',val:extB});}
       const isCrit=ext.roll===20;
       const hourG={};
       const pickN=reg.pick||reg.ingr.length;
