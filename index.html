@@ -2059,6 +2059,7 @@ function CindervaleAlchemistInner(){
   const [selectedSite,setSelectedSite]=useState(null); // {regId, siteId} for weighted foraging
   const [selFlavor,setSelFlavor]=useState('');
   const [expBench,setExpBench]=useState([]);  // ingredients on experiment bench
+  const [brewTierSel,setBrewTierSel]=useState({}); // {healing_salve:'fine', firebrew:'mw'}
   const [txSource,setTxSource]=useState(null); // transmute source ingredient
   const [txTarget,setTxTarget]=useState(null); // transmute target ingredient
   const [pubPapers,setPubPapers]=useState([]); // published research papers [{id,type,day}]
@@ -7727,34 +7728,60 @@ function CindervaleAlchemistInner(){
             <div style={{marginTop:3}}>
               {(()=>{
               const masteryDisc=getMasteryDiscount(brewCounts,r.id);
-              const tiers=['std','fine','mw'];
-              const bc1=buyCalc(1);
+              const selTier=brewTierSel[r.id]||'std';
+              const selQT=QUALITY[selTier];
+              // Compute cost for selected tier (per unit)
+              const selCost={};r.ingr.forEach(id=>{selCost[id]=(selCost[id]||0)+1;});
+              if(selQT.extraIngr>=1)selCost[r.ingr[0]]=(selCost[r.ingr[0]]||0)+1;
+              if(selQT.extraIngr>=2&&r.ingr.length>1)selCost[r.ingr[1]]=(selCost[r.ingr[1]]||0)+1;
+              let selDC=Math.max(5,r.dc+selQT.dcMod-masteryDisc);
+              if(selTier==='fine')selDC+=upEff('fineDCBonus');
+              if(selTier==='mw'){selDC+=upEff('fineDCBonus');selDC+=upEff('mwDCBonus');}
+              const selNeeded=selDC-totalMod;
+              const selPct=Math.min(95,Math.max(5,Math.floor((21-selNeeded)/20*100)));
+              // Buy calc for selected tier
+              const selBuyCalc=(n)=>{
+                const needed={};Object.entries(selCost).forEach(([id,q])=>{const need=q*n-(inv[id]||0);if(need>0)needed[id]=need;});
+                const allShop=Object.keys(needed).every(id=>SHOP_I.find(i=>i.id===id));
+                const total=Object.entries(needed).reduce((s,[id,q])=>{const si=SHOP_I.find(i=>i.id===id);return si?s+q*getBuyPrice(Math.max(1,si.price-hagMod)):s;},0);
+                return{needed,allShop,total,canBuy:allShop&&total>0&&total<=gold};
+              };
+              const selDoBuy=(n)=>{const{needed}=selBuyCalc(n);Object.entries(needed).forEach(([id,q])=>{const si=SHOP_I.find(i=>i.id===id);if(si){const bp=getBuyPrice(Math.max(1,si.price-hagMod));for(let i=0;i<q;i++){setGold(g=>g-bp);modInv(id,1);}}});};
               return <>
-              <div style={{display:'flex',gap:3}}>
-              {tiers.map(q=>{
-                const qT=QUALITY[q];
-                const tierCost={};r.ingr.forEach(id=>{tierCost[id]=(tierCost[id]||0)+1;});
-                if(qT.extraIngr>=1)tierCost[r.ingr[0]]=(tierCost[r.ingr[0]]||0)+1;
-                if(qT.extraIngr>=2&&r.ingr.length>1)tierCost[r.ingr[1]]=(tierCost[r.ingr[1]]||0)+1;
-                const canT=fOk&&hours>=1&&Object.entries(tierCost).every(([id,qq])=>(inv[id]||0)>=qq);
-                let tierDC=Math.max(5,r.dc+qT.dcMod-masteryDisc);
-                if(q==='fine')tierDC+=upEff('fineDCBonus');
-                if(q==='mw'){tierDC+=upEff('fineDCBonus');tierDC+=upEff('mwDCBonus');}
-                const tierMod=totalMod;const tierNeeded=tierDC-tierMod;
-                const tierPct=Math.min(95,Math.max(5,Math.floor((21-tierNeeded)/20*100)));
-                return <button key={q} style={{...S.btn(canT?q==='mw'?'gold':q==='fine'?'green':'def':'dim'),flex:1,fontSize:13,padding:'3px 6px',opacity:canT?1:0.5}}
-                  onClick={()=>canT&&doCraft(r,q)} disabled={!canT||hours<1}
-                  title={qT.name+': DC'+tierDC+' | '+qT.sellMult+'× sell | +'+qT.extraIngr+' extra ingr'}>
-                  {qT.name==='Standard'?'⚗️':qT.icon} {qT.name} <span style={{fontSize:11,color:canT?(tierPct>=60?TH.green:tierPct>=30?TH.gold:TH.red):TH.textDim}}>DC{tierDC} {tierPct}%</span>
-                </button>;
-              })}
+              {/* Tier selector (toggle, doesn't brew) */}
+              <div style={{display:'flex',gap:2,marginBottom:4}}>
+                <span style={{fontSize:12,color:TH.textDim,alignSelf:'center',marginRight:2}}>Quality:</span>
+                {['std','fine','mw'].map(q=>{
+                  const qT=QUALITY[q];const isSel=selTier===q;
+                  let qDC=Math.max(5,r.dc+qT.dcMod-masteryDisc);
+                  if(q==='fine')qDC+=upEff('fineDCBonus');
+                  if(q==='mw'){qDC+=upEff('fineDCBonus');qDC+=upEff('mwDCBonus');}
+                  const qNeeded=qDC-totalMod;
+                  const qPct=Math.min(95,Math.max(5,Math.floor((21-qNeeded)/20*100)));
+                  return <button key={q} style={{padding:'3px 8px',fontSize:12,borderRadius:4,cursor:'pointer',fontFamily:'inherit',
+                    background:isSel?(q==='mw'?TH.gold:q==='fine'?TH.greenDim:TH.borderLight):'transparent',
+                    color:isSel?(q==='mw'?TH.bg:TH.text):TH.textDim,
+                    border:'1px solid '+(isSel?q==='mw'?TH.gold:q==='fine'?TH.green:TH.border:TH.border+'66'),
+                    fontWeight:isSel?'bold':'normal'}}
+                    onClick={()=>setBrewTierSel(p=>({...p,[r.id]:q}))}>
+                    {q==='std'?'⚗️':qT.icon} {qT.name} <span style={{fontSize:10,color:isSel?'inherit':TH.textDim}}>DC{qDC} {qPct}% {qT.sellMult}×</span>
+                  </button>;
+                })}
               </div>
-              <div style={{display:'flex',gap:3,marginTop:3,alignItems:'center'}}>
-                {[2,3,5].map(n=>{const canN=fOk&&hours>=n&&Object.entries(cost).every(([id,q])=>(inv[id]||0)>=q*n);
-                  return <button key={n} style={{...S.btn(canN?'def':'dim'),fontSize:12,padding:'2px 6px'}} onClick={()=>canN&&doBatchCraft(r,n,'std')} disabled={!canN}>
-                    ×{n} Std</button>;})}
-                {!can&&bc1.canBuy&&fOk&&hours>=1&&<button style={{fontSize:12,padding:'2px 6px',background:TH.gold,color:TH.bg,border:'none',borderRadius:3,cursor:'pointer',fontFamily:'inherit'}}
-                  onClick={()=>doBuy(1)}>🛒 Buy ({bc1.total}g)</button>}
+              {/* Brew + Batch buttons */}
+              <div style={{display:'flex',gap:3,alignItems:'center',flexWrap:'wrap'}}>
+                {[1,2,3,5].map(n=>{
+                  const canN=fOk&&hours>=n&&Object.entries(selCost).every(([id,q])=>(inv[id]||0)>=q*n);
+                  const bc=selBuyCalc(n);
+                  return <span key={n} style={{display:'inline-flex',gap:2,alignItems:'center'}}>
+                    <button style={{...S.btn(canN?n===1?'gold':'def':'dim'),fontSize:13,padding:'3px 8px'}}
+                      onClick={()=>canN&&(n===1?doCraft(r,selTier):doBatchCraft(r,n,selTier))} disabled={!canN||hours<n}>
+                      {n===1?('⚗️ Brew '+selQT.name):('×'+n)}
+                    </button>
+                    {!canN&&bc.canBuy&&fOk&&hours>=n&&<button style={{fontSize:11,padding:'2px 5px',background:TH.gold,color:TH.bg,border:'none',borderRadius:3,cursor:'pointer',fontFamily:'inherit'}}
+                      onClick={()=>selDoBuy(n)}>🛒 {bc.total}g</button>}
+                  </span>;
+                })}
               </div>
               </>;
             })()}</div>
