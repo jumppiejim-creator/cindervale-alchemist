@@ -1,0 +1,21 @@
+{
+  "name": "Cindervale Alchemist",
+  "short_name": "Cindervale",
+  "description": "A fantasy alchemy crafting RPG. Brew potions, enchant items, and build your workshop in Cindervale.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#1a1a2e",
+  "theme_color": "#d4a420",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
