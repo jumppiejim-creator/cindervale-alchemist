@@ -377,7 +377,7 @@ const CLASSES={
         ]},
       reclaimer:{id:'reclaimer',name:'Reclaimer',icon:'♻️',color:'#60a080',bStat:'com',bSkills:['procurement','haggling'],
         features:[
-          {classLv:3,name:'Zero Waste',desc:'75% salvage on failure. Can break down excess potions to ingredients.',effects:{salvagePercent:0.75,ingredientEfficiency:0.25}},
+          {classLv:3,name:'Zero Waste',desc:'75% salvage on failure. Break down potions. 50% of spoiled ingredients become Alchemical Residue.',effects:{salvagePercent:0.75,ingredientEfficiency:0.25,spoilSalvage:0.50}},
           {classLv:6,name:'Deconstruct',desc:'Break any item into component ingredients. Failed enchants return all materials.',effects:{failEnchantReturn:1.0,saveIngredientChance:0.30}},
           {classLv:10,name:'Perfect Reclamation',desc:'One free craft per day (no ingredients consumed). Deconstruction yields 150%.',effects:{freeCraft:1,salvagePercent:1.0}},
         ]},
@@ -479,9 +479,9 @@ const CLASSES={
         ]},
       quartermaster:{id:'quartermaster',name:'Quartermaster',icon:'📋',color:'#6080a0',bStat:'dis',bSkills:['stockpiling','efficiency'],
         features:[
-          {classLv:3,name:'Supply Chain',desc:'Workshop storage doubled. Ingredient efficiency +25% on all crafts.',effects:{doubleStorage:true,ingredientEfficiency:0.25}},
-          {classLv:6,name:'Logistics Master',desc:'Auto-sort ingredients. Batch foraging: send expedition to multiple regions at once. Supply chain maintenance is free.',effects:{staffForageBonus:0.25,freeSupplyMaint:true}},
-          {classLv:10,name:'War Room',desc:'Fully automated ingredient management. Foraging yield +100%.',effects:{staffEfficiencyBonus:0.30,yieldMultiplier:1}},
+          {classLv:3,name:'Supply Chain',desc:'Workshop storage doubled. Ingredient efficiency +25%. Spoilage threshold +4.',effects:{doubleStorage:true,ingredientEfficiency:0.25,spoilThreshold:4}},
+          {classLv:6,name:'Logistics Master',desc:'Auto-sort ingredients. Batch foraging. Free supply chain maintenance. Supply chain deliveries exempt from spoilage.',effects:{staffForageBonus:0.25,freeSupplyMaint:true,supplyChainNoSpoil:true}},
+          {classLv:10,name:'War Room',desc:'Fully automated ingredient management. Foraging yield +100%. Spoilage threshold +8.',effects:{staffEfficiencyBonus:0.30,yieldMultiplier:1,spoilThreshold:8}},
         ]},
       sentinel:{id:'sentinel',name:'Sentinel',icon:'🗼',color:'#a07040',bStat:'tec',bSkills:['extraction','precision'],
         features:[
@@ -546,14 +546,15 @@ const FEAT_LEVELS=[2,4,6,8,10,12,14,16];
 
 // ═══ UPGRADES ═══
 const UPGRADES={
-  cauldron_2:{id:'cauldron_2',name:'Reinforced Cauldron',icon:'🫕',cat:'Crafting',desc:'Potion DC -1.',cost:{gold:50,ashite:3},effect:{craftDC:-1},tier:1,req:null},
-  cauldron_3:{id:'cauldron_3',name:'Master\'s Cauldron',icon:'⚗️',cat:'Crafting',desc:'DC -2, +10% double.',cost:{gold:150,embervein:3,ashite:5},effect:{craftDC:-2,doubleBatch:0.1},tier:2,req:'cauldron_2'},
-  bench_1:{id:'bench_1',name:'Enchanting Bench',icon:'✨',cat:'Crafting',desc:'Enchant DC -1.',cost:{gold:60,ironroot_bark:5,hearthstone:2},effect:{enchDC:-1},tier:1,req:null},
-  bench_2:{id:'bench_2',name:'Arcane Nexus',icon:'🔮',cat:'Crafting',desc:'Enchant DC -2.',cost:{gold:200,veil_shard:2,hearthstone:5},effect:{enchDC:-2},tier:2,req:'bench_1'},
+  cauldron_2:{id:'cauldron_2',name:'Reinforced Cauldron',icon:'🫕',cat:'Crafting',desc:'Fine brew DC -1.',cost:{gold:50,ashite:3},effect:{fineDCBonus:-1},tier:1,req:null},
+  cauldron_3:{id:'cauldron_3',name:'Master\'s Cauldron',icon:'⚗️',cat:'Crafting',desc:'Masterwork DC -1, +10% double.',cost:{gold:150,embervein:3,ashite:5},effect:{mwDCBonus:-1,doubleBatch:0.1},tier:2,req:'cauldron_2'},
+  bench_1:{id:'bench_1',name:'Enchanting Bench',icon:'✨',cat:'Crafting',desc:'Fine inscription DC -1.',cost:{gold:60,ironroot_bark:5,hearthstone:2},effect:{fineEnchDC:-1},tier:1,req:null},
+  bench_2:{id:'bench_2',name:'Arcane Nexus',icon:'🔮',cat:'Crafting',desc:'Masterwork inscription DC -1.',cost:{gold:200,veil_shard:2,hearthstone:5},effect:{mwEnchDC:-1},tier:2,req:'bench_1'},
   mortar:{id:'mortar',name:'Precision Mortar',icon:'⚙️',cat:'Crafting',desc:'15% save ingredient.',cost:{gold:35,ashite:2},effect:{saveIngredient:0.15},tier:1,req:null},
   runic_tools:{id:'runic_tools',name:'Runic Tools',icon:'🔧',cat:'Crafting',desc:'+1 craft checks.',cost:{gold:80,warden_sigil:1,embervein:2},effect:{craftSkillBonus:1},tier:1,req:null},
   shelves:{id:'shelves',name:'Shelves',icon:'📦',cat:'Storage',desc:'Stockpiling +2.',cost:{gold:25,ironroot_bark:3},effect:{stockBonus:2},tier:1,req:null},
-  cellar:{id:'cellar',name:'Cellar',icon:'🏚️',cat:'Storage',desc:'Nothing spoils.',cost:{gold:80,ashite:5},effect:{noSpoil:true},tier:1,req:'shelves'},
+  cellar:{id:'cellar',name:'Cellar',icon:'🏚️',cat:'Storage',desc:'Spoilage threshold +2.',cost:{gold:80,ashite:5},effect:{spoilThreshold:2},tier:1,req:'shelves'},
+  preserveJars:{id:'preserveJars',name:'Preservation Jars',icon:'🫙',cat:'Storage',desc:'Spoilage threshold +2.',cost:{gold:60,ironroot_bark:4,gloomcap:2},effect:{spoilThreshold:2},tier:1,req:null},
   vault:{id:'vault',name:'Vault',icon:'🔐',cat:'Storage',desc:'Double capacity.',cost:{gold:200,deep_crystal:1,ashite:8},effect:{doubleStorage:true},tier:2,req:'cellar'},
   shopfront:{id:'shopfront',name:'Shop Front',icon:'🪟',cat:'Business',desc:'+5g/day passive.',cost:{gold:40,ironroot_bark:4},effect:{passiveIncome:5},tier:1,req:null},
   signage:{id:'signage',name:'Signage',icon:'🪧',cat:'Business',desc:'+1 enchant customer.',cost:{gold:30},effect:{extraCustomers:1},tier:1,req:'shopfront'},
@@ -566,7 +567,7 @@ const UPGRADES={
   garden_2:{id:'garden_2',name:'Greenhouse',icon:'🌿',cat:'Comfort',desc:'Free rare herbs.',cost:{gold:150,moonpetal:3,sacred_ember:1},effect:{dailyRareHerbs:true},tier:2,req:'garden'},
   library:{id:'library',name:'Library',icon:'📚',cat:'Advanced',desc:'Research/Lore +2.',cost:{gold:120,veil_shard:1},effect:{researchBonus:2},tier:2,req:null},
   forge:{id:'forge',name:'Forge',icon:'🔨',cat:'Advanced',desc:'Artificer recipes.',cost:{gold:180,embervein:5,ashite:8},effect:{enableForge:true},tier:2,req:'runic_tools'},
-  leyline:{id:'leyline',name:'Ley Line Tap',icon:'⚡',cat:'Advanced',desc:'All DC-1, veil shard.',cost:{gold:300,veil_shard:3,deep_crystal:2},effect:{allDC:-1,dailyVeil:true},tier:3,req:'library'},
+  leyline:{id:'leyline',name:'Ley Line Tap',icon:'⚡',cat:'Advanced',desc:'+1 free research/day, daily veil shard.',cost:{gold:300,veil_shard:3,deep_crystal:2},effect:{freeResearchPerDay:1,dailyVeil:true},tier:3,req:'library'},
 };
 
 // ═══ APPRENTICES ═══
@@ -884,6 +885,21 @@ const ENCHANTMENTS=[
   {id:'e_moth',name:'Moth Charm',icon:'🦋',cat:'other',ingr:['moth_scale','dream_pollen'],xp:60,dc:13,desc:'Moonlit moth essence grants the wearer prophetic flashes — a split-second of foresight in danger.'},
   {id:'e_titan',name:'Titan\'s Mark',icon:'🦴',cat:'other',ingr:['titan_bone','heartstone_sliver'],xp:95,dc:18,desc:'Ancient power courses through the wearer. Strength and endurance far exceed mortal limits.'},
 ];
+// ═══ QUALITY TIERS ═══
+const QUALITY={
+  std:{id:'std',name:'Standard',icon:'',color:'#aaaaaa',dcMod:0,sellMult:1,xpMult:1,extraIngr:0},
+  fine:{id:'fine',name:'Fine',icon:'★',color:'#50c070',dcMod:3,sellMult:1.5,xpMult:1.5,extraIngr:1},
+  mw:{id:'mw',name:'Masterwork',icon:'★★',color:'#d4a420',dcMod:6,sellMult:3,xpMult:2.5,extraIngr:2},
+};
+const getBaseRecipeId=(potId)=>potId.replace(/_[FM]$/,'');
+const getPotQuality=(potId)=>potId.endsWith('_M')?'mw':potId.endsWith('_F')?'fine':'std';
+const qualPotId=(recipeId,q)=>q==='fine'?recipeId+'_F':q==='mw'?recipeId+'_M':recipeId;
+const getMasteryDiscount=(brewCounts,recipeId)=>{const bc=brewCounts[recipeId]||0;return bc>=25?2:bc>=10?1:0;};
+
+// Spoilage color coding for inventory display
+const getSpoilColor=(qty,threshold)=>qty>16?'#c04040':qty>12?'#d08030':qty>8?'#c0a040':'';
+const getSpoilLabel=(qty,threshold)=>qty>threshold+8?'Spoils imminent':qty>threshold+4?'Spoilage likely':qty>threshold?'Getting full':'';
+
 const ENCH_CATS={weapon:{name:'Weapon',icon:'⚔️'},armor:{name:'Armor',icon:'🛡️'},other:{name:'Accessory',icon:'💍'}};
 const CUST_ITEMS=[
   {name:'Iron Sword',icon:'⚔️',tier:1,cat:'weapon'},{name:'Steel Axe',icon:'🪓',tier:2,cat:'weapon'},{name:'Warhammer',icon:'🔨',tier:3,cat:'weapon'},{name:'Hunting Bow',icon:'🏹',tier:1,cat:'weapon'},{name:'Mithril Blade',icon:'🗡️',tier:3,cat:'weapon'},
@@ -1067,7 +1083,7 @@ const GADGET_BLUEPRINTS=[
     effect:'staffEffBonus',values:[0.15,0.30,0.45],effectDesc:['+15% staff efficiency','+30% staff efficiency','+45% staff efficiency']},
   {id:'gd_perpetual',name:'Perpetual Motion Engine',icon:'♾️',tier:3,dc:20,legendary:true,
     matCost:{embervein:3,deep_crystal:2,volcanic_essence:1},desc:'A device that defies natural law — self-sustaining energy.',
-    effect:'perpetual',values:[null,null,[3,2]],effectDesc:['—','—','+3 hours/day AND 2 free crafts']},
+    effect:'perpetual',values:[null,null,[3,2]],effectDesc:['—','—','+3 Energy/day AND 2 free crafts']},
   {id:'gd_probability',name:'Probability Manipulator',icon:'🎲',tier:3,dc:20,legendary:true,
     matCost:{starwort:2,deep_crystal:2,moonpetal:2},desc:'A crystalline device that nudges fate in your favor.',
     effect:'rerollsPerDay',values:[null,null,2],effectDesc:['—','—','Reroll 2 failed checks/day']},
@@ -1202,7 +1218,7 @@ const RANGER_COMPANIONS=[
     desc:'A keen-eyed raptor that rides the thermal updrafts above the canopy.',
     primary:{type:'danger_reduce',values:[0.25,0.40,0.50,0.60,0.75]},
     secondary:{type:'travel_reduce',desc:'-1 travel time to scouted region',unlockLv:3},
-    legendary:'Once/day: instant travel (0 hours) to any region'},
+    legendary:'Once/day: instant travel (0 Energy) to any region'},
   {id:'rc_hound',name:'Ridge Hound',icon:'🐕',region:'crystal_hollow',role:'greeter',color:'#c09040',
     desc:'A loyal hound with crystalline eyes. Customers love petting it at the door.',
     primary:{type:'customers',values:[0,0,1,1,2]},
@@ -1459,6 +1475,7 @@ const HIDDEN_INGR={
 };
 // Merge hidden ingredients into INGR at runtime
 Object.assign(INGR,HIDDEN_INGR);
+INGR.alchemical_residue={id:'alchemical_residue',name:'Alchemical Residue',icon:'♻️',val:3,desc:'Salvaged essence from spoiled ingredients. Can substitute for common reagents.'};
 
 // ═══ CARTOGRAPHER ELIXIRS — Multi-day buff potions ═══
 const ELIXIR_BUFFS={
@@ -2057,6 +2074,9 @@ function CindervaleAlchemistInner(){
   const [customPatterns,setCustomPatterns]=useState([]); // [{id:'cp_1',name:'Arcane Sigil',effects:['pe_dmg_fire'],power:0,cat:'weapon',xp:30,dc:12}]
   const [mappedRegions,setMappedRegions]=useState([]); // ['hr_ash_geysers','hr_iron_canopy',...]
   const [activeBuffs,setActiveBuffs]=useState({}); // {prismatic_elixir: {daysLeft:3}, canopy_draught: {daysLeft:2}}
+  const [debt,setDebt]=useState(0); // Accumulated debt when gold < 0
+  const [disabledUpgrades,setDisabledUpgrades]=useState([]); // Upgrades repossessed due to debt
+  const [shopLocked,setShopLocked]=useState(false); // Shop padlocked at debt > 200
   const [pendingCompDec,setPendingCompDec]=useState([]); // [{comp:{id,name,icon,...},check:{roll,total,...}}]
   const [shelves,setShelves]=useState({});
   const [lastCheck,setLastCheck]=useState(null);
@@ -2148,9 +2168,9 @@ function CindervaleAlchemistInner(){
   const gatherState=useCallback(()=>({
     phase,charName,charRace,charGender,stats,ptsLeft,skRanks,skPts,skProgress,classLevels,specs,playerFeats,asiSpent,startingClass,
     screen,day,hours,xp,gold,inv,pots,known,aQ,doneQ,
-    log:log.slice(-30),milestones,fRep,factionAlign,upgrades,hiredAppr,apprTasks,apprXP,enchQ,potCustQ,clinicPatients,venomContracts,forgedWeapons,shieldCommissions,planarFocus,gadgets,blueprints,fieldJournal,loreFragments,companions,caravans,supplyChains,caravanRuns,trainingSessions,factionHarmony,prestigeLevels,automata,customPatterns,mappedRegions,activeBuffs,shelves,dailyReport,
+    log:log.slice(-30),milestones,fRep,factionAlign,upgrades,hiredAppr,apprTasks,apprXP,enchQ,potCustQ,clinicPatients,venomContracts,forgedWeapons,shieldCommissions,planarFocus,gadgets,blueprints,fieldJournal,loreFragments,companions,caravans,supplyChains,caravanRuns,trainingSessions,factionHarmony,prestigeLevels,automata,customPatterns,mappedRegions,activeBuffs,debt,disabledUpgrades,shopLocked,shelves,dailyReport,
     boardQ,activeBQ,doneBQCount,dayFlags,knownEnch,brewCounts,procureItems,pubPapers,selectedSite,constructProgress,
-  }),[phase,charName,charRace,charGender,stats,ptsLeft,skRanks,skPts,skProgress,classLevels,specs,playerFeats,asiSpent,startingClass,screen,day,hours,xp,gold,inv,pots,known,aQ,doneQ,log,milestones,fRep,factionAlign,upgrades,hiredAppr,apprTasks,apprXP,enchQ,potCustQ,clinicPatients,venomContracts,forgedWeapons,shieldCommissions,planarFocus,gadgets,blueprints,fieldJournal,loreFragments,companions,caravans,supplyChains,caravanRuns,trainingSessions,factionHarmony,prestigeLevels,automata,customPatterns,mappedRegions,activeBuffs,shelves,dailyReport,boardQ,activeBQ,doneBQCount,dayFlags,knownEnch,brewCounts,procureItems,constructProgress,selectedSite]);
+  }),[phase,charName,charRace,charGender,stats,ptsLeft,skRanks,skPts,skProgress,classLevels,specs,playerFeats,asiSpent,startingClass,screen,day,hours,xp,gold,inv,pots,known,aQ,doneQ,log,milestones,fRep,factionAlign,upgrades,hiredAppr,apprTasks,apprXP,enchQ,potCustQ,clinicPatients,venomContracts,forgedWeapons,shieldCommissions,planarFocus,gadgets,blueprints,fieldJournal,loreFragments,companions,caravans,supplyChains,caravanRuns,trainingSessions,factionHarmony,prestigeLevels,automata,customPatterns,mappedRegions,activeBuffs,debt,disabledUpgrades,shopLocked,shelves,dailyReport,boardQ,activeBQ,doneBQCount,dayFlags,knownEnch,brewCounts,procureItems,constructProgress,selectedSite]);
 
   const restoreState=useCallback((s)=>{
     if(!s)return;
@@ -2175,7 +2195,7 @@ function CindervaleAlchemistInner(){
     setUpgrades(s.upgrades||[]);setHiredAppr(s.hiredAppr||[]);
     setApprTasks(s.apprTasks||{});setApprXP(s.apprXP||{});
     prevLvl.current=getLvl(s.xp||0);
-    setDailyReport(s.dailyReport||[]);setEnchQ(s.enchQ||[]);setPotCustQ(s.potCustQ||[]);setClinicPatients(s.clinicPatients||[]);setVenomContracts(s.venomContracts||[]);setForgedWeapons(s.forgedWeapons||[]);setShieldCommissions(s.shieldCommissions||[]);setPlanarFocus(s.planarFocus||null);setGadgets(s.gadgets||[]);setBlueprints(s.blueprints||[]);setFieldJournal(s.fieldJournal||[]);setLoreFragments(s.loreFragments||[]);setCompanions(s.companions||[]);setCaravans(s.caravans||[]);setSupplyChains(s.supplyChains||[]);setCaravanRuns(s.caravanRuns||{});setTrainingSessions(s.trainingSessions||{});setFactionHarmony(s.factionHarmony||{});setPrestigeLevels(s.prestigeLevels||{});setAutomata(s.automata||[]);setCustomPatterns(s.customPatterns||[]);setMappedRegions(s.mappedRegions||[]);setActiveBuffs(s.activeBuffs||{});setShelves(s.shelves||{});setLastCheck(null);setNews([]);setMorningReport(null);
+    setDailyReport(s.dailyReport||[]);setEnchQ(s.enchQ||[]);setPotCustQ(s.potCustQ||[]);setClinicPatients(s.clinicPatients||[]);setVenomContracts(s.venomContracts||[]);setForgedWeapons(s.forgedWeapons||[]);setShieldCommissions(s.shieldCommissions||[]);setPlanarFocus(s.planarFocus||null);setGadgets(s.gadgets||[]);setBlueprints(s.blueprints||[]);setFieldJournal(s.fieldJournal||[]);setLoreFragments(s.loreFragments||[]);setCompanions(s.companions||[]);setCaravans(s.caravans||[]);setSupplyChains(s.supplyChains||[]);setCaravanRuns(s.caravanRuns||{});setTrainingSessions(s.trainingSessions||{});setFactionHarmony(s.factionHarmony||{});setPrestigeLevels(s.prestigeLevels||{});setAutomata(s.automata||[]);setCustomPatterns(s.customPatterns||[]);setMappedRegions(s.mappedRegions||[]);setActiveBuffs(s.activeBuffs||{});setDebt(s.debt||0);setDisabledUpgrades(s.disabledUpgrades||[]);setShopLocked(s.shopLocked||false);setShelves(s.shelves||{});setLastCheck(null);setNews([]);setMorningReport(null);
     setBoardQ(s.boardQ||[]);setActiveBQ(s.activeBQ||[]);setDoneBQCount(s.doneBQCount||0);setDayFlags(s.dayFlags||[]);setKnownEnch(s.knownEnch&&s.knownEnch.length>0?s.knownEnch:['e_sharp','e_glow','e_ironbark','e_feather','e_windwalk','e_rootbind']);
     setBrewCounts(s.brewCounts||{});setProcureItems(s.procureItems||[]);setPubPapers(s.pubPapers||[]);setConstructProgress(s.constructProgress||{});
     setSelHex(null);setVBuild('workshop');setDlgNpc(null);setShowShop(false);setQuestDlg(null);setPendingLevelUp(null);setSelectedSite(s.selectedSite||null);
@@ -2235,7 +2255,7 @@ function CindervaleAlchemistInner(){
   const snapshot=useCallback(()=>{
     const snap={day,hours,xp,gold,inv:{...inv},pots:{...pots},known:[...known],aQ:[...aQ],doneQ:[...doneQ],
       fRep:{...fRep},upgrades:[...upgrades],hiredAppr:hiredAppr.map(a=>({...a})),apprTasks:{...apprTasks},apprXP:{...apprXP},
-      skRanks:{...skRanks},skPts,skProgress:{...skProgress},enchQ:[...enchQ],potCustQ:[...potCustQ],clinicPatients:[...clinicPatients],venomContracts:[...venomContracts],forgedWeapons:[...forgedWeapons],shieldCommissions:[...shieldCommissions],planarFocus,gadgets:[...gadgets],blueprints:[...blueprints],fieldJournal:[...fieldJournal],loreFragments:[...loreFragments],companions:companions.map(c=>({...c})),caravans:[...caravans],supplyChains:[...supplyChains],caravanRuns:{...caravanRuns},trainingSessions:{...trainingSessions},factionHarmony:{...factionHarmony},prestigeLevels:{...prestigeLevels},automata:automata.map(a=>({...a})),customPatterns:[...customPatterns],mappedRegions:[...mappedRegions],activeBuffs:{...activeBuffs},gadgets,blueprints,fieldJournal,loreFragments,companions,caravans,supplyChains,caravanRuns,trainingSessions,factionHarmony,prestigeLevels,automata,customPatterns,mappedRegions,activeBuffs,shelves:{...shelves},milestones:[...milestones],log:[...log],dailyReport:[...dailyReport],brewCounts:{...brewCounts},procureItems:[...procureItems],constructProgress:{...constructProgress}};
+      skRanks:{...skRanks},skPts,skProgress:{...skProgress},enchQ:[...enchQ],potCustQ:[...potCustQ],clinicPatients:[...clinicPatients],venomContracts:[...venomContracts],forgedWeapons:[...forgedWeapons],shieldCommissions:[...shieldCommissions],planarFocus,gadgets:[...gadgets],blueprints:[...blueprints],fieldJournal:[...fieldJournal],loreFragments:[...loreFragments],companions:companions.map(c=>({...c})),caravans:[...caravans],supplyChains:[...supplyChains],caravanRuns:{...caravanRuns},trainingSessions:{...trainingSessions},factionHarmony:{...factionHarmony},prestigeLevels:{...prestigeLevels},automata:automata.map(a=>({...a})),customPatterns:[...customPatterns],mappedRegions:[...mappedRegions],activeBuffs:{...activeBuffs},debt,disabledUpgrades:[...disabledUpgrades],shopLocked,gadgets,blueprints,fieldJournal,loreFragments,companions,caravans,supplyChains,caravanRuns,trainingSessions,factionHarmony,prestigeLevels,automata,customPatterns,mappedRegions,activeBuffs,debt,disabledUpgrades,shopLocked,shelves:{...shelves},milestones:[...milestones],log:[...log],dailyReport:[...dailyReport],brewCounts:{...brewCounts},procureItems:[...procureItems],constructProgress:{...constructProgress}};
     setUndoStack(p=>[...p.slice(-4),snap]);
   },[day,hours,xp,gold,inv,pots,known,aQ,doneQ,fRep,upgrades,hiredAppr,apprTasks,apprXP,skRanks,skPts,skProgress,enchQ,potCustQ,shelves,milestones,log,dailyReport,brewCounts,procureItems,constructProgress]);
 
@@ -2258,7 +2278,7 @@ function CindervaleAlchemistInner(){
     setInv(snap.inv);setPots(snap.pots);setKnown(snap.known);setAQ(snap.aQ);setDoneQ(snap.doneQ);
     setFRep(snap.fRep);setUpgrades(snap.upgrades);setHiredAppr(snap.hiredAppr);
     setApprTasks(snap.apprTasks);setApprXP(snap.apprXP);setSkRanks(snap.skRanks);setSkPts(snap.skPts);setSkProgress(snap.skProgress||{});
-    setEnchQ(snap.enchQ);setPotCustQ(snap.potCustQ||[]);setClinicPatients(snap.clinicPatients||[]);setVenomContracts(snap.venomContracts||[]);setForgedWeapons(snap.forgedWeapons||[]);setShieldCommissions(snap.shieldCommissions||[]);setPlanarFocus(snap.planarFocus||null);setGadgets(snap.gadgets||[]);setBlueprints(snap.blueprints||[]);setFieldJournal(snap.fieldJournal||[]);setLoreFragments(snap.loreFragments||[]);setCompanions(snap.companions||[]);setCaravans(snap.caravans||[]);setSupplyChains(snap.supplyChains||[]);setCaravanRuns(snap.caravanRuns||{});setTrainingSessions(snap.trainingSessions||{});setFactionHarmony(snap.factionHarmony||{});setPrestigeLevels(snap.prestigeLevels||{});setAutomata(snap.automata||[]);setCustomPatterns(snap.customPatterns||[]);setMappedRegions(snap.mappedRegions||[]);setActiveBuffs(snap.activeBuffs||{});setShelves(snap.shelves||{});setMilestones(snap.milestones);setLog(snap.log);setDailyReport(snap.dailyReport);
+    setEnchQ(snap.enchQ);setPotCustQ(snap.potCustQ||[]);setClinicPatients(snap.clinicPatients||[]);setVenomContracts(snap.venomContracts||[]);setForgedWeapons(snap.forgedWeapons||[]);setShieldCommissions(snap.shieldCommissions||[]);setPlanarFocus(snap.planarFocus||null);setGadgets(snap.gadgets||[]);setBlueprints(snap.blueprints||[]);setFieldJournal(snap.fieldJournal||[]);setLoreFragments(snap.loreFragments||[]);setCompanions(snap.companions||[]);setCaravans(snap.caravans||[]);setSupplyChains(snap.supplyChains||[]);setCaravanRuns(snap.caravanRuns||{});setTrainingSessions(snap.trainingSessions||{});setFactionHarmony(snap.factionHarmony||{});setPrestigeLevels(snap.prestigeLevels||{});setAutomata(snap.automata||[]);setCustomPatterns(snap.customPatterns||[]);setMappedRegions(snap.mappedRegions||[]);setActiveBuffs(snap.activeBuffs||{});setDebt(snap.debt||0);setDisabledUpgrades(snap.disabledUpgrades||[]);setShopLocked(snap.shopLocked||false);setShelves(snap.shelves||{});setMilestones(snap.milestones);setLog(snap.log);setDailyReport(snap.dailyReport);
     setBrewCounts(snap.brewCounts||{});setProcureItems(snap.procureItems||[]);setPubPapers(snap.pubPapers||[]);setConstructProgress(snap.constructProgress||{});
     setLastCheck(null);
     addLog('↩️ Time seems to blur — you find yourself a moment before, as if the last action never happened.','info');
@@ -2279,7 +2299,7 @@ function CindervaleAlchemistInner(){
   const getSkMod=skId=>{const sk=SKILLS[skId];if(!sk)return 0;return getMod(eStat(sk.stat))+rankB(skRanks[skId]||0,pb)+getRaceSkBonus(skId);};
   const doCheck=(skId,dc)=>{const sk=SKILLS[skId];if(!sk)return{success:false,total:0,roll:0,name:'?',mod:0,rb:0,dc,statName:'',extras:[]};const roll=d20();const mod=getMod(eStat(sk.stat));const rb=rankB(skRanks[skId]||0,pb);const total=roll+mod+rb;const r={roll,mod,rb,total,dc,success:total>=dc,name:sk.name,icon:sk.icon,statName:STATS[sk.stat]?.name||'',extras:[]};setLastCheck(r);return r;};
   const hasUp=id=>upgrades.includes(id);
-  const upEff=key=>{let v=0;upgrades.forEach(uid=>{const u=UPGRADES[uid];if(u?.effect?.[key])v+=typeof u.effect[key]==='number'?u.effect[key]:(u.effect[key]?1:0);});return v;};
+  const upEff=key=>{let v=0;upgrades.filter(uid=>!disabledUpgrades.includes(uid)).forEach(uid=>{const u=UPGRADES[uid];if(u?.effect?.[key])v+=typeof u.effect[key]==='number'?u.effect[key]:(u.effect[key]?1:0);});return v;};
   const modInv=(id,a)=>setInv(p=>{const n={...p};n[id]=(n[id]||0)+a;if(n[id]<=0)delete n[id];return n;});
   const modPot=(id,a)=>setPots(p=>{const n={...p};n[id]=(n[id]||0)+a;if(n[id]<=0)delete n[id];return n;});
   const gainXP=(base)=>{const mult=1+getFeatureVal('xpMultiplier');setXp(x=>x+Math.floor(base*mult));};
@@ -2316,7 +2336,7 @@ function CindervaleAlchemistInner(){
     const enchBonus=isEnch?1:0;
     const forgeBonus=forgedWeapons.filter(w=>w.displayed).length; // Named weapons attract customers
     const compCustBonus=companions.filter(c=>c.active&&RANGER_COMPANIONS.find(r=>r.id===c.compId)?.primary.type==='customers').reduce((s,c)=>{const comp=RANGER_COMPANIONS.find(r=>r.id===c.compId);return s+(comp?.primary.values[Math.min(c.loyalty-1,4)]||0);},0);
-    const n=1+Math.floor(Math.random()*2)+upEff('extraCustomers')+enchBonus+custBonusF+Math.min(3,forgeBonus)+compCustBonus;
+    const n=shopLocked?0:1+Math.floor(Math.random()*2)+upEff('extraCustomers')+enchBonus+custBonusF+Math.min(3,forgeBonus)+compCustBonus;
     const q=[];
     const effKnownEnch=knownEnch.length>0?knownEnch:['e_sharp','e_glow','e_ironbark','e_feather','e_windwalk','e_rootbind'];
     for(let i=0;i<n;i++){const mT=level>=7?3:level>=4?2:1;const items=CUST_ITEMS.filter(it=>it.tier<=mT);
@@ -2342,17 +2362,19 @@ function CindervaleAlchemistInner(){
         const reqCount=Math.min(fbEnchs.length,1+Math.floor(Math.random()*(level>=6?3:level>=3?2:1)));
         const shuffledE=[...fbEnchs].sort(()=>Math.random()-0.5);
         const reqEnch=shuffledE.slice(0,reqCount).map(e=>e.id);
+        const reqQual1=day>=26&&Math.random()<0.20?'mw':day>=11&&Math.random()<0.30?'fine':'std';
         q.push({...fbItem,customer:name,title:cd.title,
           line:cd.lines[Math.floor(Math.random()*cd.lines.length)],
-          reqEnch,id:Math.random().toString(36).slice(2)});
+          reqEnch,reqQuality:reqQual1,id:Math.random().toString(36).slice(2)});
         continue;
       }
       const reqCount=Math.min(allCatEnchs.length,1+Math.floor(Math.random()*(level>=6?3:level>=3?2:1)));
       const shuffledE=[...allCatEnchs].sort(()=>Math.random()-0.5);
       const reqEnch=shuffledE.slice(0,reqCount).map(e=>e.id);
+      const reqQual2=day>=26&&Math.random()<0.20?'mw':day>=11&&Math.random()<0.30?'fine':'std';
       q.push({...item,customer:name,title:cd.title,
         line:cd.lines[Math.floor(Math.random()*cd.lines.length)],
-        reqEnch,
+        reqEnch,reqQuality:reqQual2,
         id:Math.random().toString(36).slice(2)});}
     setEnchQ(q);
     // ═══ CLINIC PATIENTS (Apothecary spec) ═══
@@ -2770,27 +2792,39 @@ function CindervaleAlchemistInner(){
   // ─── CRAFT ───
   const CRAFT_SUCCESS=['The mixture bubbles and settles into a perfect brew.','Your hands move with practiced confidence. Another fine creation.','Steam rises as the ingredients bind together beautifully.','The workshop fills with a satisfying aroma as the potion takes form.','You hold the vial to the light — clear, potent, exactly right.'];
   const CRAFT_FAIL=['The mixture turns an ugly brown and dissolves into sludge.','A sharp crack — something went wrong. The compound is ruined.','The ingredients resist each other, refusing to bind.','Smoke billows from the cauldron. Not your finest hour.'];
-  const doCraft=r=>{
+  const doCraft=(r,quality='std')=>{
     // firstBrewFree: first brew of each day costs no hours
     const fbf=getFeatureVal('firstBrewFree')&&!dayFlags.includes('first_brew_used');
     if(!fbf&&hours<1){addLog('Not enough Energy to brew. Rest and try tomorrow.','error');return;}
+    const qT=QUALITY[quality]||QUALITY.std;
     const cost={};r.ingr.forEach(id=>{cost[id]=(cost[id]||0)+1;});
+    // Quality tier extra ingredients
+    if(qT.extraIngr>=1){const firstIngr=r.ingr[0];cost[firstIngr]=(cost[firstIngr]||0)+1;}
+    if(qT.extraIngr>=2&&r.ingr.length>1){const secondIngr=r.ingr[1];cost[secondIngr]=(cost[secondIngr]||0)+1;}
     // freeCraft: one daily free craft (no ingredients consumed)
     const fc=getFeatureVal('freeCraft')&&!dayFlags.includes('free_craft_used');
-    if(!fc&&!Object.entries(cost).every(([id,q])=>(inv[id]||0)>=q)){addLog(`You reach for ingredients but come up short. Not enough materials for ${r.icon}${r.name}.`,'error');return;}
-    if(r.faction&&getRL(r.faction)<(r.fReq||0)){addLog(`This recipe requires deeper trust with the ${FACTIONS[r.faction]?.name||'faction'}. Keep building your reputation.`,'error');return;}
+    if(!fc&&!Object.entries(cost).every(([id,q])=>(inv[id]||0)>=q)){addLog('Not enough materials for '+(qT.name!=='Standard'?qT.name+' ':'')+r.icon+r.name+'.','error');return;}
+    if(r.faction&&getRL(r.faction)<(r.fReq||0)){addLog('This recipe requires deeper trust with the '+(FACTIONS[r.faction]?.name||'faction')+'. Keep building your reputation.','error');return;}
     snapshot();
     if(fbf)setDayFlags(f=>[...f,'first_brew_used']);else spendEnergy(1);
-    const adjDC=Math.max(5,r.dc+upEff('craftDC')+upEff('allDC'));
+    // Mastery discount
+    const masteryDisc=getMasteryDiscount(brewCounts,r.id);
+    // Quality DC modifier + cauldron bonuses
+    let qualDCMod=qT.dcMod;
+    if(quality==='fine')qualDCMod+=upEff('fineDCBonus');
+    if(quality==='mw'){qualDCMod+=upEff('fineDCBonus');qualDCMod+=upEff('mwDCBonus');}
+    const adjDC=Math.max(5,r.dc+qualDCMod-masteryDisc);
     const sk=r.stat==='inu'?'attunement':r.stat==='tec'?'precision':r.stat==='acu'?'research':'improvisation';
     // Analysis: auto-succeed chance
     const analysisMod=getSkMod('analysis');const autoSucc=analysisMod>0&&Math.random()<analysisMod*0.05;
     const ch=autoSucc?{roll:20,mod:0,rb:0,total:99,dc:adjDC,success:true,name:'Analysis',icon:'🧮',statName:'',extras:[{label:'🧮 Analysis',val:'Auto'}]}:doCheck(sk,adjDC);
     const csb=upEff('craftSkillBonus');if(csb){ch.total+=csb;ch.extras.push({label:'Upgrades',val:csb});}
     const cfb=getFeatureVal('craftBonus');if(cfb){ch.total+=cfb;ch.extras.push({label:'Class Mastery',val:cfb});}
+    if(masteryDisc>0)ch.extras.push({label:'📖 Mastery',val:'-'+masteryDisc+' DC'});
+    if(qualDCMod!==qT.dcMod)ch.extras.push({label:'🫕 Cauldron',val:qualDCMod-qT.dcMod+' DC'});
     // craftFloor: minimum roll result (capped at 10)
     const cFloor=Math.min(getFeatureVal('craftFloor'),10);
-    if(cFloor&&ch.roll<cFloor&&!autoSucc){ch.extras.push({label:'⚗️ Craft Floor',val:`${ch.roll}→${cFloor}`});ch.total+=(cFloor-ch.roll);ch.roll=cFloor;}
+    if(cFloor&&ch.roll<cFloor&&!autoSucc){ch.extras.push({label:'⚗️ Craft Floor',val:ch.roll+'→'+cFloor});ch.total+=(cFloor-ch.roll);ch.roll=cFloor;}
     // Adaptation: bonus for unfamiliar recipes
     const adaptMod=getSkMod('adaptation');const bc=brewCounts[r.id]||0;
     if(adaptMod>0&&bc<=5){ch.total+=adaptMod;ch.extras.push({label:'🔄 Adaptation',val:adaptMod});}
@@ -2819,12 +2853,10 @@ function CindervaleAlchemistInner(){
       }
     }
     if(!ch.success){
-      // Stockpiling: chance to save ingredients on failure (only DC>8)
       const stockMod=getSkMod('stockpiling');const saved=adjDC>8&&stockMod>0&&Math.random()<stockMod*0.1;
       const salvagePct=getFeatureVal('salvagePercent');
       if(saved){addLog('🏗️ Stockpiling: Careful preparation saved your ingredients!','info');}
       else{Object.entries(cost).forEach(([id,q])=>modInv(id,salvagePct>0?-Math.ceil(q*(1-salvagePct)):-q));}
-      // lesserOnFail: chance to produce a lesser known potion instead of total failure
       const lesserChance=getFeatureVal('lesserOnFail');
       let lesserResult=null;
       if(lesserChance>0&&Math.random()<lesserChance){
@@ -2833,7 +2865,7 @@ function CindervaleAlchemistInner(){
       }
       const fl=CRAFT_FAIL[Math.floor(Math.random()*CRAFT_FAIL.length)];
       if(fsb>0)failStreakRef.current++;
-      showResult(r.icon+' '+r.name+' — Brew Failed!','error',fl+(saved?'\n🏗️ Ingredients saved by Stockpiling!':'\nIngredients lost.'+(salvagePct>0?` Salvaged ${Math.round(salvagePct*100)}%.`:''))+(lesserResult?`\n🧪 But you salvaged a ${lesserResult.icon}${lesserResult.name}!`:'')+(fsb>0?`\n🔥 Streak: +${Math.min((failStreakRef.current)*fsb,fsc||99)} next attempt`:''),ch);return;}
+      showResult(r.icon+' '+(qT.name!=='Standard'?qT.icon+' ':'')+r.name+' — Brew Failed!','error',fl+(saved?'\n🏗️ Ingredients saved by Stockpiling!':'\nIngredients lost.'+(salvagePct>0?' Salvaged '+Math.round(salvagePct*100)+'%.':''))+(lesserResult?'\n🧪 But you salvaged a '+lesserResult.icon+lesserResult.name+'!':'')+(fsb>0?'\n🔥 Streak: +'+Math.min((failStreakRef.current)*fsb,fsc||99)+' next attempt':''),ch);return;}
     if(fc){setDayFlags(f=>[...f,'free_craft_used']);addLog('✨ Free Craft: No ingredients consumed!','info');}
     else{
       const ingEff=getFeatureVal('ingredientEfficiency');
@@ -2845,27 +2877,28 @@ function CindervaleAlchemistInner(){
     const saveChance=upEff('saveIngredient')+getFeatureVal('saveIngredientChance');
     if(saveChance>0&&Math.random()<saveChance)modInv(r.ingr[0],1);
     const dblChance=getFeatureVal('doubleBatchChance')+upEff('doubleBatch');
-    let qty=1;if(dblChance>0&&Math.random()<dblChance)qty=2;
-    // Refinement: bonus potion chance
+    let qty2=1;if(dblChance>0&&Math.random()<dblChance)qty2=2;
     const refMod=getSkMod('refinement');const refBonus=refMod>0&&Math.random()<refMod*0.06;
-    if(refBonus){qty++;addLog('💎 Refinement: Masterful technique yielded a bonus potion!','craft');}
-    modPot(r.id,qty);if(!known.includes(r.id))setKnown(p=>[...p,r.id]);
+    if(refBonus){qty2++;addLog('💎 Refinement: Masterful technique yielded a bonus potion!','craft');}
+    const potId=qualPotId(r.id,quality);
+    modPot(potId,qty2);if(!known.includes(r.id))setKnown(p=>[...p,r.id]);
     if(fsb>0)failStreakRef.current=0;
     setBrewCounts(p=>({...p,[r.id]:(p[r.id]||0)+1}));
     const bps=getFeatureVal('bonusPerSuccess');
     if(bps>0)setGold(g=>g+bps);
-    // masterworkOnCrit: nat 20 = bonus gold
     const isCrit=ch.roll===20&&!autoSucc;
     const mwGold=isCrit&&getFeatureVal('masterworkOnCrit')?(r.xp*2):0;
     if(mwGold>0)setGold(g=>g+mwGold);
-    gainXP(r.xp+getSkMod('aesthetics')*2);
+    const xpEarned=Math.floor((r.xp+getSkMod('aesthetics')*2)*qT.xpMult);
+    gainXP(xpEarned);
     const fl=CRAFT_SUCCESS[Math.floor(Math.random()*CRAFT_SUCCESS.length)];
-    showResult(r.icon+' '+r.name+' — Brewed!','craft',fl+(autoSucc?'\n🧮 Analysis: Perfect execution!':'')+(refBonus?'\n💎 Refinement: Bonus potion!':'')+(qty>1&&!refBonus?'\nBonus double batch!':'')+(fbf?'\n⏰ First brew free!':'')+(fc?'\n✨ Free craft!':'')+(mwGold>0?`\n🏆 Masterwork! +${mwGold}g`:'')+'\n+'+r.xp+' XP',ch);
+    const qualLabel=qT.name!=='Standard'?' ['+qT.icon+' '+qT.name+']':'';
+    showResult(r.icon+' '+r.name+qualLabel+' — Brewed!','craft',fl+(autoSucc?'\n🧮 Analysis: Perfect execution!':'')+(refBonus?'\n💎 Refinement: Bonus potion!':'')+(qty2>1&&!refBonus?'\nBonus double batch!':'')+(fbf?'\n⚡ First brew free!':'')+(fc?'\n✨ Free craft!':'')+(mwGold>0?'\n🏆 Masterwork! +'+mwGold+'g':'')+(masteryDisc>0?'\n📖 Mastery: -'+masteryDisc+' DC':'')+'\n+'+xpEarned+' XP'+(qT.xpMult>1?' ('+qT.name+' '+qT.xpMult+'×)':''),ch);
     if(!hasMilestone('first_brew'))earnMilestone('first_brew');
     if(r.id==='forge_catalyst'){earnMilestone('heartforge');addLog('⚡ The Forge Catalyst pulses with ancient heat. The ground trembles. Something deep beneath Cindervale stirs to life... but this is not an ending. It is a beginning.','story');}
   };
 
-  // ─── EXPERIMENT ───
+    // ─── EXPERIMENT ───
   const addToExp=(id)=>{if(expBench.length<4&&(inv[id]||0)>expBench.filter(x=>x===id).length)setExpBench(p=>[...p,id]);};
   const rmFromExp=(idx)=>setExpBench(p=>p.filter((_,i)=>i!==idx));
   const doExperiment=()=>{
@@ -3023,30 +3056,51 @@ function CindervaleAlchemistInner(){
 
   // ─── TRANSMUTATION ───
   // ─── CONSUME ELIXIR (activate buff) ───
+  // ─── UPKEEP CALCULATOR ───
+  const calcUpkeep=()=>{
+    let total=5; // Base workshop upkeep
+    // Upgrade maintenance: tier 1 = 1g, tier 2 = 2g, tier 3 = 3g per active upgrade
+    upgrades.filter(uid=>!disabledUpgrades.includes(uid)).forEach(uid=>{
+      const up=UPGRADES[uid];if(up)total+=up.tier||1;
+    });
+    // Staff wages
+    hiredAppr.forEach(ap=>{
+      const payDisc=getFeatureVal('payrollDiscount');
+      const halfPay=getFeatureVal('halfPayroll')?0.5:1;
+      total+=Math.ceil((ap.salary||5)*halfPay*(1-payDisc));
+    });
+    return total;
+  };
+
   // ─── ENERGY COST HELPER ───
   const spendEnergy=(cost=1)=>{
     const earlyR=getFeatureVal('firstActionFree')&&!dayFlags.includes('first_action_used');
     const endSave=getSkMod('endurance')>0&&Math.random()<getSkMod('endurance')*0.05;
-    if(earlyR){setDayFlags(f=>[...f,'first_action_used']);addLog('\U0001f305 Early Riser: First action free!','info');return true;}
-    if(endSave){addLog('\U0001f4aa Endurance: Energy preserved!','info');return true;}
+    if(earlyR){setDayFlags(f=>[...f,'first_action_used']);addLog('🌅 Early Riser: First action free!','info');return true;}
+    if(endSave){addLog('💪 Endurance: Energy preserved!','info');return true;}
     setHours(h=>h-cost);return false;
   };
 
   const consumeElixir=(potionId)=>{
     const buff=ELIXIR_BUFFS[potionId];if(!buff)return;
-    if((pots[potionId]||0)<1){addLog('You don\'t have any '+buff.name+' to drink.','error');return;}
+    // Find any quality version of this potion
+    const availPot=[potionId,potionId+'_F',potionId+'_M'].find(pid=>(pots[pid]||0)>=1);
+    if(!availPot){addLog('You don\'t have any '+buff.name+' to drink.','error');return;}
     if(activeBuffs[potionId]&&activeBuffs[potionId].daysLeft>0){addLog(buff.name+' is already active ('+activeBuffs[potionId].daysLeft+' days remaining).','error');return;}
     snapshot();
-    modPot(potionId,-1);
-    setActiveBuffs(prev=>({...prev,[potionId]:{daysLeft:buff.duration}}));
+    const potQual=getPotQuality(availPot);
+    const bonusDays=potQual==='mw'?1:0;
+    const totalDuration=buff.duration+bonusDays;
+    modPot(availPot,-1);
+    setActiveBuffs(prev=>({...prev,[potionId]:{daysLeft:totalDuration}}));
     const FLAVOR=['The liquid shimmers as it goes down. You feel power coursing through your veins.',
       'A warm glow spreads from your core outward. The elixir takes hold.',
       'Your senses sharpen. Colors brighten. The world feels more... possible.',
       'Ancient energy suffuses your body. You feel ready for anything.'];
-    showResult(buff.icon+' '+buff.name+' — Consumed!','craft',
+    showResult(buff.icon+' '+buff.name+(potQual!=='std'?' ('+QUALITY[potQual].icon+' '+QUALITY[potQual].name+')':'')+' — Consumed!','craft',
       FLAVOR[Math.floor(Math.random()*FLAVOR.length)]+
-      '\n\n'+buff.buffDesc+'\n\nActive for '+buff.duration+' days.');
-    addLog(buff.icon+' Consumed '+buff.name+': '+buff.buffDesc,'quest');
+      '\n\n'+buff.buffDesc+(bonusDays>0?'\n★★ Masterwork quality: +'+bonusDays+' bonus day!':'')+'\n\nActive for '+totalDuration+' days.');
+    addLog(buff.icon+' Consumed '+buff.name+(bonusDays>0?' (Masterwork: +1 day)':'')+': '+buff.buffDesc,'quest');
   };
 
   const doTransmute=(srcId,tgtId,qty)=>{
@@ -3063,102 +3117,46 @@ function CindervaleAlchemistInner(){
     showResult('🔄 Transmutation!','craft',`${FLAVOR[Math.floor(Math.random()*FLAVOR.length)]}\n${srcNeed}× ${INGR[srcId]?.icon||''}${INGR[srcId]?.name||srcId} → ${qty}× ${INGR[tgtId]?.icon||''}${INGR[tgtId]?.name||tgtId}\n+${10*qty} XP${free?' (free)':''}`);
   };
 
-  // ─── BATCH BREW ───
-  const doBatchCraft=(r,qty)=>{
-    if(hours<qty){addLog(`Need ${qty} Energy to brew ${qty}×${r.icon}${r.name}. You have ⚡${hours} Energy.`,'error');return;}
-    const cost={};r.ingr.forEach(id=>{cost[id]=(cost[id]||0)+qty;});
-    if(!Object.entries(cost).every(([id,q])=>(inv[id]||0)>=q)){addLog(`Not enough ingredients for ${qty}× ${r.icon}${r.name}.`,'error');return;}
-    if(r.faction&&getRL(r.faction)<(r.fReq||0)){addLog('Not enough faction reputation for this recipe.','error');return;}
-    snapshot();
-    spendEnergy(qty);
-    Object.entries(cost).forEach(([id,q])=>modInv(id,-q));
-    const adjDC=Math.max(5,r.dc+upEff('craftDC')+upEff('allDC'));
-    const sk=r.stat==='inu'?'attunement':r.stat==='tec'?'precision':r.stat==='acu'?'research':'improvisation';
-    let brewed=0;let failed=0;let analysisCount=0;let refCount=0;
-    const analysisMod=getSkMod('analysis');const refMod=getSkMod('refinement');
-    const adaptMod=getSkMod('adaptation');const bc=brewCounts[r.id]||0;
-    const cfb=getFeatureVal('craftBonus');
-    const bsb=getFeatureVal('batchSuccessBonus');
-    const dblChance=getFeatureVal('doubleBatchChance')+upEff('doubleBatch');
-    let firstCheck=null;
-    for(let i=0;i<qty;i++){
-      const autoSucc=analysisMod>0&&Math.random()<analysisMod*0.05;
-      const ch=autoSucc?{roll:20,mod:0,rb:0,total:99,dc:adjDC,success:true,name:'Analysis',icon:'🧮',statName:'',extras:[{label:'🧮 Analysis',val:'Auto'}]}
-        :i===0?doCheck(sk,adjDC):pureCheck(sk,adjDC);
-      if(i===0)firstCheck=ch;
-      const csb=upEff('craftSkillBonus');let total=ch.total+csb+cfb+bsb;
-      if(adaptMod>0&&(bc+i)<=5)total+=adaptMod;
-      if(i===0&&!autoSucc){
-        if(csb)firstCheck.extras.push({label:'Upgrades',val:csb});
-        if(cfb)firstCheck.extras.push({label:'Class Mastery',val:cfb});
-        if(bsb)firstCheck.extras.push({label:'📦 Batch Bonus',val:bsb});
-        if(adaptMod>0&&bc<=5)firstCheck.extras.push({label:'🔄 Adaptation',val:adaptMod});
-        firstCheck.total=total;firstCheck.success=total>=adjDC;
-      }
-      if(total>=adjDC||autoSucc){
-        let q=1;if(dblChance>0&&Math.random()<dblChance)q=2;
-        if(refMod>0&&Math.random()<refMod*0.06){q++;refCount++;}
-        brewed+=q;if(autoSucc)analysisCount++;
-      } else failed++;
-    }
-    // Stockpiling: save ingredients on failures (only DC>8)
-    const stockMod=getSkMod('stockpiling');let stockSaved=0;
-    const salvagePct=getFeatureVal('salvagePercent');
-    if(failed>0&&stockMod>0&&adjDC>8){for(let i=0;i<failed;i++){if(Math.random()<stockMod*0.1)stockSaved++;}}
-    if(stockSaved>0&&!salvagePct){
-      r.ingr.forEach(id=>modInv(id,stockSaved));
-    }
-    if(brewed>0)modPot(r.id,brewed);
-    if(failed>0&&salvagePct>0){r.ingr.forEach(id=>modInv(id,Math.ceil(failed*salvagePct)));}
-    setBrewCounts(p=>({...p,[r.id]:(p[r.id]||0)+qty}));
-    gainXP((r.xp+getSkMod('aesthetics')*2)*Math.max(1,brewed));
-    if(brewed>0&&!hasMilestone('first_brew'))earnMilestone('first_brew');
-    const extras=[];if(analysisCount>0)extras.push('🧮 '+analysisCount+' auto-success');if(refCount>0)extras.push('💎 '+refCount+' bonus');if(stockSaved>0)extras.push('🏗️ '+stockSaved+' saves');
-    showResult(`${r.icon} Batch Brew: ${brewed}/${qty}`,'craft',
-      `Brewed ${brewed}× ${r.name}${failed>0?' ('+failed+' failed)':''}\n${extras.length>0?extras.join(', ')+'\n':''}+${(r.xp+getSkMod('aesthetics')*2)*Math.max(1,brewed)} XP`,firstCheck);
-  };
-
-  // ─── ENCHANT ───
-  const doEnchant=(eId,cust)=>{
-    // dualInscription: do 2 enchants per hour slot
+  // ─── ENCHANT CUSTOMER ITEMS ───
+  const doEnchant=(eId,cust,quality='std')=>{
     const dualInsc=getFeatureVal('dualInscription');
     if(hours<1){addLog('Not enough Energy to enchant. Rest and try tomorrow.','error');return;}
-    // Resolve enchantment — check base enchantments first, then custom patterns
     let ench=ENCHANTMENTS.find(e=>e.id===eId);
     let isCustomEnch=false;let customSellMult=1;
     if(!ench&&eId.startsWith('custom_')){
       const cp=customPatterns.find(p=>'custom_'+p.id===eId);
-      if(cp){ench={id:eId,name:cp.name,icon:'✨',cat:cp.cat,ingr:[],xp:cp.xp,dc:cp.dc,desc:cp.effectDescs};isCustomEnch=true;customSellMult=cp.sellMult||1;}
+      if(cp){ench={id:eId,name:cp.name,icon:'\u2728',cat:cp.cat,ingr:[],xp:cp.xp,dc:cp.dc,desc:cp.effectDescs};isCustomEnch=true;customSellMult=cp.sellMult||1;}
     }
     if(!ench)return;
     const cost={};ench.ingr.forEach(id=>{cost[id]=(cost[id]||0)+1;});
-    // enchantMatDiscount: chance to halve ingredient cost
+    // Quality tier extra inscription materials
+    if(eqT.extraIngr>=1&&ench.ingr.length>0){cost[ench.ingr[0]]=(cost[ench.ingr[0]]||0)+1;}
+    if(eqT.extraIngr>=2&&ench.ingr.length>1){cost[ench.ingr[1]]=(cost[ench.ingr[1]]||0)+1;}
     const matDisc=getFeatureVal('enchantMatDiscount');
     const discounted=matDisc>0&&Object.keys(cost).length>0&&Math.random()<matDisc;
     const effCost={};Object.entries(cost).forEach(([id,q])=>{effCost[id]=discounted?Math.max(1,Math.ceil(q/2)):q;});
-    if(Object.keys(effCost).length>0&&!Object.entries(effCost).every(([id,q])=>(inv[id]||0)>=q)){addLog(`You lay out the inscription tools, but realize you're missing key materials for ${ench.icon}${ench.name}.`,'error');return;}
-    snapshot();
-    spendEnergy(1);
-    // enchantMatSave: chance to preserve materials
+    if(Object.keys(effCost).length>0&&!Object.entries(effCost).every(([id,q])=>(inv[id]||0)>=q)){addLog('Not enough materials for '+ench.icon+ench.name+'.','error');return;}
+    snapshot();spendEnergy(1);
     const matSaveChance=getFeatureVal('enchantMatSave');
     const matSaved=matSaveChance>0&&Math.random()<matSaveChance;
-    if(!matSaved)Object.entries(effCost).forEach(([id,q])=>modInv(id,-q));
-    else addLog('✨ Inscription mastery: materials preserved!','info');
-    if(discounted&&!matSaved)addLog('🏷️ Enchant discount: reduced material cost!','info');
-    const adjDC=Math.max(5,ench.dc+upEff('enchDC')+upEff('allDC'));
+    if(!matSaved&&Object.keys(effCost).length>0)Object.entries(effCost).forEach(([id,q])=>modInv(id,-q));
+    else if(matSaved)addLog('\u2728 Inscription mastery: materials preserved!','info');
+    if(discounted&&!matSaved)addLog('🏷\ufe0f Enchant discount: reduced material cost!','info');
+    const eqT=QUALITY[quality]||QUALITY.std;
+    let enchQualDCMod=eqT.dcMod;
+    if(quality==='fine')enchQualDCMod+=upEff('fineEnchDC');
+    if(quality==='mw'){enchQualDCMod+=upEff('fineEnchDC');enchQualDCMod+=upEff('mwEnchDC');}
+    const adjDC=Math.max(5,ench.dc+enchQualDCMod);
     const ch=doCheck('inscription',adjDC);
     const arcB=getSkMod('arcane_sense');const focB=Math.floor(getSkMod('focus')/2);const csb=upEff('craftSkillBonus');
     const efb=getFeatureVal('enchantBonus');const esf=Math.min(getFeatureVal('enchantSuccessFlat'),20);
     if(arcB)ch.extras.push({label:'Arcane Sense',val:arcB});if(focB)ch.extras.push({label:'Focus',val:focB});if(csb)ch.extras.push({label:'Upgrades',val:csb});if(efb)ch.extras.push({label:'Inscription Mastery',val:efb});if(esf)ch.extras.push({label:'Enchant Mastery',val:esf});
     const autoEnchDC=getFeatureVal('autoEnchantDC');
-    // enchantCritRange: expanded crit range (e.g. 19-20 instead of just 20)
     const critRange=20-getFeatureVal('enchantCritRange');
     const isCrit=ch.roll>=critRange;
-    // Arcanist custom pattern bonus
     const arcPatternB=isCustomEnch?getPatternInscBonus():0;
-    if(arcPatternB){ch.total+=arcPatternB;ch.extras.push({label:'✨ Arcanist',val:arcPatternB});}
+    if(arcPatternB){ch.total+=arcPatternB;ch.extras.push({label:'\u2728 Arcanist',val:arcPatternB});}
     const adj=ch.total+arcB+focB+csb+efb+esf+arcPatternB;ch.total=adj;ch.success=adj>=adjDC||(autoEnchDC>0&&adjDC<=autoEnchDC)||isCrit;
-    // checkReroll: general reroll on fail
     if(!ch.success){
       const crCharges=getFeatureVal('checkReroll');
       const crUsed=dayFlags.filter(f=>f==='check_rerolled').length;
@@ -3173,21 +3171,59 @@ function CindervaleAlchemistInner(){
     if(ch.success){const baseGR=20+ench.dc*3+cust.tier*12+getSkMod('aesthetics')*3+getSkMod('appraisal')*2;
       const critGold=isCrit?Math.floor(baseGR*0.5):0;
       const enchGoldB=getFeatureVal('enchantGoldBonus');const custPayB=getFeatureVal('customerPayBonus');
-      const gR=Math.floor((baseGR+critGold)*(1+enchGoldB+custPayB)*customSellMult);gainXP(ench.xp);setGold(g=>g+gR);
-      showResult(ench.icon+' '+ench.name+' — Enchanted!','craft',cust.customer+"'s "+cust.icon+cust.name+'\n+'+ench.xp+' XP  +'+gR+'g'+(isCustomEnch&&customSellMult>1?'\n✨ Custom pattern: '+customSellMult+'× premium!':'')+(matSaved?'\n✨ Materials preserved!':'')+(isCrit?'\n🎯 Critical inscription!':'')+(discounted?'\n🏷️ Discount materials!':''),ch);
-      // dualInscription: queue a second free enchant for this hour
-      if(dualInsc>0&&!dayFlags.includes('dual_inscribed')){setDayFlags(f=>[...f,'dual_inscribed']);setHours(h=>h+1);addLog('✨ Dual Inscription: bonus enchant this hour!','info');}
+      const debtPenalty=debt>50?-0.20:0;
+      const gR=Math.floor((baseGR+critGold)*(1+enchGoldB+custPayB+debtPenalty)*customSellMult*eqT.sellMult);const enchXpEarned=Math.floor(ench.xp*eqT.xpMult);gainXP(enchXpEarned);setGold(g=>g+gR);
+      showResult(ench.icon+' '+(quality!=='std'?QUALITY[quality].icon+' ':'')+ench.name+' \u2014 Enchanted!','craft',cust.customer+"'s "+cust.icon+cust.name+'\\n+'+enchXpEarned+' XP  +'+gR+'g'+(isCustomEnch&&customSellMult>1?'\\n\u2728 Custom pattern: '+customSellMult+'\u00d7 premium!':'')+(matSaved?'\\n\u2728 Materials preserved!':'')+(isCrit?'\\n🎯 Critical inscription!':'')+(discounted?'\\n🏷\ufe0f Discount materials!':'')+(debtPenalty<0?'\\n\u26a0\ufe0f Debt penalty: -20% pay':''),ch);
+      if(dualInsc>0&&!dayFlags.includes('dual_inscribed')){setDayFlags(f=>[...f,'dual_inscribed']);setHours(h=>h+1);addLog('\u2728 Dual Inscription: bonus enchant this hour!','info');}
     }
     else{
-      // failEnchantReturn: return some materials on enchant fail
       const fer=getFeatureVal('failEnchantReturn');
-      if(fer>0&&!matSaved){Object.entries(cost).forEach(([id,q])=>modInv(id,Math.ceil(q*fer)));
-        addLog(`✨ Enchanter training: recovered ${Math.round(fer*100)}% of inscription materials.`,'info');}
-      showResult(ench.icon+' '+ench.name+' — Failed!','error',"The inscription flickers and fades on "+cust.customer+"'s "+cust.name+'.'+(fer>0?'\nRecovered some materials.':''),ch);}
+      if(fer>0&&!matSaved&&Object.keys(cost).length>0){Object.entries(cost).forEach(([id,q])=>modInv(id,Math.ceil(q*fer)));
+        addLog('\u2728 Enchanter training: recovered '+Math.round(fer*100)+'% of materials.','info');}
+      showResult(ench.icon+' '+ench.name+' \u2014 Failed!','error',"The inscription flickers and fades on "+cust.customer+"'s "+cust.name+'.'+(fer>0?'\\nRecovered some materials.':''),ch);}
     setEnchQ(p=>p.filter(c=>c!==cust));
   };
 
-  // ─── POTION ORDERS ───
+  // ─── BATCH BREW ───
+  const doBatchCraft=(r,qty,quality='std')=>{
+    const qT=QUALITY[quality]||QUALITY.std;
+    const cost={};r.ingr.forEach(id=>{cost[id]=(cost[id]||0)+qty;});
+    if(qT.extraIngr>=1){const firstIngr=r.ingr[0];cost[firstIngr]=(cost[firstIngr]||0)+qty;}
+    if(qT.extraIngr>=2&&r.ingr.length>1){const secondIngr=r.ingr[1];cost[secondIngr]=(cost[secondIngr]||0)+qty;}
+    if(hours<qty){addLog('Need ⚡'+qty+' Energy to brew '+qty+'×'+r.icon+r.name+'. You have ⚡'+hours+' Energy.','error');return;}
+    if(!Object.entries(cost).every(([id,q])=>(inv[id]||0)>=q)){addLog('Not enough ingredients for '+qty+'× '+(qT.name!=='Standard'?qT.name+' ':'')+r.icon+r.name+'.','error');return;}
+    if(r.faction&&getRL(r.faction)<(r.fReq||0)){addLog('Not enough faction reputation for this recipe.','error');return;}
+    snapshot();
+    spendEnergy(qty);
+    Object.entries(cost).forEach(([id,q])=>modInv(id,-q));
+    const masteryDisc=getMasteryDiscount(brewCounts,r.id);
+    let qualDCMod=qT.dcMod;
+    if(quality==='fine')qualDCMod+=upEff('fineDCBonus');
+    if(quality==='mw'){qualDCMod+=upEff('fineDCBonus');qualDCMod+=upEff('mwDCBonus');}
+    const adjDC=Math.max(5,r.dc+qualDCMod-masteryDisc);
+    const sk=r.stat==='inu'?'attunement':r.stat==='tec'?'precision':r.stat==='acu'?'research':'improvisation';
+    const batchBonus=getFeatureVal('batchSuccessBonus');
+    let successes=0;const rolls=[];
+    for(let i=0;i<qty;i++){
+      const ch=doCheck(sk,adjDC);
+      const csb=upEff('craftSkillBonus');const cfb=getFeatureVal('craftBonus');
+      ch.total+=csb+cfb;if(batchBonus>0&&i>0)ch.total+=Math.floor(batchBonus*(i)*10);
+      ch.success=ch.total>=adjDC;
+      if(ch.success)successes++;
+      rolls.push(ch);
+    }
+    const potId=qualPotId(r.id,quality);
+    if(successes>0)modPot(potId,successes);
+    setBrewCounts(p=>({...p,[r.id]:(p[r.id]||0)+successes}));
+    const xpPer=Math.floor((r.xp+getSkMod('aesthetics')*2)*qT.xpMult);
+    gainXP(xpPer*successes);
+    const qualLabel=qT.name!=='Standard'?' ['+qT.icon+' '+qT.name+']':'';
+    showResult(r.icon+' Batch Brew'+qualLabel+': '+successes+'/'+qty+' succeeded!','craft',
+      rolls.map((ch,i)=>'#'+(i+1)+': '+(ch.success?'✅':'❌')+' Roll '+ch.roll+'+'+Math.floor(ch.total-ch.roll)+'='+ch.total+' vs DC'+adjDC).join('\n')+
+      '\n\n+'+(xpPer*successes)+' XP'+(qT.xpMult>1?' ('+qT.name+' '+qT.xpMult+'×)':'')+(masteryDisc>0?'\n📖 Mastery: -'+masteryDisc+' DC':''));
+  };
+
+    // ─── POTION ORDERS ───
   const doFillOrder=(cust)=>{
     const have=pots[cust.potionId]||0;if(have<cust.qty){addLog('Not enough '+cust.potionIcon+cust.potionName+' to fill this order.','error');return;}
     snapshot();
@@ -3307,7 +3343,7 @@ function CindervaleAlchemistInner(){
     // Check ingredients
     const hasMats=Object.entries(weapon.matCost).every(([id,q])=>(inv[id]||0)>=q);
     if(!hasMats){addLog('Not enough materials to forge this weapon.','error');return;}
-    if(hours<2){addLog('Forging a weapon takes 2 hours.','error');return;}
+    if(hours<2){addLog('Forging a weapon takes ⚡2 Energy.','error');return;}
     snapshot();
     spendEnergy(2);
     setDayFlags(f=>[...f,'forge_used']);
@@ -3481,7 +3517,7 @@ function CindervaleAlchemistInner(){
     if(customPatterns.length>=getPatternSlots()){addLog(`Pattern library full (${getPatternSlots()} max).`,'error');return;}
     if(effectIds.length>getMaxEffects()){addLog(`Can only combine ${getMaxEffects()} effects at your level.`,'error');return;}
     if(effectIds.length<1){addLog('Select at least one effect.','error');return;}
-    if(hours<2){addLog('Pattern research takes 2 hours of focused study.','error');return;}
+    if(hours<2){addLog('Pattern research takes ⚡2 Energy.','error');return;}
     snapshot();spendEnergy(2);
     // DC scales with power level and number of effects
     const baseDC=10+powerLevel*3+effectIds.length*2;
@@ -3539,7 +3575,7 @@ function CindervaleAlchemistInner(){
   const canAutoEnchant=()=>(prestigeLevels.magitech||0)>=4;
   const buildAutomaton=()=>{
     if(automata.length>=getAutoSlots()){addLog('Maximum automaton slots reached.','error');return;}
-    if(hours<2){addLog('Building an automaton frame takes 2 hours.','error');return;}
+    if(hours<2){addLog('Building an automaton frame takes ⚡2 Energy.','error');return;}
     const matCost={ironroot_bark:3,hearthstone:2};
     if(!Object.entries(matCost).every(([id,q])=>(inv[id]||0)>=q)){addLog('Need 3× Ironroot Bark + 2× Hearthstone to build an automaton.','error');return;}
     snapshot();spendEnergy(2);
@@ -3630,11 +3666,11 @@ function CindervaleAlchemistInner(){
   // ═══ GUILDMASTER ACADEMY ═══
   const trainApprentice=(apprId,statId)=>{
     const ap=hiredAppr.find(a=>a.id===apprId);if(!ap)return;
-    if(hours<1){addLog('Training takes 1 hour.','error');return;}
+    if(hours<1){addLog('Training takes ⚡1 Energy.','error');return;}
     const gmLv=classLevels.merchant||0;
     // Lv10: passive training costs 0 hours
     const hourCost=gmLv>=10?0:1;
-    if(hourCost>0&&hours<hourCost){addLog('Training takes 1 hour.','error');return;}
+    if(hourCost>0&&hours<hourCost){addLog('Training takes ⚡1 Energy.','error');return;}
     snapshot();
     if(hourCost>0)spendEnergy(hourCost);
     // COM-based instruction check
@@ -3670,7 +3706,7 @@ function CindervaleAlchemistInner(){
     if((classLevels.merchant||0)<10){addLog('Teaching traits requires Guildmaster Lv10.','error');return;}
     if((ap.traits||[]).includes(traitId)){addLog(ap.name+' already has this trait.','error');return;}
     if((ap.traits||[]).length>=4){addLog(ap.name+' has too many traits (max 4).','error');return;}
-    if(hours<2){addLog('Teaching a trait takes 2 hours of intensive training.','error');return;}
+    if(hours<2){addLog('Teaching a trait takes ⚡2 Energy.','error');return;}
     snapshot();spendEnergy(2);
     const dc=15;
     const ch=doCheck('persuasion',dc);ch.success=ch.total>=dc;
@@ -3918,7 +3954,7 @@ function CindervaleAlchemistInner(){
     if(bp.legendary&&getMaxMk()<3){addLog('Legendary gadgets require Tinkerer Lv10.','error');return;}
     const hasMats=Object.entries(bp.matCost).every(([id,q])=>(inv[id]||0)>=q);
     if(!hasMats){addLog('Not enough materials to craft '+bp.name+'.','error');return;}
-    if(hours<2){addLog('Crafting a gadget takes 2 hours.','error');return;}
+    if(hours<2){addLog('Crafting a gadget takes ⚡2 Energy.','error');return;}
     snapshot();
     spendEnergy(2);
     setInv(p=>{const n={...p};Object.entries(bp.matCost).forEach(([id,q])=>{n[id]=Math.max(0,(n[id]||0)-q);});return n;});
@@ -3984,7 +4020,7 @@ function CindervaleAlchemistInner(){
     const obj=qObj(q);const navTo=q.type==='gather'?'worldmap':'workshop';const navLabel=q.type==='gather'?'🗺️ Go Forage':'⚗️ Go to Workshop';
     setNews(p=>[...p,{icon:'📜',text:`New quest: ${obj}`,to:navTo,label:navLabel,color:TH.cyan}]);
   }};
-  const qP=q=>{if(q.type==='deliver')return{c:pots[q.target]||0,n:q.count};if(q.type==='gather')return{c:inv[q.target]||0,n:q.count};if(q.type==='multi')return{c:q.targets.every(t=>(pots[t]||0)>=1)?1:0,n:1};return{c:0,n:1};};
+  const qP=q=>{if(q.type==='deliver'){const allQ=Object.entries(pots).filter(([pid])=>getBaseRecipeId(pid)===q.target).reduce((s,[,c])=>s+c,0);return{c:allQ,n:q.count};}if(q.type==='gather')return{c:inv[q.target]||0,n:q.count};if(q.type==='multi')return{c:q.targets.every(t=>(pots[t]||0)>=1)?1:0,n:1};return{c:0,n:1};};
   // Quest objective description
   const qObj=q=>{
     if(q.type==='deliver'){const r=RECIPES.find(r=>r.id===q.target);return r?`Craft and deliver ${q.count}× ${r.icon}${r.name} to ${q.giver}`:`Deliver ${q.count}× ${q.target}`;}
@@ -4000,7 +4036,7 @@ function CindervaleAlchemistInner(){
     if(q.type==='deliver'){
       const r=RECIPES.find(r=>r.id===q.target);
       if(r){
-        const have=pots[q.target]||0;
+        const have=Object.entries(pots).filter(([pid])=>getBaseRecipeId(pid)===q.target).reduce((s,[,c])=>s+c,0);
         if(have<q.count){
           const need=q.count-have;
           steps.push({done:false,text:`Brew ${need} more ${r.icon}${r.name}`,nav:{to:'workshop',label:'⚗️ Go to Workshop'}});
@@ -4042,7 +4078,7 @@ function CindervaleAlchemistInner(){
   };
   const compQ=q=>{
     snapshot();
-    if(q.type==='deliver')modPot(q.target,-q.count);else if(q.type==='gather')modInv(q.target,-q.count);else if(q.type==='multi')q.targets.forEach(t=>modPot(t,-1));
+    if(q.type==='deliver'){let rem=q.count;[q.target,q.target+'_F',q.target+'_M'].forEach(pid=>{const have=pots[pid]||0;if(rem>0&&have>0){const take=Math.min(rem,have);modPot(pid,-take);rem-=take;}});}else if(q.type==='gather')modInv(q.target,-q.count);else if(q.type==='multi')q.targets.forEach(t=>{let done=false;[t,t+'_F',t+'_M'].forEach(pid=>{if(!done&&(pots[pid]||0)>=1){modPot(pid,-1);done=true;}});});
     setAQ(p=>p.filter(a=>a.id!==q.id));setDoneQ(p=>[...p,q.id]);const loreXp=getSkMod('lore')*4;
     const qGoldB=1+getFeatureVal('questGoldBonus');const qRepB=1+getFeatureVal('questRepBonus');const qXpB=1+getFeatureVal('questXPBonus');
     const qGold=Math.floor(q.gold*qGoldB);
@@ -4095,13 +4131,13 @@ function CindervaleAlchemistInner(){
     addLog(`📌 Accepted board request: ${bq.name}`,'quest');
   };
   const bqProgress=(bq)=>{
-    if(bq.type==='deliver')return{c:pots[bq.target]||0,n:bq.count};
+    if(bq.type==='deliver'){const allQ=Object.entries(pots).filter(([pid])=>getBaseRecipeId(pid)===bq.target).reduce((s,[,c])=>s+c,0);return{c:allQ,n:bq.count};}
     if(bq.type==='gather')return{c:inv[bq.target]||0,n:bq.count};
     return{c:0,n:bq.count};
   };
   const completeBQ=(bq)=>{
     snapshot();
-    if(bq.type==='deliver')modPot(bq.target,-bq.count);
+    if(bq.type==='deliver'){let rem=bq.count;[bq.target,bq.target+'_F',bq.target+'_M'].forEach(pid=>{const have=pots[pid]||0;if(rem>0&&have>0){const take=Math.min(rem,have);modPot(pid,-take);rem-=take;}});}
     else if(bq.type==='gather')modInv(bq.target,-bq.count);
     setActiveBQ(p=>p.filter(q=>q.id!==bq.id));
     setDoneBQCount(c=>c+1);
@@ -4366,7 +4402,46 @@ function CindervaleAlchemistInner(){
       return{...ap,morale:Math.min(100,Math.max(20,ap.morale+(upEff('morale')||0)+2+getFeatureVal('healMorale')+traitMorale))};
     });
     setHiredAppr(updatedAppr);
-    setGold(g=>Math.max(0,g-totalSal));if(totalSal>0)report.push({n:'Payroll',i:'💰',r:`-${totalSal}g${gold<totalSal?' (couldn\'t cover!)':''}`,t:gold<totalSal?'fail':'idle'});
+    // ═══ DAILY UPKEEP & DEBT PROCESSING ═══
+    const dailyUpkeep=calcUpkeep();
+    const prevGold=gold;
+    let newGold=gold-dailyUpkeep;
+    let newDebt=debt;
+    // Process debt
+    if(newGold<0){
+      newDebt+=Math.abs(newGold);
+      newGold=0;
+    } else if(newDebt>0){
+      // Pay down debt with surplus gold
+      const payoff=Math.min(newGold,newDebt);
+      newGold-=payoff;
+      newDebt-=payoff;
+    }
+    setGold(newGold);setDebt(newDebt);
+    // Debt consequences
+    if(newDebt>50){
+      // Morale hit
+      setHiredAppr(prev=>prev.map(ap=>({...ap,morale:Math.max(0,(ap.morale||80)-5)})));
+    }
+    if(newDebt>100&&disabledUpgrades.length<upgrades.length){
+      // Repossess a random active upgrade
+      const active=upgrades.filter(uid=>!disabledUpgrades.includes(uid));
+      if(active.length>0){
+        const victim=active[Math.floor(Math.random()*active.length)];
+        setDisabledUpgrades(prev=>[...prev,victim]);
+        addLog('⚠️ DEBT: The town council has repossessed your '+UPGRADES[victim]?.name+'! Pay off debt to restore it.','error');
+      }
+    }
+    if(newDebt>200&&!shopLocked){
+      setShopLocked(true);
+      addLog('🛑 DEBT CRISIS: Your shop has been padlocked! You cannot sell from shelves or serve customers until debt is reduced below 200g.','error');
+    }
+    if(newDebt<=200&&shopLocked){
+      setShopLocked(false);
+      addLog('✅ Shop reopened! Debt reduced below critical threshold.','info');
+    }
+    // Report line
+    report.push({n:'Daily Costs',i:'💰',r:'-'+dailyUpkeep+'g (base 5 + '+Math.max(0,dailyUpkeep-5)+' maintenance/wages)'+(newDebt>0?' | DEBT: '+newDebt+'g':''),t:newDebt>0?'fail':'idle'});
     if(upEff('passiveIncome')>0){const piMult=Math.max(1,getFeatureVal('passiveIncomeMulti'));const p=Math.floor(upEff('passiveIncome')*piMult);setGold(g=>g+p);report.push({n:'Shop Front',i:'🪟',r:`+${p}g${piMult>1?' (×'+piMult+')':''}`,t:'ok'});}
     // Research Papers: passive income from published papers
     if(pubPapers.length>0){
@@ -4422,7 +4497,7 @@ function CindervaleAlchemistInner(){
       });
       return next;
     });
-    if(shelfGold>0){setGold(g=>g+shelfGold);const items=Object.entries(shelfSold).map(([id,q])=>{const r=RECIPES.find(x=>x.id===id);return(r?.icon||'')+r?.name+' ×'+q;}).join(', ');
+    if(shelfGold>0&&!shopLocked){setGold(g=>g+shelfGold);const items=Object.entries(shelfSold).map(([id,q])=>{const r=RECIPES.find(x=>x.id===getBaseRecipeId(id));return(r?.icon||'')+r?.name+(getPotQuality(id)!=='std'?' '+QUALITY[getPotQuality(id)].icon:'')+' ×'+q;}).join(', ');
       report.push({n:'Shelf Sales',i:'🏪',r:'+'+shelfGold+'g ('+items+')',t:'ok'});}
     // Overnight Craft: auto-brew 1 potion while sleeping
     if(getFeatureVal('overnightCraft')){
@@ -4527,14 +4602,23 @@ function CindervaleAlchemistInner(){
       let ppGold=0;pubPapers.forEach(p=>{const age=Math.max(1,day-p.day);const base=grand?8:3;ppGold+=scaling?Math.floor(base*(1+Math.min(age/30,2))):base;});
       if(ppGold>0){goldIn+=ppGold;goldLines.push({icon:'📝',label:`Research Papers (${pubPapers.length})`,val:'+'+ppGold+'g',color:TH.green});}
     }
-    if(totalSal>0){goldOut+=totalSal;goldLines.push({icon:'💰',label:'Payroll',val:'-'+totalSal+'g',color:TH.red});}
+    {
+      const upkeepTotal=calcUpkeep();
+      goldOut+=upkeepTotal;
+      goldLines.push({icon:'🏠',label:'Base Upkeep',val:'-5g',color:TH.red});
+      const upgMaint=upkeepTotal-5-hiredAppr.reduce((s,ap)=>{const pd=getFeatureVal('payrollDiscount');const hp=getFeatureVal('halfPayroll')?0.5:1;return s+Math.ceil((ap.salary||5)*hp*(1-pd));},0);
+      if(upgMaint>0)goldLines.push({icon:'🔧',label:'Upgrade Maintenance ('+upgrades.filter(u=>!disabledUpgrades.includes(u)).length+')',val:'-'+upgMaint+'g',color:TH.red});
+      const staffCost=upkeepTotal-5-upgMaint;
+      if(staffCost>0)goldLines.push({icon:'💰',label:'Payroll ('+hiredAppr.length+' staff)',val:'-'+staffCost+'g',color:TH.red});
+      if(debt>0)goldLines.push({icon:'⚠️',label:'OUTSTANDING DEBT',val:debt+'g',color:'#c04040'});
+    }
     firedEvents.forEach(e=>{if(e.result?.gold){
       if(e.result.gold>0){goldIn+=e.result.gold;goldLines.push({icon:'🏘️',label:e.text,val:'+'+e.result.gold+'g',color:TH.green});}
       else{goldOut+=Math.abs(e.result.gold);goldLines.push({icon:'🏘️',label:e.text,val:e.result.gold+'g',color:TH.red});}}});
     if(goldLines.length>0)mrSections.push({title:'💰 Gold',net:goldIn-goldOut,lines:goldLines});
     // Shelf Sales detail
     if(Object.keys(shelfSold).length>0){
-      const sLines=Object.entries(shelfSold).map(([id,q])=>{const r=RECIPES.find(x=>x.id===id);
+      const sLines=Object.entries(shelfSold).map(([id,q])=>{const r=RECIPES.find(x=>x.id===getBaseRecipeId(id));
         const basePrice=r?r.xp+getSkMod('aesthetics')*2+getSkMod('haggling')+Math.floor(upEff('sellBonus')*r.xp):0;
         const price=Math.floor(basePrice*(1+getFeatureVal('sellBonus')+getFeatureVal('customerPayBonus')+getFeatureVal('potionValueBonus')));
         return{icon:r?.icon||'🧪',label:(r?.name||id)+' ×'+q,val:'+'+price*q+'g',color:TH.gold};});
@@ -4655,6 +4739,49 @@ function CindervaleAlchemistInner(){
       if(train)bpLines.push({icon:'🎓',label:'Training Room',val:'Staff XP ×'+Math.floor(2*mult),color:TH.gold});
       if(bpLines.length>0)mrSections.push({title:'🏗️ Constructor Projects',lines:bpLines});
     }
+    // ═══ INGREDIENT SPOILAGE ═══
+    const spoilLines=[];
+    const spoilThresholdBase=8;
+    const spoilThresholdBonus=getFeatureVal('spoilThreshold')+upEff('spoilThreshold');
+    const totalSpoilThreshold=spoilThresholdBase+spoilThresholdBonus;
+    // Naturalist bonus: documented flora entries give +3 threshold for their ingredient
+    const natBonusIngr={};
+    if(fieldJournal&&FIELD_DISCOVERIES){
+      Object.values(FIELD_DISCOVERIES).flat().filter(d=>fieldJournal.includes(d.id)&&d.type==='flora'&&d.bonus?.ingredient).forEach(d=>{
+        natBonusIngr[d.bonus.ingredient]=(natBonusIngr[d.bonus.ingredient]||0)+3;
+      });
+    }
+    let totalSpoiled=0;let totalResidueGained=0;
+    const spoilSalvage=getFeatureVal('spoilSalvage');
+    const newInv={...inv};
+    Object.entries(newInv).forEach(([id,qty])=>{
+      if(qty<=0)return;
+      // Hidden/legendary ingredients get higher base threshold
+      const isHidden=HIDDEN_INGR&&HIDDEN_INGR[id];
+      const baseT=isHidden?12:totalSpoilThreshold;
+      const natBonus=natBonusIngr[id]||0;
+      const threshold=baseT+natBonus;
+      if(qty<=threshold)return;
+      const excess=qty-threshold;
+      let spoiled=0;
+      for(let i=0;i<excess;i++){if(Math.random()<0.10)spoiled++;}
+      if(spoiled>0){
+        newInv[id]=Math.max(0,qty-spoiled);
+        if(newInv[id]<=0)delete newInv[id];
+        totalSpoiled+=spoiled;
+        const salvaged=spoilSalvage>0?Math.floor(spoiled*spoilSalvage):0;
+        if(salvaged>0){
+          newInv.alchemical_residue=(newInv.alchemical_residue||0)+salvaged;
+          totalResidueGained+=salvaged;
+        }
+        spoilLines.push({icon:'🗑️',label:(INGR[id]?.icon||'')+' '+(INGR[id]?.name||id),val:'-'+spoiled+(salvaged>0?' (♻'+salvaged+' residue)':''),color:'#c06040'});
+      }
+    });
+    if(spoilLines.length>0){
+      setInv(newInv);
+      mrSections.push({title:'🗑️ Spoilage (threshold: '+totalSpoilThreshold+')',lines:spoilLines});
+    }
+
     // ═══ ELIXIR BUFFS — Decrement and report ═══
     const buffLines=[];
     const updatedBuffs={...activeBuffs};
@@ -4846,6 +4973,15 @@ function CindervaleAlchemistInner(){
     }
     // Always show morning report
     const MR_FLAVOR=['Dawn breaks over Cindervale. Smoke curls from the workshop chimney.','The morning bell rings across the village square.','Another day begins — the scent of ash and hearthfire fills the air.','Birdsong mixes with the distant clang of the smithy as you open shop.','Mist clings to the cobblestones as Cindervale stirs to life.','The sun crests the eastern ridge, painting the rooftops in amber.','A cool breeze carries the scent of ashbloom through the village.','You wake to the rhythmic tapping of the notice board being updated.'];
+    // ═══ GAME OVER CHECK ═══
+    if(newDebt>=300){
+      setMorningReport({dayNum:day+1,sections:[{title:'🛑 WORKSHOP SEIZED',lines:[
+        {icon:'⚠️',label:'The Cindervale Town Council has seized your workshop.',val:'',color:'#c04040'},
+        {icon:'💰',label:'Outstanding debt: '+newDebt+'g',val:'',color:'#c04040'},
+        {icon:'🏠',label:'Your dream of Cindervale is over... for now.',val:'',color:TH.textDim},
+      ]}],baseH:0,flavor:'The workshop doors are locked. The dream is over.',isGameOver:true});
+      return;
+    }
     setMorningReport({dayNum:day+1,sections:mrSections,baseH,flavor:MR_FLAVOR[Math.floor(Math.random()*MR_FLAVOR.length)]});
     setNews(nw);
   };
@@ -5311,7 +5447,7 @@ function CindervaleAlchemistInner(){
         </div>
         {showDebug&&<div style={{position:'fixed',bottom:50,right:8,zIndex:1001,background:'#1a1a2a',border:'1px solid #555',borderRadius:8,padding:10,width:320,maxHeight:'80vh',overflow:'auto',fontSize:13,color:'#ddd',boxShadow:'0 4px 20px #000a'}} onClick={e=>e.stopPropagation()}>
           <div style={{fontSize:16,color:'#ff8',marginBottom:6,display:'flex',justifyContent:'space-between'}}><b>🐛 Debug Panel</b><span style={{cursor:'pointer'}} onClick={()=>setShowDebug(false)}>✕</span></div>
-          <div style={{color:'#aaa',fontSize:11,marginBottom:8}}>Day {day} · {hours}h · Lv{getLvl(xp)} · {gold}g · {xp}xp</div>
+          <div style={{color:'#aaa',fontSize:11,marginBottom:8}}>Day {day} · ⚡{hours} · Lv{getLvl(xp)} · {gold}g · {xp}xp</div>
 
           <div style={{marginBottom:6}}><b style={{color:'#8cf'}}>💰 Resources</b></div>
           <div style={{display:'flex',flexWrap:'wrap',gap:3,marginBottom:8}}>
@@ -5382,7 +5518,7 @@ function CindervaleAlchemistInner(){
           <div style={{fontSize:20,color:TH.gold,letterSpacing:2,cursor:'pointer'}} onClick={()=>{setScreen('map');handleDevTap();}}>⚗️ Cindervale</div>
           <div style={{fontSize:11,color:TH.gold,position:'absolute',right:8,top:2}}>{BUILD_VERSION}</div>
           <div style={{display:'flex',gap:4}}>
-            <button style={{...S.btn('gold'),fontSize:14,padding:'3px 10px'}} onClick={()=>setConfirmRest(true)}>🌙 Rest ({hours}h)</button>
+            <button style={{...S.btn('gold'),fontSize:14,padding:'3px 10px'}} onClick={()=>setConfirmRest(true)}>🌙 Rest (⚡{hours})</button>
             {undoStack.length>0&&<button style={{...S.btn('def'),fontSize:14,padding:'3px 8px'}} onClick={undo}>↩️ Undo</button>}
             <button style={{...S.btn('dim'),fontSize:14,padding:'3px 8px'}} onClick={()=>setShowSaveMenu(true)}>💾</button>
             <button style={{...S.btn((musicOn||sfxOn)?'gold':'dim'),fontSize:14,padding:'3px 8px'}} onClick={()=>setShowAudioPanel(p=>!p)} title="Audio Settings">🎵</button>
@@ -5425,7 +5561,7 @@ function CindervaleAlchemistInner(){
           <Portrait cls={startingClass||'alchemist'} race={charRace} gender={charGender} size={22} style={{borderWidth:1,borderRadius:4}}/>
           <span style={{color:TH.textBright}}>{charName}</span>
           <span>{Object.entries(classLevels).filter(([cid])=>CLASSES[cid]).map(([cid,lv])=>CLASSES[cid]?.icon).join('')}</span>
-          <span>📅{day}</span><span>⏳{hours}h</span><span style={{color:TH.gold}}>Lv{level}</span><span>💰{gold}g</span>
+          <span>📅{day}</span><span>⚡{hours}</span><span style={{color:TH.gold}}>Lv{level}</span><span style={{color:debt>0?'#c04040':TH.gold}}>💰{gold}g{debt>0&&<span style={{fontSize:11,color:'#c04040'}}> (debt:{debt}g)</span>}</span>
         </div>
         {nextXp&&<div style={{width:'100%',maxWidth:250,height:4,background:TH.panel,borderRadius:3,overflow:'hidden',margin:'2px auto'}}>
           <div style={{height:'100%',borderRadius:3,width:`${((xp-XP_TBL[getLvl(xp)])/(nextXp-XP_TBL[getLvl(xp)]))*100}%`,background:`linear-gradient(90deg,${TH.goldDim},${TH.gold})`}}/>
@@ -5527,7 +5663,7 @@ function CindervaleAlchemistInner(){
            'Night has fallen. Nothing left to do but rest and prepare for tomorrow.'}
         </div>
         <div style={{fontSize:15,color:TH.textDim,marginBottom:8}}>
-          {hours>0&&<span>You'll lose your remaining <b style={{color:TH.goldBright}}>{hours} hours</b>. </span>}
+          {hours>0&&<span>You'll lose your remaining <b style={{color:TH.goldBright}}>⚡{hours} Energy</b>. </span>}
           {hiredAppr.length>0&&<span>Your {hiredAppr.length} staff will complete their assignments overnight. </span>}
           {hiredAppr.reduce((s,a)=>s+a.salary,0)>0&&<span>Payroll: {hiredAppr.reduce((s,a)=>s+a.salary,0)}g. </span>}
           {hiredAppr.reduce((s,a)=>s+a.salary,0)>gold&&<div style={{color:TH.red,marginTop:4}}>⚠️ You can't cover payroll! ({hiredAppr.reduce((s,a)=>s+a.salary,0)}g needed, {gold}g available)</div>}
@@ -5550,7 +5686,7 @@ function CindervaleAlchemistInner(){
       </div>}
 
       {/* MORNING REPORT POPUP — overnight summary */}
-      {morningReport&&<div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'#000000cc',display:'flex',alignItems:'center',justifyContent:'center',zIndex:999,padding:16}} onClick={()=>setMorningReport(null)}>
+      {morningReport&&<div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'#000000cc',display:'flex',alignItems:'center',justifyContent:'center',zIndex:999,padding:16}} onClick={()=>{if(!morningReport?.isGameOver)setMorningReport(null);}}>
         <div style={{background:`linear-gradient(160deg,${TH.panelAlt},${TH.panel})`,border:`2px solid ${TH.borderGold}`,borderRadius:12,padding:'20px 24px',maxWidth:440,width:'100%',maxHeight:'80vh',overflowY:'auto',boxShadow:`0 0 40px ${TH.gold}20`}} onClick={e=>e.stopPropagation()}>
           <div style={{textAlign:'center',marginBottom:12}}>
             <Portrait cls={startingClass||'alchemist'} race={charRace} gender={charGender} size={90} style={{marginBottom:8}}/>
@@ -5560,7 +5696,7 @@ function CindervaleAlchemistInner(){
               {Object.entries(classLevels).filter(([cid])=>CLASSES[cid]).map(([cid,lv])=>CLASSES[cid]?.icon+' '+CLASSES[cid]?.name+' '+lv).join(' · ')} · Lv{level} · 💰{gold}g
             </div>
             <div style={{fontSize:14,color:TH.textDim,marginTop:4,fontStyle:'italic'}}>{morningReport.flavor}</div>
-            <div style={{fontSize:15,color:TH.textBright,marginTop:4}}>⏳ {morningReport.baseH} hours ahead{hiredAppr.length>0?` · ${hiredAppr.length} staff on duty`:''}</div>
+            <div style={{fontSize:15,color:TH.textBright,marginTop:4}}>⏳ ⚡{morningReport.baseH} Energy for today{hiredAppr.length>0?` · ${hiredAppr.length} staff on duty`:''}</div>
           </div>
           {morningReport.sections.map((sec,si)=><div key={si} style={{marginBottom:10}}>
             <div style={{fontSize:16,color:TH.gold,fontWeight:'bold',borderBottom:`1px solid ${TH.border}`,paddingBottom:3,marginBottom:6,display:'flex',justifyContent:'space-between',alignItems:'center'}}>
@@ -5573,7 +5709,7 @@ function CindervaleAlchemistInner(){
             </div>)}
           </div>)}
           <div style={{textAlign:'center',marginTop:12}}>
-            <button style={{...S.btn('gold'),fontSize:16,padding:'8px 24px'}} onClick={()=>setMorningReport(null)}>Begin the Day</button>
+            <button style={{...S.btn('gold'),fontSize:16,padding:'8px 24px'}} onClick={()=>{if(morningReport?.isGameOver){setGameStarted(false);setMorningReport(null);return;}setMorningReport(null);}}>{morningReport?.isGameOver?'Return to Title':'Begin the Day'}</button>
           </div>
         </div>
       </div>}
@@ -5755,7 +5891,7 @@ function CindervaleAlchemistInner(){
                 </div>}
                 <button style={S.btn('dim')} onClick={()=>setZonePopup(null)}>Close</button>
               </div>
-              {canGo&&<div style={{fontSize:13,color:TH.textDim,marginTop:4,textAlign:'center'}}>⚠️ This uses all remaining {hours} hours</div>}
+              {canGo&&<div style={{fontSize:13,color:TH.textDim,marginTop:4,textAlign:'center'}}>⚠️ This uses all remaining ⚡{hours} Energy</div>}
             </div>
           </div>
         </div>);
@@ -6269,7 +6405,7 @@ function CindervaleAlchemistInner(){
 
           <div style={{textAlign:'center',marginBottom:12,position:'relative',zIndex:1}}>
             <div style={{fontSize:18,color:TH.gold,letterSpacing:4}}>— CINDERVALE —</div>
-            <div style={{fontSize:14,color:TH.textDim}}>{hours>4?'The day stretches ahead.':hours>1?'Shadows lengthen across the village.':hours>0?'The last light fades.':'Night has fallen.'} Day {day} · ⚡{hours} Energy</div>
+            <div style={{fontSize:14,color:TH.textDim}}>{debt>200?'Your shop is PADLOCKED. Reduce debt to reopen.':debt>100?'Creditors circle. Some upgrades have been repossessed.':debt>50?'The town council is watching your finances closely.':hours>4?'The day stretches ahead.':hours>1?'Shadows lengthen across the village.':hours>0?'The last light fades.':'Night has fallen.'} Day {day} · ⚡{hours} Energy</div>
           </div>
 
           {/* Buildings — 4×2 grid */}
@@ -6277,7 +6413,7 @@ function CindervaleAlchemistInner(){
             <MapB icon="⚗️" name="Workshop" screen="workshop" color={TH.green} sub={`${upgrades.length} upgrades`}/>
             <MapB icon="🛒" name="Market" screen="market" color={TH.gold} sub="Shop · Brenna"/>
             <MapB icon="🍺" name="Ember & Anvil" screen="tavern" color={TH.ember} sub="Tavern · NPCs"/>
-            <MapB icon="🗺️" name="Village Gates" screen="worldmap" color={TH.teal} sub={`${hours}h to explore`}/>
+            <MapB icon="🗺️" name="Village Gates" screen="worldmap" color={TH.teal} sub={`$⚡{hours} to explore`}/>
 
             <MapB icon="📜" name="Quest Board" screen="quests" color={TH.cyan} note={questNote}/>
             <MapB icon="👥" name="Staff Hall" screen="staff" color={TH.orange} sub={`${hiredAppr.length}/${maxAppr}`} note={staffNote}/>
@@ -6345,9 +6481,9 @@ function CindervaleAlchemistInner(){
                   <span style={{color:TH.purple,marginLeft:'auto'}}>{bp}g</span>
                   <button style={S.btn(gold>=bp?'def':'dim')} onClick={()=>{if(gold>=bp){setGold(g=>g-bp);modInv(item.id,1);}}} disabled={gold<bp}>+1</button>
                 </div>);})}</>}            {Object.entries(pots).filter(([,q])=>q>0).length>0&&<div style={{fontSize:16,color:TH.gold,marginTop:8,marginBottom:4}}>Sell Potions</div>}
-            {Object.entries(pots).filter(([,q])=>q>0).map(([id,qty])=>{const r=RECIPES.find(r=>r.id===id);if(!r)return null;const baseSp=r.xp+getSkMod('aesthetics')*2+getSkMod('haggling')+Math.floor(upEff('sellBonus')*r.xp);const sp=Math.floor(baseSp*(1+getFeatureVal('sellBonus')));return(
+            {Object.entries(pots).filter(([,q])=>q>0).map(([id,qty])=>{const baseId=getBaseRecipeId(id);const r=RECIPES.find(r=>r.id===baseId);if(!r)return null;const pq=getPotQuality(id);const qT=QUALITY[pq]||QUALITY.std;const baseSp=r.xp+getSkMod('aesthetics')*2+getSkMod('haggling')+Math.floor(upEff('sellBonus')*r.xp);const sp=Math.floor(baseSp*(1+getFeatureVal('sellBonus'))*qT.sellMult);return(
               <div key={id} style={{display:'flex',alignItems:'center',gap:6,padding:'3px 0',fontSize:16}}>
-                <span>{r.icon}{r.name} ×{qty}</span><span style={{color:TH.gold,marginLeft:'auto'}}>{sp}g ea</span>
+                <span>{r.icon}{r.name}{qT.icon?' '+qT.icon:''} ×{qty}</span><span style={{color:TH.gold,marginLeft:'auto'}}>{sp}g ea</span>
                 <button style={S.btn()} onClick={()=>{modPot(id,-1);setGold(g=>g+sp);addLog(`Sold ${r.icon}${r.name}. (+${sp}g)`,'info');}}>Sell 1</button>
                 {qty>1&&<button style={S.btn()} onClick={()=>{modPot(id,-qty);setGold(g=>g+sp*qty);addLog(`Sold ${qty}× ${r.icon}${r.name}. (+${sp*qty}g)`,'info');}}>All ({sp*qty}g)</button>}
               </div>);})}
@@ -6368,13 +6504,13 @@ function CindervaleAlchemistInner(){
             Sell potions through underground channels at {getFeatureVal('blackMarketMulti')||2}× price.
             {!getFeatureVal('noRisk')?' ⚠️ Risk of confiscation — you may lose goods AND gold.':' No risk — you\'re untouchable.'}
           </div>
-          {Object.entries(pots).filter(([,q])=>q>0).map(([id,qty])=>{const r=RECIPES.find(r=>r.id===id);if(!r)return null;
+          {Object.entries(pots).filter(([,q])=>q>0).map(([id,qty])=>{const baseId=getBaseRecipeId(id);const r=RECIPES.find(r=>r.id===baseId);if(!r)return null;const pq=getPotQuality(id);const qT=QUALITY[pq]||QUALITY.std;
             const baseSp=r.xp+getSkMod('aesthetics')*2+getSkMod('haggling')+Math.floor(upEff('sellBonus')*r.xp);
             const bmMult=getFeatureVal('blackMarketMulti')||2;
             const bmPrice=Math.floor(baseSp*bmMult*(1+getFeatureVal('sellBonus')));
             const riskChance=getFeatureVal('noRisk')?0:getFeatureVal('reducedRisk')?0.08:0.2;
             return(<div key={id} style={{display:'flex',alignItems:'center',gap:6,padding:'3px 0',fontSize:16}}>
-              <span>{r.icon}{r.name} ×{qty}</span>
+              <span>{r.icon}{r.name}{qT.icon?' '+qT.icon:''} ×{qty}</span>
               <span style={{color:'#ff4080',marginLeft:'auto'}}>{bmPrice}g ea</span>
               <button style={{...S.btn('def'),borderColor:'#ff408066'}} onClick={()=>{
                 if(Math.random()<riskChance){
@@ -6481,7 +6617,7 @@ function CindervaleAlchemistInner(){
                 ⛏️ Quick Forage ({reg.sites?.find(s=>s.id===selectedSite.siteId)?.name||'selected'})
               </button>}
             </div>
-            {canGo&&<div style={{fontSize:13,color:TH.textDim,marginTop:3,textAlign:'center'}}>⚠️ This will use your remaining {hours} hours — plan crafting & shop tasks first!</div>}
+            {canGo&&<div style={{fontSize:13,color:TH.textDim,marginTop:3,textAlign:'center'}}>⚠️ This will use all remaining ⚡{hours} Energy — plan crafting & shop tasks first!</div>}
           </div>);})()}
         {lastCheck&&<div style={{...S.card,borderColor:lastCheck.success?TH.green:TH.red}}>
           <div style={{fontSize:16,color:lastCheck.success?TH.green:TH.red,marginBottom:2}}>{lastCheck.success?'✅ Success!':'❌ Failed!'}</div>
@@ -6499,6 +6635,12 @@ function CindervaleAlchemistInner(){
           <button style={{...S.btn(),fontSize:14}} onClick={()=>setScreen('enchant')}>🛒 Customers{enchNote?' ('+enchNote+')':''}</button>
           <button style={{...S.btn(),fontSize:14}} onClick={()=>setScreen('upgrades')}>🏗️ Upgrades ({upgrades.length})</button>
         </div>
+
+        {/* Daily Costs Summary */}
+        {debt>0&&<div style={{display:'flex',flexWrap:'wrap',gap:4,marginBottom:8,padding:'6px 10px',background:'#c0404015',borderRadius:6,border:'1px solid #c0404044'}}>
+          <span style={{fontSize:13,color:'#c04040',fontWeight:'bold',flex:1}}>⚠️ Debt: {debt}g {debt>=200?'| SHOP LOCKED':debt>=100?'| Upgrades at risk':debt>=50?'| Morale dropping':''}</span>
+          <span style={{fontSize:12,color:TH.textDim}}>Daily costs: ~{calcUpkeep()}g</span>
+        </div>}
 
         {/* Active Elixir Buffs */}
         {Object.entries(activeBuffs).filter(([,b])=>b.daysLeft>0).length>0&&<div style={{display:'flex',flexWrap:'wrap',gap:4,marginBottom:8,padding:'6px 10px',background:'#50c07010',borderRadius:6,border:'1px solid #50c07033'}}>
@@ -7330,7 +7472,7 @@ function CindervaleAlchemistInner(){
                   const name=document.getElementById('arc_name_input')?.value||'';
                   researchPattern(checked,power,cat,name);
                 }}>
-                🔬 Research Pattern (2h)
+                🔬 Research Pattern (⚡2)
               </button>
             </div>
             {/* Pattern library */}
@@ -7430,7 +7572,7 @@ function CindervaleAlchemistInner(){
           {/* Build button */}
           {automata.length<getAutoSlots()&&<button style={{...S.btn(hours>=2?'gold':'dim'),fontSize:14,padding:'6px 12px',marginTop:4}} disabled={hours<2}
             onClick={()=>buildAutomaton()}>
-            🔨 Build Automaton (2h · 3× Ironroot Bark + 2× Hearthstone · DC 12)
+            🔨 Build Automaton (⚡2 · 3× Ironroot Bark + 2× Hearthstone · DC 12)
           </button>}
           {(prestigeLevels.magitech||0)<3&&<div style={{fontSize:12,color:TH.textDim,marginTop:4}}>🔒 Automata gain XP at Magitech Lv3</div>}
           {(prestigeLevels.magitech||0)>=3&&(prestigeLevels.magitech||0)<4&&<div style={{fontSize:12,color:TH.textDim,marginTop:4}}>🔒 Enchanting task at Magitech Lv4</div>}
@@ -7439,8 +7581,8 @@ function CindervaleAlchemistInner(){
         <div style={S.card}><div style={S.cT}>⚗️ Recipes ({known.length}/{RECIPES.length})</div>
         {RECIPES.filter(r=>known.includes(r.id)).map(r=>{
           const cost={};r.ingr.forEach(id=>{cost[id]=(cost[id]||0)+1;});const can=Object.entries(cost).every(([id,q])=>(inv[id]||0)>=q);
-          const fOk=!r.faction||getRL(r.faction)>=(r.fReq||0);const adjDC=Math.max(5,r.dc+upEff('craftDC')+upEff('allDC'));
-          // Calculate success chance for display
+          const fOk=!r.faction||getRL(r.faction)>=(r.fReq||0);const masteryD=getMasteryDiscount(brewCounts,r.id);const adjDC=Math.max(5,r.dc-masteryD);
+          // Calculate success chance for display (Standard quality)
           const craftSk=r.stat==='inu'?'attunement':r.stat==='tec'?'precision':r.stat==='acu'?'research':'improvisation';
           const totalMod=getSkMod(craftSk)+upEff('craftSkillBonus')+getFeatureVal('craftBonus');
           const needed=adjDC-totalMod;
@@ -7455,23 +7597,39 @@ function CindervaleAlchemistInner(){
           const doBuy=(n)=>{const{needed}=buyCalc(n);Object.entries(needed).forEach(([id,q])=>{const si=SHOP_I.find(i=>i.id===id);if(si){const bp=getBuyPrice(Math.max(1,si.price-hagMod));for(let i=0;i<q;i++){setGold(g=>g-bp);modInv(id,1);}}});};
           return(<div key={r.id} style={{padding:'6px 8px',background:TH.panelLight,borderRadius:4,marginBottom:4,border:`1px solid ${can&&fOk?TH.borderGold:TH.border}`,opacity:fOk?1:.5}}>
             <div style={{display:'flex',justifyContent:'space-between'}}><span style={{fontSize:16,color:TH.textBright}}>{r.icon}{r.name}</span>
-              <span style={{fontSize:14}}><span style={{color:TH.textDim}}>DC{adjDC}</span> <span style={{color:successPct>=70?TH.green:successPct>=40?TH.gold:TH.red,fontSize:13}}>{successPct}%</span></span></div>
+              <span style={{fontSize:14}}><span style={{color:TH.textDim}}>DC{adjDC}{masteryD>0?' (-'+masteryD+')':''}</span> <span style={{color:successPct>=70?TH.green:successPct>=40?TH.gold:TH.red,fontSize:13}}>{successPct}%</span></span></div>
             {r.desc&&<div style={{fontSize:14,color:TH.textDim,fontStyle:'italic',margin:'2px 0'}}>{r.desc}</div>}
             {!fOk&&<div style={{fontSize:13,color:TH.red,fontWeight:'bold',margin:'3px 0',padding:'2px 6px',background:TH.red+'12',borderRadius:3,border:'1px solid '+TH.red+'33'}}>🔒 Requires {FACTIONS[r.faction]?.icon} {FACTIONS[r.faction]?.name} reputation: {REP_LVS[r.fReq]||'Lv'+r.fReq} (currently: {REP_LVS[getRL(r.faction)]||'Unknown'})</div>}
             <div style={S.row}>{Object.entries(cost).map(([id,q])=>{
               const have=(inv[id]||0)>=q;
+              const iQty=inv[id]||0;const iHid=HIDDEN_INGR&&HIDDEN_INGR[id];const iThresh=(iHid?12:8)+getFeatureVal('spoilThreshold')+upEff('spoilThreshold');
+              const iWarn=iQty>iThresh;
               return <span key={id} style={{...S.tag,borderColor:have?TH.green:TH.red}}>
-                {INGR[id]?.icon}{INGR[id]?.name} <b style={{color:have?TH.green:TH.red}}>{inv[id]||0}/{q}</b>
+                {INGR[id]?.icon}{INGR[id]?.name} <b style={{color:have?TH.green:TH.red}}>{iQty}/{q}</b>{iWarn&&<span style={{fontSize:10,color:'#c0a040'}}> ⚠️</span>}
               </span>;})}
             </div>
             <div style={{...S.row,marginTop:3}}>
-              {(()=>{const bsb=getFeatureVal('batchSizeBonus');const sizes=[1,2,3,5];if(bsb>0)sizes.push(5+bsb);return sizes;})().map(n=>{const canN=fOk&&hours>=n&&Object.entries(cost).every(([id,q])=>(inv[id]||0)>=q*n);const bc=buyCalc(n);
-                return <span key={n} style={{display:'inline-flex',gap:2,alignItems:'center'}}>
-                  <button style={S.btn(canN?n===1?'gold':'def':'dim')} onClick={()=>n===1?doCraft(r):doBatchCraft(r,n)} disabled={!canN||hours<n}
-                    >{n===1?(hours>=1?'×1 (⚡1)':'No Energy'):'×'+n}</button>
-                  {!canN&&bc.canBuy&&fOk&&hours>=n&&<button style={{fontSize:12,padding:'1px 4px',background:TH.gold,color:TH.bg,border:'none',borderRadius:2,cursor:'pointer',fontFamily:'inherit'}}
-                    onClick={(e)=>{e.stopPropagation();doBuy(n);}}>Buy {bc.total}g</button>}
-                </span>;})}</div>
+              {(()=>{
+              const masteryDisc=getMasteryDiscount(brewCounts,r.id);
+              const tiers=['std','fine','mw'];
+              return tiers.map(q=>{
+                const qT=QUALITY[q];
+                const tierCost={};r.ingr.forEach(id=>{tierCost[id]=(tierCost[id]||0)+1;});
+                if(qT.extraIngr>=1)tierCost[r.ingr[0]]=(tierCost[r.ingr[0]]||0)+1;
+                if(qT.extraIngr>=2&&r.ingr.length>1)tierCost[r.ingr[1]]=(tierCost[r.ingr[1]]||0)+1;
+                const canT=fOk&&hours>=1&&Object.entries(tierCost).every(([id,qq])=>(inv[id]||0)>=qq);
+                let tierDC=Math.max(5,r.dc+qT.dcMod-masteryDisc);
+                if(q==='fine')tierDC+=upEff('fineDCBonus');
+                if(q==='mw'){tierDC+=upEff('fineDCBonus');tierDC+=upEff('mwDCBonus');}
+                const tierMod=totalMod;const tierNeeded=tierDC-tierMod;
+                const tierPct=Math.min(95,Math.max(5,Math.floor((21-tierNeeded)/20*100)));
+                return <button key={q} style={{...S.btn(canT?q==='mw'?'gold':q==='fine'?'green':'def':'dim'),fontSize:13,padding:'3px 8px',opacity:canT?1:0.5}}
+                  onClick={()=>canT&&doCraft(r,q)} disabled={!canT||hours<1}
+                  title={qT.name+': DC'+tierDC+' | '+qT.sellMult+'× sell | +'+qT.extraIngr+' extra ingr'}>
+                  {qT.name==='Standard'?'⚗️':qT.icon} {qT.name} <span style={{fontSize:11,color:canT?(tierPct>=60?TH.green:tierPct>=30?TH.gold:TH.red):TH.textDim}}>DC{tierDC} {tierPct}%</span>
+                </button>;
+              });
+            })()}</div>
           </div>);})}
         {/* Undiscovered recipes */}
         {RECIPES.filter(r=>!known.includes(r.id)).map(r=>{
@@ -7489,12 +7647,12 @@ function CindervaleAlchemistInner(){
         {(Object.entries(pots).some(([,q])=>q>0)||Object.entries(inv).some(([,q])=>q>0))&&<div style={S.card}>
           <div style={S.cT}>💰 Sell</div>
           {Object.entries(pots).filter(([,q])=>q>0).length>0&&<div style={{fontSize:15,color:TH.gold,marginBottom:4}}>Potions</div>}
-          {Object.entries(pots).filter(([,q])=>q>0).map(([id,qty])=>{const r=RECIPES.find(r=>r.id===id);if(!r)return null;
-            const sp=r.xp+getSkMod('aesthetics')*2+getSkMod('haggling')+Math.floor(upEff('sellBonus')*r.xp);
+          {Object.entries(pots).filter(([,q])=>q>0).map(([id,qty])=>{const baseId=getBaseRecipeId(id);const r=RECIPES.find(r=>r.id===baseId);if(!r)return null;const pq=getPotQuality(id);const qT=QUALITY[pq]||QUALITY.std;
+            const sp=Math.floor((r.xp+getSkMod('aesthetics')*2+getSkMod('haggling')+Math.floor(upEff('sellBonus')*r.xp))*qT.sellMult);
             const hasBuff=r.buff&&ELIXIR_BUFFS[r.buff];
             const buffActive=hasBuff&&activeBuffs[r.buff]?.daysLeft>0;
             return(<div key={id} style={{display:'flex',alignItems:'center',gap:6,padding:'3px 0',fontSize:16}}>
-              <span>{r.icon}{r.name} ×{qty}</span><span style={{color:TH.gold,marginLeft:'auto'}}>{sp}g ea</span>
+              <span>{r.icon}{r.name}{qT.icon?' '+qT.icon:''} ×{qty}</span><span style={{color:TH.gold,marginLeft:'auto'}}>{sp}g ea</span>
               {hasBuff&&<button style={{...S.btn(buffActive?'dim':'green'),fontSize:14,padding:'2px 8px'}} disabled={buffActive}
                 onClick={()=>consumeElixir(r.buff)} title={ELIXIR_BUFFS[r.buff].buffDesc}>
                 {buffActive?'✓ Active':'🧪 Drink'}
@@ -7503,9 +7661,12 @@ function CindervaleAlchemistInner(){
               {qty>1&&<button style={S.btn()} onClick={()=>{modPot(id,-qty);setGold(g=>g+sp*qty);addLog(`Sold ${qty}× ${r.icon}${r.name} for ${sp*qty}g.`,'info');}}>Sell All ({sp*qty}g)</button>}
             </div>);})}
           {Object.entries(inv).filter(([,q])=>q>0).length>0&&<div style={{fontSize:15,color:TH.gold,marginTop:6,marginBottom:4}}>Ingredients</div>}
-          {Object.entries(inv).filter(([,q])=>q>0).map(([id,qty])=>{const ig=INGR[id];if(!ig)return null;const sp=Math.max(1,Math.floor((ig.val||5)*0.4)+getSkMod('haggling')+getSkMod('appraisal'));return(
+          {Object.entries(inv).filter(([,q])=>q>0).map(([id,qty])=>{const ig=INGR[id];if(!ig)return null;const sp=Math.max(1,Math.floor((ig.val||5)*0.4)+getSkMod('haggling')+getSkMod('appraisal'));
+            const isHid=HIDDEN_INGR&&HIDDEN_INGR[id];const spThresh=(isHid?12:8)+getFeatureVal('spoilThreshold')+upEff('spoilThreshold');
+            const spColor=qty>spThresh+8?'#c04040':qty>spThresh+4?'#d08030':qty>spThresh?'#c0a040':'';
+            return(
             <div key={id} style={{display:'flex',alignItems:'center',gap:6,padding:'3px 0',fontSize:16}}>
-              <span>{ig.icon}{ig.name} ×{qty}</span><span style={{color:TH.gold,marginLeft:'auto'}}>{sp}g ea</span>
+              <span style={{color:spColor||TH.text}}>{ig.icon}{ig.name} ×{qty}{spColor&&<span style={{fontSize:11,marginLeft:4,color:spColor}}>⚠️</span>}</span><span style={{color:TH.gold,marginLeft:'auto'}}>{sp}g ea</span>
               <button style={S.btn()} onClick={()=>{modInv(id,-1);setGold(g=>g+sp);addLog(`Sold ${ig.icon}${ig.name} for ${sp}g.`,'info');}}>Sell 1</button>
               {qty>1&&<button style={S.btn()} onClick={()=>{modInv(id,-qty);setGold(g=>g+sp*qty);addLog(`Sold ${qty}× ${ig.icon}${ig.name} for ${sp*qty}g.`,'info');}}>Sell All ({sp*qty}g)</button>}
             </div>);})}
@@ -7726,7 +7887,7 @@ function CindervaleAlchemistInner(){
           <div style={{fontSize:14,color:TH.textDim,marginBottom:6}}>Stock potions for townsfolk to browse. Shelved potions sell passively overnight.</div>
           {Object.entries(shelves).filter(([,q])=>q>0).length>0?
             <div style={{marginBottom:6}}>{Object.entries(shelves).filter(([,q])=>q>0).map(([id,qty])=>{const r=RECIPES.find(x=>x.id===id);if(!r)return null;
-              const sp=r.xp+getSkMod('aesthetics')*2+getSkMod('haggling')+Math.floor(upEff('sellBonus')*r.xp);
+              const sp=Math.floor((r.xp+getSkMod('aesthetics')*2+getSkMod('haggling')+Math.floor(upEff('sellBonus')*r.xp))*qT.sellMult);
               return(<div key={id} style={{display:'flex',alignItems:'center',gap:6,padding:'3px 6px',background:TH.panelLight,borderRadius:3,marginBottom:2,fontSize:15}}>
                 <span style={{flex:1}}>{r.icon} {r.name} ×{qty}</span><span style={{color:TH.gold,fontSize:14}}>{sp}g ea</span>
                 <button style={{...S.btn('def'),fontSize:13,padding:'1px 5px'}} onClick={()=>unstockShelf(id,1)}>−1</button>
@@ -7811,12 +7972,15 @@ function CindervaleAlchemistInner(){
               const fullReward=Math.floor(reward*(1+getFeatureVal('enchantGoldBonus')+getFeatureVal('customerPayBonus')));
               return(
               <div key={ench.id} style={{padding:'8px 10px',background:can?TH.gold+'08':TH.panel,borderRadius:6,marginBottom:6,border:'1px solid '+(can?TH.borderGold:TH.border),opacity:can?1:0.75}}>
+                {cust.reqQuality&&cust.reqQuality!=='std'&&<div style={{fontSize:12,padding:'2px 8px',background:QUALITY[cust.reqQuality]?.color+'20',border:'1px solid '+QUALITY[cust.reqQuality]?.color+'44',borderRadius:10,display:'inline-block',marginBottom:4,color:QUALITY[cust.reqQuality]?.color}}>
+                  {QUALITY[cust.reqQuality]?.icon} Requests {QUALITY[cust.reqQuality]?.name} quality — {QUALITY[cust.reqQuality]?.sellMult}× pay
+                </div>}
                 <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
                   <span style={{fontSize:17,color:can?TH.textBright:TH.textDim,fontWeight:'bold'}}>{ench.icon} {ench.name}</span>
                   <span style={{fontSize:14,color:TH.gold}}>DC{adjDC} · +{ench.xp}XP · +{reward}g</span>
                 </div>
                 {showHints>0&&<div style={{fontSize:13,color:hintPct>=60?TH.green:hintPct>=30?TH.gold:TH.red,marginTop:1}}>
-                  📊 {hintPct}% success · est. {fullReward}g with bonuses
+                  📊 {hintPct}% success (Standard) · est. {fullReward}g
                 </div>}
                 {ench.desc&&<div style={{fontSize:14,color:TH.textDim,fontStyle:'italic',margin:'3px 0'}}>{ench.desc}</div>}
                 <div style={{margin:'6px 0',padding:'6px 8px',background:TH.bg,borderRadius:4,border:'1px solid '+TH.border}}>
@@ -7837,9 +8001,28 @@ function CindervaleAlchemistInner(){
                     </div>);})}
                   </>:<div style={{fontSize:14,color:'#b090e0'}}>✨ No materials needed — pure arcane knowledge</div>}
                 </div>
-                <button style={{...S.btn(can&&hours>=1?'gold':'dim'),width:'100%',padding:'6px',fontSize:16}} onClick={()=>can&&hours>=1&&doEnchant(ench.id,cust)} disabled={!can||hours<1}>
-                  {hours<1?'No Energy':(can?'✨ Apply '+ench.name+' to '+cust.icon+cust.name:'Gather Materials First')}
-                </button>
+                {hours<1?<div style={{fontSize:14,color:TH.textDim,textAlign:'center',padding:4}}>No Energy</div>
+                :!can?<div style={{fontSize:14,color:TH.textDim,textAlign:'center',padding:4}}>Gather Materials First</div>
+                :<div style={{display:'flex',gap:4,marginTop:4}}>
+                  {['std','fine','mw'].map(eq=>{
+                    const eqT=QUALITY[eq];
+                    const eqCost={};ench.ingr.forEach(id=>{eqCost[id]=(eqCost[id]||0)+1;});
+                    if(eqT.extraIngr>=1&&ench.ingr.length>0)eqCost[ench.ingr[0]]=(eqCost[ench.ingr[0]]||0)+1;
+                    if(eqT.extraIngr>=2&&ench.ingr.length>1)eqCost[ench.ingr[1]]=(eqCost[ench.ingr[1]]||0)+1;
+                    const canQ=Object.entries(eqCost).every(([id,qq])=>(inv[id]||0)>=qq)||Object.keys(eqCost).length===0;
+                    let eqDC=Math.max(5,ench.dc+eqT.dcMod);
+                    if(eq==='fine')eqDC+=upEff('fineEnchDC');
+                    if(eq==='mw'){eqDC+=upEff('fineEnchDC');eqDC+=upEff('mwEnchDC');}
+                    const eqPct=Math.min(95,Math.max(5,Math.floor((21-(eqDC-hintMod))/20*100)));
+                    const meetsReq=!cust.reqQuality||cust.reqQuality==='std'||['std','fine','mw'].indexOf(eq)>=(['std','fine','mw'].indexOf(cust.reqQuality));
+                    return <button key={eq} style={{...S.btn(canQ?eq==='mw'?'gold':eq==='fine'?'green':'def':'dim'),flex:1,fontSize:13,padding:'5px 4px',opacity:canQ?1:0.5}}
+                      onClick={()=>canQ&&doEnchant(ench.id,cust,eq)} disabled={!canQ}>
+                      {eq==='std'?'✨':''+eqT.icon} {eqT.name}
+                      <span style={{display:'block',fontSize:11,color:canQ?(eqPct>=60?TH.green:eqPct>=30?TH.gold:TH.red):TH.textDim}}>DC{eqDC} {eqPct}% {eqT.sellMult}×</span>
+                      {!meetsReq&&<span style={{display:'block',fontSize:10,color:TH.red}}>Below request</span>}
+                    </button>;
+                  })}
+                </div>}
               </div>);})}
             {requested.length===0&&<div style={{fontSize:15,color:TH.textDim}}>No known enchantments match this item. Research new inscriptions!</div>}
           </div>);})}
