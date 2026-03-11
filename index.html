@@ -7756,7 +7756,49 @@ function CindervaleAlchemistInner(){
           {(prestigeLevels.magitech||0)>=3&&(prestigeLevels.magitech||0)<4&&<div style={{fontSize:12,color:TH.textDim,marginTop:4}}>🔒 Enchanting task at Magitech Lv4</div>}
         </div>}
 
-        <div style={S.card}><div style={S.cT}>⚗️ Recipes ({known.length}/{RECIPES.length})</div>
+        {/* ── Quest Shopping List ── */}
+        {(()=>{
+          const needs={};
+          // Active quests
+          aQ.forEach(q=>{
+            if(q.type==='deliver'){needs[q.target]=(needs[q.target]||0)+q.count;}
+            if(q.type==='multi')q.targets.forEach(t=>{needs[t]=(needs[t]||0)+1;});
+          });
+          // Active board quests
+          activeBQ.forEach(bq=>{
+            if(bq.type==='deliver'){needs[bq.target]=(needs[bq.target]||0)+bq.count;}
+          });
+          const entries=Object.entries(needs).filter(([,n])=>n>0);
+          if(entries.length===0)return null;
+          return <div style={{...S.card,borderColor:TH.cyan+'44'}}>
+            <div style={{...S.cT,color:TH.cyan}}>{'📋'} Quest Shopping List</div>
+            <div style={{fontSize:13,color:TH.textDim,marginBottom:6}}>Potions needed across all active quests and board requests:</div>
+            {entries.map(([potId,needed])=>{
+              const r=RECIPES.find(x=>x.id===potId);if(!r)return null;
+              const have=countAllPots(potId);
+              const done=have>=needed;
+              const stillNeed=Math.max(0,needed-have);
+              // Ingredient check for brewing what's still needed
+              const ingrNeeded={};
+              if(stillNeed>0)r.ingr.forEach(id=>{ingrNeeded[id]=(ingrNeeded[id]||0)+stillNeed;});
+              const ingrStatus=Object.entries(ingrNeeded).map(([id,q])=>({id,need:q,have:inv[id]||0,ok:(inv[id]||0)>=q}));
+              return <div key={potId} style={{padding:'6px 8px',background:done?TH.green+'10':TH.panel,borderRadius:5,marginBottom:4,border:'1px solid '+(done?TH.green+'44':TH.border)}}>
+                <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                  <span style={{fontSize:15,color:done?TH.green:TH.textBright,fontWeight:'bold'}}>{r.icon} {r.name}</span>
+                  <span style={{fontSize:14,color:done?TH.green:have>0?TH.gold:TH.red,fontWeight:'bold'}}>{have}/{needed} {done&&'\u2705'}</span>
+                </div>
+                {!done&&<div style={{fontSize:12,color:TH.textDim,marginTop:2}}>
+                  Brew {stillNeed} more {'\u00b7'} Ingredients per brew: {r.ingr.map(id=>{
+                    const ih=inv[id]||0;const ineed=stillNeed;
+                    return <span key={id} style={{color:ih>=ineed?TH.green:'#c06040'}}>{INGR[id]?.icon}{ih}/{ineed} </span>;
+                  })}
+                </div>}
+              </div>;
+            })}
+          </div>;
+        })()}
+
+        <div style={S.card}><div style={S.cT}>{'\u2697\ufe0f'} Recipes ({known.length}/{RECIPES.length})</div>
         {RECIPES.filter(r=>known.includes(r.id)).map(r=>{
           const cost={};r.ingr.forEach(id=>{cost[id]=(cost[id]||0)+1;});const can=Object.entries(cost).every(([id,q])=>(inv[id]||0)>=q);
           const fOk=!r.faction||getRL(r.faction)>=(r.fReq||0);const masteryD=getMasteryDiscount(brewCounts,r.id);const adjDC=Math.max(5,r.dc-masteryD);
