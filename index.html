@@ -7724,11 +7724,14 @@ function CindervaleAlchemistInner(){
                 {INGR[id]?.icon}{INGR[id]?.name} <b style={{color:have?TH.green:TH.red}}>{iQty}/{q}</b>{iWarn&&<span style={{fontSize:10,color:'#c0a040'}}> ⚠️</span>}
               </span>;})}
             </div>
-            <div style={{...S.row,marginTop:3}}>
+            <div style={{marginTop:3}}>
               {(()=>{
               const masteryDisc=getMasteryDiscount(brewCounts,r.id);
               const tiers=['std','fine','mw'];
-              return tiers.map(q=>{
+              const bc1=buyCalc(1);
+              return <>
+              <div style={{display:'flex',gap:3}}>
+              {tiers.map(q=>{
                 const qT=QUALITY[q];
                 const tierCost={};r.ingr.forEach(id=>{tierCost[id]=(tierCost[id]||0)+1;});
                 if(qT.extraIngr>=1)tierCost[r.ingr[0]]=(tierCost[r.ingr[0]]||0)+1;
@@ -7739,12 +7742,21 @@ function CindervaleAlchemistInner(){
                 if(q==='mw'){tierDC+=upEff('fineDCBonus');tierDC+=upEff('mwDCBonus');}
                 const tierMod=totalMod;const tierNeeded=tierDC-tierMod;
                 const tierPct=Math.min(95,Math.max(5,Math.floor((21-tierNeeded)/20*100)));
-                return <button key={q} style={{...S.btn(canT?q==='mw'?'gold':q==='fine'?'green':'def':'dim'),fontSize:13,padding:'3px 8px',opacity:canT?1:0.5}}
+                return <button key={q} style={{...S.btn(canT?q==='mw'?'gold':q==='fine'?'green':'def':'dim'),flex:1,fontSize:13,padding:'3px 6px',opacity:canT?1:0.5}}
                   onClick={()=>canT&&doCraft(r,q)} disabled={!canT||hours<1}
                   title={qT.name+': DC'+tierDC+' | '+qT.sellMult+'× sell | +'+qT.extraIngr+' extra ingr'}>
                   {qT.name==='Standard'?'⚗️':qT.icon} {qT.name} <span style={{fontSize:11,color:canT?(tierPct>=60?TH.green:tierPct>=30?TH.gold:TH.red):TH.textDim}}>DC{tierDC} {tierPct}%</span>
                 </button>;
-              });
+              })}
+              </div>
+              <div style={{display:'flex',gap:3,marginTop:3,alignItems:'center'}}>
+                {[2,3,5].map(n=>{const canN=fOk&&hours>=n&&Object.entries(cost).every(([id,q])=>(inv[id]||0)>=q*n);
+                  return <button key={n} style={{...S.btn(canN?'def':'dim'),fontSize:12,padding:'2px 6px'}} onClick={()=>canN&&doBatchCraft(r,n,'std')} disabled={!canN}>
+                    ×{n} Std</button>;})}
+                {!can&&bc1.canBuy&&fOk&&hours>=1&&<button style={{fontSize:12,padding:'2px 6px',background:TH.gold,color:TH.bg,border:'none',borderRadius:3,cursor:'pointer',fontFamily:'inherit'}}
+                  onClick={()=>doBuy(1)}>🛒 Buy ({bc1.total}g)</button>}
+              </div>
+              </>;
             })()}</div>
           </div>);})}
         {/* Undiscovered recipes */}
