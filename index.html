@@ -2249,7 +2249,7 @@ function CindervaleAlchemistInner(){
   const [txTarget,setTxTarget]=useState(null); // transmute target ingredient
   const [pubPapers,setPubPapers]=useState([]); // published research papers [{id,type,day}]
   // ═══ LOCATION FILTERING ═══
-  const locRegions=locRegions.filter(r=>!r.loc||r.loc===gameLocation);
+  const locRegions=REGIONS.filter(r=>!r.loc||r.loc===gameLocation);
   const locFactions=Object.fromEntries(Object.entries(FACTIONS).filter(([,f])=>!f.loc||f.loc===gameLocation));
   const locQuests=QUESTS.filter(q=>{if(q.id.startsWith('aq'))return gameLocation==='ashfall';if(q.id.startsWith('q')||q.id.startsWith('fc_'))return gameLocation==='cindervale';return true;});
   const locApprentices=AP_POOL.filter(a=>!a.loc||a.loc===gameLocation);
