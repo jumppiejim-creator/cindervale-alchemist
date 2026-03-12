@@ -7046,7 +7046,6 @@ function CindervaleAlchemistInner(){
               ?['amara','tarek'].map(n=>NPCS[n]?<button key={n} style={S.btn(dlgNpc===n?'gold':'def')} onClick={()=>openNpc(n)}>{NPCS[n]?.icon} {NPCS[n]?.name}</button>:null)
               :['tarn','holst','marta','gretta'].map(n=><button key={n} style={S.btn(dlgNpc===n?'gold':'def')} onClick={()=>openNpc(n)}>{NPCS[n]?.icon} {NPCS[n]?.name}</button>)}
           </div>
-          </div>
           {dlgNpc&&(NPCS[dlgNpc]?.loc==='chapel'||NPCS[dlgNpc]?.loc==='tavern')&&<NpcDlg npc={NPCS[dlgNpc]} {...{dlgLine,setDlgLine,setDlgNpc,availQ,aQ,acceptQ,compQ,qP,qObj,S,questDlg,setQuestDlg,openNpc}}/>}
           {!dlgNpc&&<div style={{color:TH.textDim,fontSize:15,textAlign:'center',padding:12,fontStyle:'italic'}}>The warm hearth crackles softly. Choose someone to speak with.</div>}
         </div>
