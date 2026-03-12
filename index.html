@@ -652,6 +652,15 @@ const AP_POOL=[
   {id:'ap_vex',name:'Vex Copperhand',icon:'🧑‍🔧',personality:'Tinkerer who fixes anything.',baseStat:{tec:14,acu:11,dis:9},specialty:'brewing',salary:7,traits:['Inventive','Perfectionist']},
   {id:'ap_luma',name:'Luma Brightquill',icon:'👩‍💼',personality:'Former merchant guild clerk.',baseStat:{com:13,dis:12,acu:10},specialty:'shopkeeping',salary:6,traits:['Numerate','Cautious']},
   {id:'ap_zara',name:'Zara Veilsight',icon:'🧙‍♀️',personality:'Mystic with a talent for pattern-reading.',baseStat:{acu:13,inu:13,cre:10},specialty:'research',salary:8,traits:['Insightful','Eccentric']},
+  // ═══ ASHFALL CROSSING APPRENTICES ═══
+  {id:'ap_rashid',name:'Rashid Sandborn',icon:'👳',personality:'Desert-raised trader with a nose for rare ingredients.',loc:'ashfall',baseStat:{com:13,dis:12,inu:10},specialty:'shopkeeping',salary:6,traits:['Haggler','Restless']},
+  {id:'ap_keva',name:'Keva Flamedaughter',icon:'👩‍🦰',personality:'Flamekeeper acolyte who chose alchemy over prayer.',loc:'ashfall',baseStat:{inu:13,acu:12,tec:10},specialty:'brewing',salary:7,traits:['Devout','Perfectionist']},
+  {id:'ap_torq',name:'Torq Duststrider',icon:'🧑‍🦲',personality:'Former Dustwalker scout, knows every trail.',loc:'ashfall',baseStat:{dis:14,inu:11,tec:10},specialty:'foraging',salary:6,traits:['Tireless','Stubborn']},
+  {id:'ap_yara',name:'Yara the Quick',icon:'👧',personality:'Street kid from the Crossing. Fast learner.',loc:'ashfall',baseStat:{tec:12,com:13,dis:9},specialty:'brewing',salary:4,traits:['Quick Learner','Unreliable']},
+  {id:'ap_naveen',name:'Naveen Crystaleye',icon:'🧑‍🔬',personality:'Salt Cavern researcher with encyclopedic mineral knowledge.',loc:'ashfall',baseStat:{acu:14,tec:12,inu:9},specialty:'research',salary:8,traits:['Methodical','Fragile']},
+  {id:'ap_duri',name:'Duri Ironvein',icon:'🧔',personality:'Obsidian miner turned alchemist\'s assistant.',loc:'ashfall',baseStat:{tec:13,dis:13,inu:8},specialty:'foraging',salary:7,traits:['Experienced','Slow']},
+  {id:'ap_lira',name:'Lira Miragecatcher',icon:'🧝‍♀️',personality:'Half-elf drawn to the Mirage Bazaar\'s mysteries.',loc:'ashfall',baseStat:{inu:14,acu:12,cre:11},specialty:'enchanting',salary:8,traits:['Arcane Gifted','Eccentric']},
+  {id:'ap_baz',name:'Baz Saltbeard',icon:'🧔‍♂️',personality:'Grizzled dwarf who ran a competing shop that failed.',loc:'ashfall',baseStat:{tec:12,com:12,dis:11},specialty:'shopkeeping',salary:7,traits:['Experienced','Set in Ways']},
   {id:'ap_holt',name:'Holt Cinderforge',icon:'👷',personality:'Blacksmith\'s son looking for a change.',baseStat:{tec:13,dis:12,com:9},specialty:'foraging',salary:5,traits:['Strong','Blunt']},
 ];
 const TASK_TYPES={
@@ -714,7 +723,7 @@ const weightedPick=(weights,n)=>{
 };
 
 const REGIONS=[
-  {id:'ashfields',name:'Ashfields',icon:'🏜️',color:'#5a4a3a',ingr:['ashbloom','ironroot_bark','ash_salt','cinder_moss','char_root','wind_dust','ember_petal','soot_crystal'],pick:3,sites:[
+  {id:'ashfields',loc:'cindervale',name:'Ashfields',icon:'🏜️',color:'#5a4a3a',ingr:['ashbloom','ironroot_bark','ash_salt','cinder_moss','char_root','wind_dust','ember_petal','soot_crystal'],pick:3,sites:[
       {id:'old_road',name:'The Old Road',icon:'🛤️',desc:'Cracked flagstones where ashbloom grows thick between broken cartwheel ruts.',
         weights:{ashbloom:28,ironroot_bark:22,ash_salt:8,cinder_moss:8,char_root:9,wind_dust:9,ember_petal:8,soot_crystal:8}},
       {id:'ember_drifts',name:'Ember Drifts',icon:'🌬️',desc:'Wind-sculpted ash dunes that catch ember seeds and crystallized dust.',
@@ -723,7 +732,7 @@ const REGIONS=[
         weights:{ashbloom:7,ironroot_bark:7,ash_salt:25,cinder_moss:9,char_root:9,wind_dust:7,ember_petal:8,soot_crystal:28}},
     ],diff:1,unlock:0,time:1,yield:[2,4],dc:8,
     flavor:['Grey ash crunches underfoot as pale blooms peek through the drifts.','Wind scatters ash like snow across the barren expanse.','A familiar trail — Ashbloom grows thick along the old road.']},
-  {id:'ironwood',name:'Ironwood',icon:'🌲',color:'#2a3a2a',ingr:['ironroot_bark','ashbloom','embercap','ironwood_sap','thornvine','bark_resin','moss_amber','amber_sap','beetle_shell'],pick:3,sites:[
+  {id:'ironwood',loc:'cindervale',name:'Ironwood',icon:'🌲',color:'#2a3a2a',ingr:['ironroot_bark','ashbloom','embercap','ironwood_sap','thornvine','bark_resin','moss_amber','amber_sap','beetle_shell'],pick:3,sites:[
       {id:'root_halls',name:'The Root Halls',icon:'🌳',desc:'Massive exposed root systems form natural hallways beneath ancient trees.',
         weights:{ironroot_bark:26,ashbloom:7,embercap:7,ironwood_sap:24,thornvine:7,bark_resin:10,moss_amber:7,amber_sap:7,beetle_shell:5}},
       {id:'amber_hollow',name:'Amber Hollow',icon:'🟡',desc:'A sheltered depression where golden sap pools and slowly hardens into amber.',
@@ -732,7 +741,7 @@ const REGIONS=[
         weights:{ironroot_bark:7,ashbloom:7,embercap:25,ironwood_sap:6,thornvine:26,bark_resin:7,moss_amber:6,amber_sap:6,beetle_shell:10}},
     ],diff:2,unlock:1,time:1,yield:[2,4],dc:10,
     flavor:['Ancient trees with bark like hammered iron loom overhead.','The forest floor is soft with decay — perfect for Embercap.','Ironwood roots grip stone like fingers. Good harvesting here.']},
-  {id:'fungal_caves',name:'Fungal Caves',icon:'🍄',color:'#3a2a3a',ingr:['embercap','gloomcap','spore_dust','cave_lichen','biolumen_gel','mycelium_thread','echo_fungus','ghost_silk'],pick:3,sites:[
+  {id:'fungal_caves',loc:'cindervale',name:'Fungal Caves',icon:'🍄',color:'#3a2a3a',ingr:['embercap','gloomcap','spore_dust','cave_lichen','biolumen_gel','mycelium_thread','echo_fungus','ghost_silk'],pick:3,sites:[
       {id:'spore_gallery',name:'Spore Gallery',icon:'💨',desc:'An open cavern thick with airborne spores and dense mushroom colonies.',
         weights:{embercap:22,gloomcap:8,spore_dust:28,cave_lichen:8,biolumen_gel:9,mycelium_thread:9,echo_fungus:8,ghost_silk:8}},
       {id:'gloom_deep',name:'The Gloom Deep',icon:'🖤',desc:'The deepest accessible chamber, where light has never touched the stone.',
@@ -741,7 +750,7 @@ const REGIONS=[
         weights:{embercap:7,gloomcap:7,spore_dust:7,cave_lichen:8,biolumen_gel:12,mycelium_thread:24,echo_fungus:7,ghost_silk:28}},
     ],diff:2,unlock:2,time:2,yield:[2,4],dc:11,
     flavor:['Bioluminescent fungi paint the cave walls in ghostly blue.','The air is thick with spores. You tie a cloth over your nose.','Dripping water echoes off stone — and strange mushrooms glow in the dark.']},
-  {id:'crystal_hollow',name:'Crystal Hollows',icon:'💎',color:'#2a3a4a',ingr:['hearthstone','ashite','crystal_shard','mineral_clay','geode_dust','resonance_ore','singing_quartz','copper_vein'],pick:3,sites:[
+  {id:'crystal_hollow',loc:'cindervale',name:'Crystal Hollows',icon:'💎',color:'#2a3a4a',ingr:['hearthstone','ashite','crystal_shard','mineral_clay','geode_dust','resonance_ore','singing_quartz','copper_vein'],pick:3,sites:[
       {id:'geode_chamber',name:'Geode Chamber',icon:'🪨',desc:'A hollow dome encrusted with split geodes revealing sparkling crystal interiors.',
         weights:{hearthstone:8,ashite:8,crystal_shard:24,mineral_clay:9,geode_dust:27,resonance_ore:8,singing_quartz:9,copper_vein:7}},
       {id:'resonance_vein',name:'Resonance Vein',icon:'🔔',desc:'A deep fissure where ore hums with harmonic energy that you can feel in your chest.',
@@ -750,7 +759,7 @@ const REGIONS=[
         weights:{hearthstone:24,ashite:9,crystal_shard:7,mineral_clay:10,geode_dust:7,resonance_ore:7,singing_quartz:8,copper_vein:28}},
     ],diff:3,unlock:3,time:2,yield:[2,4],dc:13,
     flavor:['Crystals hum with deep resonance as you descend into the hollow.','Hearthstone veins glitter in your lantern light like trapped stars.','The Cinderfolk carved these paths long ago. Their pick-marks still show.']},
-  {id:'moonlit_glade',name:'Moonlit Glade',icon:'🌙',color:'#2a2a4a',ingr:['moonpetal','starwort','nightdew','lunar_moss','dew_crystal','silver_lichen','moth_scale','dream_pollen'],pick:3,sites:[
+  {id:'moonlit_glade',loc:'cindervale',name:'Moonlit Glade',icon:'🌙',color:'#2a2a4a',ingr:['moonpetal','starwort','nightdew','lunar_moss','dew_crystal','silver_lichen','moth_scale','dream_pollen'],pick:3,sites:[
       {id:'moonpool',name:'The Moonpool',icon:'🪷',desc:'A still reflecting pool surrounded by luminous moonpetal blooms.',
         weights:{moonpetal:28,starwort:8,nightdew:24,lunar_moss:8,dew_crystal:9,silver_lichen:8,moth_scale:7,dream_pollen:8}},
       {id:'silver_grove',name:'Silver Grove',icon:'🌿',desc:'Ancient trees wrapped in silvery lichen under perpetual moonlight.',
@@ -768,7 +777,7 @@ const REGIONS=[
         weights:{volcanic_essence:7,embervein:9,sulfur_bloom:7,obsidian_flake:28,thermal_clay:7,magma_salt:7,lava_pearl:8,pyrestone:27}},
     ],diff:4,unlock:5,time:3,yield:[2,4],dc:15,
     flavor:['Sulfurous heat blasts from cracks in the scorched earth.','Embervein ore glows cherry-red near the active vents.','The ground trembles. You work quickly, gathering what you can.']},
-  {id:'deep_mines',name:'Deep Mines',icon:'⛏️',color:'#3a3a40',ingr:['ashite','hearthstone','embervein','deep_iron','shadow_quartz','echo_stone','dark_amber','mithril_dust','void_salt','deep_crystal'],pick:3,sites:[
+  {id:'deep_mines',loc:'cindervale',name:'Deep Mines',icon:'⛏️',color:'#3a3a40',ingr:['ashite','hearthstone','embervein','deep_iron','shadow_quartz','echo_stone','dark_amber','mithril_dust','void_salt','deep_crystal'],pick:3,sites:[
       {id:'upper_shafts',name:'Upper Shafts',icon:'⛏️',desc:'Well-mapped tunnels near the surface with common but reliable mineral veins.',
         weights:{ashite:24,hearthstone:22,embervein:9,deep_iron:9,shadow_quartz:7,echo_stone:8,dark_amber:8,mithril_dust:6,void_salt:5,deep_crystal:2}},
       {id:'shadow_gallery',name:'Shadow Gallery',icon:'👁️',desc:'A vast gallery where quartz formations cast eerie, shifting shadows.',
@@ -842,6 +851,57 @@ const RECIPES=[
   {id:'magma_essence',name:'Magma Essence',icon:'🔥',ingr:['magma_diamond','living_ember','volcanic_essence'],xp:100,unlock:7,dc:17,stat:'tec',desc:'Liquid fire. Incredibly potent but short-lived crafting power for 2 days.',buff:'magma_essence'},
   {id:'mithril_draught',name:'Mithril Draught',icon:'⚪',ingr:['deep_mithril','shadow_ore','embervein'],xp:100,unlock:7,dc:17,stat:'tec',desc:'The rarest metal dissolved. Your hands become instruments of precision for 3 days.',buff:'mithril_draught'},
   {id:'primordial_elixir',name:'Primordial Elixir',icon:'⚡',ingr:['primordial_spark','forge_heart_shard','phoenix_ash'],xp:150,unlock:8,dc:20,stat:'inu',desc:'Creation energy in a flask. The ultimate elixir — boosts everything for 5 days.',buff:'primordial_elixir'},
+  // ═══ ASHFALL CROSSING REGIONS ═══
+  {id:'sunscorch_flats',loc:'ashfall',name:'Sunscorch Flats',icon:'☀️',color:'#8a7a3a',
+    ingr:['sunpetal','dustite','scorchroot','ashbloom','ash_salt','wind_dust'],pick:3,sites:[
+      {id:'af_nomad_trail',name:'Nomad Trail',icon:'🐪',desc:'Ancient caravan path with hardy desert plants.',
+        weights:{sunpetal:30,dustite:25,scorchroot:20,ashbloom:10,ash_salt:8,wind_dust:7}},
+      {id:'af_dust_bowl',name:'Dust Bowl',icon:'🌪️',desc:'Windswept depression where dustite concentrates.',
+        weights:{dustite:35,scorchroot:20,sunpetal:15,wind_dust:15,ash_salt:10,ashbloom:5}},
+    ],diff:1,unlock:0,time:1,yield:[2,4],dc:8,
+    flavor:['The relentless sun beats down on cracked earth.','Heat shimmers rise from the flats like liquid glass.']},
+  {id:'salt_caverns',loc:'ashfall',name:'Salt Caverns',icon:'🧂',color:'#6a7a8a',
+    ingr:['crystal_salt','brine_moss','echo_fungus','gloomcap','ashite','mineral_clay'],pick:3,sites:[
+      {id:'af_brine_pools',name:'Brine Pools',icon:'💧',desc:'Underground pools crusted with crystallized salt.',
+        weights:{crystal_salt:30,brine_moss:28,echo_fungus:15,gloomcap:12,ashite:8,mineral_clay:7}},
+    ],diff:2,unlock:1,time:1,yield:[2,4],dc:10,
+    flavor:['Salt crystals catch your torchlight, scattering rainbows across damp walls.']},
+  {id:'obsidian_wastes',loc:'ashfall',name:'Obsidian Wastes',icon:'🖤',color:'#2a2a3a',
+    ingr:['obsidian_shard','ashite','embervein','scorchroot','dustite','volcanic_essence'],pick:3,sites:[
+      {id:'af_glass_fields',name:'Glass Fields',icon:'🔮',desc:'Vast plains of razor-sharp volcanic glass.',
+        weights:{obsidian_shard:30,ashite:22,embervein:18,scorchroot:12,dustite:10,volcanic_essence:8}},
+    ],diff:2,unlock:2,time:2,yield:[2,4],dc:11,
+    flavor:['Black glass crunches underfoot. One wrong step and you bleed.']},
+  {id:'sandworm_tunnels',loc:'ashfall',name:'Sandworm Tunnels',icon:'🪱',color:'#7a6a3a',
+    ingr:['sandsilk','venomgland','thornvine','scorchroot','brine_moss','obsidian_shard'],pick:3,sites:[
+      {id:'af_silk_nests',name:'Silk Nests',icon:'🕸️',desc:'Abandoned sandworm cocoons lined with precious silk.',
+        weights:{sandsilk:32,venomgland:22,thornvine:16,scorchroot:12,brine_moss:10,obsidian_shard:8}},
+    ],diff:3,unlock:3,time:2,yield:[2,4],dc:13,
+    flavor:['The tunnels vibrate with distant movement. Something very large lives down here.']},
+  {id:'oasis_grove',loc:'ashfall',name:'Oasis Grove',icon:'🌴',color:'#3a6a4a',
+    ingr:['dewdrop_lily','moonpetal','sacred_ember','sunpetal','starwort','dream_pollen'],pick:3,sites:[
+      {id:'af_spring',name:'Hidden Spring',icon:'💧',desc:'Crystal-clear water surrounded by rare blooms.',
+        weights:{dewdrop_lily:30,moonpetal:25,sacred_ember:15,sunpetal:12,starwort:10,dream_pollen:8}},
+    ],diff:3,unlock:4,time:2,yield:[2,4],dc:14,faction:'flamekeepers',fReq:2,
+    flavor:['Water. Actual flowing water, in the middle of the desert. Impossibly lush.']},
+  {id:'molten_vents',loc:'ashfall',name:'Molten Vents',icon:'🌋',color:'#6a2a2a',
+    ingr:['magma_diamond','living_ember','forge_heart_shard','volcanic_essence','embervein','obsidian_shard'],pick:3,sites:[
+      {id:'af_caldera',name:'The Caldera',icon:'🔥',desc:'Active volcanic crater. Incredibly dangerous.',
+        weights:{magma_diamond:25,living_ember:25,forge_heart_shard:15,volcanic_essence:15,embervein:12,obsidian_shard:8}},
+    ],diff:4,unlock:5,time:3,yield:[2,4],dc:15,
+    flavor:['The heat is beyond anything you have experienced. Lava glows through cracks.']},
+  {id:'mirage_bazaar',loc:'ashfall',name:'Mirage Bazaar',icon:'🏜️',color:'#5a3a6a',
+    ingr:['mirage_dust','veil_shard','prismatic_ash','crystal_salt','sandsilk','deep_crystal'],pick:3,sites:[
+      {id:'af_phantom_stalls',name:'Phantom Stalls',icon:'👻',desc:'Ghostly market stalls that fade in and out of existence.',
+        weights:{mirage_dust:30,veil_shard:22,prismatic_ash:18,crystal_salt:12,sandsilk:10,deep_crystal:8}},
+    ],diff:4,unlock:6,time:3,yield:[2,4],dc:16,faction:'dustwalkers',fReq:2,
+    flavor:['The bazaar shimmers into existence around you.']},
+  {id:'buried_temple',loc:'ashfall',name:'Buried Temple',icon:'🏛️',color:'#4a3a2a',
+    ingr:['ancient_resin','temple_gold','deep_crystal','mirage_dust','sacred_ember','veil_shard'],pick:3,sites:[
+      {id:'af_sanctum',name:'Inner Sanctum',icon:'⚱️',desc:'The heart of the temple. Untouched for millennia.',
+        weights:{temple_gold:25,ancient_resin:25,deep_crystal:18,mirage_dust:12,sacred_ember:12,veil_shard:8}},
+    ],diff:5,unlock:8,time:4,yield:[2,4],dc:18,
+    flavor:['Stone doors grind open on hinges that have not moved in a thousand years.']},
 ];
 // Enchantment categories: weapon, armor, other (jewelry/clothing/accessories)
 const ENCHANTMENTS=[
@@ -885,7 +945,30 @@ const ENCHANTMENTS=[
   {id:'e_void',name:'Void Barrier',icon:'🟪',cat:'armor',ingr:['void_salt','mithril_dust'],xp:80,dc:16,desc:'A shimmering barrier of nothingness. Magic and projectiles pass through the wearer harmlessly.'},
   {id:'e_moth',name:'Moth Charm',icon:'🦋',cat:'other',ingr:['moth_scale','dream_pollen'],xp:60,dc:13,desc:'Moonlit moth essence grants the wearer prophetic flashes — a split-second of foresight in danger.'},
   {id:'e_titan',name:'Titan\'s Mark',icon:'🦴',cat:'other',ingr:['titan_bone','heartstone_sliver'],xp:95,dc:18,desc:'Ancient power courses through the wearer. Strength and endurance far exceed mortal limits.'},
+  // ═══ ASHFALL CROSSING RECIPES ═══
+  {id:'sunstroke_tonic',name:'Sunstroke Tonic',icon:'☀️',ingr:['sunpetal','crystal_salt'],dc:8,xp:40,stat:'inu',unlock:0,desc:'Restores energy sapped by desert heat.'},
+  {id:'sandveil_draught',name:'Sandveil Draught',icon:'🏜️',ingr:['dustite','sunpetal','scorchroot'],dc:10,xp:55,stat:'tec',unlock:1,desc:'Renders the drinker nearly invisible in sandstorms.'},
+  {id:'obsidian_edge_oil',name:'Obsidian Edge Oil',icon:'🖤',ingr:['obsidian_shard','scorchroot'],dc:11,xp:60,stat:'tec',unlock:2,desc:'Weapon oil that gives blades a volcanic glass edge.'},
+  {id:'brine_poultice',name:'Brine Poultice',icon:'🧂',ingr:['crystal_salt','brine_moss','sunpetal'],dc:10,xp:50,stat:'inu',unlock:1,desc:'Salt-based wound treatment.'},
+  {id:'sandsilk_salve',name:'Sandsilk Salve',icon:'🕸️',ingr:['sandsilk','dewdrop_lily'],dc:13,xp:75,stat:'inu',unlock:3,desc:'Luxurious healing cream prized by nobles.'},
+  {id:'venom_antidote',name:'Venom Antidote',icon:'🐍',ingr:['venomgland','dewdrop_lily','crystal_salt'],dc:14,xp:80,stat:'acu',unlock:3,desc:'Neutralizes the deadliest desert venoms.'},
+  {id:'mirage_elixir',name:'Mirage Elixir',icon:'✨',ingr:['mirage_dust','dewdrop_lily','sandsilk'],dc:16,xp:100,stat:'inu',unlock:5,desc:'Grants brief glimpses of hidden things.'},
+  {id:'desert_iron_flask',name:'Desert Iron Flask',icon:'⚱️',ingr:['obsidian_shard','ancient_resin','crystal_salt'],dc:15,xp:90,stat:'tec',unlock:4,desc:'Unbreakable container that preserves any liquid.'},
+  {id:'temple_restoration',name:'Temple Restoration',icon:'🏛️',ingr:['temple_gold','ancient_resin','sacred_ember'],dc:18,xp:140,stat:'acu',unlock:7,desc:'Repairs ancient artifacts. Immensely valuable.'},
+  {id:'oasis_blessing',name:'Oasis Blessing',icon:'💧',ingr:['dewdrop_lily','sacred_ember','moonpetal','mirage_dust'],dc:20,xp:180,stat:'inu',unlock:8,desc:'Legendary desert restorative.'},
 ];
+// ═══ LOCATIONS ═══
+const LOCATIONS={
+  cindervale:{id:'cindervale',name:'Cindervale',icon:'🔥',desc:'A quiet mountain village built atop the ancient Heartforge. Rich forests and deep caves surround you.',
+    startGold:15,startInv:{ashbloom:3,hearthstone:1,embercap:1},startRecipes:['healing_salve'],
+    bgColor:'#1a2a1a',themeAccent:'#d4a420',
+    intro:'You arrive in Cindervale with little more than a pack and a dream. The workshop is dusty, the shelves are bare, and the villagers eye you with cautious hope. Time to prove yourself.'},
+  ashfall:{id:'ashfall',name:'Ashfall Crossing',icon:'☀️',desc:'A bustling desert trading post at the crossroads of three caravan routes. Harsh terrain, fierce competition, but unmatched trade access.',
+    startGold:25,startInv:{sunpetal:3,crystal_salt:2,dustite:1},startRecipes:['sunstroke_tonic'],
+    bgColor:'#2a1a0a',themeAccent:'#c0a040',
+    intro:'The Crossing hits you like a wall of heat. Merchants haggle, camels bray, and the smell of spice and sand fills the air. Your mentor\'s name opens a few doors — but out here, reputation is earned daily.'},
+};
+
 // ═══ QUALITY TIERS ═══
 const QUALITY={
   std:{id:'std',name:'Standard',icon:'',color:'#aaaaaa',dcMod:0,sellMult:1,xpMult:1,extraIngr:0},
@@ -1182,7 +1265,7 @@ const LORE_CHAINS={
       {id:'lf_vw3',name:'The Warding Song',desc:'The original wards around Cindervale aren\'t runes — they\'re a song, hummed by the stones themselves.',factions:['veilwalkers','cinderfolk']},
     ],
     reward:{discoveryChanceBonus:0.15},rewardDesc:'+15% discovery chance permanently'},
-  cinderfolk:{id:'cinderfolk',name:'Cinderfolk Legends',icon:'⛏️',color:'#aa8866',
+  cinderfolk:{id:'cinderfolk',loc:'cindervale',name:'Cinderfolk Legends',icon:'⛏️',color:'#aa8866',
     desc:'Stories passed down through generations of miners — the deep history written in stone.',
     fragments:[
       {id:'lf_cf1',name:'The Deep King',desc:'Before Cindervale, the Cinderfolk served an underground king. His throne room lies beneath Shaft Nine.',factions:['cinderfolk']},
@@ -1477,6 +1560,23 @@ const HIDDEN_INGR={
 };
 // Merge hidden ingredients into INGR at runtime
 Object.assign(INGR,HIDDEN_INGR);
+// ═══ ASHFALL CROSSING INGREDIENTS ═══
+INGR.sunpetal={id:'sunpetal',name:'Sunpetal',icon:'🌻',val:5,desc:'Hardy desert flower that blooms at high noon.'};
+INGR.dustite={id:'dustite',name:'Dustite',icon:'⏳',val:7,desc:'Compressed sandite with time-distortion properties.'};
+INGR.scorchroot={id:'scorchroot',name:'Scorchroot',icon:'🫚',val:6,desc:'Heat-resistant root that grows near volcanic vents.'};
+INGR.crystal_salt={id:'crystal_salt',name:'Crystal Salt',icon:'🧂',val:8,desc:'Salt crystals with preserved magical resonance.'};
+INGR.brine_moss={id:'brine_moss',name:'Brine Moss',icon:'🌊',val:10,desc:'Salt-saturated moss from underground caverns.'};
+INGR.obsidian_shard={id:'obsidian_shard',name:'Obsidian Shard',icon:'🖤',val:12,desc:'Razor-sharp volcanic glass with alchemical potential.'};
+INGR.sandsilk={id:'sandsilk',name:'Sandsilk',icon:'🕸️',val:14,desc:'Incredibly strong threads spun by desert sandworms.'};
+INGR.venomgland={id:'venomgland',name:'Venomgland',icon:'🐍',val:16,desc:'Potent venom sac from desert predators.'};
+INGR.dewdrop_lily={id:'dewdrop_lily',name:'Dewdrop Lily',icon:'💧',val:15,desc:'Rare oasis flower that condenses water from air.'};
+INGR.mirage_dust={id:'mirage_dust',name:'Mirage Dust',icon:'✨',val:22,desc:'Shimmering particles from collapsed illusions.'};
+INGR.ancient_resin={id:'ancient_resin',name:'Ancient Resin',icon:'🪵',val:28,desc:'Fossilized tree sap from the Buried Temple era.'};
+INGR.temple_gold={id:'temple_gold',name:'Temple Gold',icon:'🏆',val:35,desc:'Alchemically pure gold from ancient ritual vessels.'};
+INGR.sand_merchant_seal={id:'sand_merchant_seal',name:'Merchant Seal',icon:'📜',val:22,desc:'Official seal of the Sand Merchants Guild.'};
+INGR.flamekeeper_ember={id:'flamekeeper_ember',name:'Sacred Flame',icon:'🕯️',val:25,desc:'Eternal flame fragment from the Flamekeeper shrine.'};
+INGR.dustwalker_compass={id:'dustwalker_compass',name:'Wayfinder',icon:'🧭',val:22,desc:'Enchanted compass crafted by Dustwalker navigators.'};
+
 INGR.alchemical_residue={id:'alchemical_residue',name:'Alchemical Residue',icon:'♻️',val:3,desc:'Salvaged essence from spoiled ingredients. Can substitute for common reagents.'};
 
 // ═══ CARTOGRAPHER ELIXIRS — Multi-day buff potions ═══
@@ -1522,7 +1622,7 @@ const POT_LINES={
 const REP_LVS=['Stranger','Neutral','Friendly','Trusted','Honored','Revered'];
 const REP_TH=[0,50,150,350,650,1100];
 const getRepLvl=rep=>{let l=0;for(let i=0;i<REP_TH.length;i++)if(rep>=REP_TH[i])l=i;return l;};
-const FACTIONS={ashwardens:{id:'ashwardens',name:'Ashwardens',icon:'🛡️',color:TH.fAsh,res:'warden_sigil',
+const FACTIONS={ashwardens:{id:'ashwardens',loc:'cindervale',name:'Ashwardens',icon:'🛡️',color:TH.fAsh,res:'warden_sigil',
   alignBonus:{name:'Ashwarden Defender',desc:'+20% forage yield, +1 craft bonus, protection enchants cost -1 ingredient.',effects:{yieldMultiplier:0.20,craftBonus:1}},
   tierBonuses:[
     {name:'Guarded Zones',desc:'Unlock Ashwarden-guarded foraging zones.',effects:{}},
@@ -1530,7 +1630,7 @@ const FACTIONS={ashwardens:{id:'ashwardens',name:'Ashwardens',icon:'🛡️',col
     {name:'Warden Sigils',desc:'Quests occasionally reward bonus Warden Sigils.',effects:{factionBonusDrop_warden_sigil:0.25}},
     {name:'Elite Contracts',desc:'+20% gold from all quest rewards.',effects:{questGoldBonus:0.20}},
     {name:'Defender',desc:'+1 to all craft checks. Protection enchants cost -1 ingredient.',effects:{craftBonus:1}},
-  ]},hearthkeepers:{id:'hearthkeepers',name:'Hearthkeepers',icon:'🔥',color:TH.fHearth,res:'sacred_ember',
+  ]},hearthkeepers:{id:'hearthkeepers',loc:'cindervale',name:'Hearthkeepers',icon:'🔥',color:TH.fHearth,res:'sacred_ember',
   alignBonus:{name:'Hearthkeeper Devotee',desc:'+15% potion value, +15% XP from all sources, +15% staff efficiency.',effects:{potionValueBonus:0.15,xpMultiplier:0.15,staffEfficiencyBonus:0.15}},
   tierBonuses:[
     {name:'Purification',desc:'+10% potion sale value.',effects:{potionValueBonus:0.10}},
@@ -1538,7 +1638,7 @@ const FACTIONS={ashwardens:{id:'ashwardens',name:'Ashwardens',icon:'🛡️',col
     {name:'Sacred Embers',desc:'Quests occasionally reward bonus Sacred Embers.',effects:{factionBonusDrop_sacred_ember:0.25}},
     {name:'Temple Healing',desc:'Restore 1 Energy when completing a quest.',effects:{questEnergyRestore:1}},
     {name:'Keeper',desc:'+10% XP from all sources.',effects:{xpMultiplier:0.10}},
-  ]},veilwalkers:{id:'veilwalkers',name:'Veilwalkers',icon:'👁️',color:TH.fVeil,res:'veil_shard',
+  ]},veilwalkers:{id:'veilwalkers',loc:'cindervale',name:'Veilwalkers',icon:'👁️',color:TH.fVeil,res:'veil_shard',
   alignBonus:{name:'Veilseer',desc:'+25% enchant success, +20% discovery chance, research -1h.',effects:{enchantSuccessFlat:25,discoveryChanceBonus:0.20,researchCostReduction:1}},
   tierBonuses:[
     {name:'Arcane ID',desc:'+5% enchantment success chance.',effects:{enchantSuccessFlat:5}},
@@ -1554,7 +1654,29 @@ const FACTIONS={ashwardens:{id:'ashwardens',name:'Ashwardens',icon:'🛡️',col
     {name:'Deep Crystals',desc:'Quests occasionally reward bonus Deep Crystals.',effects:{factionBonusDrop_deep_crystal:0.25}},
     {name:'Mining Crew',desc:'Foraging expeditions yield +1 extra item.',effects:{forageYieldBonus:1}},
     {name:'Stone Sibling',desc:'+25% rare find chance on expeditions.',effects:{rareForageBonus:0.25}},
-  ]}};
+  ]}  // ═══ ASHFALL CROSSING FACTIONS ═══
+  sand_merchants:{id:'sand_merchants',loc:'ashfall',name:'Sand Merchants Guild',icon:'📜',color:'#c0a040',res:'sand_merchant_seal',
+    alignBonus:{name:'Guild Merchant',desc:'+20% sell, rare procurement.',effects:{sellBonus:0.20,shopRestockBonus:2}},
+    tierBonuses:[
+      {name:'Trade License',desc:'Guild wholesale prices.',effects:{buyDiscount:0.15}},
+      {name:'Caravan Routes',desc:'Exotic ingredients in shop.',effects:{shopRestockBonus:3}},
+      {name:'Master Trader',desc:'+10% potion value, +15% customer pay.',effects:{potionValueBonus:0.10,customerPayBonus:0.15}},
+    ]},
+  flamekeepers:{id:'flamekeepers',loc:'ashfall',name:'Flamekeepers',icon:'🕯️',color:'#d06030',res:'flamekeeper_ember',
+    alignBonus:{name:'Flamekeeper Acolyte',desc:'+15% XP, free herbs, +1 Energy.',effects:{xpMultiplier:0.15,dailyHerbs:true,bonusEnergyPerDay:1}},
+    tierBonuses:[
+      {name:'Temple Access',desc:'Oasis Grove unlocked early.',effects:{}},
+      {name:'Sacred Rites',desc:'+2 research, +1 craft.',effects:{researchBonus:2,craftBonus:1}},
+      {name:'Eternal Flame',desc:'All checks +1. +1 Energy on quest.',effects:{craftBonus:1,enchantBonus:1,extractionBonus:1,questEnergyRestore:1}},
+    ]},
+  dustwalkers:{id:'dustwalkers',loc:'ashfall',name:'Dustwalkers',icon:'🧭',color:'#8a7050',res:'dustwalker_compass',
+    alignBonus:{name:'Dustwalker Scout',desc:'+2 extraction, danger reduced, +1 Energy.',effects:{extractionBonus:2,reducedRisk:0.25,bonusEnergyPerDay:1}},
+    tierBonuses:[
+      {name:'Trail Knowledge',desc:'Travel time -1 Ashfall regions.',effects:{}},
+      {name:'Desert Sense',desc:'+30% danger reduction. Mirage Bazaar access.',effects:{reducedRisk:0.30}},
+      {name:'Pathfinder',desc:'Target no yield penalty. +50% discovery.',effects:{targetNoYieldPenalty:true,discoveryChanceBonus:0.50}},
+    ]},
+};
 const getFactionEffects=(fRepState,alignment)=>{const effs={};for(const [fid,f] of Object.entries(FACTIONS)){const rl=getRepLvl(fRepState[fid]||0);for(let i=0;i<Math.min(rl,f.tierBonuses.length);i++){const tb=f.tierBonuses[i];for(const [k,v] of Object.entries(tb.effects)){effs[k]=(effs[k]||0)+(typeof v==='number'?v:v===true?1:0);}}if(alignment===fid&&f.alignBonus){for(const [k,v] of Object.entries(f.alignBonus.effects)){effs[k]=(effs[k]||0)+(typeof v==='number'?v:v===true?1:0);}}}return effs;};
 const QUESTS=[
   {id:'q1',name:'Brenna\'s Request',giver:'Brenna',loc:'market',type:'deliver',target:'healing_salve',count:1,xp:80,gold:15,items:['moonpetal','moonpetal'],unlock:0,faction:null,fRep:0,
@@ -1758,6 +1880,28 @@ const QUESTS=[
     offer:['"The old Cinderfolk forge. Not the Heartforge. Where we used to shape the mountain itself."','"It\'s been sealed since my grandfather\'s time. But with the new vein, we have reason to reopen it."','"Three Ironhide for the crew. One Forge Catalyst to restart the furnace."','"This is the biggest thing to happen to the Cinderfolk in a lifetime."'],
     onAccept:'"When that forge lights up, the whole mountain will know."',
     turnIn:['"*the furnace roars to life, orange light flooding the chamber*"','"Listen. The mountain is singing. It\'s been waiting for this."','"Stone Sibling. That\'s what we call those who share the mountain\'s fire. That\'s you now."']},
+
+  // ═══ ASHFALL CROSSING QUESTS ═══
+  {id:'aq1',name:'Sola\'s Sunburn',giver:'Sola',type:'deliver',target:'sunstroke_tonic',count:1,xp:80,gold:20,items:['dustite','dustite'],unlock:0,faction:null,fRep:0,
+    desc:'Sola needs relief from desert sickness.',hint:'Brew a Sunstroke Tonic and return to Sola.',
+    offer:['"The sun out here doesn\'t just burn \u2014 it breaks you down."','"I need something for heat sickness. Can you manage it?"'],
+    turnIn:['"*drinks deeply* Oh, that\'s good. I can feel my head clearing."']},
+  {id:'aq2',name:'Obsidian Arms',giver:'Razak',type:'deliver',target:'obsidian_edge_oil',count:2,xp:120,gold:40,items:['obsidian_shard','obsidian_shard','obsidian_shard'],unlock:2,faction:'sand_merchants',fRep:15,
+    desc:'Razak needs Obsidian Edge Oil for a guild contract.',hint:'Brew 2 Obsidian Edge Oil.',
+    offer:['"The Guild has a contract \u2014 fifty blades, all obsidian-edged."','"Two flasks. Can you deliver?"'],
+    turnIn:['"Perfect viscosity. The Guild will be pleased."']},
+  {id:'aq3',name:'Oasis Pilgrimage',giver:'Keeper Amara',type:'deliver',target:'brine_poultice',count:3,xp:150,gold:35,items:['dewdrop_lily','dewdrop_lily'],unlock:2,faction:'flamekeepers',fRep:20,
+    desc:'Keeper Amara needs poultices for injured pilgrims.',hint:'Brew 3 Brine Poultices.',
+    offer:['"The pilgrims arrive sunburned, blistered, half-dead."','"Three Brine Poultices. The Flamekeepers remember those who serve."'],
+    turnIn:['"See? Already the swelling recedes. The Flamekeepers are grateful."']},
+  {id:'aq4',name:'Desert Navigation',giver:'Scout Tarek',type:'deliver',target:'sandveil_draught',count:2,xp:130,gold:45,items:['sandsilk'],unlock:3,faction:'dustwalkers',fRep:20,
+    desc:'Scout Tarek needs Sandveil Draughts for scouting.',hint:'Brew 2 Sandveil Draughts.',
+    offer:['"There\'s a sandstorm belt between here and the old temple."','"Two Sandveil Draughts and my scouts can slip through."'],
+    turnIn:['"Clear as morning. This will do perfectly."']},
+  {id:'aq5',name:'Antivenom Supply',giver:'Sola',type:'deliver',target:'venom_antidote',count:3,xp:200,gold:80,items:['venomgland','venomgland'],unlock:4,faction:null,fRep:0,reqQuest:'aq1',
+    desc:'Sola needs antidotes \u2014 sandworm attacks increasing.',hint:'Brew 3 Venom Antidotes.',
+    offer:['"The worms are getting bolder. Three guards bitten last week."'],
+    turnIn:['"Three antidotes. Three lives saved."']},
 ];
 const NPCS={
   brenna:{name:'Brenna',loc:'market',icon:'🧑‍🌾',title:'Market Keeper',
@@ -1774,7 +1918,11 @@ const NPCS={
   gretta:{name:'Gretta',loc:'chapel',icon:'⛏️',title:'Cinderfolk Guild Representative',
     portrait:{bg:['#4a4040','#2e2828'],ring:'#aa8866',accent:'#aa8866'},
     lines:['"The deep mines hold more than ore. There are crystals down there that sing if you listen right."','"Earn the Cinderfolk\'s trust and we\'ll show you veins that haven\'t been touched in fifty years."','"Mining is honest work. You put in effort, the stone gives back. Simple as that."','"My crew pulled a Deep Crystal last week — first one in months. The deep veins are coming alive again."']}
-};const SHOP_I=[{id:'ashbloom',price:5},{id:'embercap',price:8},{id:'hearthstone',price:14},{id:'ironroot_bark',price:7},{id:'moonpetal',price:16},{id:'gloomcap',price:12},{id:'volcanic_essence',price:20},{id:'char_root',price:3},{id:'wind_dust',price:4},{id:'bark_resin',price:6},{id:'ash_salt',price:4},{id:'cinder_moss',price:5},{id:'ember_petal',price:3},{id:'soot_crystal',price:4},{id:'amber_sap',price:6},{id:'beetle_shell',price:7},{id:'echo_fungus',price:9},{id:'ghost_silk',price:11}];
+};const SHOP_I=[
+  // Ashfall ingredients
+  {id:'sunpetal',price:5},{id:'dustite',price:7},{id:'scorchroot',price:6},{id:'crystal_salt',price:8},{id:'brine_moss',price:10},{id:'obsidian_shard',price:12},
+  // Cindervale ingredients
+  {id:'ashbloom',price:5},{id:'embercap',price:8},{id:'hearthstone',price:14},{id:'ironroot_bark',price:7},{id:'moonpetal',price:16},{id:'gloomcap',price:12},{id:'volcanic_essence',price:20},{id:'char_root',price:3},{id:'wind_dust',price:4},{id:'bark_resin',price:6},{id:'ash_salt',price:4},{id:'cinder_moss',price:5},{id:'ember_petal',price:3},{id:'soot_crystal',price:4},{id:'amber_sap',price:6},{id:'beetle_shell',price:7},{id:'echo_fungus',price:9},{id:'ghost_silk',price:11}];
 const H_EVENTS=[
   // Simple events (no check)
   {prob:0.025,text:'You stumble upon a hidden cache beneath a fallen log — someone\'s forgotten stash!',effect:'bonus',good:true},
@@ -1996,7 +2144,7 @@ const genBoardQuests=(level,day,bonusQuests=0)=>{
   return quests;
 };
 
-const DEF={phase:'identity',charName:'',charRace:null,charGender:null,stats:{cre:10,inu:10,acu:10,tec:10,com:10,dis:10},ptsLeft:12,skRanks:{},skPts:0,classLevels:{},specs:{},playerFeats:[],asiSpent:[],startingClass:null,screen:'map',day:1,hours:8,xp:0,gold:15,inv:{ashbloom:3,hearthstone:1,embercap:1},pots:{},known:['healing_salve'],aQ:[],doneQ:[],log:[],milestones:[],fRep:{ashwardens:0,hearthkeepers:0,veilwalkers:0,cinderfolk:0},upgrades:[],hiredAppr:[],apprTasks:{},apprXP:{},boardQ:[],activeBQ:[],doneBQCount:0,dayFlags:[],knownEnch:['e_sharp','e_glow','e_ironbark','e_feather','e_windwalk','e_rootbind'],constructProgress:{}};
+const DEF={phase:'identity',charName:'',charRace:null,charGender:null,stats:{cre:10,inu:10,acu:10,tec:10,com:10,dis:10},ptsLeft:12,skRanks:{},skPts:0,classLevels:{},specs:{},playerFeats:[],asiSpent:[],startingClass:null,screen:'map',day:1,hours:8,gameLocation:'cindervale',xp:0,gold:15,inv:{ashbloom:3,hearthstone:1,embercap:1},pots:{},known:['healing_salve'],aQ:[],doneQ:[],log:[],milestones:[],fRep:{ashwardens:0,hearthkeepers:0,veilwalkers:0,cinderfolk:0},upgrades:[],hiredAppr:[],apprTasks:{},apprXP:{},boardQ:[],activeBQ:[],doneBQCount:0,dayFlags:[],knownEnch:['e_sharp','e_glow','e_ironbark','e_feather','e_windwalk','e_rootbind'],constructProgress:{}};
 
 // ═══ ERROR BOUNDARY ═══
 class EB extends Component{constructor(p){super(p);this.state={e:null,info:null};}
@@ -2014,6 +2162,39 @@ class EB extends Component{constructor(p){super(p);this.state={e:null,info:null}
 function CindervaleAlchemistInner(){
   // ─── ALL STATE ───
   const [gameStarted,setGameStarted]=useState(false);
+  const [lineage,setLineage]=useState(null); // Lineage data persisted across runs
+  const [showTorch,setShowTorch]=useState(false);
+  const [showLocationSelect,setShowLocationSelect]=useState(false);
+  const [torchApprentice,setTorchApprentice]=useState(null);
+
+  // ═══ LINEAGE PERSISTENCE ═══
+  const LINEAGE_KEY='cindervale_lineage';
+  const loadLineage=()=>{try{const d=localStorage.getItem(LINEAGE_KEY);return d?JSON.parse(d):null;}catch(e){return null;}};
+  const saveLineage=(data)=>{try{localStorage.setItem(LINEAGE_KEY,JSON.stringify(data));}catch(e){}};
+  React.useEffect(()=>{const l=loadLineage();if(l)setLineage(l);},[]);
+
+  // Compute cumulative mentor bonuses from lineage
+  const getMentorBonuses=()=>{
+    if(!lineage?.generations?.length)return{};
+    const bonuses={};
+    lineage.generations.forEach(gen=>{
+      if(gen.mentorBonus){
+        bonuses[gen.mentorBonus.type]=(bonuses[gen.mentorBonus.type]||0)+gen.mentorBonus.val;
+      }
+    });
+    // Cap each at +3
+    Object.keys(bonuses).forEach(k=>{bonuses[k]=Math.min(3,bonuses[k]);});
+    return bonuses;
+  };
+  const mentorBonuses=getMentorBonuses();
+
+  const MENTOR_TYPES={
+    alchemist:{type:'brewBonus',val:1,desc:'+1 all brew checks',icon:'⚗️'},
+    scholar:{type:'researchBonus',val:1,desc:'+1 all research checks',icon:'📚'},
+    merchant:{type:'sellBonus',val:0.10,desc:'+10% sell prices',icon:'💰'},
+    warden:{type:'extractionBonus',val:1,desc:'+1 extraction checks',icon:'🌲'},
+    artificer:{type:'enchantBonus',val:1,desc:'+1 enchant checks',icon:'✨'},
+  };
   const [saveSlots,setSaveSlots]=useState([null,null]);
   const [autoSaveData,setAutoSaveData]=useState(null);
   const [loadingSlots,setLoadingSlots]=useState(true);
@@ -2057,6 +2238,7 @@ function CindervaleAlchemistInner(){
   const [log,setLog]=useState([]);
   const [selHex,setSelHex]=useState(null);
   const [zonePopup,setZonePopup]=useState(null); // region id for zone detail popup
+  const [gameLocation,setGameLocation]=useState('cindervale');
   const [selectedSite,setSelectedSite]=useState(null); // {regId, siteId} for weighted foraging
   const [targetIngr,setTargetIngr]=useState(null); // ingredient id to target during foraging
   const [selFlavor,setSelFlavor]=useState('');
@@ -2065,6 +2247,12 @@ function CindervaleAlchemistInner(){
   const [txSource,setTxSource]=useState(null); // transmute source ingredient
   const [txTarget,setTxTarget]=useState(null); // transmute target ingredient
   const [pubPapers,setPubPapers]=useState([]); // published research papers [{id,type,day}]
+  // ═══ LOCATION FILTERING ═══
+  const locRegions=REGIONS.filter(r=>!r.loc||r.loc===gameLocation);
+  const locFactions=Object.fromEntries(Object.entries(FACTIONS).filter(([,f])=>!f.loc||f.loc===gameLocation));
+  const locQuests=QUESTS.filter(q=>{if(q.id.startsWith('aq'))return gameLocation==='ashfall';if(q.id.startsWith('q')||q.id.startsWith('fc_'))return gameLocation==='cindervale';return true;});
+  const locApprentices=APPRENTICES.filter(a=>!a.loc||a.loc===gameLocation);
+
   const pickHex=(regId)=>{setSelHex(regId);setZonePopup(regId);const reg=REGIONS.find(r=>r.id===regId);setSelFlavor(reg?.flavor?reg.flavor[Math.floor(Math.random()*reg.flavor.length)]:'');};
   const [vBuild,setVBuild]=useState('workshop');
   const [dlgNpc,setDlgNpc]=useState(null);
@@ -2172,8 +2360,10 @@ function CindervaleAlchemistInner(){
     for(const [buffId,buff] of Object.entries(activeBuffs)){
       if(buff.daysLeft>0&&ELIXIR_BUFFS[buffId]?.effects[effectKey]){total+=ELIXIR_BUFFS[buffId].effects[effectKey];}
     }
+    // Mentor bonuses from lineage
+    if(mentorBonuses[effectKey])total+=mentorBonuses[effectKey];
     return total;
-  },[classLevels,specs,playerFeats,fRep,factionAlign,loreFragments,activeBuffs]);
+  },[classLevels,specs,playerFeats,fRep,factionAlign,loreFragments,activeBuffs,mentorBonuses]);
   const hasFeature=useCallback((effectKey)=>{
     for(const [cid,lv] of Object.entries(classLevels)){
       const cls=CLASSES[cid];if(!cls)continue;
@@ -2192,7 +2382,7 @@ function CindervaleAlchemistInner(){
 
   const gatherState=useCallback(()=>({
     phase,charName,charRace,charGender,stats,ptsLeft,skRanks,skPts,skProgress,classLevels,specs,playerFeats,asiSpent,startingClass,
-    screen,day,hours,xp,gold,inv,pots,known,aQ,doneQ,
+    screen,day,hours,gameLocation,xp,gold,inv,pots,known,aQ,doneQ,
     log:log.slice(-30),milestones,fRep,factionAlign,upgrades,hiredAppr,apprTasks,apprXP,enchQ,potCustQ,clinicPatients,venomContracts,forgedWeapons,shieldCommissions,planarFocus,gadgets,blueprints,fieldJournal,loreFragments,companions,caravans,supplyChains,caravanRuns,trainingSessions,factionHarmony,prestigeLevels,automata,customPatterns,mappedRegions,activeBuffs,debt,disabledUpgrades,shopLocked,injuryPenalty,staffInjuries,shelves,dailyReport,
     boardQ,activeBQ,doneBQCount,dayFlags,knownEnch,brewCounts,procureItems,pubPapers,selectedSite,constructProgress,
   }),[phase,charName,charRace,charGender,stats,ptsLeft,skRanks,skPts,skProgress,classLevels,specs,playerFeats,asiSpent,startingClass,screen,day,hours,xp,gold,inv,pots,known,aQ,doneQ,log,milestones,fRep,factionAlign,upgrades,hiredAppr,apprTasks,apprXP,enchQ,potCustQ,clinicPatients,venomContracts,forgedWeapons,shieldCommissions,planarFocus,gadgets,blueprints,fieldJournal,loreFragments,companions,caravans,supplyChains,caravanRuns,trainingSessions,factionHarmony,prestigeLevels,automata,customPatterns,mappedRegions,activeBuffs,debt,disabledUpgrades,shopLocked,injuryPenalty,staffInjuries,shelves,dailyReport,boardQ,activeBQ,doneBQCount,dayFlags,knownEnch,brewCounts,procureItems,constructProgress,selectedSite]);
@@ -2213,7 +2403,7 @@ function CindervaleAlchemistInner(){
     setPtsLeft(s.ptsLeft??12);setSkRanks(s.skRanks||{});setSkPts(s.skPts||0);setSkProgress(s.skProgress||{});
     const _cl=s.classLevels||{};const cleanCL={};Object.entries(_cl).forEach(([k,v])=>{if(CLASSES[k])cleanCL[k]=v;});
     setClassLevels(cleanCL);setSpecs(s.specs||{});setPlayerFeats(s.playerFeats||[]);setAsiSpent(s.asiSpent||[]);setStartingClass(s.startingClass||null);
-    setScreen(s.screen||'map');setDay(s.day||1);setHours(s.hours||8);
+    setScreen(s.screen||'map');setDay(s.day||1);setHours(s.hours||8);setGameLocation(s.gameLocation||'cindervale');
     setXp(s.xp||0);setGold(s.gold||15);setInv(s.inv||{});setPots(s.pots||{});
     setKnown(s.known||['healing_salve']);setAQ(s.aQ||[]);setDoneQ(s.doneQ||[]);
     setLog(s.log||[]);setMilestones(s.milestones||[]);setFRep(s.fRep||DEF.fRep);setFactionAlign(s.factionAlign||null);
@@ -2265,7 +2455,7 @@ function CindervaleAlchemistInner(){
       });
       addLog(`⬆ Level ${newLv}! Time to advance your training.`,'level');
       const nw=[{icon:'⬆',text:`Level ${newLv}! Choose how to advance.`,color:TH.goldBright}];
-      const newRegions=REGIONS.filter(r=>r.unlock===newLv);
+      const newRegions=locRegions.filter(r=>r.unlock===newLv);
       if(newRegions.length>0)nw.push({icon:'🗺️',text:`New region${newRegions.length>1?'s':''} unlocked: ${newRegions.map(r=>`${r.icon}${r.name}`).join(', ')}`,to:'worldmap',label:'🗺️ Explore',color:TH.teal});
       const newRecipes=RECIPES.filter(r=>r.unlock===newLv&&(!r.faction||getRL(r.faction)>=(r.fReq||0)));
       if(newRecipes.length>0)nw.push({icon:'⚗️',text:`New recipe${newRecipes.length>1?'s':''} available: ${newRecipes.map(r=>`${r.icon}${r.name}`).join(', ')}`,to:'workshop',label:'⚗️ Workshop',color:TH.green});
@@ -2490,7 +2680,49 @@ function CindervaleAlchemistInner(){
   const loadSave=(data)=>{if(data){restoreState(data);setGameStarted(true);}};
   const loadSlot=async(slot)=>{const d=saveSlots[slot-1]||await sGet(sK(slot));if(d){restoreState(d);setGameStarted(true);}};
   const deleteSave=async(slot)=>{await sDel(sK(slot));setSaveSlots(p=>{const n=[...p];n[slot-1]=null;return n;});setConfirmDelete(null);};
-  const newGame=()=>{restoreState(DEF);setLog([]);setGameStarted(true);};
+  const newGame=(loc='cindervale',inheritData=null)=>{
+    const locData=LOCATIONS[loc]||LOCATIONS.cindervale;
+    const defState={...DEF,
+      gameLocation:loc,
+      gold:inheritData?.gold||locData.startGold,
+      inv:inheritData?.inv||{...locData.startInv},
+      known:inheritData?.recipes||[...locData.startRecipes],
+      upgrades:inheritData?.heirloom?[inheritData.heirloom]:[],
+      fRep:inheritData?.fRep||{},
+    };
+    restoreState(defState);setLog([]);setGameStarted(true);
+    if(inheritData?.intro)addLog(inheritData.intro,'story');
+    else addLog(locData.intro,'story');
+  };
+
+  const passTorch=(apprentice,heirloomUpgrade,selectedLoc)=>{
+    // Build generation record
+    const topRecipes=Object.entries(brewCounts).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([id])=>id);
+    const mentorType=MENTOR_TYPES[startingClass]||MENTOR_TYPES.alchemist;
+    const gen={
+      name:charName,race:charRace,gender:charGender,
+      class:startingClass,spec:Object.values(specs).filter(Boolean)[0]||'',
+      level:getLvl(xp),location:gameLocation,
+      daysPlayed:day,goldEarned:gold,potionsBrewed:Object.values(brewCounts).reduce((s,v)=>s+v,0),
+      topRecipes,mentorBonus:{type:mentorType.type,val:mentorType.val},
+      heirloomUpgrade,apprenticeName:apprentice.name,
+    };
+    // Build or extend lineage
+    const newLineage=lineage?{...lineage,generations:[...lineage.generations,gen],totalGenerations:lineage.totalGenerations+1}
+      :{id:'lineage_'+Date.now(),name:charName+"'s Legacy",generations:[gen],totalGenerations:1,unlockedLocations:['cindervale','ashfall']};
+    saveLineage(newLineage);setLineage(newLineage);
+    // Compute inheritance
+    const inheritData={
+      gold:Math.min(150,Math.floor(gold*0.15)),
+      recipes:topRecipes.filter(id=>RECIPES.find(r=>r.id===id)),
+      heirloom:heirloomUpgrade||null,
+      fRep:Object.fromEntries(Object.entries(fRep).map(([k,v])=>([k,Math.floor(v/3)]))),
+      intro:apprentice.name+' sets out from '+LOCATIONS[gameLocation]?.name+', carrying the lessons of '+charName+'. A new chapter begins.',
+    };
+    // Start new game at selected location
+    setShowTorch(false);setTorchApprentice(null);
+    newGame(selectedLoc,inheritData);
+  };
   const [showImport,setShowImport]=useState(false);
   const [importText,setImportText]=useState('');
   const [importInput,setImportInput]=useState('');
@@ -4250,7 +4482,7 @@ function CindervaleAlchemistInner(){
       }
     }
   };
-  const availQ=QUESTS.filter(q=>!doneQ.includes(q.id)&&!aQ.find(a=>a.id===q.id)&&level>=q.unlock&&(!q.fReq||getRL(q.faction)>=q.fReq)&&(!q.reqQuest||doneQ.includes(q.reqQuest)));
+  const availQ=locQuests.filter(q=>!doneQ.includes(q.id)&&!aQ.find(a=>a.id===q.id)&&level>=q.unlock&&(!q.fReq||getRL(q.faction)>=q.fReq)&&(!q.reqQuest||doneQ.includes(q.reqQuest)));
 
   // ─── BOARD QUESTS (repeatable) ───
   const acceptBQ=(bq)=>{
@@ -4602,7 +4834,7 @@ function CindervaleAlchemistInner(){
     if(hasUp('leyline')&&Math.random()<.25){modInv('veil_shard',1);report.push({n:'Ley Line',i:'⚡',r:'Veil Shard!',t:'ok'});}
     // forageOnRest: passive overnight foraging
     if(getFeatureVal('forageOnRest')){
-      const restRegions=REGIONS.filter(r=>level>=regUnlock(r)&&(!r.faction||getRL(r.faction)>=(r.fReq||0)));
+      const restRegions=locRegions.filter(r=>level>=regUnlock(r)&&(!r.faction||getRL(r.faction)>=(r.fReq||0)));
       if(restRegions.length>0){
         const reg=restRegions[Math.floor(Math.random()*restRegions.length)];
         const pick=reg.ingr[Math.floor(Math.random()*reg.ingr.length)];
@@ -4654,7 +4886,7 @@ function CindervaleAlchemistInner(){
     // Procurement: rare ingredients appear in shop
     const procMod=getSkMod('procurement');const procList=[];
     const restockB=getFeatureVal('shopRestockBonus');
-    const rareIngr=new Set();REGIONS.filter(r=>r.diff>=3&&level>=regUnlock(r)).forEach(r=>r.ingr.forEach(id=>rareIngr.add(id)));
+    const rareIngr=new Set();locRegions.filter(r=>r.diff>=3&&level>=regUnlock(r)).forEach(r=>r.ingr.forEach(id=>rareIngr.add(id)));
     const alreadyInShop=new Set(SHOP_I.map(s=>s.id));
     const rarePool=[...rareIngr].filter(id=>!alreadyInShop.has(id));
     if(procMod>0||restockB>0){
@@ -4683,7 +4915,7 @@ function CindervaleAlchemistInner(){
       nw.push({icon:'🛒',text:parts.join(' & ')+' customer'+(totalCust>1?'s':'')+' waiting!',to:'enchant',label:'🛒 Customers',color:TH.purple});}
     if(shelfGold>0)nw.push({icon:'🏪',text:'Overnight shelf sales: +'+shelfGold+'g!',to:'workshop',label:'⚗️ Workshop',color:TH.gold});
     if(procList.length>0)nw.push({icon:'📦',text:`Procurement: ${procList.length} rare ingredient${procList.length>1?'s':''} in shop today!`,to:'market',label:'🛒 Shop',color:TH.purple});
-    const newAvailQ=QUESTS.filter(q=>!doneQ.includes(q.id)&&!aQ.find(a=>a.id===q.id)&&getLvl(xp)>=q.unlock);
+    const newAvailQ=locQuests.filter(q=>!doneQ.includes(q.id)&&!aQ.find(a=>a.id===q.id)&&getLvl(xp)>=q.unlock);
     if(newAvailQ.length>0)nw.push({icon:'📜',text:`${newAvailQ.length} quest${newAvailQ.length>1?'s':''} on the board.`,to:'quests',label:'📜 Quest Board',color:TH.cyan});
     const discoveries=report.filter(r=>r.r?.includes('Discovered'));
     if(discoveries.length>0)nw.push({icon:'📚',text:`Research breakthrough: ${discoveries.map(d=>d.r).join(', ')}`,to:'research',label:'📚 Research',color:TH.green});
@@ -4825,7 +5057,7 @@ function CindervaleAlchemistInner(){
     // Procurement
     if(procList.length>0)mrSections.push({title:'📦 Procurement',lines:procList.map(p=>({icon:p.icon,label:p.name,val:p.price+'g',color:TH.purple}))});
     // Quests available
-    const availQ=QUESTS.filter(q=>!doneQ.includes(q.id)&&!aQ.find(a=>a.id===q.id)&&getLvl(xp)>=q.unlock&&(!q.fReq||getRL(q.faction)>=q.fReq)&&(!q.reqQuest||doneQ.includes(q.reqQuest)));
+    const availQ=locQuests.filter(q=>!doneQ.includes(q.id)&&!aQ.find(a=>a.id===q.id)&&getLvl(xp)>=q.unlock&&(!q.fReq||getRL(q.faction)>=q.fReq)&&(!q.reqQuest||doneQ.includes(q.reqQuest)));
     const activeQ=aQ.length;
     const questLines=[];
     if(activeQ>0)questLines.push({icon:'📌',label:'Active quests',val:'×'+activeQ,color:TH.cyan});
@@ -4833,7 +5065,7 @@ function CindervaleAlchemistInner(){
     if(boardQ.length>0)questLines.push({icon:'📋',label:'Board requests',val:'×'+boardQ.length,color:TH.teal});
     if(questLines.length>0)mrSections.push({title:'📜 Quests',lines:questLines});
     // Faction standing
-    const facLines=Object.entries(FACTIONS).map(([fid,f])=>{const rep=fRep[fid]||0;const rl=getRepLvl(rep);const nxt=rl<REP_TH.length-1?REP_TH[rl+1]:null;return{icon:f.icon,label:f.name+' — '+REP_LVS[rl],val:nxt?rep+'/'+nxt:'MAX',color:factionAlign===fid?f.color:TH.textDim};});
+    const facLines=Object.entries(locFactions).map(([fid,f])=>{const rep=fRep[fid]||0;const rl=getRepLvl(rep);const nxt=rl<REP_TH.length-1?REP_TH[rl+1]:null;return{icon:f.icon,label:f.name+' — '+REP_LVS[rl],val:nxt?rep+'/'+nxt:'MAX',color:factionAlign===fid?f.color:TH.textDim};});
     mrSections.push({title:'🏛️ Faction Standing',lines:facLines});
     // ═══ CLOCKWORK ASSISTANT (Tinkerer gadget) ═══
     const clockworkGadget=gadgets.find(g=>g.blueprintId==='gd_assistant'&&g.equipped);
@@ -5223,7 +5455,33 @@ function CindervaleAlchemistInner(){
                 ):(<div style={{color:TH.textDim,fontSize:16}}>Slot {i}: Empty</div>)}
               </div>);})}
           </div>
-          <button style={{...S.btn('gold'),fontSize:20,padding:'10px 30px',marginTop:8}} onClick={newGame}>✨ New Game</button>
+          <button style={{...S.btn('gold'),fontSize:20,padding:'10px 30px',marginTop:8}} onClick={()=>setShowLocationSelect(true)}>✨ New Game</button>
+
+          {/* Lineage Viewer */}
+          {lineage&&lineage.generations.length>0&&<div style={{...S.card,marginTop:8,textAlign:'left',borderColor:'#c050e044'}}>
+            <div style={{...S.cT,color:'#c050e0'}}>🏰 {lineage.name} · Generation {lineage.totalGenerations}</div>
+            {lineage.generations.map((gen,i)=><div key={i} style={{padding:'4px 8px',fontSize:14,color:TH.textDim,borderBottom:'1px solid '+TH.border+'33'}}>
+              <span style={{color:TH.textBright}}>{gen.name}</span> — {CLASSES[gen.class]?.icon||''}{CLASSES[gen.class]?.name||gen.class} Lv{gen.level} at {LOCATIONS[gen.location]?.name||gen.location} ({gen.daysPlayed} days)
+              <span style={{fontSize:12,marginLeft:4,color:'#c050e0'}}>{MENTOR_TYPES[gen.class]?.icon} {MENTOR_TYPES[gen.class]?.desc}</span>
+            </div>)}
+            <div style={{fontSize:13,color:'#c050e0',marginTop:4}}>Active bonuses: {Object.entries(getMentorBonuses()).map(([k,v])=>k+' +'+v).join(', ')||'None'}</div>
+          </div>}
+
+          {/* Location Selection Modal */}
+          {showLocationSelect&&<div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'#000000dd',display:'flex',alignItems:'center',justifyContent:'center',zIndex:999,padding:16}}
+            onClick={()=>setShowLocationSelect(false)}>
+            <div style={{background:TH.bg,border:'2px solid '+TH.gold,borderRadius:12,padding:20,maxWidth:500,width:'100%'}} onClick={e=>e.stopPropagation()}>
+              <div style={{fontSize:22,color:TH.gold,textAlign:'center',marginBottom:12}}>Choose Your Location</div>
+              {lineage&&<div style={{fontSize:13,color:'#c050e0',textAlign:'center',marginBottom:8}}>🏰 {lineage.name} · Generation {lineage.totalGenerations+1}</div>}
+              {Object.values(LOCATIONS).map(loc=><div key={loc.id} style={{padding:'12px 14px',background:TH.panel,borderRadius:8,marginBottom:8,border:'2px solid '+TH.border,cursor:'pointer'}}
+                onClick={()=>{setShowLocationSelect(false);newGame(loc.id);}}>
+                <div style={{fontSize:18,color:TH.gold,fontWeight:'bold'}}>{loc.icon} {loc.name}</div>
+                <div style={{fontSize:14,color:TH.textDim,marginTop:3,lineHeight:1.4}}>{loc.desc}</div>
+                {loc.id!=='cindervale'&&(!lineage||lineage.totalGenerations<1)&&<div style={{fontSize:12,color:'#c050e0',marginTop:4}}>✨ Unlocked after your first torch pass (or play directly!)</div>}
+              </div>)}
+              <button style={{...S.btn('dim'),width:'100%',marginTop:4}} onClick={()=>setShowLocationSelect(false)}>Cancel</button>
+            </div>
+          </div>}
 
           {/* Cross-device save transfer */}
           <div style={{...S.card,marginTop:12,textAlign:'left'}}>
@@ -5572,7 +5830,41 @@ function CindervaleAlchemistInner(){
   const SaveOverlay=()=>showSaveMenu?(
     <div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'#000000cc',display:'flex',alignItems:'center',justifyContent:'center',zIndex:999}} onClick={()=>setShowSaveMenu(false)}>
       <div style={{...S.card,maxWidth:400,width:'90%',padding:20}} onClick={e=>e.stopPropagation()}>
-        <div style={S.cT}>💾 Save / Load</div>
+        {/* Pass the Torch */}
+        {getLvl(xp)>=10&&<div style={{...S.card,borderColor:'#c050e044',marginBottom:8}}>
+          <div style={{...S.cT,color:'#c050e0'}}>🔥 Pass the Torch</div>
+          <div style={{fontSize:14,color:TH.textDim,marginBottom:8,lineHeight:1.5}}>
+            Your legacy lives on. Choose an apprentice to carry your knowledge forward. They will found their own workshop at a new location.
+          </div>
+          {hiredAppr.length===0?<div style={{fontSize:14,color:TH.textDim}}>Hire an apprentice first — they will become your successor.</div>
+          :showTorch?<div>
+            <div style={{fontSize:15,color:TH.gold,marginBottom:6}}>Choose your successor:</div>
+            {hiredAppr.map(ap=><button key={ap.id} style={{...S.btn('def'),display:'block',width:'100%',marginBottom:4,textAlign:'left',fontSize:14}}
+              onClick={()=>setTorchApprentice(ap)}>
+              {ap.icon} {ap.name} — {ap.specialty} specialist
+            </button>)}
+            {torchApprentice&&<div style={{marginTop:8,padding:10,background:TH.panel,borderRadius:6,border:'1px solid '+TH.border}}>
+              <div style={{fontSize:16,color:TH.gold,marginBottom:6}}>{torchApprentice.icon} {torchApprentice.name} will carry your legacy</div>
+              <div style={{fontSize:13,color:TH.textDim,marginBottom:4}}>Choose an heirloom upgrade to pass forward:</div>
+              <div style={{display:'flex',flexWrap:'wrap',gap:3,marginBottom:8}}>
+                {upgrades.map(uid=>{const u=UPGRADES[uid];return u?<button key={uid} style={{...S.btn('def'),fontSize:12,padding:'2px 6px'}}
+                  onClick={()=>{
+                    const loc=gameLocation==='cindervale'?'ashfall':'cindervale';
+                    if(confirm('Pass the Torch to '+torchApprentice.name+'? This will start a new game at '+LOCATIONS[loc]?.name+'. Your current character will be saved in the lineage.'))
+                      passTorch(torchApprentice,uid,loc);
+                  }}>{u.icon} {u.name}</button>:null;})}
+                <button style={{...S.btn('dim'),fontSize:12,padding:'2px 6px'}}
+                  onClick={()=>{
+                    const loc=gameLocation==='cindervale'?'ashfall':'cindervale';
+                    if(confirm('Pass the Torch with no heirloom?'))passTorch(torchApprentice,null,loc);
+                  }}>No heirloom</button>
+              </div>
+            </div>}
+            <button style={{...S.btn('dim'),marginTop:4}} onClick={()=>{setShowTorch(false);setTorchApprentice(null);}}>Cancel</button>
+          </div>
+          :<button style={{...S.btn('gold'),fontSize:15}} onClick={()=>setShowTorch(true)}>🔥 Pass the Torch (Lv10+)</button>}
+        </div>}
+                <div style={S.cT}>💾 Save / Load</div>
         {[1,2].map(i=>{const data=saveSlots[i-1];return(
           <div key={i} style={{padding:'6px 8px',background:TH.panelLight,borderRadius:4,marginBottom:4,border:`1px solid ${data?TH.borderGold:TH.border}`}}>
             <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
@@ -5913,7 +6205,7 @@ function CindervaleAlchemistInner(){
       })()}
 
       {nightExpPending&&!morningReport&&!eventPopup&&(()=>{
-        const nightRegs=REGIONS.filter(r=>level>=regUnlock(r)&&(!r.faction||getRL(r.faction)>=(r.fReq||0)));
+        const nightRegs=locRegions.filter(r=>level>=regUnlock(r)&&(!r.faction||getRL(r.faction)>=(r.fReq||0)));
         const nightH=getFeatureVal('nightBonusHours')||3;
         const nightDR=getFeatureVal('nightDangerReduction');
         return(<div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'#000000cc',display:'flex',alignItems:'center',justifyContent:'center',zIndex:999,padding:16}}>
@@ -6705,7 +6997,7 @@ function CindervaleAlchemistInner(){
           {Object.entries(pots).filter(([,q])=>q>0).length===0&&<div style={{fontSize:14,color:TH.textDim,textAlign:'center'}}>No potions to sell.</div>}
           {/* Commission: buy specific rare ingredient */}
           {getFeatureVal('commissionAccess')>0&&(()=>{
-            const rareIngr=new Set();REGIONS.filter(r=>r.diff>=3&&level>=r.unlock).forEach(r=>r.ingr.forEach(id=>rareIngr.add(id)));
+            const rareIngr=new Set();locRegions.filter(r=>r.diff>=3&&level>=r.unlock).forEach(r=>r.ingr.forEach(id=>rareIngr.add(id)));
             const commItems=[...rareIngr].filter(id=>!SHOP_I.find(s=>s.id===id)).slice(0,5);
             return commItems.length>0?(
               <div style={{marginTop:8,padding:'6px 8px',background:'#40002010',borderRadius:4,border:'1px solid #80004033'}}>
@@ -8618,7 +8910,7 @@ function CindervaleAlchemistInner(){
               </div>
               <div style={{...S.row,fontSize:14,flexWrap:'wrap'}}>
                 <select onChange={e=>{if(e.target.value)assignTask(ap.id,'forage',e.target.value);}} value={task?.type==='forage'?task.target:''} title={TASK_TYPES.forage.desc} style={{padding:'2px 4px',background:TH.panelLight,color:TH.text,border:'1px solid '+TH.border,borderRadius:3,fontFamily:'inherit',fontSize:14}}>
-                  <option value="">⛏️...</option>{REGIONS.filter(r=>level>=regUnlock(r)&&(!r.faction||getRL(r.faction)>=(r.fReq||0))).map(r=>{
+                  <option value="">⛏️...</option>{locRegions.filter(r=>level>=regUnlock(r)&&(!r.faction||getRL(r.faction)>=(r.fReq||0))).map(r=>{
                     const empH=Math.max(1,6-r.time);const est=empH*3;
                     return <option key={r.id} value={r.id}>{r.name} (~{est} items, {empH}h gather)</option>;})}</select>
                 <select onChange={e=>{if(e.target.value)assignTask(ap.id,'brew',e.target.value);}} value={task?.type==='brew'?task.target:''} title={TASK_TYPES.brew.desc} style={{padding:'2px 4px',background:TH.panelLight,color:TH.text,border:'1px solid '+TH.border,borderRadius:3,fontFamily:'inherit',fontSize:14}}>
@@ -8816,7 +9108,7 @@ function CindervaleAlchemistInner(){
               </div>);})():(
               <div style={{fontSize:14,color:TH.textDim}}>🏛️ No faction alignment yet</div>)}
             <div style={{display:'flex',gap:10}}>
-              {Object.entries(FACTIONS).map(([fid,f])=>{const rl=getRepLvl(fRep[fid]||0);return(
+              {Object.entries(locFactions).map(([fid,f])=>{const rl=getRepLvl(fRep[fid]||0);return(
                 <div key={fid} style={{textAlign:'center'}}>
                   <div style={{fontSize:16}}>{f.icon}</div>
                   <div style={{fontSize:11,color:rl>=5?f.color:rl>=3?TH.textBright:TH.textDim,fontWeight:rl>=5?'bold':'normal'}}>{REP_LVS[rl]?.slice(0,4)}</div>
@@ -8825,7 +9117,7 @@ function CindervaleAlchemistInner(){
           </div>
         </div>
         <div style={S.card}><div style={S.cT}>🛡️ Factions</div>
-        {Object.entries(FACTIONS).map(([fid,f])=>{const rep=fRep[fid]||0;const rl=getRepLvl(rep);const nxt=rl<REP_TH.length-1?REP_TH[rl+1]:null;const isAligned=factionAlign===fid;const isCapped=factionAlign&&factionAlign!==fid;
+        {Object.entries(locFactions).map(([fid,f])=>{const rep=fRep[fid]||0;const rl=getRepLvl(rep);const nxt=rl<REP_TH.length-1?REP_TH[rl+1]:null;const isAligned=factionAlign===fid;const isCapped=factionAlign&&factionAlign!==fid;
           const activeBonuses=f.tierBonuses.filter((_,i)=>i<rl&&Object.keys(f.tierBonuses[i].effects).length>0).length+(isAligned?1:0);
           return(
           <div key={fid} style={{padding:'8px 10px',background:isAligned?f.color+'12':TH.panelLight,borderRadius:6,marginBottom:8,border:isAligned?`2px solid ${f.color}`:`1px solid ${TH.border}`}}>
