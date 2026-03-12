@@ -2249,12 +2249,12 @@ function CindervaleAlchemistInner(){
   const [txTarget,setTxTarget]=useState(null); // transmute target ingredient
   const [pubPapers,setPubPapers]=useState([]); // published research papers [{id,type,day}]
   // ═══ LOCATION FILTERING ═══
-  const locRegions=REGIONS.filter(r=>!r.loc||r.loc===gameLocation);
+  const locRegions=locRegions.filter(r=>!r.loc||r.loc===gameLocation);
   const locFactions=Object.fromEntries(Object.entries(FACTIONS).filter(([,f])=>!f.loc||f.loc===gameLocation));
   const locQuests=QUESTS.filter(q=>{if(q.id.startsWith('aq'))return gameLocation==='ashfall';if(q.id.startsWith('q')||q.id.startsWith('fc_'))return gameLocation==='cindervale';return true;});
   const locApprentices=AP_POOL.filter(a=>!a.loc||a.loc===gameLocation);
 
-  const pickHex=(regId)=>{setSelHex(regId);setZonePopup(regId);const reg=REGIONS.find(r=>r.id===regId);setSelFlavor(reg?.flavor?reg.flavor[Math.floor(Math.random()*reg.flavor.length)]:'');};
+  const pickHex=(regId)=>{setSelHex(regId);setZonePopup(regId);const reg=locRegions.find(r=>r.id===regId);setSelFlavor(reg?.flavor?reg.flavor[Math.floor(Math.random()*reg.flavor.length)]:'');};
   const [vBuild,setVBuild]=useState('workshop');
   const [dlgNpc,setDlgNpc]=useState(null);
   const [dlgLine,setDlgLine]=useState(0);
@@ -2689,7 +2689,7 @@ function CindervaleAlchemistInner(){
       inv:inheritData?.inv||{...locData.startInv},
       known:inheritData?.recipes||[...locData.startRecipes],
       upgrades:inheritData?.heirloom?[inheritData.heirloom]:[],
-      fRep:inheritData?.fRep||{},
+      fRep:inheritData?.fRep||(loc==='ashfall'?{sand_merchants:0,flamekeepers:0,dustwalkers:0}:{ashwardens:0,hearthkeepers:0,veilwalkers:0,cinderfolk:0}),
     };
     restoreState(defState);setLog([]);setGameStarted(true);
     if(inheritData?.intro)addLog(inheritData.intro,'story');
@@ -2780,7 +2780,7 @@ function CindervaleAlchemistInner(){
     return{roll,mod,rb,total,dc:effDc,success:total>=effDc,name:sk.name,icon:sk.icon,statName:STATS[sk.stat]?.name||'',extras:dayFlags.includes('clear_sky')&&skId==='extraction'?[{val:-2,label:'Clear Sky'}]:[]};
   };
   const doHarvest=()=>{
-    const reg=REGIONS.find(r=>r.id===selHex);if(!reg)return;
+    const reg=locRegions.find(r=>r.id===selHex);if(!reg)return;
     const info=getExpeditionInfo(reg);if(!info||info.gatherHours<1)return;
     if(reg.faction&&getRL(reg.faction)<(reg.fReq||0)){addLog(`The ${FACTIONS[reg.faction]?.name||'locals'} eye you with suspicion. You haven't earned their trust to forage here.`,'error');return;}
     snapshot();
@@ -4405,7 +4405,7 @@ function CindervaleAlchemistInner(){
           const canBrew=r.ingr.every(id=>(inv[id]||0)>=1);
           if(!canBrew){
             steps.push({done:false,text:`Need: ${r.ingr.map(id=>`${INGR[id]?.icon||''}${INGR[id]?.name||id} (have ${inv[id]||0})`).join(', ')}`});
-            const regions=REGIONS.filter(reg=>reg.ingr.some(i=>r.ingr.includes(i)&&(inv[i]||0)<1));
+            const regions=locRegions.filter(reg=>reg.ingr.some(i=>r.ingr.includes(i)&&(inv[i]||0)<1));
             if(regions.length>0)steps.push({done:false,text:`Forage at ${regions.slice(0,2).map(rr=>`${rr.icon}${rr.name}`).join(' or ')}`,nav:{to:'worldmap',label:'🗺️ Go to Wilds'}});
             steps.push({done:false,text:'Or buy ingredients',nav:{to:'market',label:'🛒 Go to Market'}});
           } else {
@@ -4420,7 +4420,7 @@ function CindervaleAlchemistInner(){
       const ing=INGR[q.target];const have=inv[q.target]||0;
       if(have<q.count){
         steps.push({done:false,text:`Gather ${q.count-have} more ${ing?.icon||''}${ing?.name||q.target} (${have}/${q.count})`});
-        const regions=REGIONS.filter(reg=>reg.ingr.includes(q.target));
+        const regions=locRegions.filter(reg=>reg.ingr.includes(q.target));
         if(regions.length>0)steps.push({done:false,text:`Found at ${regions.map(r=>`${r.icon}${r.name}`).join(', ')}`,nav:{to:'worldmap',label:'🗺️ Go to Wilds'}});
         steps.push({done:false,text:'Or buy from shop',nav:{to:'market',label:'🛒 Go to Market'}});
       } else {
@@ -4544,7 +4544,7 @@ function CindervaleAlchemistInner(){
 
   // ─── NIGHT EXPEDITION (Warden) ───
   const doNightExpedition=(regId,siteId)=>{
-    const reg=REGIONS.find(r=>r.id===regId);if(!reg)return;
+    const reg=locRegions.find(r=>r.id===regId);if(!reg)return;
     setNightExpPending(false);
     const nightSite=siteId?reg.sites?.find(s=>s.id===siteId):null;
     const nightHours=getFeatureVal('nightBonusHours')||3;
@@ -4708,7 +4708,7 @@ function CindervaleAlchemistInner(){
       const trainingRoomMult=blueprints.some(b=>b.bpId==='bp_training'&&b.complete)?(blueprints.some(b=>b.bpId==='bp_sanctum'&&b.complete)?3:2):1;
       const axp=sxpMult*traitXpMult*trainingRoomMult;
       if(task.type==='forage'&&task.target){
-        const reg=REGIONS.find(r=>r.id===task.target);
+        const reg=locRegions.find(r=>r.id===task.target);
         if(reg&&level>=regUnlock(reg)){
           const empGatherH=Math.max(1,(6-reg.time)*(dualTask?2:1));
           const pickN=reg.pick||reg.ingr.length;
@@ -5213,7 +5213,7 @@ function CindervaleAlchemistInner(){
             }
           }
         } else if(task.type==='forage'&&task.target){
-          const reg=REGIONS.find(r=>r.id===task.target);
+          const reg=locRegions.find(r=>r.id===task.target);
           if(reg&&Math.random()<totalEff){
             const items={};const n=2+aLvl;
             for(let i=0;i<n;i++){const id=reg.ingr[Math.floor(Math.random()*reg.ingr.length)];items[id]=(items[id]||0)+1;}
@@ -5472,10 +5472,15 @@ function CindervaleAlchemistInner(){
           {showLocationSelect&&<div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'#000000dd',display:'flex',alignItems:'center',justifyContent:'center',zIndex:999,padding:16}}
             onClick={()=>setShowLocationSelect(false)}>
             <div style={{background:TH.bg,border:'2px solid '+TH.gold,borderRadius:12,padding:20,maxWidth:500,width:'100%'}} onClick={e=>e.stopPropagation()}>
-              <div style={{fontSize:22,color:TH.gold,textAlign:'center',marginBottom:12}}>Choose Your Location</div>
+              <div style={{fontSize:22,color:TH.gold,textAlign:'center',marginBottom:12}}>{window._pendingTorch?'🔥 Pass the Torch — Choose Location':'Choose Your Location'}</div>
               {lineage&&<div style={{fontSize:13,color:'#c050e0',textAlign:'center',marginBottom:8}}>🏰 {lineage.name} · Generation {lineage.totalGenerations+1}</div>}
               {Object.values(LOCATIONS).map(loc=><div key={loc.id} style={{padding:'12px 14px',background:TH.panel,borderRadius:8,marginBottom:8,border:'2px solid '+TH.border,cursor:'pointer'}}
-                onClick={()=>{setShowLocationSelect(false);newGame(loc.id);}}>
+                onClick={()=>{setShowLocationSelect(false);
+                  if(window._pendingTorch){
+                    const pt=window._pendingTorch;window._pendingTorch=null;
+                    passTorch(pt.apprentice,pt.heirloom,loc.id);
+                  } else {newGame(loc.id);}
+                }}>
                 <div style={{fontSize:18,color:TH.gold,fontWeight:'bold'}}>{loc.icon} {loc.name}</div>
                 <div style={{fontSize:14,color:TH.textDim,marginTop:3,lineHeight:1.4}}>{loc.desc}</div>
                 {loc.id!=='cindervale'&&(!lineage||lineage.totalGenerations<1)&&<div style={{fontSize:12,color:'#c050e0',marginTop:4}}>✨ Unlocked after your first torch pass (or play directly!)</div>}
@@ -5850,14 +5855,14 @@ function CindervaleAlchemistInner(){
               <div style={{display:'flex',flexWrap:'wrap',gap:3,marginBottom:8}}>
                 {upgrades.map(uid=>{const u=UPGRADES[uid];return u?<button key={uid} style={{...S.btn('def'),fontSize:12,padding:'2px 6px'}}
                   onClick={()=>{
-                    const loc=gameLocation==='cindervale'?'ashfall':'cindervale';
-                    if(confirm('Pass the Torch to '+torchApprentice.name+'? This will start a new game at '+LOCATIONS[loc]?.name+'. Your current character will be saved in the lineage.'))
-                      passTorch(torchApprentice,uid,loc);
+                    setShowLocationSelect(true);
+                    // Store pending torch data for after location selection
+                    window._pendingTorch={apprentice:torchApprentice,heirloom:uid};
                   }}>{u.icon} {u.name}</button>:null;})}
                 <button style={{...S.btn('dim'),fontSize:12,padding:'2px 6px'}}
                   onClick={()=>{
-                    const loc=gameLocation==='cindervale'?'ashfall':'cindervale';
-                    if(confirm('Pass the Torch with no heirloom?'))passTorch(torchApprentice,null,loc);
+                    setShowLocationSelect(true);
+                    window._pendingTorch={apprentice:torchApprentice,heirloom:null};
                   }}>No heirloom</button>
               </div>
             </div>}
@@ -6251,7 +6256,7 @@ function CindervaleAlchemistInner(){
 
       {/* ═══ ZONE DETAIL POPUP ═══ */}
       {zonePopup&&(()=>{
-        const reg=REGIONS.find(r=>r.id===zonePopup);if(!reg)return null;
+        const reg=locRegions.find(r=>r.id===zonePopup);if(!reg)return null;
         const locked=level<regUnlock(reg)||(reg.faction&&getRL(reg.faction)<(reg.fReq||0));
         const info=getExpeditionInfo(reg);const canGo=!locked&&info&&info.gatherHours>=1;
         const imgUrl=ZONE_IMGS[reg.id];
@@ -7036,13 +7041,13 @@ function CindervaleAlchemistInner(){
           {dayFlags.includes('clear_sky')&&<div style={{fontSize:14,color:TH.green,marginBottom:4,padding:'3px 6px',background:`${TH.green}10`,borderRadius:3}}>☀️ Clear Skies — extraction DCs reduced by 2 today</div>}
           <div style={{fontSize:14,color:TH.textDim,marginBottom:6}}>Expeditions use your remaining hours. Travel takes time — leave earlier to gather more.</div>
           <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(130px,1fr))',gap:5}}>
-            {REGIONS.map(reg=>{const locked=level<regUnlock(reg)||(reg.faction&&getRL(reg.faction)<(reg.fReq||0));const sel=selHex===reg.id;
+            {locRegions.map(reg=>{const locked=level<regUnlock(reg)||(reg.faction&&getRL(reg.faction)<(reg.fReq||0));const sel=selHex===reg.id;
               const info=getExpeditionInfo(reg);const canGo=!locked&&info&&info.gatherHours>=1;
               return(
               <div key={reg.id} onClick={()=>!locked&&pickHex(reg.id)} style={{padding:6,borderRadius:4,background:sel?`${reg.color}44`:TH.panelLight,border:`1px solid ${sel?TH.goldBright:TH.border}`,cursor:locked?'not-allowed':'pointer',opacity:locked?.4:canGo?1:.6,textAlign:'center'}}>
                 <div style={{fontSize:20}}>{locked?'🔒':reg.icon}</div>
                 <div style={{fontSize:15,color:sel?TH.goldBright:TH.textBright}}>{reg.name}</div>
-                <div style={{fontSize:13,color:TH.textDim}}>{locked?`Lv${reg.unlock}`:canGo?`${info.travelTime}h travel · ${info.gatherHours}h gather`:`Need ${reg.time+1}h+`}</div>
+                <div style={{fontSize:13,color:TH.textDim}}>{locked?`Lv${reg.unlock+1}`:canGo?`${info.travelTime}h travel · ${info.gatherHours}h gather`:`Need ${reg.time+1}h+`}</div>
                 <div style={{fontSize:13,color:locked?TH.textDim:TH.gold}}>DC{reg.dc}</div>
               </div>);})}
           </div>
@@ -7061,7 +7066,7 @@ function CindervaleAlchemistInner(){
             </div>
           </div>);
         })()}
-        {selHex&&(()=>{const reg=REGIONS.find(r=>r.id===selHex);if(!reg)return null;
+        {selHex&&(()=>{const reg=locRegions.find(r=>r.id===selHex);if(!reg)return null;
           const info=getExpeditionInfo(reg);const canGo=info&&info.gatherHours>=1;
           const estPerHr=3; // avg of 2-4 normal success
           const pickN=reg.pick||reg.ingr.length;
@@ -7515,7 +7520,7 @@ function CindervaleAlchemistInner(){
             const natLv=classLevels.scholar||0;
             const canGeo=natLv>=6;
             const totalPossible=Object.entries(FIELD_DISCOVERIES).reduce((s,[,discs])=>s+discs.filter(d=>d.type!=='geological'||canGeo).length,0);
-            const regions=REGIONS.filter(r=>level>=regUnlock(r));
+            const regions=locRegions.filter(r=>level>=regUnlock(r));
             return <>
               <div style={{fontSize:13,color:TH.textDim,marginBottom:6}}>
                 Documented: {fieldJournal.length}/{totalPossible} · Discovery chance: {natLv>=10?'40%':natLv>=6?'30%':'20%'}/forage hour
@@ -7847,7 +7852,7 @@ function CindervaleAlchemistInner(){
                 Discovery chance: {discChance}% per forage hour · {cLv>=2?'+1 bonus ingredient from mapped areas':''} {cLv>=3?'· See region ingredients':''}
                 {cLv>=4&&' · Staff use your maps (+25% yield)'}
               </div>
-              {REGIONS.filter(r=>level>=regUnlock(r)).map(reg=>{
+              {locRegions.filter(r=>level>=regUnlock(r)).map(reg=>{
                 const regionHidden=HIDDEN_REGIONS.filter(hr=>hr.region===reg.id&&(!hr.legendary||cLv>=5));
                 if(regionHidden.length===0)return null;
                 return <div key={reg.id} style={{marginBottom:6}}>
@@ -8008,7 +8013,7 @@ function CindervaleAlchemistInner(){
                   {/* Current assignment */}
                   {auto.task&&<div style={{fontSize:13,color:'#c0c080',margin:'4px 0',padding:'3px 8px',background:'#a0a06010',borderRadius:4,border:'1px solid #a0a06033'}}>
                     📋 {auto.task.type==='brew'?'⚗️ Brew '+(RECIPES.find(r=>r.id===auto.task.target)?.icon||'')+(RECIPES.find(r=>r.id===auto.task.target)?.name||auto.task.target)
-                      :auto.task.type==='forage'?'⛏️ Forage '+(REGIONS.find(r=>r.id===auto.task.target)?.icon||'')+(REGIONS.find(r=>r.id===auto.task.target)?.name||auto.task.target)
+                      :auto.task.type==='forage'?'⛏️ Forage '+(locRegions.find(r=>r.id===auto.task.target)?.icon||'')+(locRegions.find(r=>r.id===auto.task.target)?.name||auto.task.target)
                       :auto.task.type==='shopkeep'?'🏪 Shopkeeping'
                       :auto.task.type==='enchant'?'✨ Enchanting':'❓ Unknown'}
                   </div>}
@@ -8032,7 +8037,7 @@ function CindervaleAlchemistInner(){
                     {RECIPES.filter(r=>known.includes(r.id)).map(r=><option key={r.id} value={'brew_'+r.id}>{r.icon} {r.name}</option>)}
                   </optgroup>
                   <optgroup label="⛏️ Forage">
-                    {REGIONS.filter(r=>level>=regUnlock(r)).map(r=><option key={r.id} value={'forage_'+r.id}>{r.icon} {r.name}</option>)}
+                    {locRegions.filter(r=>level>=regUnlock(r)).map(r=><option key={r.id} value={'forage_'+r.id}>{r.icon} {r.name}</option>)}
                   </optgroup>
                   <option value="shopkeep">🏪 Shopkeep</option>
                   {canAutoEnchant()&&<option value="enchant">✨ Enchant</option>}
@@ -8402,7 +8407,7 @@ function CindervaleAlchemistInner(){
           // Available targets: ingredients from known recipes, explored regions, or faction ingredients
           const targetSet=new Set();
           RECIPES.filter(r=>known.includes(r.id)).forEach(r=>r.ingr.forEach(id=>targetSet.add(id)));
-          REGIONS.filter(r=>level>=r.unlock).forEach(r=>r.ingr.forEach(id=>targetSet.add(id)));
+          locRegions.filter(r=>level>=r.unlock).forEach(r=>r.ingr.forEach(id=>targetSet.add(id)));
           if(canFaction)Object.keys(FACTIONS).forEach(fid=>{if(FACTIONS[fid].res)targetSet.add(FACTIONS[fid].res);});
           const targets=[...targetSet].filter(id=>id!==txSource);
           return(
@@ -8558,7 +8563,7 @@ function CindervaleAlchemistInner(){
                   <div style={{fontSize:14,color:TH.gold,marginBottom:3}}>Ingredients:</div>
                   {Object.entries(cost).map(([id,q])=>{
                     const have=(inv[id]||0)>=q;
-                    const regions=REGIONS.filter(reg=>reg.ingr.includes(id)&&level>=regUnlock(reg)&&(!reg.faction||getRL(reg.faction)>=(reg.fReq||0)));
+                    const regions=locRegions.filter(reg=>reg.ingr.includes(id)&&level>=regUnlock(reg)&&(!reg.faction||getRL(reg.faction)>=(reg.fReq||0)));
                     const shopItem=SHOP_I.find(s=>s.id===id);
                     return(
                     <div key={id} style={{padding:'3px 0',fontSize:15,display:'flex',alignItems:'center',flexWrap:'wrap',gap:4}}>
@@ -8902,7 +8907,7 @@ function CindervaleAlchemistInner(){
               <div style={{fontSize:14,color:TH.textDim,margin:'3px 0'}}>
                 Stats: {Object.entries(ap.baseStat).map(([s,v])=><span key={s} style={{marginRight:5,color:STATS[s]?.color||TH.text,cursor:'help'}} title={STATS[s]?.name+' '+v+' (mod '+(getMod(v)>=0?'+':'')+getMod(v)+'). '+({tec:'Used for brewing & foraging efficiency',com:'Used for shopkeeping gold earned',acu:'Used for research discovery chance',dis:'Used for construction speed & endurance',inu:'Used for attunement & intuition checks',cre:'Used for creative & experimental tasks'}[s]||'')}>{STATS[s]?.icon||s} {v}</span>)}
               </div>
-              <div style={{fontSize:14,color:TH.text,marginBottom:3}}>Task: <b style={{color:task?TH.gold:TH.textDim}}>{task?TASK_TYPES[task.type]?.icon+' '+TASK_TYPES[task.type]?.name+(task.target?' ('+(task.type==='forage'?(REGIONS.find(r=>r.id===task.target)?.name||task.target):task.type==='brew'?(RECIPES.find(r=>r.id===task.target)?.name||task.target):task.type==='construct'?(UPGRADES[task.target]?.name||task.target):task.target)+')':''):'None — assign below'}</b>
+              <div style={{fontSize:14,color:TH.text,marginBottom:3}}>Task: <b style={{color:task?TH.gold:TH.textDim}}>{task?TASK_TYPES[task.type]?.icon+' '+TASK_TYPES[task.type]?.name+(task.target?' ('+(task.type==='forage'?(locRegions.find(r=>r.id===task.target)?.name||task.target):task.type==='brew'?(RECIPES.find(r=>r.id===task.target)?.name||task.target):task.type==='construct'?(UPGRADES[task.target]?.name||task.target):task.target)+')':''):'None — assign below'}</b>
                 {task&&<span style={{fontSize:13,color:TH.textDim}}> — {TASK_TYPES[task.type]?.desc}</span>}
               </div>
               <div style={{display:'flex',flexWrap:'wrap',gap:3,fontSize:14,marginBottom:4}}>
@@ -8926,7 +8931,7 @@ function CindervaleAlchemistInner(){
                 <span style={{fontSize:14,color:TH.red}}>Dismiss {ap.name}? This cannot be undone.</span>
                 <button style={{...S.btn('red'),fontSize:14,padding:'2px 8px'}} onClick={()=>{fireAppr(ap.id);setConfirmFire(null);}}>Yes, dismiss</button>
               </div>}
-              {task?.type==='forage'&&task.target&&(()=>{const reg=REGIONS.find(r=>r.id===task.target);if(!reg)return null;
+              {task?.type==='forage'&&task.target&&(()=>{const reg=locRegions.find(r=>r.id===task.target);if(!reg)return null;
                 const empH=Math.max(1,6-reg.time);const empEff=Math.max(0.3,0.5+getMod(ap.baseStat.tec||10)*0.05+aLvl*0.1+upEff('apprenticeEff'));
                 const estPerHr=Math.floor(3*empEff); // avg 3 items/hr at full efficiency
                 return <div style={{fontSize:13,color:TH.textDim,marginTop:3,padding:'3px 6px',background:TH.bg,borderRadius:3}}>
@@ -9590,7 +9595,7 @@ function CindervaleAlchemistInner(){
           </div>}
           {hiredAppr.length>0&&<div style={S.sideSec}>
             <div style={S.sideHd}>👥 Staff ({hiredAppr.length})</div>
-            {hiredAppr.map(ap=>{const t=apprTasks[ap.id];return <div key={ap.id} style={{fontSize:13,color:TH.text,marginBottom:2}}>{ap.icon} {ap.name} — <span style={{color:TH.textDim}}>{t?(TASK_TYPES[t.type]?.icon||'')+' '+(TASK_TYPES[t.type]?.name||t.type)+(t.target?' · '+(t.type==='forage'?(REGIONS.find(r=>r.id===t.target)?.name||t.target):t.type==='brew'?(RECIPES.find(r=>r.id===t.target)?.name||t.target):t.type==='construct'?(UPGRADES[t.target]?.name||t.target):t.target):''):'Idle'}</span></div>;})}
+            {hiredAppr.map(ap=>{const t=apprTasks[ap.id];return <div key={ap.id} style={{fontSize:13,color:TH.text,marginBottom:2}}>{ap.icon} {ap.name} — <span style={{color:TH.textDim}}>{t?(TASK_TYPES[t.type]?.icon||'')+' '+(TASK_TYPES[t.type]?.name||t.type)+(t.target?' · '+(t.type==='forage'?(locRegions.find(r=>r.id===t.target)?.name||t.target):t.type==='brew'?(RECIPES.find(r=>r.id===t.target)?.name||t.target):t.type==='construct'?(UPGRADES[t.target]?.name||t.target):t.target):''):'Idle'}</span></div>;})}
           </div>}
         </>}
 
