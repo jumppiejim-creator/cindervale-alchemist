@@ -2338,7 +2338,7 @@ function CindervaleAlchemistInner(){
 
   // ─── DERIVED ───
   const charLevel=Object.values(classLevels).reduce((s,v)=>s+v,0);
-  const level=getLvl(xp);const nextXp=nxtXP(xp);const pb=profB(level);
+  const level=getLvl(xp);const displayLevel=level+1;const nextXp=nxtXP(xp);const pb=profB(level);
   const classLv=cid=>classLevels[cid]||0;
   const hasClass=cid=>(classLevels[cid]||0)>0;
 
@@ -2454,8 +2454,8 @@ function CindervaleAlchemistInner(){
         chosenClass:null,chosenSpec:null,asiChoices:null,chosenFeat:null,
         skillPointsSpent:{},needsASI,needsFeat,needsSpec:false,skillPointsAvailable:2+getFeatureVal('bonusSkillPerLevel'),
       });
-      addLog(`⬆ Level ${newLv}! Time to advance your training.`,'level');
-      const nw=[{icon:'⬆',text:`Level ${newLv}! Choose how to advance.`,color:TH.goldBright}];
+      addLog(`⬆ Level ${newLv+1}! Time to advance your training.`,'level');
+      const nw=[{icon:'⬆',text:`Level ${newLv+1}! Choose how to advance.`,color:TH.goldBright}];
       const newRegions=locRegions.filter(r=>r.unlock===newLv);
       if(newRegions.length>0)nw.push({icon:'🗺️',text:`New region${newRegions.length>1?'s':''} unlocked: ${newRegions.map(r=>`${r.icon}${r.name}`).join(', ')}`,to:'worldmap',label:'🗺️ Explore',color:TH.teal});
       const newRecipes=RECIPES.filter(r=>r.unlock===newLv&&(!r.faction||getRL(r.faction)>=(r.fReq||0)));
@@ -2703,7 +2703,7 @@ function CindervaleAlchemistInner(){
     const gen={
       name:charName,race:charRace,gender:charGender,
       class:startingClass,spec:Object.values(specs).filter(Boolean)[0]||'',
-      level:getLvl(xp),location:gameLocation,
+      level:getLvl(xp)+1,location:gameLocation,
       daysPlayed:day,goldEarned:gold,potionsBrewed:Object.values(brewCounts).reduce((s,v)=>s+v,0),
       topRecipes,mentorBonus:{type:mentorType.type,val:mentorType.val},
       heirloomUpgrade,apprenticeName:apprentice.name,
@@ -5401,7 +5401,7 @@ function CindervaleAlchemistInner(){
   // ─── CONTEXTUAL ALERTS ───
   const alerts=[];
   if(skPts>0)alerts.push({text:`You have ${skPts} unspent skill points — your experience is ready to be honed.`,to:'character',label:'📊 Spend Points'});
-  if(pendingLevelUp)alerts.push({text:`Level ${pendingLevelUp.newCharLevel}! Complete your advancement.`,color:TH.goldBright});
+  if(pendingLevelUp)alerts.push({text:`Level ${(pendingLevelUp.newCharLevel||0)+1}! Complete your advancement.`,color:TH.goldBright});
   const readyQ=aQ.filter(q=>{const p=qP(q);return p.c>=p.n;});
   if(readyQ.length>0)readyQ.forEach(q=>alerts.push({text:`"${q.name}" is complete! ${q.giver} awaits your return.`,to:q.loc==='market'?'market':'tavern',label:q.loc==='market'?`🛒 ${q.giver}`:`🍺 ${q.giver}`,npc:q.giver.toLowerCase()}));
   if(enchQ.length>0)alerts.push({text:enchQ.length+' enchant customer'+(enchQ.length>1?'s':'')+' waiting.',to:'enchant',label:'✨ Enchant'});
@@ -5439,7 +5439,7 @@ function CindervaleAlchemistInner(){
           {loadingSlots?<div style={{color:TH.textDim}}>Loading...</div>:<>
           {autoSaveData&&<div style={{...S.card,borderColor:TH.green,textAlign:'left',cursor:'pointer'}} onClick={()=>loadSave(autoSaveData)}>
             <div style={{fontSize:18,color:TH.green}}>▶ Continue — {autoSaveData.charName||'?'}</div>
-            <div style={{fontSize:15,color:TH.textDim}}>{autoSaveData.classLevels?Object.entries(autoSaveData.classLevels).map(([cid,lv])=>`${CLASSES[cid]?.icon||''}${CLASSES[cid]?.name||cid} ${lv}`).join(' / '):'?'} · Lv{getLvl(autoSaveData.xp||0)} · Day {autoSaveData.day} · {autoSaveData.gold}g</div>
+            <div style={{fontSize:15,color:TH.textDim}}>{autoSaveData.classLevels?Object.entries(autoSaveData.classLevels).map(([cid,lv])=>`${CLASSES[cid]?.icon||''}${CLASSES[cid]?.name||cid} ${lv}`).join(' / '):'?'} · Lv{getLvl(autoSaveData.xp||0)+1} · Day {autoSaveData.day} · {autoSaveData.gold}g</div>
             <div style={{fontSize:14,color:TH.textDim}}>{fmtD(autoSaveData._at)}</div>
           </div>}
           <div style={{...S.card,textAlign:'left'}}><div style={S.cT}>💾 Save Slots</div>
@@ -5447,7 +5447,7 @@ function CindervaleAlchemistInner(){
               <div key={i} style={{padding:'8px 10px',background:TH.panelLight,borderRadius:4,marginBottom:6,border:`1px solid ${data?TH.borderGold:TH.border}`}}>
                 {data?(<div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
                   <div><div style={{fontSize:17,color:TH.textBright}}>Slot {i}: {data.charName}</div>
-                    <div style={{fontSize:14,color:TH.textDim}}>{data.classLevels?Object.entries(data.classLevels).map(([cid,lv])=>`${CLASSES[cid]?.icon||''}${lv}`).join(' '):'?'} Lv{getLvl(data.xp||0)} · Day {data.day} · {fmtD(data._at)}</div></div>
+                    <div style={{fontSize:14,color:TH.textDim}}>{data.classLevels?Object.entries(data.classLevels).map(([cid,lv])=>`${CLASSES[cid]?.icon||''}${lv}`).join(' '):'?'} Lv{getLvl(data.xp||0)+1} · Day {data.day} · {fmtD(data._at)}</div></div>
                   <div style={S.row}>
                     <button style={S.btn('gold')} onClick={()=>loadSave(data)}>Load</button>
                     {confirmDelete===i?<><button style={S.btn('red')} onClick={()=>deleteSave(i)}>Yes</button><button style={S.btn('dim')} onClick={()=>setConfirmDelete(null)}>No</button></>
@@ -5832,7 +5832,7 @@ function CindervaleAlchemistInner(){
     <div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'#000000cc',display:'flex',alignItems:'center',justifyContent:'center',zIndex:999}} onClick={()=>setShowSaveMenu(false)}>
       <div style={{...S.card,maxWidth:400,width:'90%',padding:20}} onClick={e=>e.stopPropagation()}>
         {/* Pass the Torch */}
-        {getLvl(xp)>=10&&<div style={{...S.card,borderColor:'#c050e044',marginBottom:8}}>
+        {getLvl(xp)>=9&&<div style={{...S.card,borderColor:'#c050e044',marginBottom:8}}>
           <div style={{...S.cT,color:'#c050e0'}}>🔥 Pass the Torch</div>
           <div style={{fontSize:14,color:TH.textDim,marginBottom:8,lineHeight:1.5}}>
             Your legacy lives on. Choose an apprentice to carry your knowledge forward. They will found their own workshop at a new location.
@@ -5863,7 +5863,7 @@ function CindervaleAlchemistInner(){
             </div>}
             <button style={{...S.btn('dim'),marginTop:4}} onClick={()=>{setShowTorch(false);setTorchApprentice(null);}}>Cancel</button>
           </div>
-          :<button style={{...S.btn('gold'),fontSize:15}} onClick={()=>setShowTorch(true)}>🔥 Pass the Torch (Lv10+)</button>}
+          :<button style={{...S.btn('gold'),fontSize:15}} onClick={()=>setShowTorch(true)}>🔥 Pass the Torch</button>}
         </div>}
                 <div style={S.cT}>💾 Save / Load</div>
         {[1,2].map(i=>{const data=saveSlots[i-1];return(
@@ -5895,7 +5895,7 @@ function CindervaleAlchemistInner(){
         </div>
         {showDebug&&<div style={{position:'fixed',bottom:50,right:8,zIndex:1001,background:'#1a1a2a',border:'1px solid #555',borderRadius:8,padding:10,width:320,maxHeight:'80vh',overflow:'auto',fontSize:13,color:'#ddd',boxShadow:'0 4px 20px #000a'}} onClick={e=>e.stopPropagation()}>
           <div style={{fontSize:16,color:'#ff8',marginBottom:6,display:'flex',justifyContent:'space-between'}}><b>🐛 Debug Panel</b><span style={{cursor:'pointer'}} onClick={()=>setShowDebug(false)}>✕</span></div>
-          <div style={{color:'#aaa',fontSize:11,marginBottom:8}}>Day {day} · ⚡{hours} · Lv{getLvl(xp)} · {gold}g · {xp}xp</div>
+          <div style={{color:'#aaa',fontSize:11,marginBottom:8}}>Day {day} · ⚡{hours} · Lv{getLvl(xp)+1} · {gold}g · {xp}xp</div>
 
           <div style={{marginBottom:6}}><b style={{color:'#8cf'}}>💰 Resources</b></div>
           <div style={{display:'flex',flexWrap:'wrap',gap:3,marginBottom:8}}>
@@ -6009,7 +6009,7 @@ function CindervaleAlchemistInner(){
           <Portrait cls={startingClass||'alchemist'} race={charRace} gender={charGender} size={22} style={{borderWidth:1,borderRadius:4}}/>
           <span style={{color:TH.textBright}}>{charName}</span>
           <span>{Object.entries(classLevels).filter(([cid])=>CLASSES[cid]).map(([cid,lv])=>CLASSES[cid]?.icon).join('')}</span>
-          <span>📅{day}</span><span>⚡{hours}</span><span style={{color:TH.gold}}>Lv{level}</span><span style={{color:debt>0?'#c04040':TH.gold}}>💰{gold}g{debt>0&&<span style={{fontSize:11,color:'#c04040'}}> (debt:{debt}g)</span>}</span>
+          <span>📅{day}</span><span>⚡{hours}</span><span style={{color:TH.gold}}>Lv{displayLevel}</span><span style={{color:debt>0?'#c04040':TH.gold}}>💰{gold}g{debt>0&&<span style={{fontSize:11,color:'#c04040'}}> (debt:{debt}g)</span>}</span>
         </div>
         {nextXp&&<div style={{width:'100%',maxWidth:250,height:4,background:TH.panel,borderRadius:3,overflow:'hidden',margin:'2px auto'}}>
           <div style={{height:'100%',borderRadius:3,width:`${((xp-XP_TBL[getLvl(xp)])/(nextXp-XP_TBL[getLvl(xp)]))*100}%`,background:`linear-gradient(90deg,${TH.goldDim},${TH.gold})`}}/>
@@ -6141,7 +6141,7 @@ function CindervaleAlchemistInner(){
             <div style={{fontSize:22,color:TH.gold,letterSpacing:2,marginBottom:4}}>🌅 Dawn of Day {morningReport.dayNum}</div>
             <div style={{fontSize:16,color:TH.textBright}}>{charName} · {RACES[charRace]?.icon} {RACES[charRace]?.name}</div>
             <div style={{fontSize:14,color:TH.textDim,marginTop:2}}>
-              {Object.entries(classLevels).filter(([cid])=>CLASSES[cid]).map(([cid,lv])=>CLASSES[cid]?.icon+' '+CLASSES[cid]?.name+' '+lv).join(' · ')} · Lv{level} · 💰{gold}g
+              {Object.entries(classLevels).filter(([cid])=>CLASSES[cid]).map(([cid,lv])=>CLASSES[cid]?.icon+' '+CLASSES[cid]?.name+' '+lv).join(' · ')} · Lv{displayLevel} · 💰{gold}g
             </div>
             <div style={{fontSize:14,color:TH.textDim,marginTop:4,fontStyle:'italic'}}>{morningReport.flavor}</div>
             <div style={{fontSize:15,color:TH.textBright,marginTop:4}}>⏳ ⚡{morningReport.baseH} Energy for today{hiredAppr.length>0?` · ${hiredAppr.length} staff on duty`:''}</div>
@@ -6358,7 +6358,7 @@ function CindervaleAlchemistInner(){
                   🎲 Random{targetIngr&&reg.ingr.includes(targetIngr)?' 🎯 '+INGR[targetIngr]?.icon:''}
                 </button>}
                 {!canGo&&<div style={{flex:1,fontSize:15,color:TH.red,textAlign:'center',padding:6}}>
-                  {locked?`🔒 Requires Lv${reg.unlock}${reg.faction?' + '+FACTIONS[reg.faction]?.name+' rep':''}`:hours<1?'⚡ No Energy':`⚡ Need ${reg.time+1}+ (have ⚡${hours})`}
+                  {locked?`🔒 Requires Lv${reg.unlock+1}${reg.faction?' + '+FACTIONS[reg.faction]?.name+' rep':''}`:hours<1?'⚡ No Energy':`⚡ Need ${reg.time+1}+ (have ⚡${hours})`}
                 </div>}
                 <button style={S.btn('dim')} onClick={()=>{setZonePopup(null);setTargetIngr(null);}}>Close</button>
               </div>
@@ -6400,7 +6400,7 @@ function CindervaleAlchemistInner(){
               <Portrait cls={startingClass||'alchemist'} race={charRace} gender={charGender} size={100}/>
             </div>
             <div style={{textAlign:'center',marginBottom:16}}>
-              <div style={{fontSize:26,color:TH.gold,letterSpacing:2}}>⬆ Level {pendingLevelUp.newCharLevel}!</div>
+              <div style={{fontSize:26,color:TH.gold,letterSpacing:2}}>⬆ Level {pendingLevelUp.newCharLevel+1}!</div>
               <div style={{fontSize:16,color:TH.textDim,marginTop:4}}>Your experience has unlocked new potential.</div>
             </div>
             <div style={{marginBottom:12}}>
@@ -6805,7 +6805,7 @@ function CindervaleAlchemistInner(){
                   if(featDef?.effects?.bonusSkillPerLevel){
                     const retroPts=pendingLevelUp.newCharLevel*featDef.effects.bonusSkillPerLevel;
                     setSkPts(p=>p+retroPts);
-                    addLog(`🧠 ${featDef.name}: +${retroPts} retroactive skill points (${featDef.effects.bonusSkillPerLevel}/level × ${pendingLevelUp.newCharLevel} levels)`,'level');
+                    addLog(`🧠 ${featDef.name}: +${retroPts} retroactive skill points (${featDef.effects.bonusSkillPerLevel}/level × ${(pendingLevelUp.newCharLevel+1)} levels)`,'level');
                   }
                 }
                 // Apply ASI
@@ -8205,7 +8205,7 @@ function CindervaleAlchemistInner(){
           const showInfo=getFeatureVal('showRecipeInfo');
           const showIngr=getFeatureVal('showIngredients');
           return(<div key={r.id} style={{padding:'4px 8px',background:TH.panel,borderRadius:4,marginBottom:2,opacity:locked?.3:.5}}>
-            <span style={{fontSize:15,color:TH.textDim}}>❔ {locked?'Unlock at Lv'+r.unlock+(r.faction?' + '+FACTIONS[r.faction]?.name+' rep':''):
+            <span style={{fontSize:15,color:TH.textDim}}>❔ {locked?'Unlock at Lv'+(r.unlock+1)+(r.faction?' + '+FACTIONS[r.faction]?.name+' rep':''):
               'Discoverable — use 📚 Research tab to study or experiment!'}</span>
             {!locked&&showInfo>0&&<div style={{fontSize:14,color:TH.cyan,marginTop:2}}>📚 {r.icon} {r.name} — DC{r.dc} {r.desc?'· '+r.desc:''}</div>}
             {!locked&&showIngr>0&&<div style={{fontSize:13,color:TH.purple,marginTop:1}}>🔍 Needs: {r.ingr.map(id=>INGR[id]?.icon+INGR[id]?.name).join(', ')}</div>}
@@ -9577,7 +9577,7 @@ function CindervaleAlchemistInner(){
             <div style={{textAlign:'center',marginBottom:6}}>
               <Portrait cls={startingClass||'alchemist'} race={charRace} gender={charGender} size={60}/>
               <div style={{fontSize:14,color:TH.textBright,marginTop:3}}>{charName}</div>
-              <div style={{fontSize:13,color:TH.textDim}}>{RACES[charRace]?.icon} {RACES[charRace]?.name} · Lv{level}</div>
+              <div style={{fontSize:13,color:TH.textDim}}>{RACES[charRace]?.icon} {RACES[charRace]?.name} · Lv{displayLevel}</div>
             </div>
             {STAT_IDS.map(sid=><div key={sid} style={{display:'flex',justifyContent:'space-between',fontSize:13,padding:'1px 2px'}}>
               <span style={{color:STATS[sid].color}}>{STATS[sid].icon} {STATS[sid].name}</span>
@@ -9698,8 +9698,9 @@ function CindervaleAlchemistInner(){
           <div style={S.sideSec}>
             <div style={S.sideHd}>📋 Class</div>
             {Object.entries(classLevels).filter(([cid])=>CLASSES[cid]).map(([cid,lv])=>{const c=CLASSES[cid];return<div key={cid} style={{fontSize:13,color:c.color,marginBottom:2}}>{c.icon} {c.name} Lv{lv}</div>;})}
-            <div style={{fontSize:13,color:TH.textDim,marginTop:4}}>Total Level: {level}</div>
+            <div style={{fontSize:13,color:TH.textDim,marginTop:4}}>Character Level: {displayLevel}</div>
             <div style={{fontSize:13,color:TH.textDim}}>XP: {xp}{nextXp?' / '+nextXp:''}</div>
+            {displayLevel>=10&&hiredAppr.length>0&&<button style={{...S.btn('gold'),fontSize:12,padding:'3px 8px',marginTop:6,width:'100%'}} onClick={()=>setShowSaveMenu(true)}>🔥 Pass the Torch</button>}
           </div>
         </>}
 
