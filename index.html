@@ -902,6 +902,17 @@ const RECIPES=[
   {id:'magma_essence',name:'Magma Essence',icon:'🔥',ingr:['magma_diamond','living_ember','volcanic_essence'],xp:100,unlock:7,dc:17,stat:'tec',desc:'Liquid fire. Incredibly potent but short-lived crafting power for 2 days.',buff:'magma_essence'},
   {id:'mithril_draught',name:'Mithril Draught',icon:'⚪',ingr:['deep_mithril','shadow_ore','embervein'],xp:100,unlock:7,dc:17,stat:'tec',desc:'The rarest metal dissolved. Your hands become instruments of precision for 3 days.',buff:'mithril_draught'},
   {id:'primordial_elixir',name:'Primordial Elixir',icon:'⚡',ingr:['primordial_spark','forge_heart_shard','phoenix_ash'],xp:150,unlock:8,dc:20,stat:'inu',desc:'Creation energy in a flask. The ultimate elixir — boosts everything for 5 days.',buff:'primordial_elixir'},
+  // ═══ ASHFALL CROSSING RECIPES ═══
+  {id:'sunstroke_tonic',name:'Sunstroke Tonic',icon:'☀️',ingr:['sunpetal','crystal_salt'],dc:8,xp:40,stat:'inu',unlock:0,desc:'Restores energy sapped by desert heat.'},
+  {id:'sandveil_draught',name:'Sandveil Draught',icon:'🏜️',ingr:['dustite','sunpetal','scorchroot'],dc:10,xp:55,stat:'tec',unlock:1,desc:'Renders the drinker nearly invisible in sandstorms.'},
+  {id:'obsidian_edge_oil',name:'Obsidian Edge Oil',icon:'🖤',ingr:['obsidian_shard','scorchroot'],dc:11,xp:60,stat:'tec',unlock:2,desc:'Weapon oil that gives blades a volcanic glass edge.'},
+  {id:'brine_poultice',name:'Brine Poultice',icon:'🧂',ingr:['crystal_salt','brine_moss','sunpetal'],dc:10,xp:50,stat:'inu',unlock:1,desc:'Salt-based wound treatment.'},
+  {id:'sandsilk_salve',name:'Sandsilk Salve',icon:'🕸️',ingr:['sandsilk','dewdrop_lily'],dc:13,xp:75,stat:'inu',unlock:3,desc:'Luxurious healing cream prized by nobles.'},
+  {id:'venom_antidote',name:'Venom Antidote',icon:'🐍',ingr:['venomgland','dewdrop_lily','crystal_salt'],dc:14,xp:80,stat:'acu',unlock:3,desc:'Neutralizes the deadliest desert venoms.'},
+  {id:'mirage_elixir',name:'Mirage Elixir',icon:'✨',ingr:['mirage_dust','dewdrop_lily','sandsilk'],dc:16,xp:100,stat:'inu',unlock:5,desc:'Grants brief glimpses of hidden things.'},
+  {id:'desert_iron_flask',name:'Desert Iron Flask',icon:'⚱️',ingr:['obsidian_shard','ancient_resin','crystal_salt'],dc:15,xp:90,stat:'tec',unlock:4,desc:'Unbreakable container that preserves any liquid.'},
+  {id:'temple_restoration',name:'Temple Restoration',icon:'🏛️',ingr:['temple_gold','ancient_resin','sacred_ember'],dc:18,xp:140,stat:'acu',unlock:7,desc:'Repairs ancient artifacts. Immensely valuable.'},
+  {id:'oasis_blessing',name:'Oasis Blessing',icon:'💧',ingr:['dewdrop_lily','sacred_ember','moonpetal','mirage_dust'],dc:20,xp:180,stat:'inu',unlock:8,desc:'Legendary desert restorative.'},
 ];
 // Enchantment categories: weapon, armor, other (jewelry/clothing/accessories)
 const ENCHANTMENTS=[
@@ -945,17 +956,16 @@ const ENCHANTMENTS=[
   {id:'e_void',name:'Void Barrier',icon:'🟪',cat:'armor',ingr:['void_salt','mithril_dust'],xp:80,dc:16,desc:'A shimmering barrier of nothingness. Magic and projectiles pass through the wearer harmlessly.'},
   {id:'e_moth',name:'Moth Charm',icon:'🦋',cat:'other',ingr:['moth_scale','dream_pollen'],xp:60,dc:13,desc:'Moonlit moth essence grants the wearer prophetic flashes — a split-second of foresight in danger.'},
   {id:'e_titan',name:'Titan\'s Mark',icon:'🦴',cat:'other',ingr:['titan_bone','heartstone_sliver'],xp:95,dc:18,desc:'Ancient power courses through the wearer. Strength and endurance far exceed mortal limits.'},
-  // ═══ ASHFALL CROSSING RECIPES ═══
-  {id:'sunstroke_tonic',name:'Sunstroke Tonic',icon:'☀️',ingr:['sunpetal','crystal_salt'],dc:8,xp:40,stat:'inu',unlock:0,desc:'Restores energy sapped by desert heat.'},
-  {id:'sandveil_draught',name:'Sandveil Draught',icon:'🏜️',ingr:['dustite','sunpetal','scorchroot'],dc:10,xp:55,stat:'tec',unlock:1,desc:'Renders the drinker nearly invisible in sandstorms.'},
-  {id:'obsidian_edge_oil',name:'Obsidian Edge Oil',icon:'🖤',ingr:['obsidian_shard','scorchroot'],dc:11,xp:60,stat:'tec',unlock:2,desc:'Weapon oil that gives blades a volcanic glass edge.'},
-  {id:'brine_poultice',name:'Brine Poultice',icon:'🧂',ingr:['crystal_salt','brine_moss','sunpetal'],dc:10,xp:50,stat:'inu',unlock:1,desc:'Salt-based wound treatment.'},
-  {id:'sandsilk_salve',name:'Sandsilk Salve',icon:'🕸️',ingr:['sandsilk','dewdrop_lily'],dc:13,xp:75,stat:'inu',unlock:3,desc:'Luxurious healing cream prized by nobles.'},
-  {id:'venom_antidote',name:'Venom Antidote',icon:'🐍',ingr:['venomgland','dewdrop_lily','crystal_salt'],dc:14,xp:80,stat:'acu',unlock:3,desc:'Neutralizes the deadliest desert venoms.'},
-  {id:'mirage_elixir',name:'Mirage Elixir',icon:'✨',ingr:['mirage_dust','dewdrop_lily','sandsilk'],dc:16,xp:100,stat:'inu',unlock:5,desc:'Grants brief glimpses of hidden things.'},
-  {id:'desert_iron_flask',name:'Desert Iron Flask',icon:'⚱️',ingr:['obsidian_shard','ancient_resin','crystal_salt'],dc:15,xp:90,stat:'tec',unlock:4,desc:'Unbreakable container that preserves any liquid.'},
-  {id:'temple_restoration',name:'Temple Restoration',icon:'🏛️',ingr:['temple_gold','ancient_resin','sacred_ember'],dc:18,xp:140,stat:'acu',unlock:7,desc:'Repairs ancient artifacts. Immensely valuable.'},
-  {id:'oasis_blessing',name:'Oasis Blessing',icon:'💧',ingr:['dewdrop_lily','sacred_ember','moonpetal','mirage_dust'],dc:20,xp:180,stat:'inu',unlock:8,desc:'Legendary desert restorative.'},
+
+  // ═══ ASHFALL CROSSING ENCHANTMENTS ═══
+  {id:'e_sandward',name:'Sand Ward',icon:'🏜️',cat:'armor',ingr:['dustite','crystal_salt'],xp:50,dc:10,desc:'Woven desert winds deflect sand and debris. Reduces environmental damage.'},
+  {id:'e_heatresist',name:'Heat Resistance',icon:'🌡️',cat:'armor',ingr:['scorchroot','sunpetal'],xp:55,dc:11,desc:'Volcanic fibers insulate against extreme heat. Essential for desert expeditions.'},
+  {id:'e_obsidian_edge',name:'Obsidian Edge',icon:'🖤',cat:'weapon',ingr:['obsidian_shard','scorchroot'],xp:65,dc:12,desc:'Volcanic glass fragments embedded in the blade. Devastating on first strike.'},
+  {id:'e_venom_coat',name:'Venom Coating',icon:'🐍',cat:'weapon',ingr:['venomgland','brine_moss'],xp:70,dc:13,desc:'Sandworm venom seeps into wounds, weakening the target over time.'},
+  {id:'e_mirage_cloak',name:'Mirage Cloak',icon:'✨',cat:'armor',ingr:['mirage_dust','sandsilk'],xp:85,dc:15,desc:'Light bends around the wearer, making them difficult to target.'},
+  {id:'e_oasis_touch',name:'Oasis Touch',icon:'💧',cat:'other',ingr:['dewdrop_lily','crystal_salt'],xp:60,dc:11,desc:'The enchanted item draws moisture from the air. Prevents dehydration.'},
+  {id:'e_temple_seal',name:'Temple Seal',icon:'🏛️',cat:'other',ingr:['ancient_resin','temple_gold'],xp:100,dc:17,desc:'Ancient protective magic. Wards against curses and magical effects.'},
+  {id:'e_sandsilk_weave',name:'Sandsilk Weave',icon:'🕸️',cat:'armor',ingr:['sandsilk','sunpetal'],xp:75,dc:14,desc:'Impossibly light yet strong. Armor moves like cloth without sacrificing protection.'},
 ];
 // ═══ LOCATIONS ═══
 const LOCATIONS={
