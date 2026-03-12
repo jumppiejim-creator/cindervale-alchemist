@@ -2252,7 +2252,7 @@ function CindervaleAlchemistInner(){
   const locRegions=REGIONS.filter(r=>!r.loc||r.loc===gameLocation);
   const locFactions=Object.fromEntries(Object.entries(FACTIONS).filter(([,f])=>!f.loc||f.loc===gameLocation));
   const locQuests=QUESTS.filter(q=>{if(q.id.startsWith('aq'))return gameLocation==='ashfall';if(q.id.startsWith('q')||q.id.startsWith('fc_'))return gameLocation==='cindervale';return true;});
-  const locApprentices=APPRENTICES.filter(a=>!a.loc||a.loc===gameLocation);
+  const locApprentices=AP_POOL.filter(a=>!a.loc||a.loc===gameLocation);
 
   const pickHex=(regId)=>{setSelHex(regId);setZonePopup(regId);const reg=REGIONS.find(r=>r.id===regId);setSelFlavor(reg?.flavor?reg.flavor[Math.floor(Math.random()*reg.flavor.length)]:'');};
   const [vBuild,setVBuild]=useState('workshop');
@@ -5004,12 +5004,12 @@ function CindervaleAlchemistInner(){
     const updatedInjuries={...staffInjuries};
     Object.entries(updatedInjuries).forEach(([apId,inj])=>{
       if(inj.daysLeft>1){updatedInjuries[apId]={...inj,daysLeft:inj.daysLeft-1};}
-      else{delete updatedInjuries[apId];staffLines.push({icon:'🩹',label:(APPRENTICES.find(a=>a.id===apId)?.name||apId)+' recovered from injury!',val:'Ready to work',color:TH.green});}
+      else{delete updatedInjuries[apId];staffLines.push({icon:'🩹',label:(AP_POOL.find(a=>a.id===apId)?.name||apId)+' recovered from injury!',val:'Ready to work',color:TH.green});}
     });
     setStaffInjuries(updatedInjuries);
     // Show injured staff
     Object.entries(updatedInjuries).forEach(([apId,inj])=>{
-      staffLines.push({icon:'🩹',label:(APPRENTICES.find(a=>a.id===apId)?.name||apId)+' injured',val:inj.daysLeft+'d recovery',color:'#c06040'});
+      staffLines.push({icon:'🩹',label:(AP_POOL.find(a=>a.id===apId)?.name||apId)+' injured',val:inj.daysLeft+'d recovery',color:'#c06040'});
     });
     // Staff results
     const staffEntries=report.filter(r=>{const names=hiredAppr.map(a=>a.name);return names.includes(r.n);});
@@ -5789,7 +5789,7 @@ function CindervaleAlchemistInner(){
   // ═══ MAIN GAME ═══
   const cls=CLASSES[startingClass];
   const availPool=(()=>{
-    const pool=AP_POOL.filter(ap=>!hiredAppr.find(h=>h.id===ap.id));
+    const pool=locApprentices.filter(ap=>!hiredAppr.find(h=>h.id===ap.id));
     // Seed-shuffle based on day so pool rotates daily
     const hashStr=(s,seed)=>{let h=seed;for(let i=0;i<s.length;i++){h=((h<<5)-h+s.charCodeAt(i))|0;}return(h>>>0);};
     const shuffled=[...pool].sort((a,b)=>hashStr(a.id,day*2654435761)-hashStr(b.id,day*2654435761));
