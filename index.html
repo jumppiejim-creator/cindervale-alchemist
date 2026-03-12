@@ -1883,23 +1883,23 @@ const QUESTS=[
     turnIn:['"*the furnace roars to life, orange light flooding the chamber*"','"Listen. The mountain is singing. It\'s been waiting for this."','"Stone Sibling. That\'s what we call those who share the mountain\'s fire. That\'s you now."']},
 
   // ═══ ASHFALL CROSSING QUESTS ═══
-  {id:'aq1',name:'Sola\'s Sunburn',giver:'Sola',type:'deliver',target:'sunstroke_tonic',count:1,xp:80,gold:20,items:['dustite','dustite'],unlock:0,faction:null,fRep:0,
+  {id:'aq1',name:'Sola\'s Sunburn',giver:'Sola',loc:'market',type:'deliver',target:'sunstroke_tonic',count:1,xp:80,gold:20,items:['dustite','dustite'],unlock:0,faction:null,fRep:0,
     desc:'Sola needs relief from desert sickness.',hint:'Brew a Sunstroke Tonic and return to Sola.',
     offer:['"The sun out here doesn\'t just burn \u2014 it breaks you down."','"I need something for heat sickness. Can you manage it?"'],
     turnIn:['"*drinks deeply* Oh, that\'s good. I can feel my head clearing."']},
-  {id:'aq2',name:'Obsidian Arms',giver:'Razak',type:'deliver',target:'obsidian_edge_oil',count:2,xp:120,gold:40,items:['obsidian_shard','obsidian_shard','obsidian_shard'],unlock:2,faction:'sand_merchants',fRep:15,
+  {id:'aq2',name:'Obsidian Arms',giver:'Razak',loc:'market',type:'deliver',target:'obsidian_edge_oil',count:2,xp:120,gold:40,items:['obsidian_shard','obsidian_shard','obsidian_shard'],unlock:2,faction:'sand_merchants',fRep:15,
     desc:'Razak needs Obsidian Edge Oil for a guild contract.',hint:'Brew 2 Obsidian Edge Oil.',
     offer:['"The Guild has a contract \u2014 fifty blades, all obsidian-edged."','"Two flasks. Can you deliver?"'],
     turnIn:['"Perfect viscosity. The Guild will be pleased."']},
-  {id:'aq3',name:'Oasis Pilgrimage',giver:'Keeper Amara',type:'deliver',target:'brine_poultice',count:3,xp:150,gold:35,items:['dewdrop_lily','dewdrop_lily'],unlock:2,faction:'flamekeepers',fRep:20,
+  {id:'aq3',name:'Oasis Pilgrimage',giver:'Amara',loc:'chapel',type:'deliver',target:'brine_poultice',count:3,xp:150,gold:35,items:['dewdrop_lily','dewdrop_lily'],unlock:2,faction:'flamekeepers',fRep:20,
     desc:'Keeper Amara needs poultices for injured pilgrims.',hint:'Brew 3 Brine Poultices.',
     offer:['"The pilgrims arrive sunburned, blistered, half-dead."','"Three Brine Poultices. The Flamekeepers remember those who serve."'],
     turnIn:['"See? Already the swelling recedes. The Flamekeepers are grateful."']},
-  {id:'aq4',name:'Desert Navigation',giver:'Scout Tarek',type:'deliver',target:'sandveil_draught',count:2,xp:130,gold:45,items:['sandsilk'],unlock:3,faction:'dustwalkers',fRep:20,
+  {id:'aq4',name:'Desert Navigation',giver:'Tarek',loc:'tavern',type:'deliver',target:'sandveil_draught',count:2,xp:130,gold:45,items:['sandsilk'],unlock:3,faction:'dustwalkers',fRep:20,
     desc:'Scout Tarek needs Sandveil Draughts for scouting.',hint:'Brew 2 Sandveil Draughts.',
     offer:['"There\'s a sandstorm belt between here and the old temple."','"Two Sandveil Draughts and my scouts can slip through."'],
     turnIn:['"Clear as morning. This will do perfectly."']},
-  {id:'aq5',name:'Antivenom Supply',giver:'Sola',type:'deliver',target:'venom_antidote',count:3,xp:200,gold:80,items:['venomgland','venomgland'],unlock:4,faction:null,fRep:0,reqQuest:'aq1',
+  {id:'aq5',name:'Antivenom Supply',giver:'Sola',loc:'market',type:'deliver',target:'venom_antidote',count:3,xp:200,gold:80,items:['venomgland','venomgland'],unlock:4,faction:null,fRep:0,reqQuest:'aq1',
     desc:'Sola needs antidotes \u2014 sandworm attacks increasing.',hint:'Brew 3 Venom Antidotes.',
     offer:['"The worms are getting bolder. Three guards bitten last week."'],
     turnIn:['"Three antidotes. Three lives saved."']},
@@ -1919,6 +1919,19 @@ const NPCS={
   gretta:{name:'Gretta',loc:'chapel',icon:'⛏️',title:'Cinderfolk Guild Representative',
     portrait:{bg:['#4a4040','#2e2828'],ring:'#aa8866',accent:'#aa8866'},
     lines:['"The deep mines hold more than ore. There are crystals down there that sing if you listen right."','"Earn the Cinderfolk\'s trust and we\'ll show you veins that haven\'t been touched in fifty years."','"Mining is honest work. You put in effort, the stone gives back. Simple as that."','"My crew pulled a Deep Crystal last week — first one in months. The deep veins are coming alive again."']}
+  // ═══ ASHFALL CROSSING NPCs ═══
+  sola:{name:'Sola',loc:'market',icon:'💂',title:'Caravan Guard Captain',
+    portrait:{bg:['#6a5a30','#4a3a20'],ring:'#c0a040',accent:'#d0b060'},
+    lines:['"The desert takes everything that isn\'t bolted down. Including people, if you\'re not careful."','"I\'ve run caravans across the Scorchlands for fifteen years. Lost count of the sandstorms."','"A good alchemist is worth ten guards out here. Potions keep my people alive."','"Ashfall Crossing is rough, but it\'s honest. Everyone here earned their place."']},
+  razak:{name:'Razak',loc:'market',icon:'⚒️',title:'Guild Weaponsmith',
+    portrait:{bg:['#4a3a3a','#2e2020'],ring:'#c06040',accent:'#d08060'},
+    lines:['"Obsidian-edged blades. That\'s what the Guild wants. That\'s what I make."','"Your oils make the difference between a blade that cuts and a blade that shatters."','"The Sand Merchants Guild controls every trade route through the crossing. Best to stay on their good side."','"I\'ve been smithing since before you were born, alchemist. But I can\'t do it without good reagents."']},
+  amara:{name:'Keeper Amara',loc:'chapel',icon:'🕯️',title:'Flamekeeper High Priestess',
+    portrait:{bg:['#5a2a1a','#3a1a0a'],ring:'#d06030',accent:'#ff8040'},
+    lines:['"The Sacred Flame has burned since the founding. It will burn long after we are dust."','"Pilgrims come from across the desert seeking healing. We turn no one away."','"The Flamekeepers remember. We remember the old ways, the old recipes, the old promises."','"Your craft serves the flame, alchemist. Every potion you brew is a prayer answered."']},
+  tarek:{name:'Scout Tarek',loc:'tavern',icon:'🧭',title:'Dustwalker Pathfinder',
+    portrait:{bg:['#4a4030','#2e2a1a'],ring:'#8a7050',accent:'#a09060'},
+    lines:['"The desert has paths. You just need to know where to look."','"My scouts mapped every dune, every canyon, every oasis within fifty leagues."','"The Dustwalkers don\'t fight the desert. We move with it. That\'s how we survive."','"There are ruins out there older than any kingdom. The Buried Temple is just the beginning."']},
 };const SHOP_I=[
   // Ashfall ingredients
   {id:'sunpetal',price:5},{id:'dustite',price:7},{id:'scorchroot',price:6},{id:'crystal_salt',price:8},{id:'brine_moss',price:10},{id:'obsidian_shard',price:12},
@@ -4394,7 +4407,7 @@ function CindervaleAlchemistInner(){
   const qSteps=q=>{
     const steps=[];const p=qP(q);
     const turnInScreen=q.loc==='market'?'market':'tavern';
-    const turnInLabel=q.loc==='market'?`🛒 Go to Market (${q.giver})`:`🍺 Go to Tavern (${q.giver})`;
+    const turnInLabel=q.loc==='market'?(gameLocation==='ashfall'?`🛒 Go to Bazaar (${q.giver})`:`🛒 Go to Market (${q.giver})`):(q.loc==='chapel'?(gameLocation==='ashfall'?`🕯️ Visit Flamekeepers (${q.giver})`:`⛪ Visit Chapel (${q.giver})`):(gameLocation==='ashfall'?`🍺 Go to Cantina (${q.giver})`:`🍺 Go to Tavern (${q.giver})`));
     if(q.type==='deliver'){
       const r=RECIPES.find(r=>r.id===q.target);
       if(r){
@@ -5414,7 +5427,7 @@ function CindervaleAlchemistInner(){
   if(contractsWaiting>0)alerts.push({text:contractsWaiting+' venom contract'+(contractsWaiting!==1?'s':'')+' available.',to:'workshop',label:'☠️ Contracts'});
   const commissionsWaiting=shieldCommissions.filter(c=>!c.done).length;
   if(commissionsWaiting>0)alerts.push({text:commissionsWaiting+' shield commission'+(commissionsWaiting!==1?'s':'')+' waiting.',to:'workshop',label:'🛡️ Commissions'});
-  if(day===1&&aQ.length===0&&screen!=='quests')alerts.push({text:'Brenna at the Market has work for a new alchemist. Introduce yourself.',to:'market',label:'🛒 Visit Brenna',npc:'brenna'});
+  if(day===1&&aQ.length===0&&screen!=='quests')alerts.push(gameLocation==='ashfall'?{text:'Sola at the Bazaar needs an alchemist. Introduce yourself.',to:'market',label:'🛒 Visit Sola',npc:'sola'}:{text:'Brenna at the Market has work for a new alchemist. Introduce yourself.',to:'market',label:'🛒 Visit Brenna',npc:'brenna'});
   if(hours<=0&&screen!=='map')alerts.push({text:'The day\'s hours are spent. Time to rest and let tomorrow bring new work.',to:'map',label:'🏘️ Cindervale'});
   const readyBQ=activeBQ.filter(bq=>{const p=bqProgress(bq);return p.c>=p.n;});
   if(readyBQ.length>0)alerts.push({text:readyBQ.length+' board request'+(readyBQ.length>1?'s':'')+' ready to turn in!',to:'quests',label:'📌 Notice Board'});
@@ -6887,14 +6900,14 @@ function CindervaleAlchemistInner(){
           {/* Buildings — 4×2 grid */}
           <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(90px,1fr))',gap:8,position:'relative',zIndex:1}}>
             <MapB icon="⚗️" name="Workshop" screen="workshop" color={TH.green} sub={`${upgrades.length} upgrades`}/>
-            <MapB icon="🛒" name="Market" screen="market" color={TH.gold} sub="Shop · Brenna"/>
-            <MapB icon="🍺" name="Ember & Anvil" screen="tavern" color={TH.ember} sub="Tavern · NPCs"/>
-            <MapB icon="🗺️" name="Village Gates" screen="worldmap" color={TH.teal} sub={`$⚡{hours} to explore`}/>
+            <MapB icon="🛒" name={gameLocation==='ashfall'?'Bazaar':'Market'} screen="market" color={TH.gold} sub={gameLocation==='ashfall'?'Shop · Sola · Razak':'Shop · Brenna'}/>
+            <MapB icon="🍺" name={gameLocation==='ashfall'?'Oasis Cantina':'Ember & Anvil'} screen="tavern" color={TH.ember} sub={gameLocation==='ashfall'?'Scout Tarek · NPCs':'Tavern · NPCs'}/>
+            <MapB icon="🗺️" name={gameLocation==='ashfall'?'Desert Gates':'Village Gates'} screen="worldmap" color={TH.teal} sub={`⚡${hours} to explore`}/>
 
             <MapB icon="📜" name="Quest Board" screen="quests" color={TH.cyan} note={questNote}/>
             <MapB icon="👥" name="Staff Hall" screen="staff" color={TH.orange} sub={`${hiredAppr.length}/${maxAppr}`} note={staffNote}/>
             <MapB icon="📊" name="Your Quarters" screen="character" color={TH.purple} sub="Skills · Gear" note={charNote}/>
-            <MapB icon="🛡️" name="Faction Hall" screen="factions" color={TH.blue} sub={factionAlign?FACTIONS[factionAlign].icon+' Aligned':null} note={availQ.filter(q=>q.chain).length>0?'!':null}/>
+            <MapB icon="🛡️" name="Faction Hall" screen="factions" color={TH.blue} sub={factionAlign?FACTIONS[factionAlign]?.icon+' Aligned':null} note={availQ.filter(q=>q.chain).length>0?'!':null}/>
           </div>
         </div>
 
@@ -6932,11 +6945,14 @@ function CindervaleAlchemistInner(){
 
       {/* ═══════════ MARKET ═══════════ */}
       {screen==='market'&&<>
-        <BackBar title="Market Square" icon="🛒"/>
+        <BackBar title={gameLocation==='ashfall'?'Desert Bazaar':'Market Square'} icon="🛒"/>
         <div style={S.card}>
           <div style={{...S.row,marginBottom:8}}>
             <button style={S.btn(showShop?'gold':'def')} onClick={()=>{setShowShop(true);setDlgNpc(null);setQuestDlg(null);}}>🛒 Shop</button>
-            <button style={S.btn(dlgNpc==='brenna'?'gold':'def')} onClick={()=>openNpc('brenna')}>💬 Brenna</button>
+            {gameLocation==='ashfall'?<>
+              <button style={S.btn(dlgNpc==='sola'?'gold':'def')} onClick={()=>openNpc('sola')}>💬 Sola</button>
+              <button style={S.btn(dlgNpc==='razak'?'gold':'def')} onClick={()=>openNpc('razak')}>💬 Razak</button>
+            </>:<button style={S.btn(dlgNpc==='brenna'?'gold':'def')} onClick={()=>openNpc('brenna')}>💬 Brenna</button>}
           </div>
           {showShop&&<div>
             <div style={{fontSize:16,color:TH.gold,marginBottom:4}}>Buy Ingredients{dayFlags.includes('bargain_day')?' — 🏷️ Half Price Today!':''}</div>
@@ -6971,7 +6987,7 @@ function CindervaleAlchemistInner(){
                 {qty>1&&<button style={S.btn()} onClick={()=>{modInv(id,-qty);setGold(g=>g+sp*qty);addLog(`Sold ${qty}× ${ig.icon}${ig.name}. (+${sp*qty}g)`,'info');}}>All ({sp*qty}g)</button>}
               </div>);})}
           </div>}
-          {dlgNpc==='brenna'&&!showShop&&<NpcDlg npc={NPCS.brenna} {...{dlgLine,setDlgLine,setDlgNpc,availQ,aQ,acceptQ,compQ,qP,qObj,S,questDlg,setQuestDlg,openNpc}}/>}
+          {(dlgNpc==='brenna'||dlgNpc==='sola'||dlgNpc==='razak')&&!showShop&&NPCS[dlgNpc]&&<NpcDlg npc={NPCS[dlgNpc]} {...{dlgLine,setDlgLine,setDlgNpc,availQ,aQ,acceptQ,compQ,qP,qObj,S,questDlg,setQuestDlg,openNpc}}/>}
         </div>
         {/* ── Black Market (Merchant Fence) ── */}
         {getFeatureVal('blackMarket')&&<div style={{...S.card,borderColor:'#800040',background:TH.panel+'cc'}}>
@@ -7023,10 +7039,13 @@ function CindervaleAlchemistInner(){
 
       {/* ═══════════ TAVERN ═══════════ */}
       {screen==='tavern'&&<>
-        <BackBar title="Ember & Anvil" icon="🍺"/>
+        <BackBar title={gameLocation==='ashfall'?'Oasis Cantina':'Ember & Anvil'} icon="🍺"/>
         <div style={S.card}>
           <div style={{...S.row,marginBottom:8}}>
-            {['tarn','holst','marta','gretta'].map(n=><button key={n} style={S.btn(dlgNpc===n?'gold':'def')} onClick={()=>openNpc(n)}>{NPCS[n]?.icon} {NPCS[n]?.name}</button>)}
+            {gameLocation==='ashfall'
+              ?['amara','tarek'].map(n=>NPCS[n]?<button key={n} style={S.btn(dlgNpc===n?'gold':'def')} onClick={()=>openNpc(n)}>{NPCS[n]?.icon} {NPCS[n]?.name}</button>:null)
+              :['tarn','holst','marta','gretta'].map(n=><button key={n} style={S.btn(dlgNpc===n?'gold':'def')} onClick={()=>openNpc(n)}>{NPCS[n]?.icon} {NPCS[n]?.name}</button>)}
+          </div>
           </div>
           {dlgNpc&&(NPCS[dlgNpc]?.loc==='chapel'||NPCS[dlgNpc]?.loc==='tavern')&&<NpcDlg npc={NPCS[dlgNpc]} {...{dlgLine,setDlgLine,setDlgNpc,availQ,aQ,acceptQ,compQ,qP,qObj,S,questDlg,setQuestDlg,openNpc}}/>}
           {!dlgNpc&&<div style={{color:TH.textDim,fontSize:15,textAlign:'center',padding:12,fontStyle:'italic'}}>The warm hearth crackles softly. Choose someone to speak with.</div>}
