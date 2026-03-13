@@ -5667,23 +5667,20 @@ function CindervaleAlchemistInner(){
     const curDay=day+1;
     const newThreats={...(threats||{reavers:0,blight:0,veilbreakers:0})};
     // Threat growth
-    if(curDay>10)newThreats.reavers=Math.min(100,(newThreats.reavers||0)+3+(gold>200?1:0));
-    if(curDay>20)newThreats.veilbreakers=Math.min(100,(newThreats.veilbreakers||0)+3);
+    if(curDay>3)newThreats.reavers=Math.min(100,(newThreats.reavers||0)+3+(gold>200?1:0));
+    if(curDay>10)newThreats.veilbreakers=Math.min(100,(newThreats.veilbreakers||0)+3);
     // Blight grows from expedition activity (tracked via dayFlags)
     const expDiff=dayFlags.filter(f=>f.startsWith('exp_diff_')).map(f=>+f.split('_')[2]);
     expDiff.forEach(d=>{if(d>=3)newThreats.blight=Math.min(100,(newThreats.blight||0)+(d>=5?3:2));});
     // Natural decay (only kicks in above 10 — threats build up before they erode)
     THREAT_IDS.forEach(tid=>{if((newThreats[tid]||0)>10)newThreats[tid]=Math.max(0,newThreats[tid]-1);});
-    // Faction rep decay: Ashwardens/Dustwalkers reduce reavers, Cinderfolk/Flamekeepers reduce blight, Veilwalkers reduce veilbreakers
-    const ashRep=Math.floor((fRep.ashwardens||0)/25);const dustRep=Math.floor((fRep.dustwalkers||0)/25);
-    const cindRep=Math.floor((fRep.cinderfolk||0)/25);const flameRep=Math.floor((fRep.flamekeepers||0)/25);
-    const veilRep=Math.floor((fRep.veilwalkers||0)/25);
-    newThreats.reavers=Math.max(0,newThreats.reavers-ashRep-dustRep);
-    newThreats.blight=Math.max(0,newThreats.blight-cindRep-flameRep);
-    newThreats.veilbreakers=Math.max(0,newThreats.veilbreakers-veilRep);
-    // Warden/Merchant class decay
-    if((classLevels.warden||0)>=4)newThreats.blight=Math.max(0,newThreats.blight-2);
-    if((classLevels.merchant||0)>=4)newThreats.veilbreakers=Math.max(0,newThreats.veilbreakers-2);
+    // Faction rep decay: -1 per threat if Trusted (Lv3+) with relevant faction. Slows but can't stop threats.
+    if(getRepLvl(fRep.ashwardens||0)>=3||getRepLvl(fRep.dustwalkers||0)>=3)newThreats.reavers=Math.max(0,newThreats.reavers-1);
+    if(getRepLvl(fRep.cinderfolk||0)>=3||getRepLvl(fRep.flamekeepers||0)>=3)newThreats.blight=Math.max(0,newThreats.blight-1);
+    if(getRepLvl(fRep.veilwalkers||0)>=3)newThreats.veilbreakers=Math.max(0,newThreats.veilbreakers-1);
+    // Warden/Merchant class decay (-1 each, not -2)
+    if((classLevels.warden||0)>=4)newThreats.blight=Math.max(0,newThreats.blight-1);
+    if((classLevels.merchant||0)>=4)newThreats.veilbreakers=Math.max(0,newThreats.veilbreakers-1);
     // Brand Master: famous brands reduce veilbreakers
     (brands||[]).forEach(b=>{if(b.sold>=80)newThreats.veilbreakers=Math.max(0,newThreats.veilbreakers-5);});
     // Antiquarian Arsenal completion reduces reavers
@@ -8044,7 +8041,7 @@ function CindervaleAlchemistInner(){
       {screen==='worldmap'&&<>
         <BackBar title="The Wilds" icon="🗺️"/>
         {/* ── Threat Bar ── */}
-        {day>10&&THREAT_IDS.some(tid=>(threats[tid]||0)>0)&&<div style={{...S.card,padding:'6px 10px',borderColor:'#cc444444'}}>
+        {day>3&&THREAT_IDS.some(tid=>(threats[tid]||0)>0)&&<div style={{...S.card,padding:'6px 10px',borderColor:'#cc444444'}}>
           <div style={{fontSize:14,fontWeight:'bold',color:TH.textBright,marginBottom:4}}>⚔️ External Threats</div>
           <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
             {THREAT_IDS.map(tid=>{const val=threats[tid]||0;const tf=THREAT_FACTIONS[tid];const tier=getThreatTier(val);
@@ -8177,7 +8174,7 @@ function CindervaleAlchemistInner(){
       {screen==='workshop'&&<>
         <BackBar title="Workshop" icon="⚗️"/>
         {/* Compact Threat Bar */}
-        {day>10&&THREAT_IDS.some(tid=>(threats[tid]||0)>0)&&<div style={{display:'flex',gap:6,padding:'3px 8px',marginBottom:4,fontSize:12,flexWrap:'wrap'}}>
+        {day>3&&THREAT_IDS.some(tid=>(threats[tid]||0)>0)&&<div style={{display:'flex',gap:6,padding:'3px 8px',marginBottom:4,fontSize:12,flexWrap:'wrap'}}>
           {THREAT_IDS.filter(tid=>(threats[tid]||0)>=25).map(tid=>{const val=threats[tid]||0;const tf=THREAT_FACTIONS[tid];
             return <span key={tid} style={{color:getThreatColor(val)}}>{tf.icon} {getThreatLabel(val)} ({val})</span>;})}
           <span style={{color:TH.textDim,cursor:'pointer',textDecoration:'underline'}} onClick={()=>setScreen('worldmap')}>View →</span>
