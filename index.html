@@ -8942,8 +8942,6 @@ function CindervaleAlchemistInner(){
           </div>;
         })()}
 
-        <div style={S.card}><div style={S.cT}>{'\u2697\ufe0f'} Recipes ({known.filter(id=>!RECIPES.find(r=>r.id===id)?.fieldOnly).length}/{RECIPES.filter(r=>!r.fieldOnly&&canCraftAtLocation(r.ingr)).length})</div>
-
         {/* ── Brand Manager (Brand Master) ── */}
         {(prestigeLevels.brandmaster||0)>=1&&<div style={{...S.card,borderColor:'#d0a06044'}}>
           <div style={{...S.cT,color:'#d0a060',cursor:'pointer',display:'flex',justifyContent:'space-between'}} onClick={()=>setShowBrandMgr(p=>!p)}>
