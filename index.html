@@ -2598,7 +2598,7 @@ function CindervaleAlchemistInner(){
       if(buff.daysLeft>0&&ELIXIR_BUFFS[buffId]?.effects[effectKey]){total+=ELIXIR_BUFFS[buffId].effects[effectKey];}
     }
     // Museum collection bonuses (Antiquarian)
-    if(museumBonuses[effectKey])total+=museumBonuses[effectKey];
+    if(museumBonuses&&museumBonuses[effectKey])total+=museumBonuses[effectKey];
     // Mentor bonuses from lineage
     if(mentorBonuses[effectKey])total+=mentorBonuses[effectKey];
     return total;
