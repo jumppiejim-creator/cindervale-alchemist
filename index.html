@@ -10651,16 +10651,20 @@ function CindervaleAlchemistInner(){
         {screen==='workshop'&&<>
           <div style={S.sideSec}>
             <div style={S.sideHd}>🌿 Ingredients</div>
-            {Object.entries(inv).filter(([,q])=>q>0).sort((a,b)=>b[1]-a[1]).map(([id,q])=><div key={id} style={{display:'flex',justifyContent:'space-between',fontSize:13,padding:'1px 0'}}>
-              <span style={{color:TH.text}}>{INGR[id]?.icon} {INGR[id]?.name||id}</span>
-              <span style={{color:TH.textBright}}>×{q}</span>
-            </div>)}
+            {Object.entries(inv).filter(([,q])=>q>0).sort((a,b)=>b[1]-a[1]).map(([id,q])=>{
+              const isHid=typeof HIDDEN_INGR!=='undefined'&&HIDDEN_INGR&&HIDDEN_INGR[id];
+              const spThresh=(isHid?12:8)+getFeatureVal('spoilThreshold')+upEff('spoilThreshold');
+              const spColor=q>spThresh+8?'#c04040':q>spThresh+4?'#d08030':q>spThresh?'#c0a040':'';
+              return <div key={id} style={{display:'flex',justifyContent:'space-between',fontSize:13,padding:'1px 0'}}>
+              <span style={{color:spColor||TH.text}}>{INGR[id]?.icon} {INGR[id]?.name||id}</span>
+              <span style={{color:spColor||TH.textBright}}>×{q}{spColor?'⚠️':''}</span>
+            </div>;})}
             {Object.entries(inv).filter(([,q])=>q>0).length===0&&<div style={{fontSize:13,color:TH.textDim}}>No ingredients</div>}
           </div>
           <div style={S.sideSec}>
             <div style={S.sideHd}>🧪 Potions</div>
-            {Object.entries(pots).filter(([,q])=>q>0).map(([id,q])=>{const r=RECIPES.find(x=>x.id===id);return<div key={id} style={{display:'flex',justifyContent:'space-between',fontSize:13,padding:'1px 0'}}>
-              <span style={{color:TH.text}}>{r?.icon} {r?.name||id}</span>
+            {Object.entries(pots).filter(([,q])=>q>0).map(([id,q])=>{const baseId=getBaseRecipeId(id);const r=RECIPES.find(x=>x.id===baseId);const pq=getPotQuality(id);const qT=QUALITY[pq]||QUALITY.std;return<div key={id} style={{display:'flex',justifyContent:'space-between',fontSize:13,padding:'1px 0'}}>
+              <span style={{color:qT.color||TH.text}}>{r?.icon} {r?.name||id}{qT.icon?' '+qT.icon:''}</span>
               <span style={{color:TH.textBright}}>×{q}</span>
             </div>;})}
             {Object.entries(pots).filter(([,q])=>q>0).length===0&&<div style={{fontSize:13,color:TH.textDim}}>No potions</div>}
