@@ -2478,6 +2478,11 @@ function CindervaleAlchemistInner(){
   const [txTarget,setTxTarget]=useState(null); // transmute target ingredient
   const [pubPapers,setPubPapers]=useState([]); // published research papers [{id,type,day}]
   // ═══ LOCATION FILTERING ═══
+  const locRegions=REGIONS.filter(r=>!r.loc||r.loc===gameLocation);
+  const locFactions=Object.fromEntries(Object.entries(FACTIONS).filter(([,f])=>!f.loc||f.loc===gameLocation));
+  const locQuests=QUESTS.filter(q=>{if(q.id.startsWith('aq'))return gameLocation==='ashfall';if(q.id.startsWith('q')||q.id.startsWith('fc_'))return gameLocation==='cindervale';return true;});
+  const locApprentices=AP_POOL.filter(a=>!a.loc||a.loc===gameLocation);
+
   // Ingredients available at current location (computed from locRegions)
   const locIngredients=React.useMemo(()=>{
     const s=new Set();
@@ -2485,10 +2490,6 @@ function CindervaleAlchemistInner(){
     return s;
   },[locRegions]);
   const canCraftAtLocation=(ingrList)=>ingrList.every(id=>locIngredients.has(id));
-  const locRegions=REGIONS.filter(r=>!r.loc||r.loc===gameLocation);
-  const locFactions=Object.fromEntries(Object.entries(FACTIONS).filter(([,f])=>!f.loc||f.loc===gameLocation));
-  const locQuests=QUESTS.filter(q=>{if(q.id.startsWith('aq'))return gameLocation==='ashfall';if(q.id.startsWith('q')||q.id.startsWith('fc_'))return gameLocation==='cindervale';return true;});
-  const locApprentices=AP_POOL.filter(a=>!a.loc||a.loc===gameLocation);
 
   const pickHex=(regId)=>{setSelHex(regId);setZonePopup(regId);const reg=locRegions.find(r=>r.id===regId);setSelFlavor(reg?.flavor?reg.flavor[Math.floor(Math.random()*reg.flavor.length)]:'');};
   const [vBuild,setVBuild]=useState('workshop');
