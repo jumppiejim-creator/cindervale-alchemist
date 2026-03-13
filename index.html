@@ -2195,7 +2195,7 @@ function CindervaleAlchemistInner(){
   const LINEAGE_KEY='cindervale_lineage';
   const loadLineage=()=>{try{const d=localStorage.getItem(LINEAGE_KEY);return d?JSON.parse(d):null;}catch(e){return null;}};
   const saveLineage=(data)=>{try{localStorage.setItem(LINEAGE_KEY,JSON.stringify(data));}catch(e){}};
-  React.useEffect(()=>{const l=loadLineage();if(l)setLineage(l);},[]);
+  // Lineage now loaded from save file, not standalone localStorage
 
   // Compute cumulative mentor bonuses from lineage
   const getMentorBonuses=()=>{
@@ -2408,8 +2408,8 @@ function CindervaleAlchemistInner(){
     phase,charName,charRace,charGender,stats,ptsLeft,skRanks,skPts,skProgress,classLevels,specs,playerFeats,asiSpent,startingClass,
     screen,day,hours,gameLocation,xp,gold,inv,pots,known,aQ,doneQ,
     log:log.slice(-30),milestones,fRep,factionAlign,upgrades,hiredAppr,apprTasks,apprXP,enchQ,potCustQ,clinicPatients,venomContracts,forgedWeapons,shieldCommissions,planarFocus,gadgets,blueprints,fieldJournal,loreFragments,companions,caravans,supplyChains,caravanRuns,trainingSessions,factionHarmony,prestigeLevels,automata,customPatterns,mappedRegions,activeBuffs,debt,disabledUpgrades,shopLocked,injuryPenalty,staffInjuries,shelves,dailyReport,
-    boardQ,activeBQ,doneBQCount,dayFlags,knownEnch,brewCounts,procureItems,pubPapers,selectedSite,constructProgress,
-  }),[phase,charName,charRace,charGender,stats,ptsLeft,skRanks,skPts,skProgress,classLevels,specs,playerFeats,asiSpent,startingClass,screen,day,hours,xp,gold,inv,pots,known,aQ,doneQ,log,milestones,fRep,factionAlign,upgrades,hiredAppr,apprTasks,apprXP,enchQ,potCustQ,clinicPatients,venomContracts,forgedWeapons,shieldCommissions,planarFocus,gadgets,blueprints,fieldJournal,loreFragments,companions,caravans,supplyChains,caravanRuns,trainingSessions,factionHarmony,prestigeLevels,automata,customPatterns,mappedRegions,activeBuffs,debt,disabledUpgrades,shopLocked,injuryPenalty,staffInjuries,shelves,dailyReport,boardQ,activeBQ,doneBQCount,dayFlags,knownEnch,brewCounts,procureItems,constructProgress,selectedSite]);
+    boardQ,activeBQ,doneBQCount,dayFlags,knownEnch,brewCounts,procureItems,pubPapers,selectedSite,constructProgress,lineage,
+  }),[phase,charName,charRace,charGender,stats,ptsLeft,skRanks,skPts,skProgress,classLevels,specs,playerFeats,asiSpent,startingClass,screen,day,hours,xp,gold,inv,pots,known,aQ,doneQ,log,milestones,fRep,factionAlign,upgrades,hiredAppr,apprTasks,apprXP,enchQ,potCustQ,clinicPatients,venomContracts,forgedWeapons,shieldCommissions,planarFocus,gadgets,blueprints,fieldJournal,loreFragments,companions,caravans,supplyChains,caravanRuns,trainingSessions,factionHarmony,prestigeLevels,automata,customPatterns,mappedRegions,activeBuffs,debt,disabledUpgrades,shopLocked,injuryPenalty,staffInjuries,shelves,dailyReport,boardQ,activeBQ,doneBQCount,dayFlags,knownEnch,brewCounts,procureItems,constructProgress,selectedSite,lineage]);
 
   const restoreState=useCallback((s)=>{
     if(!s)return;
@@ -2437,7 +2437,7 @@ function CindervaleAlchemistInner(){
     setDailyReport(s.dailyReport||[]);setEnchQ(s.enchQ||[]);setPotCustQ(s.potCustQ||[]);setClinicPatients(s.clinicPatients||[]);setVenomContracts(s.venomContracts||[]);setForgedWeapons(s.forgedWeapons||[]);setShieldCommissions(s.shieldCommissions||[]);setPlanarFocus(s.planarFocus||null);setGadgets(s.gadgets||[]);setBlueprints(s.blueprints||[]);setFieldJournal(s.fieldJournal||[]);setLoreFragments(s.loreFragments||[]);setCompanions(s.companions||[]);setCaravans(s.caravans||[]);setSupplyChains(s.supplyChains||[]);setCaravanRuns(s.caravanRuns||{});setTrainingSessions(s.trainingSessions||{});setFactionHarmony(s.factionHarmony||{});setPrestigeLevels(s.prestigeLevels||{});setAutomata(s.automata||[]);setCustomPatterns(s.customPatterns||[]);setMappedRegions(s.mappedRegions||[]);setActiveBuffs(s.activeBuffs||{});setDebt(s.debt||0);setDisabledUpgrades(s.disabledUpgrades||[]);setShopLocked(s.shopLocked||false);setInjuryPenalty(s.injuryPenalty||0);setStaffInjuries(s.staffInjuries||{});setShelves(s.shelves||{});setLastCheck(null);setNews([]);setMorningReport(null);
     setBoardQ(s.boardQ||[]);setActiveBQ(s.activeBQ||[]);setDoneBQCount(s.doneBQCount||0);setDayFlags(s.dayFlags||[]);setKnownEnch(s.knownEnch&&s.knownEnch.length>0?s.knownEnch:['e_sharp','e_glow','e_ironbark','e_feather','e_windwalk','e_rootbind']);
     setBrewCounts(s.brewCounts||{});setProcureItems(s.procureItems||[]);setPubPapers(s.pubPapers||[]);setConstructProgress(s.constructProgress||{});
-    setSelHex(null);setVBuild('workshop');setDlgNpc(null);setShowShop(false);setQuestDlg(null);setPendingLevelUp(null);setSelectedSite(s.selectedSite||null);
+    setSelHex(null);setVBuild('workshop');setDlgNpc(null);setShowShop(false);setQuestDlg(null);setPendingLevelUp(null);setSelectedSite(s.selectedSite||null);if(s.lineage)setLineage(s.lineage);
   },[]);
 
   // ─── ALL EFFECTS (before any return!) ───
@@ -2449,7 +2449,7 @@ function CindervaleAlchemistInner(){
       const slots=[];
       for(let i=1;i<=2;i++){try{slots.push(await sGet(sK(i)));}catch(e){slots.push(null);}}
       let auto=null;try{auto=await sGet(AK);}catch(e){}
-      setSaveSlots(slots);setAutoSaveData(auto);setLoadingSlots(false);
+      setSaveSlots(slots);setAutoSaveData(auto);setLoadingSlots(false);if(auto?.lineage)setLineage(auto.lineage);else if(slots.find(s=>s?.lineage))setLineage(slots.find(s=>s?.lineage).lineage);
     })();
   },[]);
 
@@ -2713,6 +2713,7 @@ function CindervaleAlchemistInner(){
       known:inheritData?.recipes||[...locData.startRecipes],
       upgrades:inheritData?.heirloom?[inheritData.heirloom]:[],
       fRep:inheritData?.fRep||(loc==='ashfall'?{sand_merchants:0,flamekeepers:0,dustwalkers:0}:{ashwardens:0,hearthkeepers:0,veilwalkers:0,cinderfolk:0}),
+      lineage:lineage||null,
     };
     restoreState(defState);setLog([]);setGameStarted(true);
     if(inheritData?.intro)addLog(inheritData.intro,'story');
@@ -2734,7 +2735,7 @@ function CindervaleAlchemistInner(){
     // Build or extend lineage
     const newLineage=lineage?{...lineage,generations:[...lineage.generations,gen],totalGenerations:lineage.totalGenerations+1}
       :{id:'lineage_'+Date.now(),name:charName+"'s Legacy",generations:[gen],totalGenerations:1,unlockedLocations:['cindervale','ashfall']};
-    saveLineage(newLineage);setLineage(newLineage);
+    setLineage(newLineage);saveLineage(newLineage);
     // Compute inheritance
     const inheritData={
       gold:Math.min(150,Math.floor(gold*0.15)),
@@ -5495,7 +5496,8 @@ function CindervaleAlchemistInner(){
           {showLocationSelect&&<div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'#000000dd',display:'flex',alignItems:'center',justifyContent:'center',zIndex:999,padding:16}}
             onClick={()=>setShowLocationSelect(false)}>
             <div style={{background:TH.bg,border:'2px solid '+TH.gold,borderRadius:12,padding:20,maxWidth:500,width:'100%'}} onClick={e=>e.stopPropagation()}>
-              <div style={{fontSize:22,color:TH.gold,textAlign:'center',marginBottom:12}}>{window._pendingTorch?'🔥 Pass the Torch — Choose Location':'Choose Your Location'}</div>
+              <div style={{fontSize:22,color:TH.gold,textAlign:'center',marginBottom:12}}>{window._pendingTorch?'🔥 Pass the Torch — Choose Location':'Choose Your Location'}
+              {lineage&&!window._pendingTorch&&<div style={{fontSize:13,color:TH.textDim,textAlign:'center',marginBottom:4}}>Starting with {lineage.name} legacy bonuses. <button style={{fontSize:12,color:'#c050e0',background:'none',border:'none',cursor:'pointer',textDecoration:'underline',fontFamily:'inherit'}} onClick={()=>{if(confirm('Start a completely fresh game with no legacy bonuses?'))setLineage(null);}}>Start Fresh Instead</button></div>}</div>
               {lineage&&<div style={{fontSize:13,color:'#c050e0',textAlign:'center',marginBottom:8}}>🏰 {lineage.name} · Generation {lineage.totalGenerations+1}</div>}
               {Object.values(LOCATIONS).map(loc=><div key={loc.id} style={{padding:'12px 14px',background:TH.panel,borderRadius:8,marginBottom:8,border:'2px solid '+TH.border,cursor:'pointer'}}
                 onClick={()=>{setShowLocationSelect(false);
