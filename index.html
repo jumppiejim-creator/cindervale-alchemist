@@ -1485,6 +1485,42 @@ const RANGER_COMPANIONS=[
     primary:{type:'gather',ingr:['phoenix_ash','volcanic_essence','primordial_ash','forge_scale'],baseYield:[1,1,2,2,3]},
     secondary:{type:'resurrect',desc:'Once/day: retry a failed craft check',unlockLv:3},
     legendary:'Passively generates 1 Heartforge ingredient every morning'},
+  // Ashfall companions
+  {id:'rc_sandcat',name:'Dune Cat',icon:'🐈',region:'sunscorch_flats',role:'gatherer',color:'#c0a060',
+    desc:'A sand-colored feline that vanishes into the dunes. Brings back desert treasures.',
+    primary:{type:'gather',ingr:['sunpetal','dustite','scorchroot','ash_salt'],baseYield:[1,1,2,2,3]},
+    secondary:{type:'scout_gather',desc:'Also gathers from adjacent desert regions',unlockLv:3},
+    legendary:'Once/day: bring back a rare ingredient from any Ashfall region'},
+  {id:'rc_scorpion',name:'Crystal Scorpion',icon:'🦂',region:'salt_caverns',role:'guardian',color:'#60a0a0',
+    desc:'A translucent scorpion whose stinger glows with salt crystal energy. Fiercely loyal.',
+    primary:{type:'staff_morale',values:[5,8,10,12,15]},
+    secondary:{type:'guard',desc:'Prevents negative morning events that cost gold',unlockLv:3},
+    legendary:'Staff never drop below 50% morale while guardian is active'},
+  {id:'rc_vulture',name:'Obsidian Vulture',icon:'🦅',region:'obsidian_wastes',role:'scout',color:'#404040',
+    desc:'A massive black bird that circles the wastes. Nothing escapes its gaze.',
+    primary:{type:'danger_reduce',values:[0.25,0.40,0.50,0.60,0.75]},
+    secondary:{type:'travel_reduce',desc:'-1 travel time to scouted region',unlockLv:3},
+    legendary:'Once/day: instant travel (0 Energy) to any Ashfall region'},
+  {id:'rc_sandworm',name:'Burrowing Grub',icon:'🪱',region:'sandworm_tunnels',role:'shopkeeper',color:'#a08060',
+    desc:'A juvenile sandworm that tunnels through soft earth. Surprisingly useful around the shop.',
+    primary:{type:'shop',baseGold:[3,5,8,12,18]},
+    secondary:{type:'organize',desc:'+1 potion shelf capacity per loyalty level',unlockLv:3},
+    legendary:'Automatically stocks shelves from your potion supply each morning'},
+  {id:'rc_gecko',name:'Oasis Gecko',icon:'🦎',region:'oasis_grove',role:'greeter',color:'#40a060',
+    desc:'A vibrantly colored gecko found only near desert oases. Customers find it charming.',
+    primary:{type:'customers',values:[0,0,1,1,2]},
+    secondary:{type:'morale_aura',desc:'+5 staff morale per morning',unlockLv:3},
+    legendary:'Premium customers pay 15% more (charmed by the gecko)'},
+  {id:'rc_firebeetle',name:'Molten Beetle',icon:'🪲',region:'molten_vents',role:'muse',color:'#d06020',
+    desc:'A heat-resistant beetle whose shell shimmers with volcanic energy. Inspires creativity.',
+    primary:{type:'research',values:[0.05,0.08,0.10,0.13,0.15]},
+    secondary:{type:'xp_boost',desc:'+5% XP from all sources per loyalty level',unlockLv:3},
+    legendary:'Research auto-discovers at Soulbound loyalty'},
+  {id:'rc_sphinx',name:'Desert Sphinx',icon:'🐱',region:'buried_temple',role:'legendary',color:'#d4a420',legendary_only:true,
+    desc:'An ancient creature of myth guarding the Buried Temple. Speaks in riddles.',
+    primary:{type:'gather',ingr:['ancient_resin','temple_gold','deep_crystal','mirage_dust'],baseYield:[1,1,2,2,3]},
+    secondary:{type:'resurrect',desc:'Once/day: retry a failed craft check',unlockLv:3},
+    legendary:'Passively generates 1 Buried Temple ingredient every morning'},
 ];
 
 // ═══ QUARTERMASTER SUPPLY CHAIN NETWORK ═══
@@ -3272,9 +3308,9 @@ function CindervaleAlchemistInner(){
       // ═══ RANGER COMPANION ENCOUNTER ═══
       let companionEnc=null;
       const isRanger=specs.warden==='ranger';
-      if(isRanger&&ext.success){
+      if(isRanger){
         const rngLv=classLevels.warden||0;
-        const encChance=rngLv>=10?0.35:rngLv>=6?0.25:0.15;
+        const encChance=rngLv>=10?0.40:rngLv>=6?0.30:0.20;
         const owned=[...companions.map(c=>c.compId),...localNewComps.map(c=>c.compId)];
         const regionComps=RANGER_COMPANIONS.filter(c=>c.region===reg.id&&!owned.includes(c.id)&&(!c.legendary_only||rngLv>=10));
         if(regionComps.length>0&&Math.random()<encChance){
