@@ -913,6 +913,28 @@ const RECIPES=[
   {id:'desert_iron_flask',name:'Desert Iron Flask',icon:'⚱️',ingr:['obsidian_shard','ancient_resin','crystal_salt'],dc:15,xp:90,stat:'tec',unlock:4,desc:'Unbreakable container that preserves any liquid.'},
   {id:'temple_restoration',name:'Temple Restoration',icon:'🏛️',ingr:['temple_gold','ancient_resin','sacred_ember'],dc:18,xp:140,stat:'acu',unlock:7,desc:'Repairs ancient artifacts. Immensely valuable.'},
   {id:'oasis_blessing',name:'Oasis Blessing',icon:'💧',ingr:['dewdrop_lily','sacred_ember','moonpetal','mirage_dust'],dc:20,xp:180,stat:'inu',unlock:8,desc:'Legendary desert restorative.'},
+
+  // ═══ ASHFALL EXPANSION RECIPES ═══
+  {id:'dust_shield',name:'Dust Shield Potion',icon:'☕',ingr:['dustite','ashbloom'],dc:8,xp:40,stat:'tec',unlock:0,desc:'Coats the skin in hardened dust. Blocks minor abrasions.'},
+  {id:'salt_tonic',name:'Salt Tonic',icon:'🧂',ingr:['crystal_salt','sunpetal'],dc:9,xp:45,stat:'inu',unlock:0,desc:'Restores electrolytes lost in desert heat.'},
+  {id:'scorchroot_tea',name:'Scorchroot Tea',icon:'🫖',ingr:['scorchroot','ashbloom'],dc:9,xp:45,stat:'inu',unlock:1,desc:'Bitter brew that sharpens the mind in scorching conditions.'},
+  {id:'ember_ink',name:'Ember Ink',icon:'🩶',ingr:['embervein','dustite'],dc:11,xp:55,stat:'tec',unlock:2,desc:'Heat-resistant ink used for inscription and tattooing.'},
+  {id:'desert_balm',name:'Desert Balm',icon:'🩹',ingr:['sunpetal','brine_moss','crystal_salt'],dc:11,xp:60,stat:'inu',unlock:2,desc:'Soothes cracked skin and sun damage. Popular with travelers.'},
+  {id:'sandstorm_flask',name:'Sandstorm Flask',icon:'🌪️',ingr:['wind_dust','dustite','ashbloom'],dc:10,xp:50,stat:'cre',unlock:1,desc:'Release the cork and a localized sandstorm erupts. Useful distraction.'},
+  {id:'cave_salt_elixir',name:'Cave Salt Elixir',icon:'💎',ingr:['crystal_salt','echo_fungus','mineral_clay'],dc:12,xp:65,stat:'acu',unlock:2,desc:'Resonant salts amplify magical sensitivity.'},
+  {id:'obsidian_varnish',name:'Obsidian Varnish',icon:'✨',ingr:['obsidian_shard','ashite'],dc:12,xp:65,stat:'tec',unlock:3,desc:'Protective coating that makes surfaces virtually indestructible.'},
+  {id:'thornwine',name:'Thornwine',icon:'🍷',ingr:['thornvine','sunpetal','scorchroot'],dc:11,xp:55,stat:'cre',unlock:2,desc:'Fermented desert brew. Burns going down, heals from within.'},
+  {id:'silk_bandage_kit',name:'Silk Bandage Kit',icon:'🧵',ingr:['sandsilk','brine_moss'],dc:13,xp:70,stat:'tec',unlock:3,desc:'Sandsilk bandages that promote rapid healing.'},
+  {id:'venom_oil',name:'Venom Oil',icon:'☠️',ingr:['venomgland','scorchroot'],dc:14,xp:80,stat:'tec',unlock:4,desc:'Concentrated weapon poison. Handle with extreme caution.'},
+  {id:'mirage_bomb',name:'Mirage Bomb',icon:'💥',ingr:['mirage_dust','wind_dust','dustite'],dc:14,xp:80,stat:'cre',unlock:4,desc:'Creates a blinding flash of illusory images on detonation.'},
+  {id:'oasis_draught',name:'Oasis Draught',icon:'🌴',ingr:['dewdrop_lily','moonpetal'],dc:13,xp:75,stat:'inu',unlock:4,desc:'Restores vitality as if spending a day at the oasis.'},
+  {id:'crystal_resonance',name:'Crystal Resonance Tonic',icon:'🔔',ingr:['crystal_salt','deep_crystal','echo_fungus'],dc:16,xp:100,stat:'acu',unlock:5,desc:'Attunes the drinker to magical frequencies.'},
+  {id:'volcanic_salve',name:'Volcanic Salve',icon:'🌋',ingr:['volcanic_essence','obsidian_shard','scorchroot'],dc:15,xp:90,stat:'tec',unlock:5,desc:'Burns like fire but heals like nothing else.'},
+  {id:'dream_draught',name:'Dream Draught',icon:'💭',ingr:['dream_pollen','dewdrop_lily','mirage_dust'],dc:17,xp:120,stat:'inu',unlock:6,desc:'Induces prophetic visions. Not for the faint of heart.'},
+  {id:'temple_incense',name:'Temple Incense',icon:'🧯',ingr:['ancient_resin','sacred_ember'],dc:16,xp:110,stat:'inu',unlock:6,faction:'flamekeepers',fReq:2,desc:'Sacred incense that purifies spaces and calms the mind.'},
+  {id:'sandworm_antitoxin',name:'Sandworm Antitoxin',icon:'🧪',ingr:['venomgland','sandsilk','crystal_salt'],dc:15,xp:95,stat:'acu',unlock:5,desc:'Broad-spectrum antitoxin effective against all desert venoms.'},
+  {id:'dust_diamond',name:'Dust Diamond Elixir',icon:'💎',ingr:['deep_crystal','dustite','temple_gold'],dc:19,xp:160,stat:'acu',unlock:7,desc:'Crystallized time. Said to slow aging.'},
+  {id:'forge_ember_tonic',name:'Forge Ember Tonic',icon:'🔥',ingr:['volcanic_essence','embervein','ancient_resin'],dc:18,xp:140,stat:'tec',unlock:7,desc:'Liquid fire that tempers the body like steel.'},
 ];
 // Enchantment categories: weapon, armor, other (jewelry/clothing/accessories)
 const ENCHANTMENTS=[
@@ -966,6 +988,20 @@ const ENCHANTMENTS=[
   {id:'e_oasis_touch',name:'Oasis Touch',icon:'💧',cat:'other',ingr:['dewdrop_lily','crystal_salt'],xp:60,dc:11,desc:'The enchanted item draws moisture from the air. Prevents dehydration.'},
   {id:'e_temple_seal',name:'Temple Seal',icon:'🏛️',cat:'other',ingr:['ancient_resin','temple_gold'],xp:100,dc:17,desc:'Ancient protective magic. Wards against curses and magical effects.'},
   {id:'e_sandsilk_weave',name:'Sandsilk Weave',icon:'🕸️',cat:'armor',ingr:['sandsilk','sunpetal'],xp:75,dc:14,desc:'Impossibly light yet strong. Armor moves like cloth without sacrificing protection.'},
+
+  // ═══ ASHFALL EXPANSION ENCHANTMENTS ═══
+  {id:'e_dust_shield',name:'Dust Shield',icon:'🛡️',cat:'armor',ingr:['dustite','ashbloom'],xp:45,dc:9,desc:'Fine dust hardens into a protective shell on impact.'},
+  {id:'e_scorchguard',name:'Scorchguard',icon:'🔥',cat:'armor',ingr:['scorchroot','ashite'],xp:55,dc:11,desc:'Volcanic root fibers absorb and dissipate heat.'},
+  {id:'e_salt_edge',name:'Salt Edge',icon:'🧂',cat:'weapon',ingr:['crystal_salt','obsidian_shard'],xp:60,dc:12,desc:'Crystallized salt sharpens the blade and cauterizes wounds.'},
+  {id:'e_brine_ward',name:'Brine Ward',icon:'💧',cat:'armor',ingr:['brine_moss','crystal_salt'],xp:50,dc:10,desc:'Salt-crusted armor resists corrosion and decay.'},
+  {id:'e_silk_lining',name:'Silk Lining',icon:'🧵',cat:'armor',ingr:['sandsilk','dewdrop_lily'],xp:70,dc:13,desc:'Sandsilk inner lining absorbs shock and keeps the wearer cool.'},
+  {id:'e_desert_wind',name:'Desert Wind',icon:'🌬️',cat:'weapon',ingr:['wind_dust','dustite'],xp:55,dc:11,desc:'The blade trails sand that blinds opponents.'},
+  {id:'e_echo_rune',name:'Echo Rune',icon:'🔔',cat:'other',ingr:['echo_fungus','crystal_salt'],xp:60,dc:12,desc:'Sounds a magical alarm when danger approaches.'},
+  {id:'e_dream_ward',name:'Dream Ward',icon:'💭',cat:'other',ingr:['dream_pollen','moonpetal'],xp:65,dc:13,desc:'Protects the wearer from mental intrusion and nightmares.'},
+  {id:'e_volcanic_brand',name:'Volcanic Brand',icon:'🌋',cat:'weapon',ingr:['volcanic_essence','obsidian_shard'],xp:80,dc:15,desc:'The weapon glows with inner heat, searing on contact.'},
+  {id:'e_mirage_step',name:'Mirage Step',icon:'✨',cat:'other',ingr:['mirage_dust','dustite'],xp:75,dc:14,desc:'Footsteps leave illusory duplicates, confusing pursuers.'},
+  {id:'e_deep_crystal',name:'Deep Crystal Focus',icon:'💠',cat:'other',ingr:['deep_crystal','crystal_salt'],xp:90,dc:16,desc:'Amplifies magical resonance. Spells cast through it hit harder.'},
+  {id:'e_resin_coat',name:'Ancient Resin Coat',icon:'🪵',cat:'armor',ingr:['ancient_resin','sandsilk'],xp:85,dc:15,desc:'Fossilized resin creates an amber-like protective layer.'},
 ];
 // ═══ LOCATIONS ═══
 const LOCATIONS={
@@ -1913,6 +1949,44 @@ const QUESTS=[
     desc:'Sola needs antidotes \u2014 sandworm attacks increasing.',hint:'Brew 3 Venom Antidotes.',
     offer:['"The worms are getting bolder. Three guards bitten last week."'],
     turnIn:['"Three antidotes. Three lives saved."']},
+
+  // ═══ ASHFALL EXPANSION QUESTS ═══
+  {id:'aq6',name:'Market Day Supply',giver:'Razak',loc:'market',type:'deliver',target:'obsidian_varnish',count:2,xp:140,gold:50,items:['obsidian_shard','obsidian_shard'],unlock:3,faction:'sand_merchants',fRep:20,
+    desc:'Razak needs Obsidian Varnish for the market day weapon display.',hint:'Brew 2 Obsidian Varnish.',
+    offer:['"Market day is coming. Every blade on display needs to shine."','"Two flasks of Obsidian Varnish. The Guild pays well for presentation."'],
+    turnIn:['"*applies varnish to a blade, which gleams like black mirror* Perfect."']},
+  {id:'aq7',name:'Pilgrim Relief',giver:'Amara',loc:'chapel',type:'deliver',target:'desert_balm',count:4,xp:180,gold:45,items:['dewdrop_lily','dewdrop_lily','dewdrop_lily'],unlock:3,faction:'flamekeepers',fRep:25,
+    desc:'Keeper Amara needs Desert Balm for the next pilgrim caravan.',hint:'Brew 4 Desert Balm.',
+    offer:['"The summer caravan is due in three days. Forty pilgrims, all sun-beaten."','"Four Desert Balms. We cannot turn them away empty-handed."'],
+    turnIn:['"The pilgrims will remember your kindness, alchemist."']},
+  {id:'aq8',name:'Scout Supplies',giver:'Tarek',loc:'tavern',type:'deliver',target:'salt_tonic',count:3,xp:120,gold:40,items:['crystal_salt','crystal_salt','crystal_salt'],unlock:2,faction:'dustwalkers',fRep:15,
+    desc:'Scout Tarek needs Salt Tonics for a deep desert patrol.',hint:'Brew 3 Salt Tonics.',
+    offer:['"My scouts are heading into the deep dunes. Three days, no shade."','"Salt Tonics keep them functional. Three flasks."'],
+    turnIn:['"My scouts will drink well. The desert won\'t claim them today."']},
+  {id:'aq9',name:'The Silk Merchant',giver:'Razak',loc:'market',type:'deliver',target:'silk_bandage_kit',count:3,xp:200,gold:80,items:['sandsilk','sandsilk'],unlock:4,faction:'sand_merchants',fRep:30,reqQuest:'aq2',
+    desc:'A wealthy merchant wants Silk Bandage Kits for an expedition.',hint:'Brew 3 Silk Bandage Kits.',
+    offer:['"A caravan master is outfitting a deep desert expedition."','"Three Silk Bandage Kits. He\'ll pay triple for quality."'],
+    turnIn:['"The caravan master sends his regards. And his gold."']},
+  {id:'aq10',name:'Sacred Incense',giver:'Amara',loc:'chapel',type:'deliver',target:'temple_incense',count:2,xp:220,gold:70,items:['ancient_resin','ancient_resin'],unlock:6,faction:'flamekeepers',fRep:35,reqQuest:'aq3',
+    desc:'The Flamekeepers need Temple Incense for the Solstice Rite.',hint:'Brew 2 Temple Incense.',
+    offer:['"The Solstice approaches. Without proper incense, the rite cannot proceed."','"Two flasks of Temple Incense. The fate of our tradition rests on this."'],
+    turnIn:['"*lights the incense, golden smoke spirals upward* The flame burns eternal."']},
+  {id:'aq11',name:'Mirage Defense',giver:'Tarek',loc:'tavern',type:'deliver',target:'mirage_bomb',count:2,xp:200,gold:75,items:['mirage_dust','mirage_dust'],unlock:5,faction:'dustwalkers',fRep:30,reqQuest:'aq4',
+    desc:'Scout Tarek needs Mirage Bombs to defend against raiders.',hint:'Brew 2 Mirage Bombs.',
+    offer:['"Raiders from the east have been hitting our supply lines."','"Two Mirage Bombs will buy my scouts the confusion they need to escape."'],
+    turnIn:['"These will save lives. The Dustwalkers remember their debts."']},
+  {id:'aq12',name:'Deep Desert Cache',giver:'Sola',loc:'market',type:'deliver',target:'sandworm_antitoxin',count:4,xp:280,gold:100,items:['venomgland','venomgland','venomgland'],unlock:6,faction:null,fRep:0,reqQuest:'aq5',
+    desc:'Sola is stocking emergency caches along the caravan routes.',hint:'Brew 4 Sandworm Antitoxins.',
+    offer:['"I\'m placing emergency caches every ten leagues along the southern route."','"Four Antitoxins per cache. This is the first one."'],
+    turnIn:['"Cache Alpha is stocked. You just made the southern route survivable."']},
+  {id:'aq13',name:'Temple Restoration',giver:'Amara',loc:'chapel',type:'deliver',target:'temple_restoration',count:1,xp:300,gold:120,items:['temple_gold','temple_gold'],unlock:8,faction:'flamekeepers',fRep:50,reqQuest:'aq10',
+    desc:'The Flamekeepers have found a damaged shrine deep in the Buried Temple.',hint:'Brew 1 Temple Restoration Elixir.',
+    offer:['"Our scouts found something in the Buried Temple. A shrine, older than the crossing itself."','"One Temple Restoration Elixir could bring it back to life."','"This is the most important thing I have ever asked of anyone."'],
+    turnIn:['"*the shrine glows with renewed light* ...it\'s beautiful. The ancient flame still burns."','"You have done what no alchemist in a thousand years could do."']},
+  {id:'aq14',name:'The Oasis Blessing',giver:'Amara',loc:'chapel',type:'deliver',target:'oasis_blessing',count:1,xp:400,gold:200,items:['temple_gold','deep_crystal','deep_crystal'],unlock:9,faction:'flamekeepers',fRep:60,reqQuest:'aq13',
+    desc:'The ultimate Flamekeeper quest: brew the legendary Oasis Blessing.',hint:'Brew 1 Oasis Blessing.',
+    offer:['"There is one recipe spoken of only in whispers. The Oasis Blessing."','"They say it can create water from nothing. Heal any wound. Restore any ruin."','"If anyone can brew it, alchemist... it\'s you."'],
+    turnIn:['"*holds the flask, tears streaming* Do you understand what you\'ve done?"','"You\'ve given the desert hope. True, liquid, impossible hope."','"The Flamekeepers will sing your name for a thousand years."']},
 ];
 const NPCS={
   brenna:{name:'Brenna',loc:'market',icon:'🧑‍🌾',title:'Market Keeper',
@@ -2272,6 +2346,13 @@ function CindervaleAlchemistInner(){
   const [txTarget,setTxTarget]=useState(null); // transmute target ingredient
   const [pubPapers,setPubPapers]=useState([]); // published research papers [{id,type,day}]
   // ═══ LOCATION FILTERING ═══
+  // Ingredients available at current location (computed from locRegions)
+  const locIngredients=React.useMemo(()=>{
+    const s=new Set();
+    locRegions.forEach(r=>r.ingr.forEach(id=>s.add(id)));
+    return s;
+  },[locRegions]);
+  const canCraftAtLocation=(ingrList)=>ingrList.every(id=>locIngredients.has(id));
   const locRegions=REGIONS.filter(r=>!r.loc||r.loc===gameLocation);
   const locFactions=Object.fromEntries(Object.entries(FACTIONS).filter(([,f])=>!f.loc||f.loc===gameLocation));
   const locQuests=QUESTS.filter(q=>{if(q.id.startsWith('aq'))return gameLocation==='ashfall';if(q.id.startsWith('q')||q.id.startsWith('fc_'))return gameLocation==='cindervale';return true;});
@@ -3391,7 +3472,7 @@ function CindervaleAlchemistInner(){
     const cfb=getFeatureVal('craftBonus');if(cfb){ch.total+=cfb;ch.extras.push({label:'Class Mastery',val:cfb});}
     ch.success=ch.total>=dc;
     if(type==='potion'){
-      const undiscovered=RECIPES.filter(r=>!known.includes(r.id)&&level>=r.unlock&&(!r.faction||getRL(r.faction)>=(r.fReq||0)));
+      const undiscovered=RECIPES.filter(r=>!known.includes(r.id)&&level>=r.unlock&&(!r.faction||getRL(r.faction)>=(r.fReq||0))&&canCraftAtLocation(r.ingr));
       if(undiscovered.length===0){addLog('📚 You spend two hours poring over your notes, but you already know every recipe available to you.','info');return;}
       if(ch.success){
         const successXp=Math.floor(baseResXp*2*resXpMult);gainXP(successXp);
@@ -3405,7 +3486,7 @@ function CindervaleAlchemistInner(){
         showResult('📚 Study Session','info',RESEARCH_FAIL[Math.floor(Math.random()*RESEARCH_FAIL.length)]+'\n+'+failXp+' XP',ch);
       }
     } else {
-      const undiscovered=ENCHANTMENTS.filter(e=>!knownEnch.includes(e.id)&&(!e.faction||getRL(e.faction)>=(e.fReq||0)));
+      const undiscovered=ENCHANTMENTS.filter(e=>!knownEnch.includes(e.id)&&(!e.faction||getRL(e.faction)>=(e.fReq||0))&&canCraftAtLocation(e.ingr));
       if(undiscovered.length===0){addLog('📚 You study your inscription notes, but you\'ve mastered every enchantment available to you.','info');return;}
       if(ch.success){
         const successXp=Math.floor(baseResXp*2*resXpMult);gainXP(successXp);
@@ -4769,8 +4850,8 @@ function CindervaleAlchemistInner(){
         const g=Math.floor((5+level*2+aLvl*3)*eff*(1+upEff('sellBonus')+getFeatureVal('sellBonus')));setGold(gg=>gg+g);
         report.push({n:ap.name,i:ap.icon,r:`Shop: +${g}g`,t:'ok'});{const _xpGain=Math.floor(12*axp);_xpAdded[ap.id]=(_xpAdded[ap.id]||0)+_xpGain;setApprXP(p=>({...p,[ap.id]:(p[ap.id]||0)+_xpGain}));};
       } else if(task.type==='research_task'){
-        const undP=RECIPES.filter(r=>!known.includes(r.id)&&level>=r.unlock&&(!r.faction||getRL(r.faction)>=(r.fReq||0)));
-        const undE=ENCHANTMENTS.filter(e=>!knownEnch.includes(e.id)&&(!e.faction||getRL(e.faction)>=(e.fReq||0)));
+        const undP=RECIPES.filter(r=>!known.includes(r.id)&&level>=r.unlock&&(!r.faction||getRL(r.faction)>=(r.fReq||0))&&canCraftAtLocation(r.ingr));
+        const undE=ENCHANTMENTS.filter(e=>!knownEnch.includes(e.id)&&(!e.faction||getRL(e.faction)>=(e.fReq||0))&&canCraftAtLocation(e.ingr));
         const discoveryChance=0.15+eff*0.2;
         if(Math.random()<discoveryChance){
           if((undP.length>0&&Math.random()<0.5)||undE.length===0){
@@ -8235,7 +8316,7 @@ function CindervaleAlchemistInner(){
             })()}</div>
           </div>);})}
         {/* Undiscovered recipes */}
-        {RECIPES.filter(r=>!known.includes(r.id)).map(r=>{
+        {RECIPES.filter(r=>!known.includes(r.id)&&canCraftAtLocation(r.ingr)).map(r=>{
           const locked=level<r.unlock||(r.faction&&getRL(r.faction)<(r.fReq||0));
           const showInfo=getFeatureVal('showRecipeInfo');
           const showIngr=getFeatureVal('showIngredients');
@@ -8286,8 +8367,8 @@ function CindervaleAlchemistInner(){
             Spend 2 hours studying your notes and references to discover new recipes or enchantment techniques. Discovery chance scales with 🌟 Innovation ({getSkMod('innovation')}) and 🔬 Research ({getSkMod('research')}) skill ranks.
           </div>
           <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
-            {(()=>{const undiscP=RECIPES.filter(r=>!known.includes(r.id)&&level>=r.unlock&&(!r.faction||getRL(r.faction)>=(r.fReq||0)));
-              const undiscE=ENCHANTMENTS.filter(e=>!knownEnch.includes(e.id)&&(!e.faction||getRL(e.faction)>=(e.fReq||0)));
+            {(()=>{const undiscP=RECIPES.filter(r=>!known.includes(r.id)&&level>=r.unlock&&canCraftAtLocation(r.ingr)&&(!r.faction||getRL(r.faction)>=(r.fReq||0)));
+              const undiscE=ENCHANTMENTS.filter(e=>!knownEnch.includes(e.id)&&(!e.faction||getRL(e.faction)>=(e.fReq||0))&&canCraftAtLocation(e.ingr));
               const resCost=Math.max(1,(getSkMod('lore')>=4?1:2)-getFeatureVal('researchCostReduction'));
               const freeRes=getFeatureVal('freeResearchPerDay');
               const freeUsed=dayFlags.filter(f=>f==='free_research_used').length;
