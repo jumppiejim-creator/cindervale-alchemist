@@ -1062,6 +1062,40 @@ const generateRelic=(regionDiff,regionName)=>{
   return{id:'relic_'+Date.now()+'_'+Math.random().toString(36).slice(2,6),category:cat.id,rarity,name,value,appraised:false,displayed:false,region:regionName};
 };
 
+// ═══ EXTERNAL THREATS ═══
+const THREAT_FACTIONS={
+  reavers:{id:'reavers',name:'Ashland Reavers',icon:'🏴',color:'#cc4444',
+    desc:'Bandits preying on trade routes and foraging expeditions.',
+    penalties:{
+      rising:{expDangerMult:1.10,staffYieldMult:0.90},
+      dangerous:{expDangerMult:1.25,staffYieldMult:0.75,shelfTheftChance:0.10},
+      critical:{expDangerMult:1.40,staffYieldMult:0.60,shelfTheftChance:0.20},
+    }},
+  blight:{id:'blight',name:'The Blight',icon:'🦠',color:'#60a040',
+    desc:'Creeping fungal corruption from the deep caves.',
+    penalties:{
+      rising:{spoilMult:1.25},
+      dangerous:{spoilMult:1.50,contaminateChance:0.10},
+      critical:{spoilMult:2.0,contaminateChance:0.20,ingrLossChance:0.10},
+    }},
+  veilbreakers:{id:'veilbreakers',name:'Veilbreakers',icon:'💜',color:'#9060c0',
+    desc:'Rogue mages destabilizing the magical fabric around Cindervale.',
+    penalties:{
+      rising:{enchDCBonus:1,discoveryMult:0.95},
+      dangerous:{enchDCBonus:2,discoveryMult:0.85,enchPayMult:0.85},
+      critical:{enchDCBonus:3,discoveryMult:0.75,enchPayMult:0.75,custDropChance:0.10},
+    }},
+};
+const getThreatTier=(val)=>val>=75?'critical':val>=50?'dangerous':val>=25?'rising':'calm';
+const getThreatColor=(val)=>val>=75?'#cc2020':val>=50?'#d08020':val>=25?'#c0c020':'#40a040';
+const getThreatLabel=(val)=>val>=75?'Critical':val>=50?'Dangerous':val>=25?'Rising':'Calm';
+const THREAT_IDS=['reavers','blight','veilbreakers'];
+const FORTRESS_TYPES={
+  reaver_watchtower:{id:'reaver_watchtower',name:'Reaver Watchtower',icon:'🏰',threat:'reavers',cap:50,cost:200,desc:'Permanently caps Reaver threat at 50.'},
+  blight_purifier:{id:'blight_purifier',name:'Blight Purifier',icon:'🧪',threat:'blight',cap:50,cost:200,desc:'Permanently caps Blight threat at 50.'},
+  veil_anchor:{id:'veil_anchor',name:'Veil Anchor',icon:'⚓',threat:'veilbreakers',cap:50,cost:200,desc:'Permanently caps Veilbreaker threat at 50.'},
+};
+
 // ═══ BRANDS (Brand Master) ═══
 const BRAND_LEVELS=[
   {name:'New',icon:'🏷️',minSold:0,sellBonus:0.10,repeatCust:0},
@@ -1597,13 +1631,13 @@ const PRESTIGE_CLASSES={
     ]},
   siegeengineer:{id:'siegeengineer',name:'Siege Engineer',icon:'🏗️',color:'#808060',
     req:{warden:3,artificer:3},maxLv:5,
-    desc:'Builds permanent gathering outposts at discovered regions.',
+    desc:'Builds outposts that gather ingredients and suppress external threats.',
     features:[
-      {lv:1,name:'Field Outpost',desc:'Build an outpost at one region (3-day build). Passively gathers 2 ingredients/morning.'},
-      {lv:2,name:'Fortified Outpost',desc:'Outpost yield +2. Can build a second outpost.'},
-      {lv:3,name:'Processing Station',desc:'Outposts can auto-brew one recipe from gathered ingredients. Third outpost slot.'},
-      {lv:4,name:'Supply Depot',desc:'Outpost yield +3. Outpost-brewed potions auto-stock to shelves.'},
-      {lv:5,name:'Fortress Network',desc:'All outposts interconnected. Ingredients auto-transfer. Legendary outpost at Heartforge Rim.'},
+      {lv:1,name:'Field Outpost',desc:'1 outpost slot. Gathers 2 ingredients/morning. Suppresses nearby threats (-3/day).',effects:{outpostSlots:1,outpostGather:2,outpostSuppress:3}},
+      {lv:2,name:'Fortified Outpost',desc:'2 slots. Gathering +1 (3/morning). -4 suppression. +1 forage yield at outpost regions.',effects:{outpostSlots:2,outpostGather:3,outpostSuppress:4,outpostForageBonus:1}},
+      {lv:3,name:'Processing Station',desc:'3 slots. Assign 1 auto-brew recipe per outpost from stored ingredients.',effects:{outpostSlots:3,outpostGather:3,outpostSuppress:4,outpostAutoBrew:true}},
+      {lv:4,name:'Supply Depot',desc:'3 slots. Gathering +1 (4/morning). -5 suppression. Auto-brewed potions stock to shelves.',effects:{outpostSlots:3,outpostGather:4,outpostSuppress:5,outpostAutoShelf:true}},
+      {lv:5,name:'Fortress Network',desc:'4 slots. Upgrade one outpost to a fortress (caps one threat at 50). Outposts share storage.',effects:{outpostSlots:4,outpostGather:4,outpostSuppress:5,fortressUpgrade:true,outpostShareStorage:true}},
     ]},
   arcanist:{id:'arcanist',name:'Arcanist',icon:'✨',color:'#8060c0',
     req:{scholar:3,enchanter:3},maxLv:5,
@@ -2434,7 +2468,10 @@ function CindervaleAlchemistInner(){
   const [fieldBrewPhase,setFieldBrewPhase]=useState(null);
   const [brands,setBrands]=useState([]);
   const [relics,setRelics]=useState([]); // [{id,category,rarity,name,value,appraised,displayed,region}]
-  const [museum,setMuseum]=useState({pottery:0,tablets:0,jewelry:0,mechanisms:0,weapons:0}); // [{id,name,icon,recipes:[recipeId,...],sold:0}]
+  const [museum,setMuseum]=useState({pottery:0,tablets:0,jewelry:0,mechanisms:0,weapons:0});
+  const [threats,setThreats]=useState({reavers:0,blight:0,veilbreakers:0});
+  const [outposts,setOutposts]=useState([]); // [{id,regionId,built,daysLeft,recipe,storedIngr,fortress}]
+  const [defenseQuests,setDefenseQuests]=useState([]); // [{id,threatId,type,target,qty,reward,desc}] // [{id,name,icon,recipes:[recipeId,...],sold:0}]
   const [showBrandMgr,setShowBrandMgr]=useState(false);
   const [brandOrders,setBrandOrders]=useState([]); // [{brandId,recipeId,qty,price,expires}] // {haul:{ashbloom:3,...}, brewsLeft:2, regDiff:3}
   const [txSource,setTxSource]=useState(null); // transmute source ingredient
@@ -2586,8 +2623,8 @@ function CindervaleAlchemistInner(){
     phase,charName,charRace,charGender,stats,ptsLeft,skRanks,skPts,skProgress,classLevels,specs,playerFeats,asiSpent,startingClass,
     screen,day,hours,gameLocation,xp,gold,inv,pots,known,aQ,doneQ,
     log:log.slice(-30),milestones,fRep,factionAlign,upgrades,hiredAppr,apprTasks,apprXP,enchQ,potCustQ,clinicPatients,venomContracts,forgedWeapons,shieldCommissions,planarFocus,gadgets,blueprints,fieldJournal,loreFragments,companions,caravans,supplyChains,caravanRuns,trainingSessions,factionHarmony,prestigeLevels,automata,customPatterns,mappedRegions,activeBuffs,debt,disabledUpgrades,shopLocked,injuryPenalty,staffInjuries,shelves,dailyReport,
-    boardQ,activeBQ,doneBQCount,dayFlags,knownEnch,brewCounts,procureItems,pubPapers,selectedSite,constructProgress,lineage,brands,brandOrders,relics,museum,
-  }),[phase,charName,charRace,charGender,stats,ptsLeft,skRanks,skPts,skProgress,classLevels,specs,playerFeats,asiSpent,startingClass,screen,day,hours,xp,gold,inv,pots,known,aQ,doneQ,log,milestones,fRep,factionAlign,upgrades,hiredAppr,apprTasks,apprXP,enchQ,potCustQ,clinicPatients,venomContracts,forgedWeapons,shieldCommissions,planarFocus,gadgets,blueprints,fieldJournal,loreFragments,companions,caravans,supplyChains,caravanRuns,trainingSessions,factionHarmony,prestigeLevels,automata,customPatterns,mappedRegions,activeBuffs,debt,disabledUpgrades,shopLocked,injuryPenalty,staffInjuries,shelves,dailyReport,boardQ,activeBQ,doneBQCount,dayFlags,knownEnch,brewCounts,procureItems,constructProgress,selectedSite,lineage,brands,brandOrders,relics,museum]);
+    boardQ,activeBQ,doneBQCount,dayFlags,knownEnch,brewCounts,procureItems,pubPapers,selectedSite,constructProgress,lineage,brands,brandOrders,relics,museum,threats,outposts,defenseQuests,
+  }),[phase,charName,charRace,charGender,stats,ptsLeft,skRanks,skPts,skProgress,classLevels,specs,playerFeats,asiSpent,startingClass,screen,day,hours,xp,gold,inv,pots,known,aQ,doneQ,log,milestones,fRep,factionAlign,upgrades,hiredAppr,apprTasks,apprXP,enchQ,potCustQ,clinicPatients,venomContracts,forgedWeapons,shieldCommissions,planarFocus,gadgets,blueprints,fieldJournal,loreFragments,companions,caravans,supplyChains,caravanRuns,trainingSessions,factionHarmony,prestigeLevels,automata,customPatterns,mappedRegions,activeBuffs,debt,disabledUpgrades,shopLocked,injuryPenalty,staffInjuries,shelves,dailyReport,boardQ,activeBQ,doneBQCount,dayFlags,knownEnch,brewCounts,procureItems,constructProgress,selectedSite,lineage,brands,brandOrders,relics,museum,threats,outposts,defenseQuests]);
 
   const restoreState=useCallback((s)=>{
     if(!s)return;
@@ -2615,7 +2652,7 @@ function CindervaleAlchemistInner(){
     setDailyReport(s.dailyReport||[]);setEnchQ(s.enchQ||[]);setPotCustQ(s.potCustQ||[]);setClinicPatients(s.clinicPatients||[]);setVenomContracts(s.venomContracts||[]);setForgedWeapons(s.forgedWeapons||[]);setShieldCommissions(s.shieldCommissions||[]);setPlanarFocus(s.planarFocus||null);setGadgets(s.gadgets||[]);setBlueprints(s.blueprints||[]);setFieldJournal(s.fieldJournal||[]);setLoreFragments(s.loreFragments||[]);setCompanions(s.companions||[]);setCaravans(s.caravans||[]);setSupplyChains(s.supplyChains||[]);setCaravanRuns(s.caravanRuns||{});setTrainingSessions(s.trainingSessions||{});setFactionHarmony(s.factionHarmony||{});setPrestigeLevels(s.prestigeLevels||{});setAutomata(s.automata||[]);setCustomPatterns(s.customPatterns||[]);setMappedRegions(s.mappedRegions||[]);setActiveBuffs(s.activeBuffs||{});setDebt(s.debt||0);setDisabledUpgrades(s.disabledUpgrades||[]);setShopLocked(s.shopLocked||false);setInjuryPenalty(s.injuryPenalty||0);setStaffInjuries(s.staffInjuries||{});setShelves(s.shelves||{});setLastCheck(null);setNews([]);setMorningReport(null);
     setBoardQ(s.boardQ||[]);setActiveBQ(s.activeBQ||[]);setDoneBQCount(s.doneBQCount||0);setDayFlags(s.dayFlags||[]);setKnownEnch(s.knownEnch&&s.knownEnch.length>0?s.knownEnch:['e_sharp','e_glow','e_ironbark','e_feather','e_windwalk','e_rootbind']);
     setBrewCounts(s.brewCounts||{});setProcureItems(s.procureItems||[]);setPubPapers(s.pubPapers||[]);setConstructProgress(s.constructProgress||{});
-    setSelHex(null);setVBuild('workshop');setDlgNpc(null);setShowShop(false);setQuestDlg(null);setPendingLevelUp(null);setSelectedSite(s.selectedSite||null);if(s.lineage)setLineage(s.lineage);setBrands(s.brands||[]);setBrandOrders(s.brandOrders||[]);setRelics(s.relics||[]);setMuseum(s.museum||{pottery:0,tablets:0,jewelry:0,mechanisms:0,weapons:0});
+    setSelHex(null);setVBuild('workshop');setDlgNpc(null);setShowShop(false);setQuestDlg(null);setPendingLevelUp(null);setSelectedSite(s.selectedSite||null);if(s.lineage)setLineage(s.lineage);setBrands(s.brands||[]);setBrandOrders(s.brandOrders||[]);setRelics(s.relics||[]);setMuseum(s.museum||{pottery:0,tablets:0,jewelry:0,mechanisms:0,weapons:0});setThreats(s.threats||{reavers:0,blight:0,veilbreakers:0});setOutposts(s.outposts||[]);setDefenseQuests(s.defenseQuests||[]);
   },[]);
 
   // ─── ALL EFFECTS (before any return!) ───
@@ -2893,6 +2930,7 @@ function CindervaleAlchemistInner(){
       fRep:inheritData?.fRep||(loc==='ashfall'?{sand_merchants:0,flamekeepers:0,dustwalkers:0}:{ashwardens:0,hearthkeepers:0,veilwalkers:0,cinderfolk:0}),
       lineage:lineage||null,
       museum:inheritData?.museum||{pottery:0,tablets:0,jewelry:0,mechanisms:0,weapons:0},
+      threats:{reavers:0,blight:0,veilbreakers:0},outposts:[],defenseQuests:[],
     };
     restoreState(defState);setLog([]);setGameStarted(true);
     if(inheritData?.intro)addLog(inheritData.intro,'story');
@@ -3056,11 +3094,13 @@ function CindervaleAlchemistInner(){
       // Event check — one event per hour max
       let event=null;
       const riskReduc=getFeatureVal('reducedRisk');
+      const threatDangerMult=threatExpDangerMult||1;
       const posMulti=1+getFeatureVal('positiveEventMulti');
       for(const ev of H_EVENTS){
         if(ev.minDiff&&reg.diff<ev.minDiff)continue; // Skip events above region danger level
         let evProb=ev.prob;
         if(riskReduc>0&&ev.good===false)evProb*=(1-riskReduc);
+        if(ev.good===false&&threatDangerMult>1)evProb*=threatDangerMult;
         // Field Journal fauna discoveries reduce danger in this region
         if(ev.good===false){const faunaDiscs=(FIELD_DISCOVERIES[reg.id]||[]).filter(d=>d.type==='fauna'&&fieldJournal.includes(d.id));
           faunaDiscs.forEach(d=>{if(d.bonus.dangerReduce)evProb*=(1-d.bonus.dangerReduce);});}
@@ -3253,6 +3293,8 @@ function CindervaleAlchemistInner(){
       // Accumulate
       Object.entries(hourG).forEach(([id,q])=>{cumG[id]=(cumG[id]||0)+q;});
       cumXp+=hxp+(event?.effectXp||0);
+      // Tag expedition difficulty for Blight tracking
+      if(h===0)setDayFlags(f=>[...f,'exp_diff_'+reg.diff]);
       // Relic discovery (Antiquarian)
       const aqLv=prestigeLevels.antiquarian||0;
       const relicChance=aqLv>=4?0.35:aqLv>=2?0.25:aqLv>=1?0.15:0;
@@ -3444,6 +3486,82 @@ function CindervaleAlchemistInner(){
     if(newCount>=setData?.needed)addLog('✨ '+setData?.name+' COMPLETE! Bonus: '+setData?.desc,'quest');
   };
 
+    // ═══ THREAT HELPERS ═══
+  const getThreatPenalty=(threatId,key)=>{
+    const val=threats[threatId]||0;
+    const tier=getThreatTier(val);
+    if(tier==='calm')return key.includes('Mult')?1:0;
+    const tf=THREAT_FACTIONS[threatId];
+    const p=tf?.penalties[tier];
+    return p?.[key]||(key.includes('Mult')?1:0);
+  };
+  const threatExpDangerMult=getThreatPenalty('reavers','expDangerMult');
+  const threatStaffYieldMult=getThreatPenalty('reavers','staffYieldMult');
+  const threatShelfTheft=getThreatPenalty('reavers','shelfTheftChance');
+  const threatSpoilMult=getThreatPenalty('blight','spoilMult');
+  const threatContaminate=getThreatPenalty('blight','contaminateChance');
+  const threatEnchDC=getThreatPenalty('veilbreakers','enchDCBonus');
+  const threatDiscoveryMult=getThreatPenalty('veilbreakers','discoveryMult');
+  const threatEnchPayMult=getThreatPenalty('veilbreakers','enchPayMult');
+
+  // ═══ OUTPOST HELPERS ═══
+  const seLv=prestigeLevels.siegeengineer||0;
+  const maxOutpostSlots=seLv>=5?4:seLv>=3?3:seLv>=2?2:seLv>=1?1:0;
+  const outpostGatherAmt=seLv>=4?4:seLv>=2?3:2;
+  const outpostSuppressAmt=seLv>=4?5:seLv>=2?4:3;
+
+  const buildOutpost=(regionId)=>{
+    const reg=REGIONS.find(r=>r.id===regionId);if(!reg)return;
+    if(outposts.length>=maxOutpostSlots){addLog('No outpost slots available ('+outposts.length+'/'+maxOutpostSlots+').','error');return;}
+    if(outposts.some(op=>op.regionId===regionId)){addLog('Already have an outpost at '+reg.name+'.','error');return;}
+    const cost=50+reg.diff*25;
+    if(gold<cost){addLog('Need '+cost+'g to build outpost at '+reg.name+' (have '+gold+'g).','error');return;}
+    // Need 10 of any region ingredient
+    const regIngr=reg.ingr||[];const bestIngr=regIngr.find(id=>(inv[id]||0)>=10);
+    if(!bestIngr){addLog('Need 10 of any '+reg.name+' ingredient to build outpost.','error');return;}
+    snapshot();
+    setGold(g=>g-cost);modInv(bestIngr,-10);
+    const newOp={id:'op_'+Date.now(),regionId,built:false,daysLeft:reg.diff>=4?3:2,recipe:null,storedIngr:{},fortress:null};
+    setOutposts(p=>[...p,newOp]);
+    addLog('🏗️ Construction started: Outpost at '+reg.name+' ('+newOp.daysLeft+' days). Cost: '+cost+'g + 10× '+(INGR[bestIngr]?.icon||'')+INGR[bestIngr]?.name+'.','quest');
+  };
+
+  const setOutpostRecipe=(opId,recipeId)=>{
+    if(seLv<3){addLog('Processing Station (Siege Engineer Lv3) required for auto-brewing.','error');return;}
+    setOutposts(p=>p.map(op=>op.id===opId?{...op,recipe:recipeId||null}:op));
+  };
+
+  const upgradeFortress=(opId,fortressType)=>{
+    if(seLv<5){addLog('Fortress Network (Siege Engineer Lv5) required.','error');return;}
+    const ft=FORTRESS_TYPES[fortressType];if(!ft)return;
+    if(outposts.some(op=>op.fortress)){addLog('Can only have one fortress. Existing fortress must be demolished first.','error');return;}
+    if(gold<ft.cost){addLog('Need '+ft.cost+'g for '+ft.name+'.','error');return;}
+    snapshot();setGold(g=>g-ft.cost);
+    setOutposts(p=>p.map(op=>op.id===opId?{...op,fortress:fortressType}:op));
+    addLog('🏰 '+ft.name+' constructed! '+ft.desc,'quest');
+  };
+
+  const completeDefenseQuest=(dqId)=>{
+    const dq=defenseQuests.find(q=>q.id===dqId);if(!dq)return;
+    // Check requirements
+    if(dq.type==='deliver'){
+      const allQ=Object.entries(pots).filter(([pid])=>getBaseRecipeId(pid)===dq.target).reduce((s,[,c])=>s+c,0);
+      if(allQ<dq.qty){addLog('Need '+dq.qty+'× '+RECIPES.find(r=>r.id===dq.target)?.name+' (have '+allQ+').','error');return;}
+    } else if(dq.type==='gather'){
+      if((inv[dq.target]||0)<dq.qty){addLog('Need '+dq.qty+'× '+(INGR[dq.target]?.name||dq.target)+' (have '+(inv[dq.target]||0)+').','error');return;}
+    }
+    snapshot();
+    // Consume
+    if(dq.type==='deliver'){let rem=dq.qty;[dq.target,dq.target+'_F',dq.target+'_M'].forEach(pid=>{const have=pots[pid]||0;if(rem>0&&have>0){const take=Math.min(rem,have);modPot(pid,-take);rem-=take;}});}
+    else if(dq.type==='gather')modInv(dq.target,-dq.qty);
+    // Reduce threat
+    setThreats(p=>{const n={...p};n[dq.threatId]=Math.max(0,(n[dq.threatId]||0)-dq.reward);return n;});
+    setDefenseQuests(p=>p.filter(q=>q.id!==dqId));
+    gainXP(Math.floor(dq.reward*3));
+    const tf=THREAT_FACTIONS[dq.threatId];
+    addLog('🛡️ Defense quest complete! '+tf?.icon+' '+tf?.name+' threat reduced by '+dq.reward+'. (+'+Math.floor(dq.reward*3)+' XP)','quest');
+  };
+
     // ═══ BRAND HELPERS (Brand Master) ═══
   const getBrandForRecipe=(recipeId)=>brands.find(b=>b.recipes.includes(recipeId));
   const getBrandSellMult=(recipeId)=>{
@@ -3549,7 +3667,9 @@ function CindervaleAlchemistInner(){
     // firstBrewFree: first brew of each day costs no hours
     const fbf=getFeatureVal('firstBrewFree')&&!dayFlags.includes('first_brew_used');
     if(!fbf&&hours<1){addLog('Not enough Energy to brew. Rest and try tomorrow.','error');return;}
-    const qT=QUALITY[quality]||QUALITY.std;
+    let effQuality=quality;
+    if(quality!=='std'&&(threatContaminate||0)>0&&Math.random()<threatContaminate){effQuality='std';addLog('🦠 Blight contamination! Your '+QUALITY[quality].name+' brew was degraded to Standard quality.','error');}
+    const qT=QUALITY[effQuality]||QUALITY.std;
     const cost={};r.ingr.forEach(id=>{cost[id]=(cost[id]||0)+1;});
     // Quality tier extra ingredients
     if(qT.extraIngr>=1){const firstIngr=r.ingr[0];cost[firstIngr]=(cost[firstIngr]||0)+1;}
@@ -3782,7 +3902,7 @@ function CindervaleAlchemistInner(){
     if(!isFree&&hours<resCost){addLog(`Research takes ⚡${resCost} Energy.${freeResPerDay>0?' (free attempts used today)':''}`,'error');return;}
     snapshot();
     if(isFree){setDayFlags(f=>[...f,'free_research_used']);}else{spendEnergy(resCost);}
-    const discBonus=getFeatureVal('discoveryChanceBonus');
+    const discBonus=getFeatureVal('discoveryChanceBonus')*(threatDiscoveryMult||1);
     const resXpMult=1+getFeatureVal('researchXPMulti');
     const baseResXp=15+level*2;
     // Visible d20 skill check — Research vs DC
@@ -4151,7 +4271,7 @@ function CindervaleAlchemistInner(){
       return;
     }
     // Step 2: Inscription check (Inscription)
-    const enchDC=enchant.dc||12;
+    const enchDC=(enchant.dc||12)+(threatEnchDC||0);
     const inscCh=doCheck('inscription',enchDC);
     const eb=getFeatureVal('enchantBonus');if(eb){inscCh.total+=eb;inscCh.extras.push({label:'Runesmith',val:eb});}
     inscCh.success=inscCh.total>=enchDC;
@@ -5312,6 +5432,148 @@ function CindervaleAlchemistInner(){
       const museumGold=10;setGold(g=>g+museumGold);
       report.push({n:'Museum Visitors',i:'🏛️',r:'+'+museumGold+'g (Grand Collection)',t:'ok'});
     }
+    // ═══ EXTERNAL THREATS PROCESSING ═══
+    const curDay=day+1;
+    const newThreats={...(threats||{reavers:0,blight:0,veilbreakers:0})};
+    // Threat growth
+    if(curDay>10)newThreats.reavers=Math.min(100,(newThreats.reavers||0)+2+(gold>200?1:0));
+    if(curDay>20)newThreats.veilbreakers=Math.min(100,(newThreats.veilbreakers||0)+2);
+    // Blight grows from expedition activity (tracked via dayFlags)
+    const expDiff=dayFlags.filter(f=>f.startsWith('exp_diff_')).map(f=>+f.split('_')[2]);
+    expDiff.forEach(d=>{if(d>=3)newThreats.blight=Math.min(100,(newThreats.blight||0)+(d>=5?2:1));});
+    // Natural decay
+    THREAT_IDS.forEach(tid=>{newThreats[tid]=Math.max(0,(newThreats[tid]||0)-1);});
+    // Faction rep decay: Ashwardens/Dustwalkers reduce reavers, Cinderfolk/Flamekeepers reduce blight, Veilwalkers reduce veilbreakers
+    const ashRep=Math.floor((fRep.ashwardens||0)/25);const dustRep=Math.floor((fRep.dustwalkers||0)/25);
+    const cindRep=Math.floor((fRep.cinderfolk||0)/25);const flameRep=Math.floor((fRep.flamekeepers||0)/25);
+    const veilRep=Math.floor((fRep.veilwalkers||0)/25);
+    newThreats.reavers=Math.max(0,newThreats.reavers-ashRep-dustRep);
+    newThreats.blight=Math.max(0,newThreats.blight-cindRep-flameRep);
+    newThreats.veilbreakers=Math.max(0,newThreats.veilbreakers-veilRep);
+    // Warden/Merchant class decay
+    if((classLevels.warden||0)>=4)newThreats.blight=Math.max(0,newThreats.blight-2);
+    if((classLevels.merchant||0)>=4)newThreats.veilbreakers=Math.max(0,newThreats.veilbreakers-2);
+    // Brand Master: famous brands reduce veilbreakers
+    (brands||[]).forEach(b=>{if(b.sold>=80)newThreats.veilbreakers=Math.max(0,newThreats.veilbreakers-5);});
+    // Antiquarian Arsenal completion reduces reavers
+    if((museum.weapons||0)>=(RELIC_SETS.weapons?.needed||4))newThreats.reavers=Math.max(0,newThreats.reavers-10);
+
+    // ═══ OUTPOST PROCESSING ═══
+    const seLv2=prestigeLevels.siegeengineer||0;
+    const opGatherAmt=seLv2>=4?4:seLv2>=2?3:2;
+    const opSuppressAmt=seLv2>=4?5:seLv2>=2?4:3;
+    const updatedOutposts=(outposts||[]).map(op=>{
+      if(!op.built){
+        // Construction countdown
+        const remaining=op.daysLeft-1;
+        if(remaining<=0){
+          report.push({n:'Outpost Complete',i:'🏗️',r:(REGIONS.find(r=>r.id===op.regionId)?.name||op.regionId)+' outpost is ready!',t:'ok'});
+          return{...op,built:true,daysLeft:0};
+        }
+        report.push({n:'Construction',i:'🏗️',r:(REGIONS.find(r=>r.id===op.regionId)?.name||op.regionId)+' outpost: '+remaining+' day'+(remaining>1?'s':'')+' left.',t:'info'});
+        return{...op,daysLeft:remaining};
+      }
+      // Gathering
+      const reg=REGIONS.find(r=>r.id===op.regionId);if(!reg)return op;
+      const newStored={...(op.storedIngr||{})};
+      const gathered=[];
+      for(let i=0;i<opGatherAmt;i++){
+        const pool=reg.ingr||[];if(pool.length===0)break;
+        const pick=pool[Math.floor(Math.random()*pool.length)];
+        newStored[pick]=(newStored[pick]||0)+1;gathered.push(pick);
+        modInv(pick,1);
+      }
+      if(gathered.length>0){
+        const summary=Object.entries(gathered.reduce((a,id)=>{a[id]=(a[id]||0)+1;return a;},{})).map(([id,q])=>(INGR[id]?.icon||'')+INGR[id]?.name+' ×'+q).join(', ');
+        report.push({n:reg.name+' Outpost',i:'📦',r:'Gathered: '+summary,t:'ok'});
+      }
+      // Threat suppression
+      if(reg.diff>=5){THREAT_IDS.forEach(tid=>{newThreats[tid]=Math.max(0,newThreats[tid]-Math.floor(opSuppressAmt*0.4));});}
+      else if(reg.diff>=3)newThreats.blight=Math.max(0,newThreats.blight-opSuppressAmt);
+      else newThreats.reavers=Math.max(0,newThreats.reavers-opSuppressAmt);
+      // Auto-brew (Lv3+)
+      if(seLv2>=3&&op.recipe){
+        const recipe=RECIPES.find(r=>r.id===op.recipe);
+        if(recipe){
+          const cost={};recipe.ingr.forEach(id=>{cost[id]=(cost[id]||0)+1;});
+          const canBrew=Object.entries(cost).every(([id,q])=>(newStored[id]||0)>=q);
+          if(canBrew){
+            Object.entries(cost).forEach(([id,q])=>{newStored[id]=(newStored[id]||0)-q;});
+            if(seLv2>=4){
+              // Auto-stock to shelves
+              const shelfKey=op.recipe;
+              setShelves(prev=>{const n={...prev};n[shelfKey]=(n[shelfKey]||0)+1;return n;});
+              report.push({n:'Auto-Brew',i:'⚗️',r:reg.name+': '+recipe.icon+recipe.name+' → shelf',t:'ok'});
+            } else {
+              modPot(op.recipe,1);
+              report.push({n:'Auto-Brew',i:'⚗️',r:reg.name+': '+recipe.icon+recipe.name+' brewed',t:'ok'});
+            }
+          }
+        }
+      }
+      return{...op,storedIngr:newStored};
+    });
+    // Fortress caps
+    updatedOutposts.forEach(op=>{
+      if(op.fortress){const ft=FORTRESS_TYPES[op.fortress];if(ft)newThreats[ft.threat]=Math.min(ft.cap,newThreats[ft.threat]);}
+    });
+    setOutposts(updatedOutposts);
+
+    // Reaver shelf theft
+    const reaverTier=getThreatTier(newThreats.reavers);
+    const theftChance=reaverTier==='critical'?0.20:reaverTier==='dangerous'?0.10:0;
+    let stolenGold=0;
+    if(theftChance>0&&shelfGold>0&&Math.random()<theftChance*2){
+      stolenGold=Math.floor(shelfGold*theftChance);
+      report.push({n:'🏴 Reaver Raid',i:'🏴',r:'Bandits stole '+stolenGold+'g from overnight shelf sales!',t:'bad'});
+    }
+
+    // Blight ingredient loss (Critical only)
+    if(getThreatTier(newThreats.blight)==='critical'&&Math.random()<0.10){
+      const ingrKeys=Object.entries(inv).filter(([,q])=>q>0).map(([id])=>id);
+      if(ingrKeys.length>0){
+        const lostId=ingrKeys[Math.floor(Math.random()*ingrKeys.length)];
+        const lostQty=Math.min(inv[lostId]||0,Math.floor(Math.random()*2)+1);
+        if(lostQty>0){modInv(lostId,-lostQty);report.push({n:'🦠 Blight Decay',i:'🦠',r:lostQty+'× '+(INGR[lostId]?.icon||'')+INGR[lostId]?.name+' corrupted by the Blight.',t:'bad'});}
+      }
+    }
+
+    // Apply stolen gold
+    if(stolenGold>0)setGold(g=>g-stolenGold);
+
+    // Generate defense quests (1-2 per morning if any threat is Rising+)
+    const newDefQ=[];
+    THREAT_IDS.forEach(tid=>{
+      if(newThreats[tid]>=25&&Math.random()<0.5){
+        const tf=THREAT_FACTIONS[tid];
+        const potRecipes=RECIPES.filter(r=>known.includes(r.id)&&!r.fieldOnly&&canCraftAtLocation(r.ingr));
+        const ingrPool=Object.entries(inv).filter(([,q])=>q>0).map(([id])=>id).filter(id=>INGR[id]);
+        const isDeliver=potRecipes.length>0&&Math.random()<0.6;
+        if(isDeliver){
+          const r=potRecipes[Math.floor(Math.random()*potRecipes.length)];
+          const qty=Math.ceil(newThreats[tid]/30)+1;
+          const reward=Math.floor(qty*3+newThreats[tid]/10);
+          newDefQ.push({id:'dq_'+Date.now()+'_'+tid,threatId:tid,type:'deliver',target:r.id,qty,reward,
+            desc:tf.icon+' Supply '+qty+'× '+r.icon+r.name+' to defend against '+tf.name});
+        } else if(ingrPool.length>0){
+          const ingId=ingrPool[Math.floor(Math.random()*ingrPool.length)];
+          const qty=Math.ceil(newThreats[tid]/20)+3;
+          const reward=Math.floor(qty*1.5+newThreats[tid]/10);
+          newDefQ.push({id:'dq_'+Date.now()+'_'+tid,threatId:tid,type:'gather',target:ingId,qty,reward,
+            desc:tf.icon+' Donate '+qty+'× '+(INGR[ingId]?.icon||'')+INGR[ingId]?.name+' to combat '+tf.name});
+        }
+      }
+    });
+    setDefenseQuests(prev=>[...prev.slice(-4),...newDefQ]); // keep max ~6
+
+    // Threat report in morning report
+    const threatReport=THREAT_IDS.filter(tid=>newThreats[tid]>=25).map(tid=>{
+      const tf=THREAT_FACTIONS[tid];const tier=getThreatTier(newThreats[tid]);
+      return tf.icon+' '+tf.name+': '+getThreatLabel(newThreats[tid])+' ('+newThreats[tid]+'/100)';
+    });
+    if(threatReport.length>0)report.push({n:'⚔️ Threats',i:'⚔️',r:threatReport.join(' | '),t:THREAT_IDS.some(tid=>newThreats[tid]>=50)?'bad':'warn'});
+    setThreats(newThreats);
+
     // Brand repeat customers (Brand Master)
     const bmLv3=prestigeLevels.brandmaster||0;
     if(bmLv3>=1&&!shopLocked){
@@ -5630,8 +5892,10 @@ function CindervaleAlchemistInner(){
     // ═══ INGREDIENT SPOILAGE ═══
     const spoilLines=[];
     const spoilThresholdBase=8;
+    const blightSpoilMult=getThreatPenalty('blight','spoilMult');
     const spoilThresholdBonus=getFeatureVal('spoilThreshold')+upEff('spoilThreshold');
     const totalSpoilThreshold=spoilThresholdBase+spoilThresholdBonus;
+    const effSpoilThreshold=blightSpoilMult>1?Math.max(4,Math.floor(totalSpoilThreshold/blightSpoilMult)):totalSpoilThreshold;
     // Naturalist bonus: documented flora entries give +3 threshold for their ingredient
     const natBonusIngr={};
     if(fieldJournal&&FIELD_DISCOVERIES){
@@ -7547,6 +7811,71 @@ function CindervaleAlchemistInner(){
       {/* ═══════════ WORLD MAP ═══════════ */}
       {screen==='worldmap'&&<>
         <BackBar title="The Wilds" icon="🗺️"/>
+        {/* ── Threat Bar ── */}
+        {day>10&&THREAT_IDS.some(tid=>(threats[tid]||0)>=10)&&<div style={{...S.card,padding:'6px 10px',borderColor:'#cc444444'}}>
+          <div style={{fontSize:14,fontWeight:'bold',color:TH.textBright,marginBottom:4}}>⚔️ External Threats</div>
+          <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
+            {THREAT_IDS.map(tid=>{const val=threats[tid]||0;const tf=THREAT_FACTIONS[tid];const tier=getThreatTier(val);
+              return <div key={tid} style={{flex:'1 1 120px',minWidth:100}}>
+                <div style={{fontSize:13,color:tf.color,marginBottom:2}}>{tf.icon} {tf.name}</div>
+                <div style={{height:8,background:TH.bg,borderRadius:4,border:'1px solid '+TH.border,overflow:'hidden'}}>
+                  <div style={{height:'100%',width:val+'%',background:getThreatColor(val),borderRadius:4,transition:'width 0.3s'}}/>
+                </div>
+                <div style={{fontSize:11,color:getThreatColor(val),textAlign:'right'}}>{getThreatLabel(val)} ({val})</div>
+              </div>;})}
+          </div>
+          {defenseQuests.length>0&&<div style={{marginTop:4,borderTop:'1px solid '+TH.border,paddingTop:4}}>
+            <div style={{fontSize:13,fontWeight:'bold',color:TH.gold,marginBottom:2}}>🛡️ Defense Requests</div>
+            {defenseQuests.map(dq=>{
+              const tf=THREAT_FACTIONS[dq.threatId];
+              const have=dq.type==='deliver'?Object.entries(pots).filter(([pid])=>getBaseRecipeId(pid)===dq.target).reduce((s,[,c])=>s+c,0):(inv[dq.target]||0);
+              const canFill=have>=dq.qty;
+              return <div key={dq.id} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'2px 4px',marginBottom:2,fontSize:13,background:canFill?TH.greenDim:TH.panel,borderRadius:3}}>
+                <span>{dq.desc} <span style={{color:TH.textDim}}>({have}/{dq.qty})</span> <span style={{color:TH.gold}}>→ {tf.icon}-{dq.reward}</span></span>
+                <button style={{...S.btn(canFill?'gold':'dim'),fontSize:11,padding:'1px 5px'}} disabled={!canFill} onClick={()=>completeDefenseQuest(dq.id)}>Fulfill</button>
+              </div>;})}
+          </div>}
+        </div>}
+        {/* ── Outposts (Siege Engineer) ── */}
+        {seLv>=1&&<div style={{...S.card,borderColor:'#80806044'}}>
+          <div style={S.cT}>🏗️ Outposts ({outposts.filter(op=>op.built).length}/{maxOutpostSlots} slots)</div>
+          {outposts.map(op=>{
+            const reg=REGIONS.find(r=>r.id===op.regionId);if(!reg)return null;
+            const suppressTarget=reg.diff>=5?'All':reg.diff>=3?'🦠 Blight':'🏴 Reavers';
+            return <div key={op.id} style={{padding:'6px 8px',background:TH.panelLight,borderRadius:4,marginBottom:4,border:'1px solid '+(op.built?'#80806044':TH.border)}}>
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                <span style={{fontSize:15,color:TH.textBright}}>{reg.icon} {reg.name} {op.fortress?FORTRESS_TYPES[op.fortress]?.icon+' '+FORTRESS_TYPES[op.fortress]?.name:op.built?'Outpost':'(Building...)'}</span>
+                {!op.built&&<span style={{fontSize:13,color:TH.gold}}>{op.daysLeft} day{op.daysLeft>1?'s':''} left</span>}
+              </div>
+              {op.built&&<div style={{fontSize:13,color:TH.textDim,marginTop:2}}>
+                📦 Gathers {outpostGatherAmt}/morning · 🛡️ Suppresses {suppressTarget} -{outpostSuppressAmt}/day
+                {op.recipe&&<span> · ⚗️ Auto-brew: {RECIPES.find(r=>r.id===op.recipe)?.icon}{RECIPES.find(r=>r.id===op.recipe)?.name}</span>}
+              </div>}
+              {op.built&&seLv>=3&&<div style={{marginTop:3}}>
+                <select style={{fontSize:12,background:TH.bg,color:TH.text,border:'1px solid '+TH.border,borderRadius:3,padding:'1px 4px'}}
+                  value={op.recipe||''} onChange={e=>setOutpostRecipe(op.id,e.target.value||null)}>
+                  <option value="">No auto-brew</option>
+                  {RECIPES.filter(r=>known.includes(r.id)&&!r.fieldOnly).map(r=><option key={r.id} value={r.id}>{r.icon} {r.name}</option>)}
+                </select>
+                {seLv>=5&&!op.fortress&&!outposts.some(o=>o.fortress)&&<span style={{marginLeft:6}}>
+                  {Object.entries(FORTRESS_TYPES).map(([ftId,ft])=>
+                    <button key={ftId} style={{...S.btn(gold>=ft.cost?'gold':'dim'),fontSize:11,padding:'1px 5px',marginLeft:3}} disabled={gold<ft.cost}
+                      onClick={()=>upgradeFortress(op.id,ftId)}>{ft.icon} {ft.name} ({ft.cost}g)</button>
+                  )}
+                </span>}
+              </div>}
+            </div>;})}
+          {outposts.length<maxOutpostSlots&&<div style={{marginTop:4}}>
+            <select style={{fontSize:13,background:TH.bg,color:TH.text,border:'1px solid '+TH.border,borderRadius:4,padding:'3px 6px'}}
+              value="" onChange={e=>{if(e.target.value)buildOutpost(e.target.value);}}>
+              <option value="">+ Build new outpost...</option>
+              {locRegions.filter(reg=>level>=regUnlock(reg)&&!outposts.some(op=>op.regionId===reg.id)).map(reg=>{
+                const cost=50+reg.diff*25;
+                return <option key={reg.id} value={reg.id}>{reg.icon} {reg.name} (Diff {reg.diff}, {cost}g)</option>;
+              })}
+            </select>
+          </div>}
+        </div>}
         <div style={S.card}><div style={S.cT}>Expeditions — ⚡{hours} Energy remaining</div>
           {dayFlags.includes('ash_storm')&&<div style={{fontSize:14,color:TH.red,marginBottom:4,padding:'3px 6px',background:`${TH.red}10`,borderRadius:3}}>⚠️ Ash Storm — travel times +1h today</div>}
           {dayFlags.includes('clear_sky')&&<div style={{fontSize:14,color:TH.green,marginBottom:4,padding:'3px 6px',background:`${TH.green}10`,borderRadius:3}}>☀️ Clear Skies — extraction DCs reduced by 2 today</div>}
@@ -7615,6 +7944,12 @@ function CindervaleAlchemistInner(){
       {/* ═══════════ WORKSHOP ═══════════ */}
       {screen==='workshop'&&<>
         <BackBar title="Workshop" icon="⚗️"/>
+        {/* Compact Threat Bar */}
+        {day>10&&THREAT_IDS.some(tid=>(threats[tid]||0)>=25)&&<div style={{display:'flex',gap:6,padding:'3px 8px',marginBottom:4,fontSize:12,flexWrap:'wrap'}}>
+          {THREAT_IDS.filter(tid=>(threats[tid]||0)>=25).map(tid=>{const val=threats[tid]||0;const tf=THREAT_FACTIONS[tid];
+            return <span key={tid} style={{color:getThreatColor(val)}}>{tf.icon} {getThreatLabel(val)} ({val})</span>;})}
+          <span style={{color:TH.textDim,cursor:'pointer',textDecoration:'underline'}} onClick={()=>setScreen('worldmap')}>View →</span>
+        </div>}
         <div style={{...S.row,marginBottom:8,borderBottom:`1px solid ${TH.border}`,paddingBottom:6}}>
           <span style={{fontSize:16,color:TH.gold,fontWeight:'bold'}}>⚗️ Crafting</span>
           <button style={{...S.btn(),fontSize:14}} onClick={()=>setScreen('research')}>📚 Research</button>
@@ -9674,6 +10009,26 @@ function CindervaleAlchemistInner(){
               <GoBtn to={goScreen} label={goLabel} npc={q.giver.toLowerCase()}/>
             </div>);})}
         </div>}
+        {/* ── Defense Quests (External Threats) ── */}
+        {defenseQuests.length>0&&<div style={{...S.card,borderColor:'#cc444433'}}>
+          <div style={S.cT}>🛡️ Defense Requests</div>
+          <div style={{fontSize:13,color:TH.textDim,marginBottom:4}}>Supply materials to defend Cindervale against external threats. Reduces threat levels.</div>
+          {defenseQuests.map(dq=>{
+            const tf=THREAT_FACTIONS[dq.threatId];
+            const have=dq.type==='deliver'?Object.entries(pots).filter(([pid])=>getBaseRecipeId(pid)===dq.target).reduce((s,[,c])=>s+c,0):(inv[dq.target]||0);
+            const canFill=have>=dq.qty;
+            const target=dq.type==='deliver'?RECIPES.find(r=>r.id===dq.target):INGR[dq.target];
+            return <div key={dq.id} style={{padding:'5px 8px',background:canFill?TH.greenDim:TH.panelLight,borderRadius:4,marginBottom:3,border:'1px solid '+(canFill?TH.green:tf.color+'44'),display:'flex',justifyContent:'space-between',alignItems:'center',flexWrap:'wrap',gap:4}}>
+              <div>
+                <span style={{fontSize:14,color:tf.color}}>{tf.icon}</span>
+                <span style={{fontSize:14,color:TH.text}}> {dq.type==='deliver'?'Deliver':'Donate'} {dq.qty}× {target?.icon||''}{target?.name||dq.target}</span>
+                <span style={{fontSize:12,color:TH.textDim}}> ({have}/{dq.qty})</span>
+                <span style={{fontSize:12,color:TH.gold}}> → {tf.icon} -{dq.reward} threat, +{Math.floor(dq.reward*3)} XP</span>
+              </div>
+              <button style={{...S.btn(canFill?'gold':'dim'),fontSize:12,padding:'2px 6px'}} disabled={!canFill} onClick={()=>completeDefenseQuest(dq.id)}>Fulfill</button>
+            </div>;})}
+        </div>}
+
         {/* ── Notice Board (Repeatable Quests) ── */}
         <div style={{...S.card,borderColor:TH.borderGold}}>
           <div style={S.cT}>📌 Village Notice Board <span style={{fontSize:14,color:TH.textDim,fontWeight:'normal'}}>— daily requests ({doneBQCount} fulfilled)</span></div>
