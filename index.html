@@ -935,6 +935,16 @@ const RECIPES=[
   {id:'sandworm_antitoxin',name:'Sandworm Antitoxin',icon:'🧪',ingr:['venomgland','sandsilk','crystal_salt'],dc:15,xp:95,stat:'acu',unlock:5,desc:'Broad-spectrum antitoxin effective against all desert venoms.'},
   {id:'dust_diamond',name:'Dust Diamond Elixir',icon:'💎',ingr:['deep_crystal','dustite','temple_gold'],dc:19,xp:160,stat:'acu',unlock:7,desc:'Crystallized time. Said to slow aging.'},
   {id:'forge_ember_tonic',name:'Forge Ember Tonic',icon:'🔥',ingr:['volcanic_essence','embervein','ancient_resin'],dc:18,xp:140,stat:'tec',unlock:7,desc:'Liquid fire that tempers the body like steel.'},
+
+  // ═══ FIELD-ONLY RECIPES (Wildcrafter) ═══
+  {id:'vitality_draught',name:'Vitality Draught',icon:'🌿',ingr:['_any_herb','_any_herb2','_any_herb3'],dc:13,xp:70,stat:'inu',unlock:0,fieldOnly:true,
+    desc:'Heals 1 staff injury immediately. Must be brewed from fresh ingredients in the field.'},
+  {id:'trailblazer_tonic',name:'Trailblazer Tonic',icon:'🥾',ingr:['_any_herb','_any_herb2','_any_mineral'],dc:14,xp:80,stat:'tec',unlock:0,fieldOnly:true,
+    desc:'Next expedition travel time -1 hour. Brewed from whatever the land provides.'},
+  {id:'wilderness_elixir',name:'Wilderness Elixir',icon:'🍃',ingr:['_any1','_any2','_any3','_any4'],dc:16,xp:100,stat:'inu',unlock:0,fieldOnly:true,
+    desc:'3-day buff: +2 extraction, +1 forage yield. Requires 4 different fresh ingredients.',buff:'wilderness_elixir'},
+  {id:'essence_wild',name:'Essence of the Wild',icon:'🌍',ingr:['_any1','_any2','_any3','_any4','_any5'],dc:19,xp:160,stat:'inu',unlock:0,fieldOnly:true,fieldLegendary:true,
+    desc:'5-day buff: +3 extraction, +2 yield, +1 Energy/day. Requires 5 different ingredients from a dangerous region.',buff:'essence_wild'},
 ];
 // Enchantment categories: weapon, armor, other (jewelry/clothing/accessories)
 const ENCHANTMENTS=[
@@ -1015,6 +1025,77 @@ const LOCATIONS={
     intro:'The Crossing hits you like a wall of heat. Merchants haggle, camels bray, and the smell of spice and sand fills the air. Your mentor\'s name opens a few doors — but out here, reputation is earned daily.'},
 };
 
+// ═══ RELICS (Antiquarian) ═══
+const RELIC_CATS=[
+  {id:'pottery',name:'Pottery',icon:'🏺',set:'Hearth Collection',
+    names:{common:['Cracked Bowl','Clay Shard','Simple Jug'],uncommon:['Glazed Ritual Bowl','Painted Urn','Fired Censer'],rare:['Ancient Amphora','Ceremonial Chalice','Oracle Vessel'],legendary:['Heartforge Crucible','Primordial Kiln Fragment']}},
+  {id:'tablets',name:'Tablets',icon:'📜',set:'Lore Collection',
+    names:{common:['Scratched Stone','Worn Tablet','Faded Parchment'],uncommon:['Runic Fragment','Inscription Stone','Sealed Scroll'],rare:['Cipher Tablet','Prophecy Scroll','Arcane Codex Page'],legendary:['Heartforge Blueprint','Primordial Rune Slab']}},
+  {id:'jewelry',name:'Jewelry',icon:'💍',set:'Adornment Collection',
+    names:{common:['Corroded Ring','Tarnished Bead','Bent Pin'],uncommon:['Jade Pendant','Silver Circlet','Crystal Brooch'],rare:['Enchanted Amulet','Moonstone Ring','Filigree Crown'],legendary:['Heartforge Signet','Primordial Gem']}},
+  {id:'mechanisms',name:'Mechanisms',icon:'⚙️',set:'Artifice Collection',
+    names:{common:['Rusty Gear','Broken Spring','Worn Cog'],uncommon:['Clockwork Piece','Arcane Lens','Precision Bearing'],rare:['Automaton Core','Enchanted Gyroscope','Harmonic Resonator'],legendary:['Heartforge Regulator','Primordial Engine']}},
+  {id:'weapons',name:'Weapons',icon:'🗡️',set:'Arsenal Collection',
+    names:{common:['Rusted Blade','Broken Arrowhead','Dented Shield Boss'],uncommon:['Ceremonial Dagger','Warden\'s Badge','Etched Spearhead'],rare:['Enchanted Shortsword','Captain\'s Sigil','Runic Waraxe'],legendary:['Heartforge Hammer','Primordial Blade']}},
+];
+const RELIC_RARITIES=['common','uncommon','rare','legendary'];
+const RELIC_VALUES={common:[15,40],uncommon:[25,60],rare:[40,100],legendary:[80,200]};
+const RELIC_APPRAISE_DC={common:8,uncommon:11,rare:14,legendary:17};
+const RELIC_SETS={
+  pottery:{name:'Hearth Collection',icon:'🏺',needed:4,bonus:{customerBonus:1,sellBonus:0.05},desc:'+1 daily customer, +5% sell prices'},
+  tablets:{name:'Lore Collection',icon:'📜',needed:4,bonus:{researchBonus:2,xpMultiplier:0.10},desc:'+2 research, +10% XP'},
+  jewelry:{name:'Adornment Collection',icon:'💍',needed:4,bonus:{bonusEnergyPerDay:1,repGainBonus:5},desc:'+1 Energy/day, +5 rep per quest'},
+  mechanisms:{name:'Artifice Collection',icon:'⚙️',needed:4,bonus:{enchantBonus:1},desc:'+1 enchant bonus'},
+  weapons:{name:'Arsenal Collection',icon:'🗡️',needed:4,bonus:{extractionBonus:2},desc:'+2 extraction'},
+};
+const generateRelic=(regionDiff,regionName)=>{
+  const cat=RELIC_CATS[Math.floor(Math.random()*RELIC_CATS.length)];
+  let rarity;
+  const roll=Math.random();
+  if(regionDiff>=5)rarity=roll<0.3?'legendary':roll<0.7?'rare':'uncommon';
+  else if(regionDiff>=3)rarity=roll<0.05?'legendary':roll<0.35?'rare':roll<0.7?'uncommon':'common';
+  else rarity=roll<0.3?'uncommon':'common';
+  const names=cat.names[rarity]||cat.names.common;
+  const name=names[Math.floor(Math.random()*names.length)];
+  const [minV,maxV]=RELIC_VALUES[rarity];
+  const value=minV+Math.floor(Math.random()*(maxV-minV+1));
+  return{id:'relic_'+Date.now()+'_'+Math.random().toString(36).slice(2,6),category:cat.id,rarity,name,value,appraised:false,displayed:false,region:regionName};
+};
+
+// ═══ BRANDS (Brand Master) ═══
+const BRAND_LEVELS=[
+  {name:'New',icon:'🏷️',minSold:0,sellBonus:0.10,repeatCust:0},
+  {name:'Known',icon:'⭐',minSold:15,sellBonus:0.25,repeatCust:1},
+  {name:'Popular',icon:'⭐⭐',minSold:40,sellBonus:0.40,repeatCust:2},
+  {name:'Famous',icon:'⭐⭐⭐',minSold:80,sellBonus:0.60,repeatCust:3},
+];
+const getBrandLevel=(sold)=>{let lv=0;for(let i=0;i<BRAND_LEVELS.length;i++)if(sold>=BRAND_LEVELS[i].minSold)lv=i;return lv;};
+const BRAND_ICONS=['🏷️','🛡️','⚗️','🌿','💎','🔥','⭐','🌙','❤️','⚡','👑','🎯'];
+
+// ═══ INFUSIONS (Spellbrewer) ═══
+const INFUSIONS={
+  vigor:{id:'vigor',name:'Vigor',icon:'🔴',color:'#c04040',dcMod:2,suffix:'_iv',unlockLv:1,
+    desc:'+1 Energy next morning',sellMult:1.2},
+  clarity:{id:'clarity',name:'Clarity',icon:'🔵',color:'#4060c0',dcMod:2,suffix:'_ic',unlockLv:1,
+    desc:'+2 next craft/enchant check',sellMult:1.2},
+  fortify:{id:'fortify',name:'Fortify',icon:'🟢',color:'#40a040',dcMod:3,suffix:'_if',unlockLv:2,
+    desc:'-1 expedition injury severity 2 days',sellMult:1.3},
+  prosperity:{id:'prosperity',name:'Prosperity',icon:'🟡',color:'#c0a020',dcMod:3,suffix:'_ip',unlockLv:3,
+    desc:'+50% sell price',sellMult:1.5},
+  lingering:{id:'lingering',name:'Lingering',icon:'🟣',color:'#8040c0',dcMod:4,suffix:'_il',unlockLv:4,
+    desc:'Elixir buff +1 day duration',sellMult:1.3},
+};
+const INFUSION_SUFFIXES=Object.values(INFUSIONS).map(inf=>inf.suffix);
+const getInfusion=(potId)=>{for(const inf of Object.values(INFUSIONS)){if(potId.includes(inf.suffix))return inf.id;}return null;};
+const stripInfusion=(potId)=>{let id=potId;for(const s of INFUSION_SUFFIXES)id=id.replace(s,'');return id;};
+const potDisplayName=(potId)=>{
+  const baseId=getBaseRecipeId(potId);
+  const r=RECIPES.find(x=>x.id===baseId);if(!r)return potId;
+  const pq=getPotQuality(stripInfusion(potId));const qT=QUALITY[pq]||QUALITY.std;
+  const infId=getInfusion(potId);const inf=infId?INFUSIONS[infId]:null;
+  return r.icon+(inf?inf.icon:'')+r.name+(qT.icon?' '+qT.icon:'')+(inf?' ['+inf.name+']':'');
+};
+
 // ═══ QUALITY TIERS ═══
 const QUALITY={
   std:{id:'std',name:'Standard',icon:'',color:'#aaaaaa',dcMod:0,sellMult:1,xpMult:1,extraIngr:0},
@@ -1022,8 +1103,8 @@ const QUALITY={
   mw:{id:'mw',name:'Masterwork',icon:'★★',color:'#d4a420',dcMod:6,sellMult:3,xpMult:2.5,extraIngr:2},
   gm:{id:'gm',name:'Grandmaster',icon:'★★★',color:'#c050e0',dcMod:10,sellMult:5,xpMult:4,extraIngr:3},
 };
-const getBaseRecipeId=(potId)=>potId.replace(/_[FMG]$/,'');
-const getPotQuality=(potId)=>potId.endsWith('_G')?'gm':potId.endsWith('_M')?'mw':potId.endsWith('_F')?'fine':'std';
+const getBaseRecipeId=(potId)=>{let id=potId.replace(/_fresh/,'');for(const s of INFUSION_SUFFIXES)id=id.replace(s,'');return id.replace(/_[FMG]$/,'');};
+const getPotQuality=(potId)=>{const stripped=stripInfusion(potId);return stripped.endsWith('_G')?'gm':stripped.endsWith('_M')?'mw':stripped.endsWith('_F')?'fine':'std';};
 const qualPotId=(recipeId,q)=>q==='fine'?recipeId+'_F':q==='mw'?recipeId+'_M':q==='gm'?recipeId+'_G':recipeId;
 const getMasteryDiscount=(brewCounts,recipeId)=>{const bc=brewCounts[recipeId]||0;return bc>=25?2:bc>=10?1:0;};
 
@@ -1468,11 +1549,11 @@ const PRESTIGE_CLASSES={
     req:{alchemist:3,enchanter:3},maxLv:5,
     desc:'Creates infused potions that combine brewing and enchanting effects.',
     features:[
-      {lv:1,name:'Infusion Basics',desc:'Combine a known potion + known enchantment into an Infused Potion. New crafting interface.'},
-      {lv:2,name:'Stable Infusions',desc:'+2 craft bonus on infusions. Infused potions sell at 2× base value.'},
-      {lv:3,name:'Dual Essence',desc:'Infused potions apply both the potion AND enchantment effect. Discovery chance +15%.'},
-      {lv:4,name:'Resonant Brewing',desc:'Successful infusions have 20% chance to produce 2×. Materials cost -1 per infusion.'},
-      {lv:5,name:'Grand Synthesis',desc:'Create legendary infusions. Combine 2 potions + 1 enchantment into a triple-effect brew.'},
+      {lv:1,name:'Infusion Novice',desc:'Unlock Vigor and Clarity infusions. 2 infusions per day. Catalyst: any ingredient with 5+ stock.',effects:{infusionSlots:2}},
+      {lv:2,name:'Resonant Brew',desc:'Unlock Fortify infusion. Infusion DC penalty reduced by 1. 3 infusions per day.',effects:{infusionSlots:3,infusionDCReduce:1}},
+      {lv:3,name:'Essence Weaver',desc:'Unlock Prosperity infusion. 25% chance catalyst is preserved. 4 infusions per day.',effects:{infusionSlots:4,catalystPreserve:0.25}},
+      {lv:4,name:'Arcane Distiller',desc:'Unlock Lingering infusion. Catalyst always preserved on Masterwork+ brews. 5 infusions per day.',effects:{infusionSlots:5,mwCatalystPreserve:true}},
+      {lv:5,name:'Grand Spellbrewer',desc:'Stack two infusions on one brew (double catalyst). Infused shelf potions attract +1 daily customer.',effects:{infusionSlots:6,doubleInfusion:true,infusedCustomerBonus:1}},
     ]},
   magitech:{id:'magitech',name:'Magitech Engineer',icon:'🔧',color:'#a0a060',
     req:{artificer:3,enchanter:3},maxLv:5,
@@ -1488,31 +1569,31 @@ const PRESTIGE_CLASSES={
     req:{merchant:3,alchemist:3},maxLv:5,
     desc:'Creates named product lines that build customer loyalty and premium pricing.',
     features:[
-      {lv:1,name:'First Brand',desc:'Create a named potion brand. Branded potions sell at 1.5× price.'},
-      {lv:2,name:'Brand Recognition',desc:'Branded potions attract 1 repeat customer per morning who buys only your brand.'},
-      {lv:3,name:'Product Line',desc:'Create a second brand. Each brand can cover multiple potions. 2× price.'},
-      {lv:4,name:'Premium Label',desc:'Branded potions earn reputation. +5 faction rep per branded sale.'},
-      {lv:5,name:'Legendary Brand',desc:'Third brand slot. Legendary brands sell at 3× and attract collectors with rare trade goods.'},
+      {lv:1,name:'First Label',desc:'Create 1 brand with up to 2 recipes. Branded potions +10% sell. Brand levels up with sales.',effects:{brandSlots:1,maxRecipes:2}},
+      {lv:2,name:'Brand Recognition',desc:'Brands hold 3 recipes. +5 aligned faction rep per 10 branded sales. Sales tracker UI.',effects:{brandSlots:1,maxRecipes:3,brandRepPer10:5}},
+      {lv:3,name:'Product Line',desc:'2nd brand slot. Brand orders appear (2× price). Branded shelf potions +10% sell chance.',effects:{brandSlots:2,maxRecipes:3,brandOrders:true,brandShelfBonus:0.10}},
+      {lv:4,name:'Premium Label',desc:'Brands hold 4 recipes. Famous tier unlocks (+60% sell). Branded MW+ potions extra +25%.',effects:{brandSlots:2,maxRecipes:4,famousTier:true,brandMWBonus:0.25}},
+      {lv:5,name:'Legendary Brand',desc:'3rd brand slot. Famous brands attract collectors trading rare ingredients. 25% brand rep carries through torch.',effects:{brandSlots:3,maxRecipes:4,collectors:true,torchBrandRep:0.25}},
     ]},
   wildcrafter:{id:'wildcrafter',name:'Wildcrafter',icon:'🌿',color:'#60a040',
     req:{warden:3,alchemist:3},maxLv:5,
     desc:'Brews potions in the field using fresh ingredients for bonus potency.',
     features:[
-      {lv:1,name:'Field Alchemy',desc:'Brew 1 potion during foraging expeditions using just-gathered ingredients. +20% potency.'},
-      {lv:2,name:'Fresh Reagents',desc:'Field-brewed potions have +30% potency and 15% chance for double batch.'},
-      {lv:3,name:'Wilderness Recipes',desc:'Discover 3 field-only recipes that can\'t be brewed in the workshop. Powerful and unique.'},
-      {lv:4,name:'Master Fieldcrafter',desc:'Brew 2 potions per expedition. Field potency +50%. Field brews cost no hours.'},
-      {lv:5,name:'Living Apothecary',desc:'Auto-brew the optimal potion each expedition. Field-only legendaries unlock.'},
+      {lv:1,name:'Field Alchemy',desc:'1 field brew per expedition from your haul. Fresh potions sell at 1.2×. Standard quality only.',effects:{fieldBrews:1,freshMult:1.2}},
+      {lv:2,name:'Fresh Reagents',desc:'2 field brews. Fresh 1.3×. Fine quality field brewing. +1 bonus ingredient per expedition.',effects:{fieldBrews:2,freshMult:1.3,fieldFine:true,bonusForageIngr:1}},
+      {lv:3,name:'Wilderness Recipes',desc:'3 field brews. Fresh 1.4×. Unlock 3 field-only recipes (Vitality Draught, Trailblazer Tonic, Wilderness Elixir).',effects:{fieldBrews:3,freshMult:1.4,fieldRecipes:true}},
+      {lv:4,name:'Master Fieldcrafter',desc:'3 field brews. Fresh 1.5×. Masterwork field brewing. 15% double batch chance.',effects:{fieldBrews:3,freshMult:1.5,fieldMW:true,fieldDoubleBatch:0.15}},
+      {lv:5,name:'Living Apothecary',desc:'4 field brews. Auto-suggests best potion. Legendary field-only recipe: Essence of the Wild.',effects:{fieldBrews:4,freshMult:1.5,fieldLegendary:true}},
     ]},
   antiquarian:{id:'antiquarian',name:'Antiquarian',icon:'📖',color:'#c0a080',
     req:{scholar:3,merchant:3},maxLv:5,
     desc:'Discovers and appraises mysterious relics for massive profit or permanent bonuses.',
     features:[
-      {lv:1,name:'Relic Sense',desc:'15% chance to find a mysterious relic during quests. Appraise to reveal value.'},
-      {lv:2,name:'Keen Appraisal',desc:'Appraisal checks get +3 bonus. Relics found more frequently (25%).'},
-      {lv:3,name:'Collector\'s Network',desc:'Sell appraised relics to collectors for 3× base value. Some relics grant permanent bonuses.'},
-      {lv:4,name:'Relic Expertise',desc:'Identify relics without a check. 35% find rate. Can commission specific relic hunts.'},
-      {lv:5,name:'Grand Collection',desc:'Completing relic sets grants legendary permanent bonuses. Museum display earns passive gold.'},
+      {lv:1,name:'Relic Sense',desc:'15% relic find chance per expedition hour. Appraise interface unlocked (1 Energy, Acumen check).',effects:{relicChance:0.15}},
+      {lv:2,name:'Keen Appraisal',desc:'25% find chance. +3 appraisal bonus. See relic rarity before appraising.',effects:{relicChance:0.25,appraisalBonus:3,showRarity:true}},
+      {lv:3,name:'Collector\'s Network',desc:'Sell appraised relics at 3× value. Museum display unlocked. Collection set bonuses active.',effects:{relicChance:0.25,collectorSell:3,museum:true}},
+      {lv:4,name:'Relic Expertise',desc:'35% find chance. Auto-identify (no check). Staff can do Relic Hunt tasks.',effects:{relicChance:0.35,autoAppraise:true}},
+      {lv:5,name:'Grand Collection',desc:'Complete all 5 sets for +10g/morning museum income. Legendary relics in diff 4+. Set bonuses doubled.',effects:{relicChance:0.35,legendaryRelics:true,museumIncome:10,doubleSetBonus:true}},
     ]},
   siegeengineer:{id:'siegeengineer',name:'Siege Engineer',icon:'🏗️',color:'#808060',
     req:{warden:3,artificer:3},maxLv:5,
@@ -1653,6 +1734,12 @@ const ELIXIR_BUFFS={
     effects:{craftBonus:4,xpMultiplier:0.30,sellBonus:0.25,discoveryChanceBonus:0.20,enchantBonus:3},buffDesc:'+4 craft, +30% XP, +25% sell, +20% discovery, +3 inscription for 5 days'},
 };
 
+  wilderness_elixir:{id:'wilderness_elixir',name:'Wilderness Elixir',icon:'🍃',duration:3,
+    desc:'+2 extraction, +1 forage yield for 3 days.',
+    effects:{extractionBonus:2,forageYieldBonus:1}},
+  essence_wild:{id:'essence_wild',name:'Essence of the Wild',icon:'🌍',duration:5,
+    desc:'+3 extraction, +2 yield, +1 Energy/day for 5 days.',
+    effects:{extractionBonus:3,forageYieldBonus:2,bonusEnergyPerDay:1}},
 const POT_LINES={
   'Thorek':['"The boys in Shaft Nine need salves after every shift. I\'m buying."','"Something for sore muscles and worse. Whatever you recommend."'],
   'Fiona':['"I\'ll take whatever you have. Potions sell for triple in the capital."','"My caravan leaves at dawn — what\'s ready?"'],
@@ -2342,6 +2429,14 @@ function CindervaleAlchemistInner(){
   const [selFlavor,setSelFlavor]=useState('');
   const [expBench,setExpBench]=useState([]);  // ingredients on experiment bench
   const [brewTierSel,setBrewTierSel]=useState({}); // {healing_salve:'fine', firebrew:'mw'}
+  const [brewInfSel,setBrewInfSel]=useState({}); // {healing_salve:'vigor'}
+  const [infusionsUsedToday,setInfusionsUsedToday]=useState(0);
+  const [fieldBrewPhase,setFieldBrewPhase]=useState(null);
+  const [brands,setBrands]=useState([]);
+  const [relics,setRelics]=useState([]); // [{id,category,rarity,name,value,appraised,displayed,region}]
+  const [museum,setMuseum]=useState({pottery:0,tablets:0,jewelry:0,mechanisms:0,weapons:0}); // [{id,name,icon,recipes:[recipeId,...],sold:0}]
+  const [showBrandMgr,setShowBrandMgr]=useState(false);
+  const [brandOrders,setBrandOrders]=useState([]); // [{brandId,recipeId,qty,price,expires}] // {haul:{ashbloom:3,...}, brewsLeft:2, regDiff:3}
   const [txSource,setTxSource]=useState(null); // transmute source ingredient
   const [txTarget,setTxTarget]=useState(null); // transmute target ingredient
   const [pubPapers,setPubPapers]=useState([]); // published research papers [{id,type,day}]
@@ -2465,10 +2560,12 @@ function CindervaleAlchemistInner(){
     for(const [buffId,buff] of Object.entries(activeBuffs)){
       if(buff.daysLeft>0&&ELIXIR_BUFFS[buffId]?.effects[effectKey]){total+=ELIXIR_BUFFS[buffId].effects[effectKey];}
     }
+    // Museum collection bonuses (Antiquarian)
+    if(museumBonuses[effectKey])total+=museumBonuses[effectKey];
     // Mentor bonuses from lineage
     if(mentorBonuses[effectKey])total+=mentorBonuses[effectKey];
     return total;
-  },[classLevels,specs,playerFeats,fRep,factionAlign,loreFragments,activeBuffs,mentorBonuses]);
+  },[classLevels,specs,playerFeats,fRep,factionAlign,loreFragments,activeBuffs,mentorBonuses,museumBonuses]);
   const hasFeature=useCallback((effectKey)=>{
     for(const [cid,lv] of Object.entries(classLevels)){
       const cls=CLASSES[cid];if(!cls)continue;
@@ -2489,8 +2586,8 @@ function CindervaleAlchemistInner(){
     phase,charName,charRace,charGender,stats,ptsLeft,skRanks,skPts,skProgress,classLevels,specs,playerFeats,asiSpent,startingClass,
     screen,day,hours,gameLocation,xp,gold,inv,pots,known,aQ,doneQ,
     log:log.slice(-30),milestones,fRep,factionAlign,upgrades,hiredAppr,apprTasks,apprXP,enchQ,potCustQ,clinicPatients,venomContracts,forgedWeapons,shieldCommissions,planarFocus,gadgets,blueprints,fieldJournal,loreFragments,companions,caravans,supplyChains,caravanRuns,trainingSessions,factionHarmony,prestigeLevels,automata,customPatterns,mappedRegions,activeBuffs,debt,disabledUpgrades,shopLocked,injuryPenalty,staffInjuries,shelves,dailyReport,
-    boardQ,activeBQ,doneBQCount,dayFlags,knownEnch,brewCounts,procureItems,pubPapers,selectedSite,constructProgress,lineage,
-  }),[phase,charName,charRace,charGender,stats,ptsLeft,skRanks,skPts,skProgress,classLevels,specs,playerFeats,asiSpent,startingClass,screen,day,hours,xp,gold,inv,pots,known,aQ,doneQ,log,milestones,fRep,factionAlign,upgrades,hiredAppr,apprTasks,apprXP,enchQ,potCustQ,clinicPatients,venomContracts,forgedWeapons,shieldCommissions,planarFocus,gadgets,blueprints,fieldJournal,loreFragments,companions,caravans,supplyChains,caravanRuns,trainingSessions,factionHarmony,prestigeLevels,automata,customPatterns,mappedRegions,activeBuffs,debt,disabledUpgrades,shopLocked,injuryPenalty,staffInjuries,shelves,dailyReport,boardQ,activeBQ,doneBQCount,dayFlags,knownEnch,brewCounts,procureItems,constructProgress,selectedSite,lineage]);
+    boardQ,activeBQ,doneBQCount,dayFlags,knownEnch,brewCounts,procureItems,pubPapers,selectedSite,constructProgress,lineage,brands,brandOrders,relics,museum,
+  }),[phase,charName,charRace,charGender,stats,ptsLeft,skRanks,skPts,skProgress,classLevels,specs,playerFeats,asiSpent,startingClass,screen,day,hours,xp,gold,inv,pots,known,aQ,doneQ,log,milestones,fRep,factionAlign,upgrades,hiredAppr,apprTasks,apprXP,enchQ,potCustQ,clinicPatients,venomContracts,forgedWeapons,shieldCommissions,planarFocus,gadgets,blueprints,fieldJournal,loreFragments,companions,caravans,supplyChains,caravanRuns,trainingSessions,factionHarmony,prestigeLevels,automata,customPatterns,mappedRegions,activeBuffs,debt,disabledUpgrades,shopLocked,injuryPenalty,staffInjuries,shelves,dailyReport,boardQ,activeBQ,doneBQCount,dayFlags,knownEnch,brewCounts,procureItems,constructProgress,selectedSite,lineage,brands,brandOrders,relics,museum]);
 
   const restoreState=useCallback((s)=>{
     if(!s)return;
@@ -2518,7 +2615,7 @@ function CindervaleAlchemistInner(){
     setDailyReport(s.dailyReport||[]);setEnchQ(s.enchQ||[]);setPotCustQ(s.potCustQ||[]);setClinicPatients(s.clinicPatients||[]);setVenomContracts(s.venomContracts||[]);setForgedWeapons(s.forgedWeapons||[]);setShieldCommissions(s.shieldCommissions||[]);setPlanarFocus(s.planarFocus||null);setGadgets(s.gadgets||[]);setBlueprints(s.blueprints||[]);setFieldJournal(s.fieldJournal||[]);setLoreFragments(s.loreFragments||[]);setCompanions(s.companions||[]);setCaravans(s.caravans||[]);setSupplyChains(s.supplyChains||[]);setCaravanRuns(s.caravanRuns||{});setTrainingSessions(s.trainingSessions||{});setFactionHarmony(s.factionHarmony||{});setPrestigeLevels(s.prestigeLevels||{});setAutomata(s.automata||[]);setCustomPatterns(s.customPatterns||[]);setMappedRegions(s.mappedRegions||[]);setActiveBuffs(s.activeBuffs||{});setDebt(s.debt||0);setDisabledUpgrades(s.disabledUpgrades||[]);setShopLocked(s.shopLocked||false);setInjuryPenalty(s.injuryPenalty||0);setStaffInjuries(s.staffInjuries||{});setShelves(s.shelves||{});setLastCheck(null);setNews([]);setMorningReport(null);
     setBoardQ(s.boardQ||[]);setActiveBQ(s.activeBQ||[]);setDoneBQCount(s.doneBQCount||0);setDayFlags(s.dayFlags||[]);setKnownEnch(s.knownEnch&&s.knownEnch.length>0?s.knownEnch:['e_sharp','e_glow','e_ironbark','e_feather','e_windwalk','e_rootbind']);
     setBrewCounts(s.brewCounts||{});setProcureItems(s.procureItems||[]);setPubPapers(s.pubPapers||[]);setConstructProgress(s.constructProgress||{});
-    setSelHex(null);setVBuild('workshop');setDlgNpc(null);setShowShop(false);setQuestDlg(null);setPendingLevelUp(null);setSelectedSite(s.selectedSite||null);if(s.lineage)setLineage(s.lineage);
+    setSelHex(null);setVBuild('workshop');setDlgNpc(null);setShowShop(false);setQuestDlg(null);setPendingLevelUp(null);setSelectedSite(s.selectedSite||null);if(s.lineage)setLineage(s.lineage);setBrands(s.brands||[]);setBrandOrders(s.brandOrders||[]);setRelics(s.relics||[]);setMuseum(s.museum||{pottery:0,tablets:0,jewelry:0,mechanisms:0,weapons:0});
   },[]);
 
   // ─── ALL EFFECTS (before any return!) ───
@@ -2795,6 +2892,7 @@ function CindervaleAlchemistInner(){
       upgrades:inheritData?.heirloom?[inheritData.heirloom]:[],
       fRep:inheritData?.fRep||(loc==='ashfall'?{sand_merchants:0,flamekeepers:0,dustwalkers:0}:{ashwardens:0,hearthkeepers:0,veilwalkers:0,cinderfolk:0}),
       lineage:lineage||null,
+      museum:inheritData?.museum||{pottery:0,tablets:0,jewelry:0,mechanisms:0,weapons:0},
     };
     restoreState(defState);setLog([]);setGameStarted(true);
     if(inheritData?.intro)addLog(inheritData.intro,'story');
@@ -2823,6 +2921,7 @@ function CindervaleAlchemistInner(){
       recipes:topRecipes.filter(id=>RECIPES.find(r=>r.id===id)),
       heirloom:heirloomUpgrade||null,
       fRep:Object.fromEntries(Object.entries(fRep).map(([k,v])=>([k,Math.floor(v/3)]))),
+      museum:museum||{pottery:0,tablets:0,jewelry:0,mechanisms:0,weapons:0},
       intro:apprentice.name+' sets out from '+LOCATIONS[gameLocation]?.name+', carrying the lessons of '+charName+'. A new chapter begins.',
     };
     // Start new game at selected location
@@ -3154,8 +3253,17 @@ function CindervaleAlchemistInner(){
       // Accumulate
       Object.entries(hourG).forEach(([id,q])=>{cumG[id]=(cumG[id]||0)+q;});
       cumXp+=hxp+(event?.effectXp||0);
+      // Relic discovery (Antiquarian)
+      const aqLv=prestigeLevels.antiquarian||0;
+      const relicChance=aqLv>=4?0.35:aqLv>=2?0.25:aqLv>=1?0.15:0;
+      let foundRelic=null;
+      if(relicChance>0&&Math.random()<relicChance){
+        const canLegendary=aqLv>=5&&reg.diff>=4;
+        foundRelic=generateRelic(reg.diff,reg.name);
+        if(!canLegendary&&foundRelic.rarity==='legendary')foundRelic.rarity='rare';
+      }
       queue.push({
-        hourNum:h,totalHours:hoursLeft,regName:curSite?reg.name+' — '+curSite.name:reg.name,regIcon:reg.icon,travelTime:info.travelTime,
+        hourNum:h,totalHours:hoursLeft,regName:curSite?reg.name+' — '+curSite.name:reg.name,regIcon:reg.icon,travelTime:info.travelTime,diff:reg.diff||1,
         ext,gathered:{...hourG},xp:hxp+(event?.effectXp||0),event,
         cumGathered:{...cumG},cumXp,isFinal:false,divBonus,effBonus,luckyBonus,attuneBonus,discovery,companionEnc,hiddenDisc,
       });
@@ -3222,10 +3330,17 @@ function CindervaleAlchemistInner(){
     const hr=expQ[0];
     Object.entries(hr.gathered).forEach(([id,q])=>{if(q>0)modInv(id,q);});
     gainXP(hr.xp);
+    if(hr.foundRelic){setRelics(p=>[...p,hr.foundRelic]);addLog('📖 Found a relic: '+RELIC_CATS.find(c=>c.id===hr.foundRelic.category)?.icon+' '+(hr.foundRelic.appraised?hr.foundRelic.name:'Mystery Object')+' (from '+hr.foundRelic.region+')','craft');}
     if(hr.event?.effectRep)addRep(hr.event.effectRep.faction,hr.event.effectRep.amount);
     addLog(`⛏️ Hour ${hr.hourNum}: ${hr.ext.success?'✅':'❌'} ${Object.entries(hr.gathered).filter(([,q])=>q>0).map(([id,q])=>INGR[id]?.icon+INGR[id]?.name+' ×'+q).join(', ')||'nothing'}${hr.divBonus?' | 👁️ Divination: +1 '+hr.divBonus.icon+hr.divBonus.name:''}${hr.luckyBonus?' | 🍀 Lucky: +1 '+hr.luckyBonus.icon+hr.luckyBonus.name:''}${hr.attuneBonus?' | 🎯 Attuned: +1 '+hr.attuneBonus.icon+hr.attuneBonus.name:''}${hr.effBonus?' | ⏱️ Efficiency: bonus hour!':''}${hr.discovery?(hr.discovery.documented?' | 🌿 Discovered: '+hr.discovery.icon+' '+hr.discovery.name+'!':' | 🌿 Noticed something, but couldn\'t document it...'):''}${hr.companionEnc?(hr.companionEnc.approachable?' | 🦊 Approached: '+hr.companionEnc.icon+' '+hr.companionEnc.name+'!':' | 🦊 Spotted '+hr.companionEnc.icon+' '+hr.companionEnc.name+' but it fled...'):''}${hr.hiddenDisc?(hr.hiddenDisc.mapped?' | 🗺️ MAPPED: '+hr.hiddenDisc.icon+' '+hr.hiddenDisc.name+'!':' | 🗺️ Glimpsed a hidden path...'):''}${hr.event?(hr.event.dangerSensed?' | ⚠️ Danger Sense saved you!':' | '+hr.event.text):''}`,'harvest');
     const rest=expQ.slice(1);
     setExpQ(rest);
+    // Trigger Field Brew phase (Wildcrafter)
+    if(rest.length===0&&(prestigeLevels.wildcrafter||0)>=1){
+      const wcLv=prestigeLevels.wildcrafter||0;
+      const maxBrews=wcLv>=5?4:wcLv>=3?3:wcLv>=2?2:1;
+      setFieldBrewPhase({haul:{...hr.cumGathered},brewsLeft:maxBrews,regDiff:hr.diff||1});
+    }
     if(rest.length===0){
       setLastCheck(hr.ext);
       const totalHaul=Object.entries(hr.cumGathered).filter(([,q])=>q>0).map(([id,q])=>INGR[id]?.icon+INGR[id]?.name+' ×'+q).join(', ')||'Nothing usable';
@@ -3241,10 +3356,17 @@ function CindervaleAlchemistInner(){
     expQ.forEach(hr=>{
       Object.entries(hr.gathered).forEach(([id,q])=>{if(q>0)modInv(id,q);});
       gainXP(hr.xp);
+      if(hr.foundRelic){setRelics(p=>[...p,hr.foundRelic]);addLog('📖 Relic found: '+RELIC_CATS.find(c=>c.id===hr.foundRelic.category)?.icon+' Mystery Object','craft');}
       if(hr.event?.effectRep)addRep(hr.event.effectRep.faction,hr.event.effectRep.amount);
     });
     addLog(`⛏️ Expedition complete: ${last.totalHours}h at ${last.regIcon}${last.regName}.`,'harvest');
     setExpQ([]);setLastCheck(last.ext);
+    // Trigger Field Brew phase (Wildcrafter)
+    if((prestigeLevels.wildcrafter||0)>=1){
+      const wcLv=prestigeLevels.wildcrafter||0;
+      const maxBrews=wcLv>=5?4:wcLv>=3?3:wcLv>=2?2:1;
+      setFieldBrewPhase({haul:{...last.cumGathered},brewsLeft:maxBrews,regDiff:last.diff||1});
+    }
     const totalHaul=Object.entries(last.cumGathered).filter(([,q])=>q>0).map(([id,q])=>INGR[id]?.icon+INGR[id]?.name+' ×'+q).join(', ')||'Nothing usable';
     showResult(last.regIcon+last.regName+' — Expedition Complete!','harvest',
       last.totalHours+'h gathering (+'+last.travelTime+'h travel)\nTotal haul: '+totalHaul+'\nTotal XP: +'+last.cumXp);
@@ -3253,7 +3375,177 @@ function CindervaleAlchemistInner(){
   // ─── CRAFT ───
   const CRAFT_SUCCESS=['The mixture bubbles and settles into a perfect brew.','Your hands move with practiced confidence. Another fine creation.','Steam rises as the ingredients bind together beautifully.','The workshop fills with a satisfying aroma as the potion takes form.','You hold the vial to the light — clear, potent, exactly right.'];
   const CRAFT_FAIL=['The mixture turns an ugly brown and dissolves into sludge.','A sharp crack — something went wrong. The compound is ruined.','The ingredients resist each other, refusing to bind.','Smoke billows from the cauldron. Not your finest hour.'];
-  const doCraft=(r,quality='std')=>{
+  // ═══ RELIC HELPERS (Antiquarian) ═══
+  const getMuseumSetBonus=(setId)=>{
+    const s=RELIC_SETS[setId];if(!s)return{};
+    const count=museum[setId]||0;
+    if(count<s.needed)return{};
+    const mult=(prestigeLevels.antiquarian||0)>=5?2:1;
+    const bonus={};
+    Object.entries(s.bonus).forEach(([k,v])=>{bonus[k]=(typeof v==='number'?v*mult:v);});
+    return bonus;
+  };
+  const getAllMuseumBonuses=()=>{
+    const bonuses={};
+    Object.keys(RELIC_SETS).forEach(setId=>{
+      const sb=getMuseumSetBonus(setId);
+      Object.entries(sb).forEach(([k,v])=>{bonuses[k]=(bonuses[k]||0)+(typeof v==='number'?v:v===true?1:0);});
+    });
+    return bonuses;
+  };
+  const museumBonuses=getAllMuseumBonuses();
+
+  const appraiseRelic=(relicId)=>{
+    if(hours<1){addLog('Not enough Energy to appraise.','error');return;}
+    const relic=relics.find(r=>r.id===relicId);if(!relic||relic.appraised)return;
+    const aqLv=prestigeLevels.antiquarian||0;
+    // Auto-identify at Lv4+
+    if(aqLv>=4){
+      setRelics(p=>p.map(r=>r.id===relicId?{...r,appraised:true}:r));
+      addLog('📖 Auto-identified: '+RELIC_CATS.find(c=>c.id===relic.category)?.icon+' '+relic.name+' ('+relic.rarity+', '+relic.value+'g).','craft');
+      return;
+    }
+    snapshot();spendEnergy(1);
+    const dc=RELIC_APPRAISE_DC[relic.rarity]||11;
+    const ch=doCheck('research',dc);
+    const apBonus=aqLv>=2?3:0;
+    if(apBonus){ch.total+=apBonus;ch.extras.push({label:'📖 Appraisal',val:apBonus});}
+    ch.success=ch.total>=dc;
+    if(ch.success){
+      setRelics(p=>p.map(r=>r.id===relicId?{...r,appraised:true}:r));
+      const cat=RELIC_CATS.find(c=>c.id===relic.category);
+      showResult(cat?.icon+' '+relic.name+' — Appraised!','craft','Value: '+relic.value+'g ('+relic.rarity+')\nFrom: '+relic.region+'\nSet: '+cat?.set,ch);
+    } else {
+      showResult('📖 Appraisal Failed','error','You can\'t quite identify this piece. Try again tomorrow.',ch);
+    }
+  };
+
+  const sellRelic=(relicId)=>{
+    const relic=relics.find(r=>r.id===relicId);if(!relic||!relic.appraised||relic.displayed)return;
+    const aqLv=prestigeLevels.antiquarian||0;
+    const mult=aqLv>=3?3:1;
+    const gold_gain=relic.value*mult;
+    setGold(g=>g+gold_gain);
+    setRelics(p=>p.filter(r=>r.id!==relicId));
+    const cat=RELIC_CATS.find(c=>c.id===relic.category);
+    addLog('💰 Sold '+cat?.icon+' '+relic.name+' for '+gold_gain+'g'+(mult>1?' ('+mult+'× collector price)':'')+'!','quest');
+  };
+
+  const displayRelic=(relicId)=>{
+    const relic=relics.find(r=>r.id===relicId);if(!relic||!relic.appraised||relic.displayed)return;
+    const aqLv=prestigeLevels.antiquarian||0;
+    if(aqLv<3){addLog('Collector\'s Network (Antiquarian Lv3) required for museum display.','error');return;}
+    setRelics(p=>p.map(r=>r.id===relicId?{...r,displayed:true}:r));
+    setMuseum(p=>{const n={...p};n[relic.category]=(n[relic.category]||0)+1;return n;});
+    const cat=RELIC_CATS.find(c=>c.id===relic.category);
+    const setData=RELIC_SETS[relic.category];
+    const newCount=(museum[relic.category]||0)+1;
+    addLog('🏛️ Displayed '+cat?.icon+' '+relic.name+' in museum! '+setData?.name+': '+newCount+'/'+setData?.needed,'craft');
+    if(newCount>=setData?.needed)addLog('✨ '+setData?.name+' COMPLETE! Bonus: '+setData?.desc,'quest');
+  };
+
+    // ═══ BRAND HELPERS (Brand Master) ═══
+  const getBrandForRecipe=(recipeId)=>brands.find(b=>b.recipes.includes(recipeId));
+  const getBrandSellMult=(recipeId)=>{
+    const brand=getBrandForRecipe(recipeId);if(!brand)return 1;
+    const bl=getBrandLevel(brand.sold);
+    const bmLv=prestigeLevels.brandmaster||0;
+    // Famous tier only available at Lv4+
+    const effectiveBl=bl>=3&&bmLv<4?2:bl;
+    return 1+BRAND_LEVELS[effectiveBl].sellBonus;
+  };
+  const createBrand=(name,icon)=>{
+    const bmLv=prestigeLevels.brandmaster||0;
+    const maxSlots=bmLv>=5?3:bmLv>=3?2:1;
+    if(brands.length>=maxSlots){addLog('Maximum brand slots reached ('+maxSlots+').','error');return;}
+    const newBrand={id:'brand_'+Date.now(),name,icon:icon||'🏷️',recipes:[],sold:0};
+    setBrands(p=>[...p,newBrand]);
+    addLog('🏷️ Created brand: '+icon+' '+name+'!','craft');
+  };
+  const addRecipeToBrand=(brandId,recipeId)=>{
+    const bmLv=prestigeLevels.brandmaster||0;
+    const maxR=bmLv>=4?4:bmLv>=2?3:2;
+    setBrands(p=>p.map(b=>b.id===brandId?{...b,recipes:b.recipes.length<maxR&&!b.recipes.includes(recipeId)?[...b.recipes,recipeId]:b.recipes}:b));
+  };
+  const removeRecipeFromBrand=(brandId,recipeId)=>{
+    setBrands(p=>p.map(b=>b.id===brandId?{...b,recipes:b.recipes.filter(r=>r!==recipeId)}:b));
+  };
+  const recordBrandSale=(recipeId,qty)=>{
+    const brand=getBrandForRecipe(recipeId);if(!brand)return;
+    setBrands(p=>p.map(b=>b.id===brand.id?{...b,sold:b.sold+qty}:b));
+    // Faction rep from brand sales (Lv2+)
+    const bmLv=prestigeLevels.brandmaster||0;
+    if(bmLv>=2&&factionAlign){
+      const oldSold=brand.sold;const newSold=brand.sold+qty;
+      const repsEarned=Math.floor(newSold/10)-Math.floor(oldSold/10);
+      if(repsEarned>0)addRep(factionAlign,repsEarned*5);
+    }
+  };
+
+    // ═══ FIELD BREWING (Wildcrafter) ═══
+  const doFieldBrew=(recipeId,haulIngredients)=>{
+    if(!fieldBrewPhase||fieldBrewPhase.brewsLeft<=0)return;
+    const wcLv=prestigeLevels.wildcrafter||0;
+    const r=RECIPES.find(x=>x.id===recipeId);if(!r)return;
+    // Determine max quality allowed in field
+    const maxQ=wcLv>=4?'mw':wcLv>=2?'fine':'std';
+    const quality='std'; // Always standard for field brew (player can't choose - simplicity)
+    const qT=QUALITY[quality]||QUALITY.std;
+    // For field-only recipes, check haul has enough unique ingredients
+    if(r.fieldOnly){
+      const haulKeys=Object.keys(haulIngredients).filter(k=>haulIngredients[k]>0);
+      const needed=r.ingr.length; // number of unique ingredients needed
+      if(haulKeys.length<needed){addLog('🌿 Not enough different ingredients in haul (need '+needed+' unique, have '+haulKeys.length+').','error');return;}
+      // Consume from haul + inventory
+      const used=haulKeys.slice(0,needed);
+      used.forEach(id=>{modInv(id,-1);});
+      setFieldBrewPhase(prev=>({...prev,
+        haul:Object.fromEntries(Object.entries(prev.haul).map(([k,v])=>[k,used.includes(k)?v-1:v])),
+        brewsLeft:prev.brewsLeft-1}));
+    } else {
+      // Normal recipe: check haul has required ingredients
+      const cost={};r.ingr.forEach(id=>{cost[id]=(cost[id]||0)+1;});
+      if(!Object.entries(cost).every(([id,q])=>(haulIngredients[id]||0)>=q)){addLog('🌿 Not enough in your haul for '+r.icon+r.name+'.','error');return;}
+      // Consume from inventory
+      Object.entries(cost).forEach(([id,q])=>modInv(id,-q));
+      // Update haul
+      setFieldBrewPhase(prev=>{
+        const newHaul={...prev.haul};
+        Object.entries(cost).forEach(([id,q])=>{newHaul[id]=Math.max(0,(newHaul[id]||0)-q);});
+        return{...prev,haul:newHaul,brewsLeft:prev.brewsLeft-1};
+      });
+    }
+    // Craft check
+    const masteryDisc=getMasteryDiscount(brewCounts,r.id);
+    const adjDC=Math.max(5,r.dc-masteryDisc);
+    const sk=r.stat==='inu'?'attunement':r.stat==='tec'?'precision':r.stat==='acu'?'research':'improvisation';
+    const ch=doCheck(sk,adjDC);
+    const cfb=getFeatureVal('craftBonus');if(cfb){ch.total+=cfb;ch.extras.push({label:'Class',val:cfb});}
+    ch.success=ch.total>=adjDC;
+    if(!ch.success){
+      addLog('🌿 Field brew failed! '+r.icon+r.name+' — ingredients lost to the wilderness.','error');
+      showResult(r.icon+' '+r.name+' — Field Brew Failed!','error','The mixture refuses to bind in these conditions.',ch);
+      return;
+    }
+    // Success - create fresh potion
+    const freshMult=wcLv>=4?1.5:wcLv>=3?1.4:wcLv>=2?1.3:1.2;
+    const potId=r.id+'_fresh';
+    let qty=1;
+    if(wcLv>=4&&Math.random()<0.15)qty=2;
+    modPot(potId,qty);
+    setBrewCounts(p=>({...p,[r.id]:(p[r.id]||0)+1}));
+    const xpE=Math.floor(r.xp*1.1);gainXP(xpE);
+    // Apply elixir buff if applicable
+    if(r.buff&&ELIXIR_BUFFS[r.buff]){
+      const dur=ELIXIR_BUFFS[r.buff].duration;
+      setActiveBuffs(prev=>({...prev,[r.buff]:{daysLeft:dur}}));
+      addLog('🌿 '+ELIXIR_BUFFS[r.buff].icon+' '+ELIXIR_BUFFS[r.buff].name+' active for '+dur+' days!','craft');
+    }
+    addLog('🌿 Field brewed '+r.icon+r.name+'! (Fresh '+freshMult+'× sell value)'+(qty>1?' ×'+qty+' batch!':''),'craft');
+    showResult('🌿 '+r.icon+r.name+' — Field Brewed!','craft','Fresh ingredients bind perfectly in the open air!\n+'+xpE+' XP'+(qty>1?'\nDouble batch!':''),ch);
+  };
+
+    const doCraft=(r,quality='std')=>{
     // firstBrewFree: first brew of each day costs no hours
     const fbf=getFeatureVal('firstBrewFree')&&!dayFlags.includes('first_brew_used');
     if(!fbf&&hours<1){addLog('Not enough Energy to brew. Rest and try tomorrow.','error');return;}
@@ -3263,6 +3555,24 @@ function CindervaleAlchemistInner(){
     if(qT.extraIngr>=1){const firstIngr=r.ingr[0];cost[firstIngr]=(cost[firstIngr]||0)+1;}
     if(qT.extraIngr>=2&&r.ingr.length>1){const secondIngr=r.ingr[1];cost[secondIngr]=(cost[secondIngr]||0)+1;}
     if(qT.extraIngr>=3){const thirdIngr=r.ingr[Math.min(2,r.ingr.length-1)];cost[thirdIngr]=(cost[thirdIngr]||0)+1;}
+    // Infusion catalyst cost
+    const sbLv=prestigeLevels.spellbrewer||0;
+    const selInf=brewInfSel[r.id]?INFUSIONS[brewInfSel[r.id]]:null;
+    const maxInfusions=sbLv>=5?6:sbLv>=4?5:sbLv>=3?4:sbLv>=2?3:sbLv>=1?2:0;
+    if(selInf&&sbLv<1){addLog('Spellbrewer prestige required for infusions.','error');return;}
+    if(selInf&&selInf.unlockLv>sbLv){addLog('Spellbrewer Lv'+selInf.unlockLv+' required for '+selInf.name+'.','error');return;}
+    if(selInf&&infusionsUsedToday>=maxInfusions){addLog('Daily infusion limit reached ('+maxInfusions+'/day). Rest to reset.','error');return;}
+    let catalystId=null;let catalystQty=1;
+    if(selInf){
+      // Find cheapest ingredient with 5+ stock (not already fully consumed by recipe)
+      const candidates=Object.entries(inv).filter(([id,qty])=>{
+        const usedByRecipe=cost[id]||0;
+        return qty-usedByRecipe>=1&&qty>=5;
+      }).sort((a,b)=>((INGR[a[0]]?.val||0)-(INGR[b[0]]?.val||0)));
+      if(candidates.length===0){addLog('No catalyst available. Need any ingredient with 5+ in stock.','error');return;}
+      catalystId=candidates[0][0];
+      cost[catalystId]=(cost[catalystId]||0)+catalystQty;
+    }
     // freeCraft: one daily free craft (no ingredients consumed)
     const fc=getFeatureVal('freeCraft')&&!dayFlags.includes('free_craft_used');
     if(!fc&&!Object.entries(cost).every(([id,q])=>(inv[id]||0)>=q)){addLog('Not enough materials for '+(qT.name!=='Standard'?qT.name+' ':'')+r.icon+r.name+'.','error');return;}
@@ -3276,7 +3586,8 @@ function CindervaleAlchemistInner(){
     if(quality==='fine')qualDCMod+=upEff('fineDCBonus');
     if(quality==='mw'){qualDCMod+=upEff('fineDCBonus');qualDCMod+=upEff('mwDCBonus');}
     if(quality==='gm'){qualDCMod+=upEff('fineDCBonus');qualDCMod+=upEff('mwDCBonus');}
-    const adjDC=Math.max(5,r.dc+qualDCMod-masteryDisc);
+    const infDCMod=selInf?(selInf.dcMod-(sbLv>=2?1:0)):0;
+    const adjDC=Math.max(5,r.dc+qualDCMod+infDCMod-masteryDisc);
     const sk=r.stat==='inu'?'attunement':r.stat==='tec'?'precision':r.stat==='acu'?'research':'improvisation';
     // Analysis: auto-succeed chance
     const analysisMod=getSkMod('analysis');const autoSucc=analysisMod>0&&Math.random()<analysisMod*0.05;
@@ -3337,13 +3648,22 @@ function CindervaleAlchemistInner(){
         if(!saved)modInv(id,-q);
       });
     }
+    // Catalyst preservation (Spellbrewer Lv3+)
+    if(selInf&&catalystId){
+      const preserveChance=sbLv>=4&&(quality==='mw'||quality==='gm')?1.0:(sbLv>=3?0.25:0);
+      if(preserveChance>0&&Math.random()<preserveChance){
+        modInv(catalystId,catalystQty);
+        addLog('✨ Catalyst preserved! '+INGR[catalystId]?.icon+(INGR[catalystId]?.name||catalystId)+' returned.','craft');
+      }
+    }
     const saveChance=upEff('saveIngredient')+getFeatureVal('saveIngredientChance');
     if(saveChance>0&&Math.random()<saveChance)modInv(r.ingr[0],1);
     const dblChance=getFeatureVal('doubleBatchChance')+upEff('doubleBatch');
     let qty2=1;if(dblChance>0&&Math.random()<dblChance)qty2=2;
     const refMod=getSkMod('refinement');const refBonus=refMod>0&&Math.random()<refMod*0.06;
     if(refBonus){qty2++;addLog('💎 Refinement: Masterful technique yielded a bonus potion!','craft');}
-    const potId=qualPotId(r.id,quality);
+    let potId=qualPotId(r.id,quality);
+    if(selInf){potId=potId+selInf.suffix;setInfusionsUsedToday(n=>n+1);}
     modPot(potId,qty2);if(!known.includes(r.id))setKnown(p=>[...p,r.id]);
     if(fsb>0)failStreakRef.current=0;
     setBrewCounts(p=>({...p,[r.id]:(p[r.id]||0)+1}));
@@ -3356,7 +3676,8 @@ function CindervaleAlchemistInner(){
     gainXP(xpEarned);
     const fl=CRAFT_SUCCESS[Math.floor(Math.random()*CRAFT_SUCCESS.length)];
     const qualLabel=qT.name!=='Standard'?' ['+qT.icon+' '+qT.name+']':'';
-    showResult(r.icon+' '+r.name+qualLabel+' — Brewed!','craft',fl+(autoSucc?'\n🧮 Analysis: Perfect execution!':'')+(refBonus?'\n💎 Refinement: Bonus potion!':'')+(qty2>1&&!refBonus?'\nBonus double batch!':'')+(fbf?'\n⚡ First brew free!':'')+(fc?'\n✨ Free craft!':'')+(mwGold>0?'\n🏆 Masterwork! +'+mwGold+'g':'')+(masteryDisc>0?'\n📖 Mastery: -'+masteryDisc+' DC':'')+'\n+'+xpEarned+' XP'+(qT.xpMult>1?' ('+qT.name+' '+qT.xpMult+'×)':''),ch);
+    const infLabel=selInf?' ['+selInf.icon+' '+selInf.name+']':'';
+    showResult(r.icon+' '+r.name+qualLabel+infLabel+' — Brewed!','craft',fl+(autoSucc?'\n🧮 Analysis: Perfect execution!':'')+(refBonus?'\n💎 Refinement: Bonus potion!':'')+(qty2>1&&!refBonus?'\nBonus double batch!':'')+(fbf?'\n⚡ First brew free!':'')+(fc?'\n✨ Free craft!':'')+(mwGold>0?'\n🏆 Masterwork! +'+mwGold+'g':'')+(masteryDisc>0?'\n📖 Mastery: -'+masteryDisc+' DC':'')+'\n+'+xpEarned+' XP'+(qT.xpMult>1?' ('+qT.name+' '+qT.xpMult+'×)':''),ch);
     if(!hasMilestone('first_brew'))earnMilestone('first_brew');
     if(r.id==='forge_catalyst'){earnMilestone('heartforge');addLog('⚡ The Forge Catalyst pulses with ancient heat. The ground trembles. Something deep beneath Cindervale stirs to life... but this is not an ending. It is a beginning.','story');}
   };
@@ -3472,7 +3793,7 @@ function CindervaleAlchemistInner(){
     const cfb=getFeatureVal('craftBonus');if(cfb){ch.total+=cfb;ch.extras.push({label:'Class Mastery',val:cfb});}
     ch.success=ch.total>=dc;
     if(type==='potion'){
-      const undiscovered=RECIPES.filter(r=>!known.includes(r.id)&&level>=r.unlock&&(!r.faction||getRL(r.faction)>=(r.fReq||0))&&canCraftAtLocation(r.ingr));
+      const undiscovered=RECIPES.filter(r=>!known.includes(r.id)&&level>=r.unlock&&(!r.faction||getRL(r.faction)>=(r.fReq||0))&&canCraftAtLocation(r.ingr)&&!r.fieldOnly);
       if(undiscovered.length===0){addLog('📚 You spend two hours poring over your notes, but you already know every recipe available to you.','info');return;}
       if(ch.success){
         const successXp=Math.floor(baseResXp*2*resXpMult);gainXP(successXp);
@@ -3667,7 +3988,8 @@ function CindervaleAlchemistInner(){
     if(quality==='fine')qualDCMod+=upEff('fineDCBonus');
     if(quality==='mw'){qualDCMod+=upEff('fineDCBonus');qualDCMod+=upEff('mwDCBonus');}
     if(quality==='gm'){qualDCMod+=upEff('fineDCBonus');qualDCMod+=upEff('mwDCBonus');}
-    const adjDC=Math.max(5,r.dc+qualDCMod-masteryDisc);
+    const infDCMod=selInf?(selInf.dcMod-(sbLv>=2?1:0)):0;
+    const adjDC=Math.max(5,r.dc+qualDCMod+infDCMod-masteryDisc);
     const sk=r.stat==='inu'?'attunement':r.stat==='tec'?'precision':r.stat==='acu'?'research':'improvisation';
     const batchBonus=getFeatureVal('batchSuccessBonus');
     let successes=0;const rolls=[];
@@ -3679,7 +4001,8 @@ function CindervaleAlchemistInner(){
       if(ch.success)successes++;
       rolls.push(ch);
     }
-    const potId=qualPotId(r.id,quality);
+    let potId=qualPotId(r.id,quality);
+    if(selInf){potId=potId+selInf.suffix;setInfusionsUsedToday(n=>n+1);}
     if(successes>0)modPot(potId,successes);
     setBrewCounts(p=>({...p,[r.id]:(p[r.id]||0)+successes}));
     const xpPer=Math.floor((r.xp+getSkMod('aesthetics')*2)*qT.xpMult);
@@ -4708,7 +5031,7 @@ function CindervaleAlchemistInner(){
       queue.push({
         hourNum:h,totalHours:hoursLeft,regName:'🌙 '+reg.name+' (Night)',regIcon:reg.icon,travelTime:0,
         ext,gathered:{...hourG},xp:hxp+(event?.effectXp||0),event,
-        cumGathered:{...cumG},cumXp,isFinal:false,divBonus,effBonus:false,luckyBonus,attuneBonus:null,
+        cumGathered:{...cumG},cumXp,isFinal:false,diff:reg.diff||1,foundRelic,divBonus,effBonus:false,luckyBonus,attuneBonus:null,
       });
     }
     if(queue.length>0){
@@ -4775,7 +5098,7 @@ function CindervaleAlchemistInner(){
     snapshot();
     const enduranceBonus=getSkMod('endurance')>=3?1:0;
     const injPen=injuryPenalty||0;
-    if(injPen>0)setInjuryPenalty(0); // Clear after applying
+    if(injPen>0)setInjuryPenalty(0);setInfusionsUsedToday(0); // Clear after applying
     const baseH=Math.max(3,8+upEff('bonusEnergy')+getFeatureVal('bonusEnergyPerDay')+enduranceBonus+(getFeatureVal('freeAction')?1:0)-injPen);
     setDay(d=>d+1);setHours(baseH);setLastCheck(null);const report=[];let totalSal=0;
     const staffEffBonus=getFeatureVal('staffEfficiencyBonus');
@@ -4850,7 +5173,7 @@ function CindervaleAlchemistInner(){
         const g=Math.floor((5+level*2+aLvl*3)*eff*(1+upEff('sellBonus')+getFeatureVal('sellBonus')));setGold(gg=>gg+g);
         report.push({n:ap.name,i:ap.icon,r:`Shop: +${g}g`,t:'ok'});{const _xpGain=Math.floor(12*axp);_xpAdded[ap.id]=(_xpAdded[ap.id]||0)+_xpGain;setApprXP(p=>({...p,[ap.id]:(p[ap.id]||0)+_xpGain}));};
       } else if(task.type==='research_task'){
-        const undP=RECIPES.filter(r=>!known.includes(r.id)&&level>=r.unlock&&(!r.faction||getRL(r.faction)>=(r.fReq||0))&&canCraftAtLocation(r.ingr));
+        const undP=RECIPES.filter(r=>!known.includes(r.id)&&level>=r.unlock&&(!r.faction||getRL(r.faction)>=(r.fReq||0))&&canCraftAtLocation(r.ingr)&&!r.fieldOnly);
         const undE=ENCHANTMENTS.filter(e=>!knownEnch.includes(e.id)&&(!e.faction||getRL(e.faction)>=(e.fReq||0))&&canCraftAtLocation(e.ingr));
         const discoveryChance=0.15+eff*0.2;
         if(Math.random()<discoveryChance){
@@ -4961,21 +5284,93 @@ function CindervaleAlchemistInner(){
       const next={...prev};
       Object.entries(next).forEach(([potId,qty])=>{
         if(qty<=0)return;
-        const r=RECIPES.find(x=>x.id===potId);if(!r)return;
+        const r=RECIPES.find(x=>x.id===getBaseRecipeId(potId));if(!r)return;
+        const pq=getPotQuality(potId);const qMult=(QUALITY[pq]||QUALITY.std).sellMult;
+        const infId=getInfusion(potId);const infMult=infId?(INFUSIONS[infId]?.sellMult||1):1;
+        const brandMult=getBrandSellMult(getBaseRecipeId(potId));
+        const bmLv2=prestigeLevels.brandmaster||0;
+        const brandShelfBonus=getBrandForRecipe(getBaseRecipeId(potId))&&bmLv2>=3?0.10:0;
+        const freshMult=potId.includes('_fresh')?(prestigeLevels.wildcrafter>=4?1.5:prestigeLevels.wildcrafter>=3?1.4:prestigeLevels.wildcrafter>=2?1.3:1.2):1;
+        // Infused potions attract extra customers (Spellbrewer Lv5)
+        const infCustBonus=infId&&(prestigeLevels.spellbrewer||0)>=5?0.15:0;
         // Each stocked potion has a 30-60% chance to sell overnight + class/feat bonuses
         let sold=0;
-        for(let i=0;i<qty;i++){if(Math.random()<0.3+level*0.02+getSkMod('haggling')*0.02+shelfSaleB)sold++;}
+        for(let i=0;i<qty;i++){if(Math.random()<0.3+level*0.02+getSkMod('haggling')*0.02+shelfSaleB+infCustBonus+brandShelfBonus)sold++;}
         if(sold>0){
           const basePrice=r.xp+getSkMod('aesthetics')*2+getSkMod('haggling')+Math.floor(upEff('sellBonus')*r.xp);
-          const price=Math.floor(basePrice*(1+sellB+custPayB+pvb));
+          const price=Math.floor(basePrice*(1+sellB+custPayB+pvb)*qMult*infMult*freshMult*brandMult);
           shelfGold+=price*sold;shelfSold[potId]=(shelfSold[potId]||0)+sold;
           next[potId]=qty-sold;if(next[potId]<=0)delete next[potId];
         }
       });
       return next;
     });
-    if(shelfGold>0&&!shopLocked){setGold(g=>g+shelfGold);const items=Object.entries(shelfSold).map(([id,q])=>{const r=RECIPES.find(x=>x.id===getBaseRecipeId(id));return(r?.icon||'')+r?.name+(getPotQuality(id)!=='std'?' '+QUALITY[getPotQuality(id)].icon:'')+' ×'+q;}).join(', ');
-      report.push({n:'Shelf Sales',i:'🏪',r:'+'+shelfGold+'g ('+items+')',t:'ok'});}
+    // Museum income (Antiquarian Lv5)
+    const aqLv4=prestigeLevels.antiquarian||0;
+    const allSetsComplete=aqLv4>=5&&Object.keys(RELIC_SETS).every(sid=>(museum[sid]||0)>=RELIC_SETS[sid].needed);
+    if(allSetsComplete){
+      const museumGold=10;setGold(g=>g+museumGold);
+      report.push({n:'Museum Visitors',i:'🏛️',r:'+'+museumGold+'g (Grand Collection)',t:'ok'});
+    }
+    // Brand repeat customers (Brand Master)
+    const bmLv3=prestigeLevels.brandmaster||0;
+    if(bmLv3>=1&&!shopLocked){
+      let brandGold=0;const brandSales={};
+      brands.forEach(brand=>{
+        const bl=getBrandLevel(brand.sold);
+        const effectiveBl=bl>=3&&bmLv3<4?2:bl;
+        const repeatCust=BRAND_LEVELS[effectiveBl].repeatCust;
+        if(repeatCust>0&&brand.recipes.length>0){
+          for(let c=0;c<repeatCust;c++){
+            // Each repeat customer buys 1 random branded potion from shelves
+            const shelfBranded=brand.recipes.filter(rid=>{
+              return Object.entries(shelves).some(([pid,q])=>q>0&&getBaseRecipeId(pid)===rid);
+            });
+            if(shelfBranded.length>0){
+              const rid=shelfBranded[Math.floor(Math.random()*shelfBranded.length)];
+              const shelfKey=Object.keys(shelves).find(pid=>shelves[pid]>0&&getBaseRecipeId(pid)===rid);
+              if(shelfKey){
+                const r=RECIPES.find(x=>x.id===rid);if(r){
+                  const bPrice=Math.floor((r.xp+10)*getBrandSellMult(rid)*1.2);
+                  brandGold+=bPrice;brandSales[rid]=(brandSales[rid]||0)+1;
+                  setShelves(prev=>{const n={...prev};n[shelfKey]=Math.max(0,(n[shelfKey]||0)-1);if(n[shelfKey]<=0)delete n[shelfKey];return n;});
+                  recordBrandSale(rid,1);
+                }
+              }
+            }
+          }
+        }
+      });
+      if(brandGold>0){
+        setGold(g=>g+brandGold);
+        const brandItems=Object.entries(brandSales).map(([rid,q])=>{const r=RECIPES.find(x=>x.id===rid);return(r?.icon||'')+r?.name+' ×'+q;}).join(', ');
+        report.push({n:'Brand Customers',i:'🏷️',r:'+'+brandGold+'g ('+brandItems+')',t:'ok'});
+      }
+    }
+    // Brand orders (Lv3+)
+    if(bmLv3>=3&&brands.some(b=>getBrandLevel(b.sold)>=2)){
+      // Small chance to generate a brand order each morning
+      if(Math.random()<0.3&&brandOrders.length<3){
+        const eligibleBrands=brands.filter(b=>getBrandLevel(b.sold)>=2&&b.recipes.length>0);
+        if(eligibleBrands.length>0){
+          const brand=eligibleBrands[Math.floor(Math.random()*eligibleBrands.length)];
+          const rid=brand.recipes[Math.floor(Math.random()*brand.recipes.length)];
+          const r=RECIPES.find(x=>x.id===rid);
+          if(r){
+            const qty=1+Math.floor(Math.random()*2);
+            const price=Math.floor((r.xp+15)*getBrandSellMult(rid)*2*qty);
+            const order={brandId:brand.id,recipeId:rid,qty,price,expires:day+3};
+            setBrandOrders(prev=>[...prev,order]);
+            report.push({n:'Brand Order',i:'📦',r:brand.icon+' '+brand.name+': '+qty+'× '+r.icon+r.name+' for '+price+'g',t:'info'});
+          }
+        }
+      }
+      // Expire old orders
+      setBrandOrders(prev=>prev.filter(o=>o.expires>day));
+    }
+        if(shelfGold>0&&!shopLocked){setGold(g=>g+shelfGold);const items=Object.entries(shelfSold).map(([id,q])=>{const r=RECIPES.find(x=>x.id===getBaseRecipeId(id));const _inf=getInfusion(id);return(r?.icon||'')+(_inf?INFUSIONS[_inf]?.icon:'')+r?.name+(getPotQuality(id)!=='std'?' '+QUALITY[getPotQuality(id)].icon:'')+(_inf?' ['+INFUSIONS[_inf]?.name+']':'')+' ×'+q;}).join(', ');
+      report.push({n:'Shelf Sales',i:'🏪',r:'+'+shelfGold+'g ('+items+')',t:'ok'});
+      Object.entries(shelfSold).forEach(([pid,q])=>{recordBrandSale(getBaseRecipeId(pid),q);});}
     // Overnight Craft: auto-brew 1 potion while sleeping
     if(getFeatureVal('overnightCraft')){
       const brewable=RECIPES.filter(r=>known.includes(r.id)).filter(r=>{
@@ -5156,7 +5551,7 @@ function CindervaleAlchemistInner(){
     const shelfCap=SHELF_MAX;
     const shelfTotal=shelfEntries.reduce((s,[,q])=>s+q,0);
     if(shelfEntries.length>0){
-      const sLines=shelfEntries.map(([id,q])=>{const baseId=getBaseRecipeId(id);const r=RECIPES.find(x=>x.id===baseId);const sq=QUALITY[getPotQuality(id)]||QUALITY.std;return{icon:r?.icon||'🧪',label:(r?.name||id)+(sq.icon?' '+sq.icon:''),val:'×'+q,color:TH.gold};});
+      const sLines=shelfEntries.map(([id,q])=>{const baseId=getBaseRecipeId(id);const r=RECIPES.find(x=>x.id===baseId);const sq=QUALITY[getPotQuality(id)]||QUALITY.std;const _sinf=getInfusion(id);return{icon:r?.icon||'🧪',label:(r?.name||id)+(sq.icon?' '+sq.icon:'')+(_sinf?' '+INFUSIONS[_sinf]?.icon:''),val:'×'+q,color:TH.gold};});
       sLines.push({icon:'📊',label:'Shelf capacity',val:shelfTotal+'/'+shelfCap,color:shelfTotal>=shelfCap?TH.red:TH.textDim});
       mrSections.push({title:'🏪 Shelf Stock',lines:sLines});
     } else {mrSections.push({title:'🏪 Shelf Stock',lines:[{icon:'📊',label:'Shelves empty',val:'0/'+shelfCap,color:TH.textDim}]});}
@@ -7066,10 +7461,15 @@ function CindervaleAlchemistInner(){
                   <span style={{color:TH.purple,marginLeft:'auto'}}>{bp}g</span>
                   <button style={S.btn(gold>=bp?'def':'dim')} onClick={()=>{if(gold>=bp){setGold(g=>g-bp);modInv(item.id,1);}}} disabled={gold<bp}>+1</button>
                 </div>);})}</>}            {Object.entries(pots).filter(([,q])=>q>0).length>0&&<div style={{fontSize:16,color:TH.gold,marginTop:8,marginBottom:4}}>Sell Potions</div>}
-            {Object.entries(pots).filter(([,q])=>q>0).map(([id,qty])=>{const baseId=getBaseRecipeId(id);const r=RECIPES.find(r=>r.id===baseId);if(!r)return null;const pq=getPotQuality(id);const qT=QUALITY[pq]||QUALITY.std;const baseSp=r.xp+getSkMod('aesthetics')*2+getSkMod('haggling')+Math.floor(upEff('sellBonus')*r.xp);const sp=Math.floor(baseSp*(1+getFeatureVal('sellBonus'))*qT.sellMult);return(
+            {Object.entries(pots).filter(([,q])=>q>0).map(([id,qty])=>{const baseId=getBaseRecipeId(id);const r=RECIPES.find(r=>r.id===baseId);if(!r)return null;const pq=getPotQuality(id);const qT=QUALITY[pq]||QUALITY.std;const _mInf=getInfusion(id);const _mInfObj=_mInf?INFUSIONS[_mInf]:null;const baseSp=r.xp+getSkMod('aesthetics')*2+getSkMod('haggling')+Math.floor(upEff('sellBonus')*r.xp);const infSellMult=getInfusion(id)?INFUSIONS[getInfusion(id)]?.sellMult||1:1;
+              const brandMult=getBrandSellMult(getBaseRecipeId(id));
+              const bmLv=prestigeLevels.brandmaster||0;
+              const brandMWExtra=(bmLv>=4&&getBrandForRecipe(getBaseRecipeId(id))&&(pq==='mw'||pq==='gm'))?0.25:0;
+              const freshMult=id.includes('_fresh')?(prestigeLevels.wildcrafter>=4?1.5:prestigeLevels.wildcrafter>=3?1.4:prestigeLevels.wildcrafter>=2?1.3:1.2):1;
+              const sp=Math.floor(baseSp*(1+getFeatureVal('sellBonus')+brandMWExtra)*qT.sellMult*infSellMult*freshMult*brandMult);return(
               <div key={id} style={{display:'flex',alignItems:'center',gap:6,padding:'3px 0',fontSize:16}}>
                 <span>{r.icon}{r.name}{qT.icon?' '+qT.icon:''} ×{qty}</span><span style={{color:TH.gold,marginLeft:'auto'}}>{sp}g ea</span>
-                <button style={S.btn()} onClick={()=>{modPot(id,-1);setGold(g=>g+sp);addLog(`Sold ${r.icon}${r.name}. (+${sp}g)`,'info');}}>Sell 1</button>
+                <button style={S.btn()} onClick={()=>{modPot(id,-1);setGold(g=>g+sp);recordBrandSale(getBaseRecipeId(id),1);addLog(`Sold ${r.icon}${r.name}. (+${sp}g)`,'info');}}>Sell 1</button>
                 {qty>1&&<button style={S.btn()} onClick={()=>{modPot(id,-qty);setGold(g=>g+sp*qty);addLog(`Sold ${qty}× ${r.icon}${r.name}. (+${sp*qty}g)`,'info');}}>All ({sp*qty}g)</button>}
               </div>);})}
             {Object.entries(inv).filter(([,q])=>q>0).length>0&&<div style={{fontSize:16,color:TH.gold,marginTop:8,marginBottom:4}}>Sell Ingredients</div>}
@@ -7567,7 +7967,7 @@ function CindervaleAlchemistInner(){
               <div style={{fontSize:14,color:'#60a080',fontWeight:'bold',marginBottom:4}}>🧪 Potion Breakdown {rcLv>=6?'(100% recovery)':rcLv>=10?'(150% yield)':'(50-75% recovery)'}</div>
               <div style={{display:'flex',flexWrap:'wrap',gap:3,marginBottom:8}}>
                 {Object.entries(pots).filter(([id,q])=>q>0).map(([id,q])=>{
-                  const r=RECIPES.find(x=>x.id===id);if(!r)return null;
+                  const r=RECIPES.find(x=>x.id===getBaseRecipeId(id));if(!r)return null;
                   return <button key={id} style={{...S.btn(hours>=1?'gold':'dim'),fontSize:12,padding:'2px 6px'}} disabled={hours<1}
                     onClick={()=>breakdownPotion(id)}>{r.icon} {r.name} ({q}) → ingredients</button>;
                 })}
@@ -8207,8 +8607,115 @@ function CindervaleAlchemistInner(){
           </div>;
         })()}
 
-        <div style={S.card}><div style={S.cT}>{'\u2697\ufe0f'} Recipes ({known.length}/{RECIPES.length})</div>
-        {RECIPES.filter(r=>known.includes(r.id)).map(r=>{
+        <div style={S.card}><div style={S.cT}>{'\u2697\ufe0f'} Recipes ({known.filter(id=>!RECIPES.find(r=>r.id===id)?.fieldOnly).length}/{RECIPES.filter(r=>!r.fieldOnly&&canCraftAtLocation(r.ingr)).length})</div>
+
+        {/* ── Brand Manager (Brand Master) ── */}
+        {(prestigeLevels.brandmaster||0)>=1&&<div style={{...S.card,borderColor:'#d0a06044'}}>
+          <div style={{...S.cT,color:'#d0a060',cursor:'pointer',display:'flex',justifyContent:'space-between'}} onClick={()=>setShowBrandMgr(p=>!p)}>
+            <span>{'🏷️'} Brand Manager</span><span style={{fontSize:13,color:TH.textDim}}>{showBrandMgr?'\u25b2':'\u25bc'}</span>
+          </div>
+          {showBrandMgr&&<div>
+            {brands.map(brand=>{const bl=getBrandLevel(brand.sold);const blData=BRAND_LEVELS[bl>=3&&(prestigeLevels.brandmaster||0)<4?2:bl];
+              const nextLv=bl<BRAND_LEVELS.length-1?BRAND_LEVELS[bl+1]:null;
+              return <div key={brand.id} style={{padding:'8px 10px',background:TH.panel,borderRadius:6,marginBottom:6,border:'1px solid #d0a06033'}}>
+                <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                  <span style={{fontSize:16,color:'#d0a060',fontWeight:'bold'}}>{brand.icon} {brand.name}</span>
+                  <span style={{fontSize:13,color:TH.textDim}}>{blData.icon} {blData.name} \u00b7 {brand.sold} sold{nextLv?' \u00b7 '+nextLv.minSold+' for next':''}</span>
+                </div>
+                <div style={{fontSize:13,color:TH.textDim,marginTop:2}}>Sell bonus: +{Math.round(blData.sellBonus*100)}% \u00b7 Repeat customers: {blData.repeatCust}/morning</div>
+                <div style={{display:'flex',flexWrap:'wrap',gap:3,marginTop:4}}>
+                  {brand.recipes.map(rid=>{const r=RECIPES.find(x=>x.id===rid);return r?<span key={rid} style={{...S.tag,borderColor:'#d0a060'}}>{r.icon}{r.name}
+                    <button style={{fontSize:10,color:TH.red,background:'none',border:'none',cursor:'pointer',marginLeft:3}} onClick={()=>removeRecipeFromBrand(brand.id,rid)}>\u2715</button>
+                  </span>:null;})}
+                  {brand.recipes.length<((prestigeLevels.brandmaster||0)>=4?4:(prestigeLevels.brandmaster||0)>=2?3:2)&&
+                    <select style={{fontSize:12,background:TH.bg,color:TH.text,border:'1px solid '+TH.border,borderRadius:3,padding:'1px 4px'}}
+                      value="" onChange={e=>{if(e.target.value)addRecipeToBrand(brand.id,e.target.value);}}>
+                      <option value="">+ Add recipe...</option>
+                      {RECIPES.filter(r=>known.includes(r.id)&&!r.fieldOnly&&!brand.recipes.includes(r.id)&&!brands.some(b=>b.id!==brand.id&&b.recipes.includes(r.id))).map(r=>
+                        <option key={r.id} value={r.id}>{r.icon} {r.name}</option>
+                      )}
+                    </select>}
+                </div>
+              </div>;})}
+            {/* Brand Orders */}
+            {brandOrders.length>0&&<div style={{marginTop:6}}>
+              <div style={{fontSize:14,color:'#d0a060',fontWeight:'bold',marginBottom:3}}>{'📦'} Brand Orders</div>
+              {brandOrders.map((order,oi)=>{const r=RECIPES.find(x=>x.id===order.recipeId);const brand=brands.find(b=>b.id===order.brandId);
+                if(!r||!brand)return null;
+                const have=countAllPots(order.recipeId);const canFill=have>=order.qty;
+                return <div key={oi} style={{padding:'4px 8px',background:canFill?TH.greenDim:TH.panel,borderRadius:4,marginBottom:3,border:'1px solid '+(canFill?TH.green:TH.border),display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                  <span style={{fontSize:14}}>{brand.icon} {order.qty}\u00d7 {r.icon}{r.name} <span style={{color:TH.gold}}>{order.price}g</span> <span style={{fontSize:11,color:TH.textDim}}>expires day {order.expires}</span></span>
+                  <button style={S.btn(canFill?'gold':'dim')} disabled={!canFill} onClick={()=>{
+                    consumePots(order.recipeId,order.qty);setGold(g=>g+order.price);
+                    recordBrandSale(order.recipeId,order.qty);
+                    setBrandOrders(prev=>prev.filter((_,i)=>i!==oi));
+                    addLog('📦 Brand order filled: '+order.qty+'\u00d7 '+r.icon+r.name+' for '+order.price+'g!','quest');
+                    gainXP(Math.floor(r.xp*order.qty*0.5));
+                  }}>Fill Order</button>
+                </div>;})}
+            </div>}
+            {/* Create new brand */}
+            {brands.length<((prestigeLevels.brandmaster||0)>=5?3:(prestigeLevels.brandmaster||0)>=3?2:1)&&<div style={{marginTop:6}}>
+              <button style={{...S.btn('gold'),fontSize:14}} onClick={()=>{
+                const name=prompt('Name your brand:');
+                if(name&&name.trim()){
+                  const iconIdx=Math.floor(Math.random()*BRAND_ICONS.length);
+                  createBrand(name.trim(),BRAND_ICONS[iconIdx]);
+                }
+              }}>+ Create New Brand</button>
+            </div>}
+          </div>}
+        </div>}
+
+        {/* ── Relic Collection (Antiquarian) ── */}
+        {(prestigeLevels.antiquarian||0)>=1&&<div style={{...S.card,borderColor:'#c0a08044'}}>
+          <div style={{...S.cT,color:'#c0a080'}}>📖 Relics & Museum</div>
+          {/* Unappraised relics */}
+          {relics.filter(r=>!r.appraised).length>0&&<div style={{marginBottom:6}}>
+            <div style={{fontSize:14,color:'#c0a080',fontWeight:'bold',marginBottom:3}}>Unappraised ({relics.filter(r=>!r.appraised).length})</div>
+            {relics.filter(r=>!r.appraised).map(relic=>{
+              const cat=RELIC_CATS.find(c=>c.id===relic.category);
+              const aqLv=prestigeLevels.antiquarian||0;
+              return <div key={relic.id} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'3px 6px',background:TH.panel,borderRadius:3,marginBottom:2}}>
+                <span style={{fontSize:14}}>{cat?.icon||'❔'} Mystery Object {aqLv>=2?<span style={{fontSize:11,color:{common:TH.textDim,uncommon:'#50c070',rare:'#d4a420',legendary:'#c050e0'}[relic.rarity]||TH.textDim}}>({relic.rarity})</span>:''} <span style={{fontSize:11,color:TH.textDim}}>from {relic.region}</span></span>
+                {aqLv>=4
+                  ?<button style={{...S.btn('gold'),fontSize:12,padding:'2px 6px'}} onClick={()=>appraiseRelic(relic.id)}>Auto-ID</button>
+                  :<button style={{...S.btn(hours>=1?'def':'dim'),fontSize:12,padding:'2px 6px'}} disabled={hours<1} onClick={()=>appraiseRelic(relic.id)}>Appraise (1⚡ DC{RELIC_APPRAISE_DC[relic.rarity]||11})</button>}
+              </div>;})}
+          </div>}
+          {/* Appraised relics */}
+          {relics.filter(r=>r.appraised&&!r.displayed).length>0&&<div style={{marginBottom:6}}>
+            <div style={{fontSize:14,color:'#c0a080',fontWeight:'bold',marginBottom:3}}>Appraised ({relics.filter(r=>r.appraised&&!r.displayed).length})</div>
+            {relics.filter(r=>r.appraised&&!r.displayed).map(relic=>{
+              const cat=RELIC_CATS.find(c=>c.id===relic.category);
+              const aqLv=prestigeLevels.antiquarian||0;
+              const sellPrice=relic.value*(aqLv>=3?3:1);
+              return <div key={relic.id} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'3px 6px',background:TH.panelLight,borderRadius:3,marginBottom:2,border:'1px solid #c0a08022'}}>
+                <span style={{fontSize:14}}>{cat?.icon} {relic.name} <span style={{fontSize:12,color:{common:TH.textDim,uncommon:'#50c070',rare:'#d4a420',legendary:'#c050e0'}[relic.rarity]}}>{relic.rarity}</span> <span style={{color:TH.gold,fontSize:12}}>{relic.value}g</span></span>
+                <span style={{display:'flex',gap:3}}>
+                  {aqLv>=3&&<button style={{...S.btn('gold'),fontSize:11,padding:'2px 5px'}} onClick={()=>sellRelic(relic.id)}>Sell {sellPrice}g</button>}
+                  {aqLv>=3&&<button style={{...S.btn('def'),fontSize:11,padding:'2px 5px'}} onClick={()=>displayRelic(relic.id)}>Display</button>}
+                  {aqLv<3&&<button style={{...S.btn('gold'),fontSize:11,padding:'2px 5px'}} onClick={()=>sellRelic(relic.id)}>Sell {relic.value}g</button>}
+                </span>
+              </div>;})}
+          </div>}
+          {/* Museum collections */}
+          {(prestigeLevels.antiquarian||0)>=3&&<div>
+            <div style={{fontSize:14,color:'#c0a080',fontWeight:'bold',marginBottom:3}}>🏛️ Museum Collections</div>
+            {Object.entries(RELIC_SETS).map(([setId,setData])=>{
+              const count=museum[setId]||0;const complete=count>=setData.needed;
+              return <div key={setId} style={{padding:'3px 6px',marginBottom:2,fontSize:13,color:complete?TH.green:TH.textDim,display:'flex',justifyContent:'space-between'}}>
+                <span>{setData.icon} {setData.name}: {count}/{setData.needed}{complete?' ✅':''}</span>
+                {complete&&<span style={{fontSize:11,color:TH.green}}>{setData.desc}</span>}
+              </div>;})}
+            {Object.keys(RELIC_SETS).every(sid=>(museum[sid]||0)>=RELIC_SETS[sid].needed)&&
+              <div style={{fontSize:14,color:'#c050e0',fontWeight:'bold',textAlign:'center',marginTop:4,padding:4,background:'#c050e010',borderRadius:4}}>🏆 Grand Collection Complete! +10g/morning from museum visitors</div>}
+          </div>}
+          {relics.length===0&&<div style={{fontSize:14,color:TH.textDim,textAlign:'center',padding:6}}>Go on expeditions to discover relics! (15% chance per hour)</div>}
+        </div>}
+
+        <div style={S.card}><div style={S.cT}>{'\u2697\ufe0f'} Recipes ({known.filter(id=>!RECIPES.find(r=>r.id===id)?.fieldOnly).length}/{RECIPES.filter(r=>!r.fieldOnly&&canCraftAtLocation(r.ingr)).length})</div>
+        {RECIPES.filter(r=>known.includes(r.id)&&!r.fieldOnly).map(r=>{
           const cost={};r.ingr.forEach(id=>{cost[id]=(cost[id]||0)+1;});const can=Object.entries(cost).every(([id,q])=>(inv[id]||0)>=q);
           const fOk=!r.faction||getRL(r.faction)>=(r.fReq||0);const masteryD=getMasteryDiscount(brewCounts,r.id);const adjDC=Math.max(5,r.dc-masteryD);
           // Calculate success chance for display (Standard quality)
@@ -8225,7 +8732,7 @@ function CindervaleAlchemistInner(){
           };
           const doBuy=(n)=>{const{needed}=buyCalc(n);Object.entries(needed).forEach(([id,q])=>{const si=SHOP_I.find(i=>i.id===id);if(si){const bp=getBuyPrice(Math.max(1,si.price-hagMod));for(let i=0;i<q;i++){setGold(g=>g-bp);modInv(id,1);}}});};
           return(<div key={r.id} style={{padding:'6px 8px',background:TH.panelLight,borderRadius:4,marginBottom:4,border:`1px solid ${can&&fOk?TH.borderGold:TH.border}`,opacity:fOk?1:.5}}>
-            <div style={{display:'flex',justifyContent:'space-between'}}><span style={{fontSize:16,color:TH.textBright}}>{r.icon}{r.name}</span>
+            <div style={{display:'flex',justifyContent:'space-between'}}><span style={{fontSize:16,color:TH.textBright}}>{r.icon}{r.name}{(()=>{const br=getBrandForRecipe(r.id);return br?<span style={{fontSize:11,color:'#d0a060',marginLeft:4}}>{br.icon}{br.name}</span>:null;})()}</span>
               <span style={{fontSize:14}}><span style={{color:TH.textDim}}>DC{adjDC}{masteryD>0?' (-'+masteryD+')':''}</span> <span style={{color:successPct>=70?TH.green:successPct>=40?TH.gold:TH.red,fontSize:13}}>{successPct}%</span></span></div>
             {r.desc&&<div style={{fontSize:14,color:TH.textDim,fontStyle:'italic',margin:'2px 0'}}>{r.desc}</div>}
             {!fOk&&<div style={{fontSize:13,color:TH.red,fontWeight:'bold',margin:'3px 0',padding:'2px 6px',background:TH.red+'12',borderRadius:3,border:'1px solid '+TH.red+'33'}}>🔒 Requires {FACTIONS[r.faction]?.icon} {FACTIONS[r.faction]?.name} reputation: {REP_LVS[r.fReq]||'Lv'+r.fReq} (currently: {REP_LVS[getRL(r.faction)]||'Unknown'})</div>}
@@ -8283,6 +8790,25 @@ function CindervaleAlchemistInner(){
                   </button>;
                 })}
               </div>
+              {/* Infusion selector (Spellbrewer prestige) */}
+              {(prestigeLevels.spellbrewer||0)>=1&&<div style={{display:'flex',gap:2,marginBottom:4,flexWrap:'wrap'}}>
+                <span style={{fontSize:12,color:TH.textDim,alignSelf:'center',marginRight:2}}>Infuse:</span>
+                <button style={{padding:'2px 6px',fontSize:11,borderRadius:3,cursor:'pointer',fontFamily:'inherit',
+                  background:!brewInfSel[r.id]?TH.borderLight:'transparent',color:!brewInfSel[r.id]?TH.text:TH.textDim,
+                  border:'1px solid '+(!brewInfSel[r.id]?TH.border:TH.border+'66')}} onClick={()=>setBrewInfSel(p=>({...p,[r.id]:null}))}>None</button>
+                {Object.values(INFUSIONS).filter(inf=>inf.unlockLv<=(prestigeLevels.spellbrewer||0)).map(inf=>{
+                  const isSel=brewInfSel[r.id]===inf.id;
+                  const hasCatalyst=Object.entries(inv).some(([id,qty])=>{const usedByRecipe=selCost[id]||0;return qty-usedByRecipe>=1&&qty>=5;});
+                  return <button key={inf.id} style={{padding:'2px 6px',fontSize:11,borderRadius:3,cursor:hasCatalyst?'pointer':'not-allowed',fontFamily:'inherit',
+                    background:isSel?inf.color+'30':'transparent',color:isSel?inf.color:hasCatalyst?TH.textDim:TH.textDim+'66',
+                    border:'1px solid '+(isSel?inf.color:TH.border+'44'),opacity:hasCatalyst?1:.5}}
+                    onClick={()=>hasCatalyst&&setBrewInfSel(p=>({...p,[r.id]:inf.id}))}>
+                    {inf.icon} {inf.name} <span style={{fontSize:10}}>DC+{inf.dcMod-(prestigeLevels.spellbrewer>=2?1:0)} {inf.sellMult}×</span>
+                  </button>;})}
+                {brewInfSel[r.id]&&<span style={{fontSize:11,color:INFUSIONS[brewInfSel[r.id]]?.color||TH.textDim,alignSelf:'center'}}>
+                  {INFUSIONS[brewInfSel[r.id]]?.desc} · {infusionsUsedToday}/{(prestigeLevels.spellbrewer||0)>=5?6:(prestigeLevels.spellbrewer||0)>=4?5:(prestigeLevels.spellbrewer||0)>=3?4:(prestigeLevels.spellbrewer||0)>=2?3:2}/day
+                </span>}
+              </div>}
               {/* Brew + Batch buttons */}
               <div style={{display:'flex',gap:3,alignItems:'center',flexWrap:'wrap'}}>
                 {[1,2,3,5].map(n=>{
@@ -8570,7 +9096,7 @@ function CindervaleAlchemistInner(){
           <div style={S.cT}>🏪 Shop Shelves ({shelfTotal}/{SHELF_MAX})</div>
           <div style={{fontSize:14,color:TH.textDim,marginBottom:6}}>Stock potions for townsfolk to browse. Shelved potions sell passively overnight.</div>
           {Object.entries(shelves).filter(([,q])=>q>0).length>0?
-            <div style={{marginBottom:6}}>{Object.entries(shelves).filter(([,q])=>q>0).map(([id,qty])=>{const baseId=getBaseRecipeId(id);const r=RECIPES.find(x=>x.id===baseId);if(!r)return null;
+            <div style={{marginBottom:6}}>{Object.entries(shelves).filter(([,q])=>q>0).map(([id,qty])=>{const baseId=getBaseRecipeId(id);const r=RECIPES.find(x=>x.id===baseId);if(!r)return null;const _inf=getInfusion(id);const _infObj=_inf?INFUSIONS[_inf]:null;
               const pq=getPotQuality(id);const sqT=QUALITY[pq]||QUALITY.std;
               const sp=Math.floor((r.xp+getSkMod('aesthetics')*2+getSkMod('haggling')+Math.floor(upEff('sellBonus')*r.xp))*sqT.sellMult);
               return(<div key={id} style={{display:'flex',alignItems:'center',gap:6,padding:'3px 6px',background:TH.panelLight,borderRadius:3,marginBottom:2,fontSize:15}}>
@@ -9638,7 +10164,7 @@ function CindervaleAlchemistInner(){
           </div>
           {Object.entries(pots).filter(([,q])=>q>0).length>0&&<><div style={{fontSize:15,color:TH.gold,marginTop:6,marginBottom:4}}>Potions</div>
           <div style={{display:'flex',flexWrap:'wrap',gap:3}}>
-            {Object.entries(pots).filter(([,q])=>q>0).map(([id,qty])=>{const r=RECIPES.find(r=>r.id===id);return r?<span key={id} style={{...S.tag,borderColor:TH.borderGold}}>{r.icon}{r.name} <b style={{color:TH.goldBright}}>×{qty}</b></span>:null;})}
+            {Object.entries(pots).filter(([,q])=>q>0).map(([id,qty])=>{const baseId=getBaseRecipeId(id);const r=RECIPES.find(r=>r.id===baseId);if(!r)return null;const _inf=getInfusion(id);const pq=getPotQuality(id);const qI=(QUALITY[pq]||QUALITY.std).icon;return <span key={id} style={{...S.tag,borderColor:_inf?INFUSIONS[_inf]?.color||TH.borderGold:TH.borderGold}}>{r.icon}{_inf?INFUSIONS[_inf]?.icon:''}{r.name}{qI?' '+qI:''} <b style={{color:TH.goldBright}}>×{qty}</b></span>;})}
           </div></>}
         </div>
       </>}
@@ -9648,6 +10174,61 @@ function CindervaleAlchemistInner(){
 
       {/* ═══ EXPEDITION HOUR POPUP ═══ */}
       {expQ.length>0&&<ExpeditionHourPopup hr={expQ[0]} TH={TH} S={S} LC={LC} INGR={INGR} FACTIONS={FACTIONS} onOk={advanceExpedition} onSkipAll={skipAllExpedition} remaining={expQ.length} playSfx={playSfx}/>}
+
+      {/* Field Brew Phase (Wildcrafter) */}
+      {fieldBrewPhase&&expQ.length===0&&<div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'#000000dd',display:'flex',alignItems:'center',justifyContent:'center',zIndex:998,padding:12}}>
+        <div style={{background:TH.bg,border:'2px solid #60a040',borderRadius:12,padding:16,maxWidth:480,width:'100%',maxHeight:'85vh',overflow:'auto'}}>
+          <div style={{fontSize:20,color:'#60a040',textAlign:'center',marginBottom:8}}>🌿 Field Brewing</div>
+          <div style={{fontSize:14,color:TH.textDim,textAlign:'center',marginBottom:8}}>
+            Brew from your fresh haul before heading home. {fieldBrewPhase.brewsLeft} brew{fieldBrewPhase.brewsLeft!==1?'s':''} remaining.
+          </div>
+          <div style={{fontSize:13,color:TH.textDim,marginBottom:8,padding:'4px 8px',background:TH.panel,borderRadius:4}}>
+            <b style={{color:'#60a040'}}>Haul:</b> {Object.entries(fieldBrewPhase.haul).filter(([,q])=>q>0).map(([id,q])=>
+              <span key={id} style={{marginRight:6}}>{INGR[id]?.icon||''}{INGR[id]?.name||id} ×{q}</span>
+            )}
+            {Object.entries(fieldBrewPhase.haul).filter(([,q])=>q>0).length===0&&<span>Empty</span>}
+          </div>
+          {fieldBrewPhase.brewsLeft>0?<div>
+            {/* Normal recipes brewable from haul */}
+            {RECIPES.filter(r=>known.includes(r.id)&&!r.fieldOnly).filter(r=>{
+              const cost={};r.ingr.forEach(id=>{cost[id]=(cost[id]||0)+1;});
+              return Object.entries(cost).every(([id,q])=>(fieldBrewPhase.haul[id]||0)>=q);
+            }).map(r=>{
+              const masteryD=getMasteryDiscount(brewCounts,r.id);const adjDC=Math.max(5,r.dc-masteryD);
+              return <button key={r.id} style={{display:'block',width:'100%',textAlign:'left',padding:'6px 10px',marginBottom:3,background:TH.panelLight,border:'1px solid '+TH.borderGold,borderRadius:4,color:TH.text,cursor:'pointer',fontFamily:'inherit',fontSize:14}}
+                onClick={()=>doFieldBrew(r.id,fieldBrewPhase.haul)}>
+                {r.icon} {r.name} <span style={{fontSize:12,color:TH.textDim}}>DC{adjDC}</span>
+                <span style={{fontSize:12,color:'#60a040',marginLeft:6}}>🌿 Fresh</span>
+              </button>;
+            })}
+            {/* Field-only recipes (Lv3+) */}
+            {(prestigeLevels.wildcrafter||0)>=3&&<>
+              <div style={{fontSize:13,color:'#60a040',fontWeight:'bold',marginTop:6,marginBottom:3}}>🌿 Field-Only Recipes</div>
+              {RECIPES.filter(r=>r.fieldOnly&&(!r.fieldLegendary||(prestigeLevels.wildcrafter||0)>=5)).map(r=>{
+                const haulKeys=Object.keys(fieldBrewPhase.haul).filter(k=>fieldBrewPhase.haul[k]>0);
+                const canBrew=haulKeys.length>=r.ingr.length;
+                const needsDiff4=r.fieldLegendary&&(fieldBrewPhase.regDiff||0)<4;
+                return <button key={r.id} style={{display:'block',width:'100%',textAlign:'left',padding:'6px 10px',marginBottom:3,background:canBrew&&!needsDiff4?'#60a04015':TH.panel,border:'1px solid '+(canBrew&&!needsDiff4?'#60a040':TH.border),borderRadius:4,color:canBrew&&!needsDiff4?TH.text:TH.textDim,cursor:canBrew&&!needsDiff4?'pointer':'not-allowed',fontFamily:'inherit',fontSize:14,opacity:canBrew&&!needsDiff4?1:.5}}
+                  onClick={()=>canBrew&&!needsDiff4&&doFieldBrew(r.id,fieldBrewPhase.haul)} disabled={!canBrew||needsDiff4}>
+                  {r.icon} {r.name} <span style={{fontSize:12,color:TH.textDim}}>DC{r.dc} · {r.ingr.length} unique ingr.</span>
+                  {needsDiff4&&<span style={{fontSize:11,color:TH.red}}> (needs diff 4+ region)</span>}
+                  {!canBrew&&!needsDiff4&&<span style={{fontSize:11,color:TH.textDim}}> (need {r.ingr.length} unique, have {haulKeys.length})</span>}
+                </button>;
+              })}
+            </>}
+            {RECIPES.filter(r=>known.includes(r.id)&&!r.fieldOnly).filter(r=>{
+              const cost={};r.ingr.forEach(id=>{cost[id]=(cost[id]||0)+1;});
+              return Object.entries(cost).every(([id,q])=>(fieldBrewPhase.haul[id]||0)>=q);
+            }).length===0&&(prestigeLevels.wildcrafter||0)<3&&
+              <div style={{fontSize:14,color:TH.textDim,textAlign:'center',padding:8}}>No recipes brewable from your haul.</div>}
+          </div>
+          :<div style={{fontSize:14,color:TH.textDim,textAlign:'center',padding:8}}>All field brews used!</div>}
+          <button style={{...S.btn('def'),width:'100%',marginTop:8,fontSize:15}} onClick={()=>setFieldBrewPhase(null)}>
+            🏠 Head Home{fieldBrewPhase.brewsLeft>0?' (skip remaining brews)':''}
+          </button>
+        </div>
+      </div>}
+
       {pendingCompDec.length>0&&expQ.length===0&&<CompanionDecisionPopup
         comps={pendingCompDec}
         companions={companions}
