@@ -4094,6 +4094,8 @@ function CindervaleAlchemistInner(){
   // ─── BATCH BREW ───
   const doBatchCraft=(r,qty,quality='std')=>{
     const qT=QUALITY[quality]||QUALITY.std;
+    const sbLv=prestigeLevels.spellbrewer||0;
+    const selInf=brewInfSel[r.id]?INFUSIONS[brewInfSel[r.id]]:null;
     const cost={};r.ingr.forEach(id=>{cost[id]=(cost[id]||0)+qty;});
     if(qT.extraIngr>=1){const firstIngr=r.ingr[0];cost[firstIngr]=(cost[firstIngr]||0)+qty;}
     if(qT.extraIngr>=2&&r.ingr.length>1){const secondIngr=r.ingr[1];cost[secondIngr]=(cost[secondIngr]||0)+qty;}
