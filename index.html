@@ -7455,7 +7455,6 @@ function CindervaleAlchemistInner(){
                   const si=getSeasonalIngr(s,gameLocation);if(si.length>0)mods.push(s.icon+' Seasonal: '+si.map(id=>(INGR[id]?.icon||'')+INGR[id]?.name).join(', '));
                   return mods.length>0?<div style={{fontSize:12,color:s.color,marginTop:2}}>{mods.join(' · ')}</div>:null;
                 })()}
-                </div>
               </div>}
 
               {/* Ingredients overview */}
