@@ -945,6 +945,32 @@ const RECIPES=[
     desc:'3-day buff: +2 extraction, +1 forage yield. Requires 4 different fresh ingredients.',buff:'wilderness_elixir'},
   {id:'essence_wild',name:'Essence of the Wild',icon:'🌍',ingr:['_any1','_any2','_any3','_any4','_any5'],dc:19,xp:160,stat:'inu',unlock:0,fieldOnly:true,fieldLegendary:true,
     desc:'5-day buff: +3 extraction, +2 yield, +1 Energy/day. Requires 5 different ingredients from a dangerous region.',buff:'essence_wild'},
+  // ── Seasonal Recipes (Cindervale) ──
+  {id:'frostbrew',name:'Frostbrew Tonic',icon:'❄️',ingr:['frostbloom','moonpetal'],xp:55,unlock:3,dc:12,stat:'inu',
+    desc:'A shimmering cold tonic that sharpens the mind. Only brewable in winter when Frostbloom is available.'},
+  {id:'ice_ward_potion',name:'Ice Ward Potion',icon:'🧊',ingr:['ice_crystal','hearthstone'],xp:65,unlock:4,dc:14,stat:'tec',
+    desc:'Liquid warmth that protects against the deepest cold. Sells at a premium in winter.'},
+  {id:'winter_fortifier',name:'Winter Fortifier',icon:'🫖',ingr:['frostbloom','ice_crystal','ironroot_bark'],xp:80,unlock:5,dc:15,stat:'dis',
+    desc:'A thick warming brew that sustains body and spirit through the harshest season.'},
+  {id:'autumn_preserve',name:'Autumn Preserve',icon:'🍂',ingr:['amber_leaf','harvest_root'],xp:50,unlock:2,dc:11,stat:'tec',
+    desc:'Concentrated harvest essence. Extends ingredient storage and sells well to travelers stocking up.'},
+  {id:'harvest_elixir',name:'Harvest Elixir',icon:'🥕',ingr:['harvest_root','amber_leaf','ashbloom'],xp:65,unlock:4,dc:13,stat:'inu',
+    desc:'A golden elixir that embodies autumn abundance. Grants the drinker renewed vigor.'},
+  {id:'spring_tonic',name:'Spring Tonic',icon:'💧',ingr:['spring_dewdrop','ashbloom'],xp:45,unlock:1,dc:10,stat:'inu',
+    desc:'Fresh morning dew distilled into a revitalizing tonic. A seasonal favorite.'},
+  {id:'renewal_draught',name:'Renewal Draught',icon:'🌱',ingr:['spring_dewdrop','moonpetal','embercap'],xp:70,unlock:4,dc:14,stat:'cre',
+    desc:'Captures the essence of spring regrowth. Potent healing properties.'},
+  // ── Seasonal Recipes (Ashfall) ──
+  {id:'bloom_nectar',name:'Bloom Nectar',icon:'🌺',ingr:['desert_rain_lily','sunpetal'],xp:55,unlock:3,dc:12,stat:'inu',
+    desc:'Nectar from the rare desert bloom. Extraordinarily fragrant and alchemically potent.'},
+  {id:'monsoon_elixir',name:'Monsoon Elixir',icon:'🌧️',ingr:['desert_rain_lily','wet_sand_crystal'],xp:75,unlock:5,dc:15,stat:'cre',
+    desc:'Captures the power of the desert rains. Drinkers feel the rush of a flash flood coursing through their veins.'},
+  {id:'sand_crystal_salve',name:'Sand Crystal Salve',icon:'💎',ingr:['wet_sand_crystal','crystal_salt'],xp:60,unlock:3,dc:13,stat:'tec',
+    desc:'Ground sand crystals form a protective salve against desert heat and abrasion.'},
+  {id:'dust_shield_potion',name:'Dust Shield Potion',icon:'💨',ingr:['dust_amber','scorchroot'],xp:50,unlock:2,dc:11,stat:'dis',
+    desc:'Coating the skin with this potion repels dust and sand. Essential during dust season.'},
+  {id:'sandstorm_brew',name:'Sandstorm Brew',icon:'🌪️',ingr:['dust_amber','obsidian_shard','dustite'],xp:70,unlock:4,dc:14,stat:'tec',
+    desc:'Infused with the fury of the sandstorms. Grants resistance to wind and abrasion.'},
 ];
 // Enchantment categories: weapon, armor, other (jewelry/clothing/accessories)
 const ENCHANTMENTS=[
@@ -1094,6 +1120,78 @@ const FORTRESS_TYPES={
   reaver_watchtower:{id:'reaver_watchtower',name:'Reaver Watchtower',icon:'🏰',threat:'reavers',cap:50,cost:200,desc:'Permanently caps Reaver threat at 50.'},
   blight_purifier:{id:'blight_purifier',name:'Blight Purifier',icon:'🧪',threat:'blight',cap:50,cost:200,desc:'Permanently caps Blight threat at 50.'},
   veil_anchor:{id:'veil_anchor',name:'Veil Anchor',icon:'⚓',threat:'veilbreakers',cap:50,cost:200,desc:'Permanently caps Veilbreaker threat at 50.'},
+};
+
+// ═══ SEASONS ═══
+const SEASON_LENGTH=7; // days per season
+const SEASONS={
+  cindervale:[
+    {id:'spring',name:'Spring',icon:'🌱',color:'#60c060',
+      desc:'Renewal season. Flora ingredients bloom across the Ashfields and Ironwood.',
+      yieldMod:1,floraYieldBonus:1,travelMod:0,customerMod:0,spoilMod:0,dangerMod:0,
+      threatMod:{blight:-1},moraleMod:0,
+      flavor:['Fresh shoots push through the ash. The air smells of rain and renewal.','Birdsong fills the Ironwood canopy. A good season for gathering.','The ashbloom carpets entire hillsides in pale green.']},
+    {id:'summer',name:'Summer',icon:'☀️',color:'#d0a030',
+      desc:'Peak season. Best weather, most customers, but Reavers raid more aggressively.',
+      yieldMod:0,floraYieldBonus:0,travelMod:0,customerMod:1,spoilMod:0,dangerMod:0,
+      threatMod:{reavers:1},moraleMod:0,
+      flavor:['Long hot days under a copper sky. The village hums with activity.','Caravans arrive daily. Trade is booming.','The volcanic vents shimmer in the summer heat.']},
+    {id:'autumn',name:'Autumn',icon:'🍂',color:'#c08030',
+      desc:'Harvest pressure. Spoilage worsens but quest rewards increase. Unique autumn ingredients appear.',
+      yieldMod:0,floraYieldBonus:0,travelMod:0,customerMod:0,spoilMod:-2,dangerMod:0,
+      threatMod:{},moraleMod:0,questGoldMod:0.25,
+      flavor:['Amber leaves drift across the workshop roof. Time to stockpile.','The air carries the smell of wood smoke and dried herbs.','Frost edges the morning puddles. Winter approaches.']},
+    {id:'winter',name:'Winter',icon:'❄️',color:'#6090c0',
+      desc:'Survival. High-diff regions cost more Energy. Yields drop. Veilbreakers peak. Unique winter ingredients.',
+      yieldMod:-1,floraYieldBonus:0,travelMod:1,travelMinDiff:4,customerMod:0,spoilMod:0,dangerMod:5,
+      threatMod:{veilbreakers:1},moraleMod:-5,
+      flavor:['Snow dusts the ash fields. The Heartforge rim glows warmer than ever.','Ice crystals form on the workshop windows. A hard season for foraging.','The village draws together around the hearths. Cindervale endures.']},
+  ],
+  ashfall:[
+    {id:'cool',name:'Cool Season',icon:'🌙',color:'#6090c0',
+      desc:'Best travel conditions. Caravans run fast. Trade flourishes.',
+      yieldMod:0,floraYieldBonus:0,travelMod:-1,customerMod:1,spoilMod:0,dangerMod:-5,
+      threatMod:{},moraleMod:0,
+      flavor:['Cool desert nights make the days bearable. Caravans roll freely.','The stars blaze overhead. Perfect weather for the Crossing.','A welcome respite from the heat. The bazaar overflows with travelers.']},
+    {id:'bloom',name:'Bloom Season',icon:'🌺',color:'#60c060',
+      desc:'Rare desert rains. Oasis and Sunscorch yields surge. Sandworms surface.',
+      yieldMod:0,floraYieldBonus:2,travelMod:0,customerMod:0,spoilMod:0,dangerMod:5,
+      threatMod:{},moraleMod:0,
+      flavor:['Rain! Actual rain! The desert transforms overnight into a carpet of flowers.','Puddles form in the dunes. Desert creatures emerge to drink.','The oasis overflows its banks. Herbs grow wild along the waterline.']},
+    {id:'scorching',name:'Scorching Season',icon:'🔥',color:'#d06030',
+      desc:'Extreme heat. Surface regions cost more. Underground regions thrive. Reavers raid.',
+      yieldMod:0,floraYieldBonus:0,travelMod:1,travelMinDiff:3,customerMod:0,spoilMod:-1,dangerMod:5,
+      threatMod:{reavers:1},moraleMod:-3,
+      flavor:['The sand burns through boot leather. Only fools travel at midday.','Heat mirages dance on the horizon. The Molten Vents feel almost cool by comparison.','The Flamekeepers stoke the sacred fire higher. It barely competes with the sun.']},
+    {id:'dust',name:'Dust Season',icon:'💨',color:'#a08040',
+      desc:'Constant sandstorms. All expeditions more dangerous. Spoilage worsens. Mirage Bazaar thrives.',
+      yieldMod:0,floraYieldBonus:0,travelMod:0,customerMod:0,spoilMod:-2,dangerMod:15,
+      threatMod:{veilbreakers:1},moraleMod:0,
+      flavor:['The wind never stops. Sand finds its way into everything.','Dust clouds blot out the sun for hours at a time.','The Dustwalkers tie ropes between buildings. Visibility is measured in arm lengths.']},
+  ],
+};
+const getSeason=(day,loc)=>{const seasons=SEASONS[loc||'cindervale']||SEASONS.cindervale;const idx=Math.floor(((day-1)%28)/SEASON_LENGTH);return seasons[idx]||seasons[0];};
+// Seasonal ingredients
+INGR.frostbloom={id:'frostbloom',name:'Frostbloom',icon:'❄️',val:14,desc:'Delicate ice flower that only blooms in winter cold.'};
+INGR.ice_crystal={id:'ice_crystal',name:'Ice Crystal',icon:'🧊',val:16,desc:'Naturally formed crystal of pure frozen water with alchemical resonance.'};
+INGR.amber_leaf={id:'amber_leaf',name:'Amber Leaf',icon:'🍂',val:12,desc:'Autumn leaf that crystallizes into an alchemically active amber.'};
+INGR.harvest_root={id:'harvest_root',name:'Harvest Root',icon:'🥕',val:10,desc:'Deep taproots exposed by autumn frost. Rich in concentrated nutrients.'};
+INGR.spring_dewdrop={id:'spring_dewdrop',name:'Spring Dewdrop',icon:'💧',val:11,desc:'Morning dew collected during the first spring rains. Magically potent.'};
+INGR.desert_rain_lily={id:'desert_rain_lily',name:'Desert Rain Lily',icon:'🌺',val:14,desc:'Extraordinarily rare lily that only blooms during desert rains.'};
+INGR.wet_sand_crystal={id:'wet_sand_crystal',name:'Wet Sand Crystal',icon:'💎',val:16,desc:'Sand crystal formed by rapid evaporation of rare desert rain.'};
+INGR.dust_amber={id:'dust_amber',name:'Dust Amber',icon:'💨',val:12,desc:'Amber-like resin formed from compressed dust during sandstorms.'};
+// Seasonal ingredient availability function
+const getSeasonalIngr=(season,loc)=>{
+  if(loc==='cindervale'){
+    if(season.id==='winter')return['frostbloom','ice_crystal'];
+    if(season.id==='autumn')return['amber_leaf','harvest_root'];
+    if(season.id==='spring')return['spring_dewdrop'];
+  }
+  if(loc==='ashfall'){
+    if(season.id==='bloom')return['desert_rain_lily','wet_sand_crystal'];
+    if(season.id==='dust')return['dust_amber'];
+  }
+  return[];
 };
 
 // ═══ BRANDS (Brand Master) ═══
@@ -3052,7 +3150,8 @@ function CindervaleAlchemistInner(){
     const enchBonus=isEnch?1:0;
     const forgeBonus=forgedWeapons.filter(w=>w.displayed).length; // Named weapons attract customers
     const compCustBonus=companions.filter(c=>c.active&&RANGER_COMPANIONS.find(r=>r.id===c.compId)?.primary.type==='customers').reduce((s,c)=>{const comp=RANGER_COMPANIONS.find(r=>r.id===c.compId);return s+(comp?.primary.values[Math.min(c.loyalty-1,4)]||0);},0);
-    const n=shopLocked?0:1+Math.floor(Math.random()*2)+upEff('extraCustomers')+enchBonus+custBonusF+Math.min(3,forgeBonus)+compCustBonus;
+    const seasonCustMod=(getSeason(day,gameLocation).customerMod||0);
+    const n=shopLocked?0:1+Math.floor(Math.random()*2)+upEff('extraCustomers')+enchBonus+custBonusF+Math.min(3,forgeBonus)+compCustBonus+seasonCustMod;
     const q=[];
     const effKnownEnch=knownEnch.length>0?knownEnch:['e_sharp','e_glow','e_ironbark','e_feather','e_windwalk','e_rootbind'];
     for(let i=0;i<n;i++){const mT=level>=7?3:level>=4?2:1;const items=CUST_ITEMS.filter(it=>it.tier<=mT);
@@ -3267,8 +3366,13 @@ function CindervaleAlchemistInner(){
     let travelTime=Math.max(0,reg.time-(getSkMod('efficiency')>=2?1:0)-getFeatureVal('travelReduction'));
     const weatherReduc=getFeatureVal('weatherReduction');
     if(dayFlags.includes('ash_storm'))travelTime+=Math.max(0,Math.ceil(1*(1-weatherReduc)));
+    // Seasonal travel modifier
+    const season=getSeason(day,gameLocation);
+    if(season.travelMod&&(!season.travelMinDiff||reg.diff>=season.travelMinDiff)){
+      travelTime=Math.max(0,travelTime+season.travelMod);
+    }
     const gatherHours=Math.max(0,hours-travelTime);
-    return{travelTime,gatherHours};
+    return{travelTime,gatherHours,season};
   };
   // Pure check — no state side effects, for pre-computation
   const pureCheck=(skId,dc)=>{
@@ -3310,14 +3414,20 @@ function CindervaleAlchemistInner(){
       // Targeting yield penalty (-25% unless Tracker)
       const tgtPenalty=(targetIngr&&reg.ingr.includes(targetIngr)&&!getFeatureVal('targetNoYieldPenalty'))?0.75:1;
       const yieldMult=(1+Math.min(getFeatureVal('yieldMultiplier'),2))*tgtPenalty;
+      // Seasonal yield modifier
+      const fSeason=getSeason(day,gameLocation);
+      const seasonYieldMod=(fSeason.yieldMod||0)+(fSeason.floraYieldBonus&&reg.ingr.some(id=>INGR[id]?.icon==='🌿'||INGR[id]?.icon==='🌸'||INGR[id]?.icon==='🌻'||INGR[id]?.icon==='🍄')?(fSeason.floraYieldBonus||0):0);
       const critMult=isCrit?(1+getFeatureVal('critExtractionMulti')):1;
       if(ext.success){
         const baseTotal=isCrit?(10+Math.floor(Math.random()*4)):(4+Math.floor(Math.random()*6));
-        const total=Math.floor(baseTotal*yieldMult*critMult)+Math.floor(getFeatureVal('forageYieldBonus'));
+        const total=Math.max(1,Math.floor(baseTotal*yieldMult*critMult)+Math.floor(getFeatureVal('forageYieldBonus'))+seasonYieldMod);
         // Guarantee at least 3 distinct resources (1 each), then distribute remainder randomly
         const minDistinct=Math.min(3,picked.length);
         for(let d=0;d<minDistinct;d++){hourG[picked[d]]=(hourG[picked[d]]||0)+1;}
         for(let t=0;t<total-minDistinct;t++){const id=picked[Math.floor(Math.random()*picked.length)];hourG[id]=(hourG[id]||0)+1;}
+        // Seasonal ingredient drops (15% chance per hour)
+        const seasonalIngr=getSeasonalIngr(fSeason,gameLocation);
+        if(seasonalIngr.length>0&&Math.random()<0.15){const sid=seasonalIngr[Math.floor(Math.random()*seasonalIngr.length)];hourG[sid]=(hourG[sid]||0)+1;}
         // Field Journal discovery bonuses — permanent extra yields from documented flora/geological
         const regDiscs=FIELD_DISCOVERIES[reg.id]||[];
         regDiscs.forEach(d=>{if(fieldJournal.includes(d.id)&&d.bonus.extraYield&&d.bonus.ingredient){
@@ -3351,6 +3461,7 @@ function CindervaleAlchemistInner(){
       let event=null;
       const riskReduc=getFeatureVal('reducedRisk');
       const threatDangerMult=threatExpDangerMult||1;
+      const seasonDangerPct=(fSeason.dangerMod||0)/100;
       const posMulti=1+getFeatureVal('positiveEventMulti');
       for(const ev of H_EVENTS){
         if(ev.loc&&ev.loc!==gameLocation)continue; // Skip events for wrong location
@@ -3358,6 +3469,8 @@ function CindervaleAlchemistInner(){
         let evProb=ev.prob;
         if(riskReduc>0&&ev.good===false)evProb*=(1-riskReduc);
         if(ev.good===false&&threatDangerMult>1)evProb*=threatDangerMult;
+        if(ev.good===false&&seasonDangerPct>0)evProb*=(1+seasonDangerPct);
+        if(ev.good===false&&seasonDangerPct<0)evProb*=Math.max(0.5,1+seasonDangerPct);
         // Field Journal fauna discoveries reduce danger in this region
         if(ev.good===false){const faunaDiscs=(FIELD_DISCOVERIES[reg.id]||[]).filter(d=>d.type==='fauna'&&fieldJournal.includes(d.id));
           faunaDiscs.forEach(d=>{if(d.bonus.dangerReduce)evProb*=(1-d.bonus.dangerReduce);});}
@@ -5257,7 +5370,7 @@ function CindervaleAlchemistInner(){
     snapshot();
     if(q.type==='deliver')consumePots(q.target,q.count);else if(q.type==='gather')modInv(q.target,-q.count);else if(q.type==='multi')q.targets.forEach(t=>consumePots(t,1));
     setAQ(p=>p.filter(a=>a.id!==q.id));setDoneQ(p=>[...p,q.id]);const loreXp=getSkMod('lore')*4;
-    const qGoldB=1+getFeatureVal('questGoldBonus');const qRepB=1+getFeatureVal('questRepBonus');const qXpB=1+getFeatureVal('questXPBonus');
+    const qGoldB=1+getFeatureVal('questGoldBonus')+(getSeason(day,gameLocation).questGoldMod||0);const qRepB=1+getFeatureVal('questRepBonus');const qXpB=1+getFeatureVal('questXPBonus');
     const qGold=Math.floor(q.gold*qGoldB);
     gainXP(Math.floor((q.xp+loreXp)*qXpB));setGold(g=>g+qGold);
     if(q.items?.length)q.items.forEach(id=>modInv(id,1));if(q.faction&&q.fRep)addRep(q.faction,Math.floor(q.fRep*qRepB));
@@ -5488,6 +5601,14 @@ function CindervaleAlchemistInner(){
     if(injPen>0)setInjuryPenalty(0);setInfusionsUsedToday(0); // Clear after applying
     const baseH=Math.max(3,4+upEff('bonusEnergy')+getFeatureVal('bonusEnergyPerDay')+enduranceBonus+(getFeatureVal('freeAction')?1:0)-injPen);
     setDay(d=>d+1);setHours(baseH);setLastCheck(null);const report=[];let totalSal=0;
+    // ── Season check ──
+    const curDay=day+1;
+    const curSeason=getSeason(curDay,gameLocation);
+    const prevSeason=getSeason(day,gameLocation);
+    if(curSeason.id!==prevSeason.id){
+      addLog(`${curSeason.icon} ${curSeason.name} has arrived! ${curSeason.desc}`,'story');
+      report.push({icon:curSeason.icon,label:'Season Change',val:curSeason.name,color:curSeason.color});
+    }
     const staffEffBonus=getFeatureVal('staffEfficiencyBonus');
     const payrollDisc=getFeatureVal('payrollDiscount');
     const halfPay=getFeatureVal('halfPayroll')?0.5:1;
@@ -5586,7 +5707,7 @@ function CindervaleAlchemistInner(){
         } else report.push({n:ap.name,i:ap.icon,r:`${u?'Already built':'Unknown upgrade'}`,t:'idle'});
       }
       const traitMorale=(ap.traits||[]).reduce((s,t)=>s+(TRAIT_FX[t]?.moraleDelta||0),0);
-      return{...ap,morale:Math.min(100,Math.max(20,ap.morale+(upEff('morale')||0)+2+getFeatureVal('healMorale')+traitMorale))};
+      return{...ap,morale:Math.min(100,Math.max(20,ap.morale+(upEff('morale')||0)+2+getFeatureVal('healMorale')+traitMorale+(curSeason.moraleMod||0)))};
     });
     setHiredAppr(updatedAppr);
     // ═══ DAILY UPKEEP & DEBT PROCESSING ═══
@@ -5700,10 +5821,12 @@ function CindervaleAlchemistInner(){
       report.push({n:'Museum Visitors',i:'🏛️',r:'+'+museumGold+'g (Grand Collection)',t:'ok'});
     }
     // ═══ EXTERNAL THREATS PROCESSING ═══
-    const curDay=day+1;
     const newThreats={...(threats||{reavers:0,blight:0,veilbreakers:0})};
     // Threat growth
     if(curDay>3)newThreats.reavers=Math.min(100,(newThreats.reavers||0)+3+(gold>200?1:0));
+    if(curDay>10)newThreats.veilbreakers=Math.min(100,(newThreats.veilbreakers||0)+3);
+    // Seasonal threat modifier
+    if(curSeason.threatMod){Object.entries(curSeason.threatMod).forEach(([tid,mod])=>{newThreats[tid]=Math.min(100,Math.max(0,(newThreats[tid]||0)+mod));});}
     if(curDay>10)newThreats.veilbreakers=Math.min(100,(newThreats.veilbreakers||0)+3);
     // Blight grows from expedition activity (tracked via dayFlags)
     const expDiff=dayFlags.filter(f=>f.startsWith('exp_diff_')).map(f=>+f.split('_')[2]);
@@ -6158,8 +6281,8 @@ function CindervaleAlchemistInner(){
     const spoilLines=[];
     const spoilThresholdBase=8;
     const blightSpoilMult=getThreatPenalty('blight','spoilMult');
-    const spoilThresholdBonus=getFeatureVal('spoilThreshold')+upEff('spoilThreshold');
-    const totalSpoilThreshold=spoilThresholdBase+spoilThresholdBonus;
+    const spoilThresholdBonus=getFeatureVal('spoilThreshold')+upEff('spoilThreshold')+(curSeason.spoilMod||0);
+    const totalSpoilThreshold=Math.max(4,spoilThresholdBase+spoilThresholdBonus);
     const effSpoilThreshold=blightSpoilMult>1?Math.max(4,Math.floor(totalSpoilThreshold/blightSpoilMult)):totalSpoilThreshold;
     // Naturalist bonus: documented flora entries give +3 threshold for their ingredient
     const natBonusIngr={};
@@ -6390,6 +6513,7 @@ function CindervaleAlchemistInner(){
     }
     // Always show morning report
     const MR_FLAVOR=['Dawn breaks over Cindervale. Smoke curls from the workshop chimney.','The morning bell rings across the village square.','Another day begins — the scent of ash and hearthfire fills the air.','Birdsong mixes with the distant clang of the smithy as you open shop.','Mist clings to the cobblestones as Cindervale stirs to life.','The sun crests the eastern ridge, painting the rooftops in amber.','A cool breeze carries the scent of ashbloom through the village.','You wake to the rhythmic tapping of the notice board being updated.'];
+    const seasonFlavor=curSeason.flavor?curSeason.flavor[Math.floor(Math.random()*curSeason.flavor.length)]:null;
     // ═══ GAME OVER CHECK ═══
     if(newDebt>=300){
       setMorningReport({dayNum:day+1,sections:[{title:'🛑 WORKSHOP SEIZED',lines:[
@@ -6399,7 +6523,7 @@ function CindervaleAlchemistInner(){
       ]}],baseH:0,flavor:'The workshop doors are locked. The dream is over.',isGameOver:true});
       return;
     }
-    setMorningReport({dayNum:day+1,sections:mrSections,baseH,flavor:MR_FLAVOR[Math.floor(Math.random()*MR_FLAVOR.length)]});
+    setMorningReport({dayNum:day+1,sections:mrSections,baseH,flavor:seasonFlavor||MR_FLAVOR[Math.floor(Math.random()*MR_FLAVOR.length)],season:curSeason});
     setNews(nw);
   };
 
@@ -7044,7 +7168,7 @@ function CindervaleAlchemistInner(){
           <Portrait cls={startingClass||'alchemist'} race={charRace} gender={charGender} size={22} style={{borderWidth:1,borderRadius:4}}/>
           <span style={{color:TH.textBright}}>{charName}</span>
           <span>{Object.entries(classLevels).filter(([cid])=>CLASSES[cid]).map(([cid,lv])=>CLASSES[cid]?.icon).join('')}</span>
-          <span>📅{day}</span><span>⚡{hours}</span><span style={{color:TH.gold}}>Lv{displayLevel}</span><span style={{color:debt>0?'#c04040':TH.gold}}>💰{gold}g{debt>0&&<span style={{fontSize:11,color:'#c04040'}}> (debt:{debt}g)</span>}</span>
+          <span>📅{day}</span><span style={{color:getSeason(day,gameLocation).color}}>{getSeason(day,gameLocation).icon}{getSeason(day,gameLocation).name}</span><span>⚡{hours}</span><span style={{color:TH.gold}}>Lv{displayLevel}</span><span style={{color:debt>0?'#c04040':TH.gold}}>💰{gold}g{debt>0&&<span style={{fontSize:11,color:'#c04040'}}> (debt:{debt}g)</span>}</span>
         </div>
         {nextXp&&<div style={{width:'100%',maxWidth:250,height:4,background:TH.panel,borderRadius:3,overflow:'hidden',margin:'2px auto'}}>
           <div style={{height:'100%',borderRadius:3,width:`${((xp-XP_TBL[getLvl(xp)])/(nextXp-XP_TBL[getLvl(xp)]))*100}%`,background:`linear-gradient(90deg,${TH.goldDim},${TH.gold})`}}/>
@@ -7174,6 +7298,7 @@ function CindervaleAlchemistInner(){
           <div style={{textAlign:'center',marginBottom:12}}>
             <Portrait cls={startingClass||'alchemist'} race={charRace} gender={charGender} size={90} style={{marginBottom:8}}/>
             <div style={{fontSize:22,color:TH.gold,letterSpacing:2,marginBottom:4}}>🌅 Dawn of Day {morningReport.dayNum}</div>
+            {morningReport.season&&<div style={{fontSize:14,color:morningReport.season.color,marginBottom:2}}>{morningReport.season.icon} {morningReport.season.name}{morningReport.season.desc?' — '+morningReport.season.desc:''}</div>}
             <div style={{fontSize:16,color:TH.textBright}}>{charName} · {RACES[charRace]?.icon} {RACES[charRace]?.name}</div>
             <div style={{fontSize:14,color:TH.textDim,marginTop:2}}>
               {Object.entries(classLevels).filter(([cid])=>CLASSES[cid]).map(([cid,lv])=>CLASSES[cid]?.icon+' '+CLASSES[cid]?.name+' '+lv).join(' · ')} · Lv{displayLevel} · 💰{gold}g
@@ -7315,6 +7440,18 @@ function CindervaleAlchemistInner(){
               {canGo&&<div style={{background:TH.bg,borderRadius:6,padding:'8px 10px',marginBottom:12,border:'1px solid '+TH.border}}>
                 <div style={{fontSize:14,color:TH.textDim,lineHeight:1.6}}>
                   🚶 Travel: <b style={{color:TH.orange}}>{info.travelTime}h</b> · ⛏️ Gathering: <b style={{color:TH.green}}>{info.gatherHours}h</b> · 📦 ~{3*info.gatherHours} items ({pickN} types/check)
+                </div>
+                {(()=>{const s=getSeason(day,gameLocation);const mods=[];
+                  if(s.floraYieldBonus)mods.push(s.icon+' +'+s.floraYieldBonus+' flora yield');
+                  if(s.yieldMod>0)mods.push(s.icon+' +'+s.yieldMod+' yield');
+                  if(s.yieldMod<0)mods.push(s.icon+' '+s.yieldMod+' yield');
+                  if(s.travelMod>0&&(!s.travelMinDiff||reg.diff>=s.travelMinDiff))mods.push(s.icon+' +'+s.travelMod+' travel');
+                  if(s.travelMod<0)mods.push(s.icon+' '+s.travelMod+' travel');
+                  if(s.dangerMod>0)mods.push(s.icon+' +'+s.dangerMod+'% danger');
+                  if(s.dangerMod<0)mods.push(s.icon+' '+Math.abs(s.dangerMod)+'% safer');
+                  const si=getSeasonalIngr(s,gameLocation);if(si.length>0)mods.push(s.icon+' Seasonal: '+si.map(id=>(INGR[id]?.icon||'')+INGR[id]?.name).join(', '));
+                  return mods.length>0?<div style={{fontSize:12,color:s.color,marginTop:2}}>{mods.join(' · ')}</div>:null;
+                })()}
                 </div>
               </div>}
 
@@ -7911,7 +8048,7 @@ function CindervaleAlchemistInner(){
 
           <div style={{textAlign:'center',marginBottom:12,position:'relative',zIndex:1}}>
             <div style={{fontSize:18,color:TH.gold,letterSpacing:4}}>— CINDERVALE —</div>
-            <div style={{fontSize:14,color:TH.textDim}}>{debt>200?'Your shop is PADLOCKED. Reduce debt to reopen.':debt>100?'Creditors circle. Some upgrades have been repossessed.':debt>50?'The town council is watching your finances closely.':hours>4?'The day stretches ahead.':hours>1?'Shadows lengthen across the village.':hours>0?'The last light fades.':'Night has fallen.'} Day {day} · ⚡{hours} Energy</div>
+            <div style={{fontSize:14,color:TH.textDim}}>{debt>200?'Your shop is PADLOCKED. Reduce debt to reopen.':debt>100?'Creditors circle. Some upgrades have been repossessed.':debt>50?'The town council is watching your finances closely.':hours>4?'The day stretches ahead.':hours>1?'Shadows lengthen across the village.':hours>0?'The last light fades.':'Night has fallen.'} Day {day} · {getSeason(day,gameLocation).icon} {getSeason(day,gameLocation).name} · ⚡{hours} Energy</div>
           </div>
 
           {/* Buildings — 4×2 grid */}
