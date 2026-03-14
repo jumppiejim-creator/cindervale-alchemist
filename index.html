@@ -1124,6 +1124,7 @@ const FORTRESS_TYPES={
 
 // ═══ SEASONS ═══
 const SEASON_LENGTH=7; // days per season
+const GOLD_MULT=0.5; // Global gold economy multiplier — applies to all income sources
 const SEASONS={
   cindervale:[
     {id:'spring',name:'Spring',img:'https://jumppiejim-creator.github.io/cindervale-alchemist/season-spring.png',icon:'🌱',color:'#60c060',
@@ -3137,7 +3138,7 @@ function CindervaleAlchemistInner(){
         const r=availPots[Math.floor(Math.random()*availPots.length)];
         const qty=1+Math.floor(Math.random()*(level>=6?3:level>=3?2:1));
         const basePay=r.xp+getSkMod('aesthetics')*2+getSkMod('haggling')+Math.floor(upEff('sellBonus')*r.xp);
-        const payPer=Math.floor(basePay*(1+custPayBF+getFeatureVal('potionValueBonus')));
+        const payPer=Math.floor(basePay*(1+custPayBF+getFeatureVal('potionValueBonus'))*GOLD_MULT);
         const pl=POT_LINES[name];
         pQ.push({kind:'potion',customer:name,title:cd.title,potionId:r.id,potionName:r.name,potionIcon:r.icon,
           qty,payPer,xpPer:Math.floor(r.xp*0.3),
@@ -4447,7 +4448,7 @@ function CindervaleAlchemistInner(){
       const critGold=isCrit?Math.floor(baseGR*0.5):0;
       const enchGoldB=getFeatureVal('enchantGoldBonus');const custPayB=getFeatureVal('customerPayBonus');
       const debtPenalty=debt>50?-0.20:0;
-      const gR=Math.floor((baseGR+critGold)*(1+enchGoldB+custPayB+debtPenalty)*customSellMult*eqT.sellMult);const enchXpEarned=Math.floor(ench.xp*eqT.xpMult);gainXP(enchXpEarned);setGold(g=>g+gR);
+      const gR=Math.floor((baseGR+critGold)*(1+enchGoldB+custPayB+debtPenalty)*customSellMult*eqT.sellMult*GOLD_MULT);const enchXpEarned=Math.floor(ench.xp*eqT.xpMult);gainXP(enchXpEarned);setGold(g=>g+gR);
       showResult(ench.icon+' '+(quality!=='std'?QUALITY[quality].icon+' ':'')+ench.name+' \u2014 Enchanted!','craft',cust.customer+"'s "+cust.icon+cust.name+'\\n+'+enchXpEarned+' XP  +'+gR+'g'+(isCustomEnch&&customSellMult>1?'\\n\u2728 Custom pattern: '+customSellMult+'\u00d7 premium!':'')+(matSaved?'\\n\u2728 Materials preserved!':'')+(isCrit?'\\n🎯 Critical inscription!':'')+(discounted?'\\n🏷\ufe0f Discount materials!':'')+(debtPenalty<0?'\\n\u26a0\ufe0f Debt penalty: -20% pay':''),ch);
       if(dualInsc>0&&!dayFlags.includes('dual_inscribed')){setDayFlags(f=>[...f,'dual_inscribed']);setHours(h=>h+1);addLog('\u2728 Dual Inscription: bonus enchant this hour!','info');}
     }
@@ -4595,7 +4596,7 @@ function CindervaleAlchemistInner(){
     const csb=upEff('craftSkillBonus');if(csb){ch.total+=csb;ch.extras.push({label:'Upgrades',val:csb});}
     ch.success=ch.total>=dc;
     if(ch.success){
-      const goldReward=Math.floor(contract.basePay*potency.payMult*(1+getSkMod('haggling')*0.03));
+      const goldReward=Math.floor(contract.basePay*potency.payMult*(1+getSkMod('haggling')*0.03)*GOLD_MULT);
       const xpReward=Math.floor(contract.baseXp*potency.payMult*0.8);
       const repReward=Math.floor((8+contract.tier*4)*potency.payMult*0.5);
       setGold(g=>g+goldReward);gainXP(xpReward);addRep(contract.faction,repReward);
@@ -4658,7 +4659,7 @@ function CindervaleAlchemistInner(){
     }
     // Both succeeded! Create a Named Weapon
     const wName=genWeaponName();
-    const goldValue=Math.floor((weapon.tier*20+enchant.tier*15)*(1+getSkMod('haggling')*0.03+getFeatureVal('enchantGoldBonus')));
+    const goldValue=Math.floor((weapon.tier*20+enchant.tier*15)*(1+getSkMod('haggling')*0.03+getFeatureVal('enchantGoldBonus'))*GOLD_MULT);
     const xpReward=Math.floor(weapon.tier*15+enchant.tier*12);
     gainXP(xpReward);
     const newWeapon={id:'fw_'+Math.random().toString(36).slice(2),name:wName,weaponType:weapon.name,weaponIcon:weapon.icon,
@@ -4697,7 +4698,7 @@ function CindervaleAlchemistInner(){
         // Calculate rewards based on completion ratio
         const ratio=newCompleted/totalLayers;
         const payMult=ratio>=1?1.0:ratio>=0.66?0.75:0.4;
-        const goldReward=Math.floor(comm.baseGold*payMult*(1+getSkMod('haggling')*0.03+getFeatureVal('enchantGoldBonus')));
+        const goldReward=Math.floor(comm.baseGold*payMult*(1+getSkMod('haggling')*0.03+getFeatureVal('enchantGoldBonus'))*GOLD_MULT);
         const xpReward=Math.floor(comm.baseXp*payMult);
         const repReward=ratio>=1?12+comm.tier*5:ratio>=0.66?6:0;
         // Bonus referral for perfect completion
@@ -5372,7 +5373,7 @@ function CindervaleAlchemistInner(){
     if(q.type==='deliver')consumePots(q.target,q.count);else if(q.type==='gather')modInv(q.target,-q.count);else if(q.type==='multi')q.targets.forEach(t=>consumePots(t,1));
     setAQ(p=>p.filter(a=>a.id!==q.id));setDoneQ(p=>[...p,q.id]);const loreXp=getSkMod('lore')*4;
     const qGoldB=1+getFeatureVal('questGoldBonus')+(getSeason(day,gameLocation).questGoldMod||0);const qRepB=1+getFeatureVal('questRepBonus');const qXpB=1+getFeatureVal('questXPBonus');
-    const qGold=Math.floor(q.gold*qGoldB);
+    const qGold=Math.floor(q.gold*qGoldB*GOLD_MULT);
     gainXP(Math.floor((q.xp+loreXp)*qXpB));setGold(g=>g+qGold);
     if(q.items?.length)q.items.forEach(id=>modInv(id,1));if(q.faction&&q.fRep)addRep(q.faction,Math.floor(q.fRep*qRepB));
     // Temple Healing: restore 1 energy on quest completion
@@ -5434,7 +5435,7 @@ function CindervaleAlchemistInner(){
     setDoneBQCount(c=>c+1);
     const bqLoreXp=getSkMod('lore')*4;
     const bqGoldB=1+getFeatureVal('questGoldBonus');const bqRepB=1+getFeatureVal('questRepBonus');const bqXpB=1+getFeatureVal('questXPBonus');
-    const bqGold=Math.floor(bq.gold*bqGoldB);
+    const bqGold=Math.floor(bq.gold*bqGoldB*GOLD_MULT);
     gainXP(Math.floor((bq.xp+bqLoreXp)*bqXpB));setGold(g=>g+bqGold);
     if(bq.faction&&bq.fRep)addRep(bq.faction,Math.floor(bq.fRep*bqRepB));
     const bqER=getFeatureVal('questEnergyRestore');if(bqER>0){setHours(h=>h+bqER);addLog('\u26a1 Temple Healing: +'+bqER+' Energy restored!','info');}
@@ -5751,7 +5752,7 @@ function CindervaleAlchemistInner(){
     }
     // Report line
     report.push({n:'Daily Costs',i:'💰',r:'-'+dailyUpkeep+'g (base 5 + '+Math.max(0,dailyUpkeep-5)+' maintenance/wages)'+(newDebt>0?' | DEBT: '+newDebt+'g':''),t:newDebt>0?'fail':'idle'});
-    if(upEff('passiveIncome')>0){const piMult=Math.max(1,getFeatureVal('passiveIncomeMulti'));const p=Math.floor(upEff('passiveIncome')*piMult);setGold(g=>g+p);report.push({n:'Shop Front',i:'🪟',r:`+${p}g${piMult>1?' (×'+piMult+')':''}`,t:'ok'});}
+    if(upEff('passiveIncome')>0){const piMult=Math.max(1,getFeatureVal('passiveIncomeMulti'));const p=Math.max(1,Math.floor(upEff('passiveIncome')*piMult*GOLD_MULT));setGold(g=>g+p);report.push({n:'Shop Front',i:'🪟',r:`+${p}g${piMult>1?' (×'+piMult+')':''}`,t:'ok'});}
     // Research Papers: passive income from published papers
     if(pubPapers.length>0){
       const scaling=getFeatureVal('paperScaling');const grand=getFeatureVal('grandPapers');
@@ -5807,7 +5808,7 @@ function CindervaleAlchemistInner(){
         for(let i=0;i<qty;i++){if(Math.random()<0.3+level*0.02+getSkMod('haggling')*0.02+shelfSaleB+infCustBonus+brandShelfBonus)sold++;}
         if(sold>0){
           const basePrice=r.xp+getSkMod('aesthetics')*2+getSkMod('haggling')+Math.floor(upEff('sellBonus')*r.xp);
-          const price=Math.floor(basePrice*(1+sellB+custPayB+pvb)*qMult*infMult*freshMult*brandMult);
+          const price=Math.floor(basePrice*(1+sellB+custPayB+pvb)*qMult*infMult*freshMult*brandMult*GOLD_MULT);
           shelfGold+=price*sold;shelfSold[potId]=(shelfSold[potId]||0)+sold;
           next[potId]=qty-sold;if(next[potId]<=0)delete next[potId];
         }
@@ -6119,7 +6120,7 @@ function CindervaleAlchemistInner(){
     if(shelfGold>0){goldIn+=shelfGold;goldLines.push({icon:'🏪',label:'Shelf Sales',val:'+'+shelfGold+'g',color:TH.green});}
     const shopStaff=report.filter(r=>r.r?.startsWith('Shop: +'));
     shopStaff.forEach(r=>{const m=r.r.match(/\+(\d+)g/);if(m){const g=+m[1];goldIn+=g;goldLines.push({icon:'🏪',label:r.n+' (Shop)',val:'+'+g+'g',color:TH.green});}});
-    if(upEff('passiveIncome')>0){const piMult=Math.max(1,getFeatureVal('passiveIncomeMulti'));const p=Math.floor(upEff('passiveIncome')*piMult);goldIn+=p;goldLines.push({icon:'🪟',label:'Shop Front'+(piMult>1?' (×'+piMult+')':''),val:'+'+p+'g',color:TH.green});}
+    if(upEff('passiveIncome')>0){const piMult=Math.max(1,getFeatureVal('passiveIncomeMulti'));const p=Math.max(1,Math.floor(upEff('passiveIncome')*piMult*GOLD_MULT));goldIn+=p;goldLines.push({icon:'🪟',label:'Shop Front'+(piMult>1?' (×'+piMult+')':''),val:'+'+p+'g',color:TH.green});}
     if(pubPapers.length>0){
       const scaling=getFeatureVal('paperScaling');const grand=getFeatureVal('grandPapers');
       let ppGold=0;pubPapers.forEach(p=>{const age=Math.max(1,day-p.day);const base=grand?8:3;ppGold+=scaling?Math.floor(base*(1+Math.min(age/30,2))):base;});
@@ -6148,7 +6149,7 @@ function CindervaleAlchemistInner(){
     if(Object.keys(shelfSold).length>0){
       const sLines=Object.entries(shelfSold).map(([id,q])=>{const r=RECIPES.find(x=>x.id===getBaseRecipeId(id));
         const basePrice=r?r.xp+getSkMod('aesthetics')*2+getSkMod('haggling')+Math.floor(upEff('sellBonus')*r.xp):0;
-        const price=Math.floor(basePrice*(1+getFeatureVal('sellBonus')+getFeatureVal('customerPayBonus')+getFeatureVal('potionValueBonus')));
+        const price=Math.floor(basePrice*(1+getFeatureVal('sellBonus')+getFeatureVal('customerPayBonus')+getFeatureVal('potionValueBonus'))*GOLD_MULT);
         return{icon:r?.icon||'🧪',label:(r?.name||id)+' ×'+q,val:'+'+price*q+'g',color:TH.gold};});
       mrSections.push({title:'🏪 Shelf Sales',lines:sLines});}
     // Staff injury recovery
@@ -6430,11 +6431,11 @@ function CindervaleAlchemistInner(){
           const tradeItems={};const n=1+Math.floor(cargoValue/2);
           for(let i=0;i<n;i++){const id=route.tradeIngr[Math.floor(Math.random()*route.tradeIngr.length)];tradeItems[id]=(tradeItems[id]||0)+1;}
           setInv(p=>{const nn={...p};Object.entries(tradeItems).forEach(([id,q])=>{nn[id]=(nn[id]||0)+q;});return nn;});
-          const tradeGold=Math.floor(route.tradeGold*(1+cargoValue*0.2));setGold(g=>g+tradeGold);
+          const tradeGold=Math.floor(route.tradeGold*(1+cargoValue*0.2)*GOLD_MULT);setGold(g=>g+tradeGold);
           qmLines.push({icon:'🚚',label:route.name+' returned!',val:Object.entries(tradeItems).map(([id,q])=>(INGR[id]?.icon||id)+'×'+q).join(' ')+' +'+tradeGold+'g',color:TH.green});
         } else {
           // Partial loss
-          const partialGold=Math.floor(route.tradeGold*0.4);setGold(g=>g+partialGold);
+          const partialGold=Math.floor(route.tradeGold*0.4*GOLD_MULT);setGold(g=>g+partialGold);
           qmLines.push({icon:'🚚',label:route.name+' — rough trip',val:'Partial cargo lost. +'+partialGold+'g',color:TH.orange});
         }
       });
@@ -8142,7 +8143,7 @@ function CindervaleAlchemistInner(){
                 {qty>1&&<button style={S.btn()} onClick={()=>{modPot(id,-qty);setGold(g=>g+sp*qty);addLog(`Sold ${qty}× ${r.icon}${r.name}. (+${sp*qty}g)`,'info');}}>All ({sp*qty}g)</button>}
               </div>);})}
             {Object.entries(inv).filter(([,q])=>q>0).length>0&&<div style={{fontSize:16,color:TH.gold,marginTop:8,marginBottom:4}}>Sell Ingredients</div>}
-            {Object.entries(inv).filter(([,q])=>q>0).map(([id,qty])=>{const ig=INGR[id];if(!ig)return null;const baseSp=Math.max(1,Math.floor((ig.val||5)*0.4)+getSkMod('haggling')+getSkMod('appraisal'));const sp=Math.floor(baseSp*(1+getFeatureVal('sellBonus')));
+            {Object.entries(inv).filter(([,q])=>q>0).map(([id,qty])=>{const ig=INGR[id];if(!ig)return null;const baseSp=Math.max(1,Math.floor((ig.val||5)*0.4)+getSkMod('haggling')+getSkMod('appraisal'));const sp=Math.max(1,Math.floor(baseSp*(1+getFeatureVal('sellBonus'))*GOLD_MULT));
               const isHid=HIDDEN_INGR&&HIDDEN_INGR[id];const spThresh=(isHid?12:8)+getFeatureVal('spoilThreshold')+upEff('spoilThreshold');return(
               <div key={id} style={{display:'flex',alignItems:'center',gap:6,padding:'3px 0',fontSize:16}}>
                 <span>{ig.icon}{ig.name} ×{qty}</span><span style={{color:TH.gold,marginLeft:'auto'}}>{sp}g ea</span>
@@ -9615,7 +9616,7 @@ function CindervaleAlchemistInner(){
               {qty>1&&<button style={S.btn()} onClick={()=>{modPot(id,-qty);setGold(g=>g+sp*qty);addLog(`Sold ${qty}× ${r.icon}${r.name} for ${sp*qty}g.`,'info');}}>Sell All ({sp*qty}g)</button>}
             </div>);})}
           {Object.entries(inv).filter(([,q])=>q>0).length>0&&<div style={{fontSize:15,color:TH.gold,marginTop:6,marginBottom:4}}>Ingredients</div>}
-          {Object.entries(inv).filter(([,q])=>q>0).map(([id,qty])=>{const ig=INGR[id];if(!ig)return null;const sp=Math.max(1,Math.floor((ig.val||5)*0.4)+getSkMod('haggling')+getSkMod('appraisal'));
+          {Object.entries(inv).filter(([,q])=>q>0).map(([id,qty])=>{const ig=INGR[id];if(!ig)return null;const sp=Math.max(1,Math.floor(((ig.val||5)*0.4)+getSkMod('haggling')+getSkMod('appraisal'))*GOLD_MULT);
             const isHid=HIDDEN_INGR&&HIDDEN_INGR[id];const spThresh=(isHid?12:8)+getFeatureVal('spoilThreshold')+upEff('spoilThreshold');
             const spColor=qty>spThresh+8?'#c04040':qty>spThresh+4?'#d08030':qty>spThresh?'#c0a040':'';
             return(
