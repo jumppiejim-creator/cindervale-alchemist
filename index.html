@@ -3250,7 +3250,7 @@ function CindervaleAlchemistInner(){
           const threatComms=SHIELD_COMMISSIONS.filter(c=>c.threatReq===tid&&(!c.threatMin||tVal>=c.threatMin)&&c.layers.length<=maxLayers+2);
           if(threatComms.length>0){
             const tc=threatComms[Math.floor(Math.random()*threatComms.length)];
-            const tf=THREAT_FACTIONS.find(f=>f.id===tid);
+            const tf=THREAT_FACTIONS[tid];
             commissions.push({id:'sc_tw_'+Math.random().toString(36).slice(2),commissionId:tc.id,
               clientName:tf?.name||'Settlement Defense',isThreatWard:true,
               layersCompleted:0,layersFailed:0,retryUsed:false,done:false});
@@ -4709,7 +4709,7 @@ function CindervaleAlchemistInner(){
           const baseReduc=comm.threatReduction||(enchLv>=8?5:enchLv>=5?4:3);
           const finalReduc=ratio>=1?baseReduc:Math.floor(baseReduc*0.6);
           setThreats(prev=>{const n={...prev};n[comm.wardTarget]=Math.max(0,(n[comm.wardTarget]||0)-finalReduc);return n;});
-          const threatName=THREAT_FACTIONS.find(tf=>tf.id===comm.wardTarget)?.name||comm.wardTarget;
+          const threatName=THREAT_FACTIONS[comm.wardTarget]?.name||comm.wardTarget;
           addLog(`🛡️ ${threatName} threat reduced by ${finalReduc}! Your wards protect the settlement.`,'quest');
         }
         const PERFECT=['"Every layer holds. This is masterwork — I\'ll send my whole squad to you."','"*tests the wards* Flawless. The Wardens will hear of this."'];
@@ -8511,7 +8511,7 @@ function CindervaleAlchemistInner(){
               </div>
               <div style={{fontSize:14,fontStyle:'italic',color:TH.textDim,margin:'4px 0'}}>{comm.desc}</div>
               {comm.wardTarget&&!sc.done&&<div style={{fontSize:12,color:getThreatColor(threats[comm.wardTarget]||0),marginBottom:4}}>
-                {THREAT_FACTIONS.find(tf=>tf.id===comm.wardTarget)?.icon} Reduces {THREAT_FACTIONS.find(tf=>tf.id===comm.wardTarget)?.name} threat by {comm.threatReduction||(classLevels.enchanter>=8?5:classLevels.enchanter>=5?4:3)} on completion
+                {THREAT_FACTIONS[comm.wardTarget]?.icon} Reduces {THREAT_FACTIONS[comm.wardTarget]?.name} threat by {comm.threatReduction||(classLevels.enchanter>=8?5:classLevels.enchanter>=5?4:3)} on completion
               </div>}
               {/* Layer progress bar */}
               <div style={{display:'flex',gap:3,margin:'6px 0'}}>
