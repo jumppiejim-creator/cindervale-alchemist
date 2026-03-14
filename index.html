@@ -92,7 +92,7 @@ const Portrait=({cls,race,gender,size=120,style:extraStyle={}})=>{
 };
 
 const d20=()=>Math.floor(Math.random()*20)+1;
-const XP_TBL=[0,400,1040,2000,3400,5400,8200,11800,16400,22400,30000,40000,52800,68800,88800,114000,144000];
+const XP_TBL=[0,400,1040,2960,5760,9760,18160,28960,42760,66760,104760,164760,254360,382360,562360,814360,1144360];
 const getLvl=xp=>{let l=0;for(let i=0;i<XP_TBL.length;i++)if(xp>=XP_TBL[i])l=i;return l;};
 const nxtXP=xp=>{const l=getLvl(xp);return l>=XP_TBL.length-1?null:XP_TBL[l+1];};
 const profB=lvl=>Math.floor(lvl/4)+2;
@@ -3667,7 +3667,6 @@ function CindervaleAlchemistInner(){
   const museumBonuses=getAllMuseumBonuses();
 
   const appraiseRelic=(relicId)=>{
-    if(hours<1){addLog('Not enough Energy to appraise.','error');return;}
     const relic=relics.find(r=>r.id===relicId);if(!relic||relic.appraised)return;
     const aqLv=prestigeLevels.antiquarian||0;
     // Auto-identify at Lv4+
@@ -3676,7 +3675,7 @@ function CindervaleAlchemistInner(){
       addLog('📖 Auto-identified: '+RELIC_CATS.find(c=>c.id===relic.category)?.icon+' '+relic.name+' ('+relic.rarity+', '+relic.value+'g).','craft');
       return;
     }
-    snapshot();spendEnergy(1);
+    snapshot();
     const dc=RELIC_APPRAISE_DC[relic.rarity]||11;
     const ch=doCheck('research',dc);
     const apBonus=aqLv>=2?3:0;
@@ -4174,10 +4173,10 @@ function CindervaleAlchemistInner(){
 
   // ─── PUBLISH PAPERS (Scholar) ───
   const doPublishPaper=(id,type)=>{
-    if(hours<1){addLog('Publishing requires 1 hour of careful writing.','error');return;}
+    // Publishing: free (spec feature)
     if(pubPapers.find(p=>p.id===id&&p.type===type)){addLog('You\'ve already published a paper on this topic.','info');return;}
     snapshot();
-    spendEnergy(1);
+    // free
     setPubPapers(p=>[...p,{id,type,day}]);
     const baseXp=type==='recipe'?25:35;
     gainXP(baseXp);
@@ -4241,9 +4240,9 @@ function CindervaleAlchemistInner(){
     const free=getFeatureVal('freeTransmute');
     const srcNeed=ratio*qty;
     if((inv[srcId]||0)<srcNeed){addLog(`Need ${srcNeed}× ${INGR[srcId]?.icon||''}${INGR[srcId]?.name||srcId} to transmute ${qty}× ${INGR[tgtId]?.icon||''}${INGR[tgtId]?.name||tgtId}.`,'error');return;}
-    if(!free&&hours<1){addLog('Transmutation requires 1 hour of focused work.','error');return;}
+    // Transmutation is free (spec feature)
     snapshot();
-    if(!free)spendEnergy(1);
+    // Free — spec feature
     modInv(srcId,-srcNeed);modInv(tgtId,qty);
     gainXP(10*qty);
     const FLAVOR=['The ingredients shimmer and reform into something new.','Alchemical bonds dissolve and reconstitute — transmutation complete.','The essence shifts, matter transforms, and new reagents emerge.'];
@@ -4442,9 +4441,9 @@ function CindervaleAlchemistInner(){
     // Check ingredients
     const hasIngr=contract.ingredients.every((id,i)=>(inv[id]||0)>=(contract.ingredientQty[i]||0));
     if(!hasIngr){addLog('Not enough ingredients to brew this poison.','error');return;}
-    if(hours<1){addLog('Brewing a contract poison takes 1 hour.','error');return;}
+    // Venom contract: free (spec feature)
     snapshot();
-    spendEnergy(1);
+    // free
     // Consume ingredients
     setInv(p=>{const n={...p};contract.ingredients.forEach((id,i)=>{n[id]=Math.max(0,(n[id]||0)-(contract.ingredientQty[i]||0));});return n;});
     // Craft check using improvisation
@@ -4484,9 +4483,9 @@ function CindervaleAlchemistInner(){
     // Check ingredients
     const hasMats=Object.entries(weapon.matCost).every(([id,q])=>(inv[id]||0)>=q);
     if(!hasMats){addLog('Not enough materials to forge this weapon.','error');return;}
-    if(hours<2){addLog('Forging a weapon takes ⚡2 Energy.','error');return;}
+    // Forge weapon: free (spec feature)
     snapshot();
-    spendEnergy(2);
+    // free
     setDayFlags(f=>[...f,'forge_used']);
     // Consume materials
     setInv(p=>{const n={...p};Object.entries(weapon.matCost).forEach(([id,q])=>{n[id]=Math.max(0,(n[id]||0)-q);});return n;});
@@ -4539,9 +4538,9 @@ function CindervaleAlchemistInner(){
     if(layerIdx>=comm.layers.length){return;}
     const enchId=comm.layers[layerIdx];
     const enchant=ENCHANTMENTS.find(e=>e.id===enchId);if(!enchant)return;
-    if(hours<1){addLog('Each inscription layer takes 1 hour.','error');return;}
+    // Shield commission layer: free (spec feature)
     snapshot();
-    spendEnergy(1);
+    // free
     // Inscription check
     const dc=enchant.dc||12;
     const ch=doCheck('inscription',dc);
@@ -4658,8 +4657,8 @@ function CindervaleAlchemistInner(){
     if(customPatterns.length>=getPatternSlots()){addLog(`Pattern library full (${getPatternSlots()} max).`,'error');return;}
     if(effectIds.length>getMaxEffects()){addLog(`Can only combine ${getMaxEffects()} effects at your level.`,'error');return;}
     if(effectIds.length<1){addLog('Select at least one effect.','error');return;}
-    if(hours<2){addLog('Pattern research takes ⚡2 Energy.','error');return;}
-    snapshot();spendEnergy(2);
+    // Pattern research: free (prestige feature)
+    snapshot();// free
     // DC scales with power level and number of effects
     const baseDC=10+powerLevel*3+effectIds.length*2;
     const ch=doCheck('research',baseDC);
@@ -4716,10 +4715,10 @@ function CindervaleAlchemistInner(){
   const canAutoEnchant=()=>(prestigeLevels.magitech||0)>=4;
   const buildAutomaton=()=>{
     if(automata.length>=getAutoSlots()){addLog('Maximum automaton slots reached.','error');return;}
-    if(hours<2){addLog('Building an automaton frame takes ⚡2 Energy.','error');return;}
+    // Automaton build: free (prestige feature)
     const matCost={ironroot_bark:3,hearthstone:2};
     if(!Object.entries(matCost).every(([id,q])=>(inv[id]||0)>=q)){addLog('Need 3× Ironroot Bark + 2× Hearthstone to build an automaton.','error');return;}
-    snapshot();spendEnergy(2);
+    snapshot();
     Object.entries(matCost).forEach(([id,q])=>modInv(id,-q));
     const ch=doCheck('precision',12);
     const cfb=getFeatureVal('craftBonus');if(cfb){ch.total+=cfb;ch.extras.push({label:'Craft',val:cfb});}
@@ -4752,8 +4751,8 @@ function CindervaleAlchemistInner(){
     if(currentHarmony>=getHarmonyCap()){addLog(`${pair.name} is already at max Harmony for your level.`,'error');return;}
     const envoysToday=dayFlags.filter(f=>f==='envoy_sent').length;
     if(envoysToday>=getMaxEnvoys()){addLog(`Maximum ${getMaxEnvoys()} envoys per day.`,'error');return;}
-    if(hours<1){addLog('Dispatching an envoy takes 1 hour.','error');return;}
-    snapshot();spendEnergy(1);
+    // Envoy: free (spec feature)
+    snapshot();// free
     setDayFlags(f=>[...f,'envoy_sent']);
     const ch=doCheck('persuasion',pair.dc+currentHarmony*2);
     const netMod=getSkMod('networking');if(netMod>0){ch.total+=netMod;ch.extras.push({label:'Networking',val:netMod});}
@@ -4810,7 +4809,7 @@ function CindervaleAlchemistInner(){
     if(hours<1){addLog('Training takes ⚡1 Energy.','error');return;}
     const gmLv=classLevels.merchant||0;
     // Lv10: passive training costs 0 hours
-    const hourCost=gmLv>=10?0:1;
+    const hourCost=0; // Training: free (spec feature)
     if(hourCost>0&&hours<hourCost){addLog('Training takes ⚡1 Energy.','error');return;}
     snapshot();
     if(hourCost>0)spendEnergy(hourCost);
@@ -4847,8 +4846,8 @@ function CindervaleAlchemistInner(){
     if((classLevels.merchant||0)<10){addLog('Teaching traits requires Guildmaster Lv10.','error');return;}
     if((ap.traits||[]).includes(traitId)){addLog(ap.name+' already has this trait.','error');return;}
     if((ap.traits||[]).length>=4){addLog(ap.name+' has too many traits (max 4).','error');return;}
-    if(hours<2){addLog('Teaching a trait takes ⚡2 Energy.','error');return;}
-    snapshot();spendEnergy(2);
+    // Teach trait: free (spec feature)
+    snapshot();// free
     const dc=15;
     const ch=doCheck('persuasion',dc);ch.success=ch.total>=dc;
     if(ch.success){
@@ -4907,12 +4906,12 @@ function CindervaleAlchemistInner(){
     // Cargo: player loads potions or ingredients
     const totalCargo=Object.values(cargo).reduce((s,v)=>s+v,0);
     if(totalCargo<1){addLog('Load at least 1 item as cargo.','error');return;}
-    if(hours<1){addLog('Dispatching a caravan takes 1 hour.','error');return;}
+    // Caravan dispatch: free (spec feature)
     // Verify cargo exists in inventory
     const isPotion=Object.keys(cargo).some(id=>RECIPES.find(r=>r.id===id));
     const hasAll=Object.entries(cargo).every(([id,q])=>isPotion?(pots[id]||0)>=q:(inv[id]||0)>=q);
     if(!hasAll){addLog('Not enough items to load.','error');return;}
-    snapshot();spendEnergy(1);
+    snapshot();// free
     // Consume cargo
     if(isPotion)setPots(p=>{const n={...p};Object.entries(cargo).forEach(([id,q])=>{n[id]=Math.max(0,(n[id]||0)-q);});return n;});
     else setInv(p=>{const n={...p};Object.entries(cargo).forEach(([id,q])=>{n[id]=Math.max(0,(n[id]||0)-q);});return n;});
@@ -4962,9 +4961,9 @@ function CindervaleAlchemistInner(){
     const activeCount=blueprints.length;
     if(activeCount>=getBPSlots()){addLog(`You can only have ${getBPSlots()} active blueprints.`,'error');return;}
     if(bp.legendary&&(classLevels.artificer||0)<10){addLog('Legendary blueprints require Artificer Lv10.','error');return;}
-    if(hours<1){addLog('Drafting a blueprint takes 1 hour.','error');return;}
+    // Blueprint draft: free (spec feature)
     snapshot();
-    spendEnergy(1);
+    // free
     const ch=doCheck('research',bp.draftDC);
     const cfb=getFeatureVal('craftBonus');if(cfb){ch.total+=cfb;ch.extras.push({label:'Craft',val:cfb});}
     ch.success=ch.total>=bp.draftDC;
@@ -4990,7 +4989,7 @@ function CindervaleAlchemistInner(){
     const hasMats=Object.entries(matCheck).every(([id,q])=>(inv[id]||0)>=q);
     if(!hasMats){addLog('Not enough materials for this build session.','error');return;}
     snapshot();
-    spendEnergy(hourCost);
+    // Build session: free (spec feature)
     setInv(p=>{const n={...p};Object.entries(matCheck).forEach(([id,q])=>{n[id]=Math.max(0,(n[id]||0)-q);});return n;});
     const ch=doCheck('precision',bp.draftDC-2);
     const cfb=getFeatureVal('craftBonus');if(cfb){ch.total+=cfb;ch.extras.push({label:'Craft',val:cfb});}
@@ -5044,8 +5043,8 @@ function CindervaleAlchemistInner(){
     const rcLv=classLevels.artificer||0;
     const ratio=rcLv>=6?2:3;
     if((inv[srcId]||0)<ratio){addLog(`Need ${ratio} of that ingredient to transmute.`,'error');return;}
-    if(hours<1){addLog('Transmutation takes 1 hour.','error');return;}
-    snapshot();spendEnergy(1);
+    // Transmutation is free (spec feature)
+    snapshot();// free
     setInv(p=>({...p,[srcId]:Math.max(0,(p[srcId]||0)-ratio),[tgtId]:(p[tgtId]||0)+1}));
     gainXP(8);
     showResult('♻️ Transmuted!','craft',(INGR[srcId]?.icon||srcId)+'×'+ratio+' → '+(INGR[tgtId]?.icon||tgtId)+'×1\n+8 XP');
@@ -5095,9 +5094,9 @@ function CindervaleAlchemistInner(){
     if(bp.legendary&&getMaxMk()<3){addLog('Legendary gadgets require Tinkerer Lv10.','error');return;}
     const hasMats=Object.entries(bp.matCost).every(([id,q])=>(inv[id]||0)>=q);
     if(!hasMats){addLog('Not enough materials to craft '+bp.name+'.','error');return;}
-    if(hours<2){addLog('Crafting a gadget takes ⚡2 Energy.','error');return;}
+    // Gadget craft: free (spec feature)
     snapshot();
-    spendEnergy(2);
+    // free
     setInv(p=>{const n={...p};Object.entries(bp.matCost).forEach(([id,q])=>{n[id]=Math.max(0,(n[id]||0)-q);});return n;});
     const ch=doCheck('precision',bp.dc);
     const cfb=getFeatureVal('craftBonus');if(cfb){ch.total+=cfb;ch.extras.push({label:'Craft',val:cfb});}
@@ -5121,9 +5120,9 @@ function CindervaleAlchemistInner(){
     const costMult=g.mk+1;
     const hasMats=Object.entries(bp.matCost).every(([id,q])=>(inv[id]||0)>=q*costMult);
     if(!hasMats){addLog(`Upgrading to Mk ${g.mk+1} requires ${costMult}× base materials.`,'error');return;}
-    if(hours<1){addLog('Upgrading a gadget takes 1 hour.','error');return;}
+    // Gadget upgrade: free (spec feature)
     snapshot();
-    spendEnergy(1);
+    // free
     setInv(p=>{const n={...p};Object.entries(bp.matCost).forEach(([id,q])=>{n[id]=Math.max(0,(n[id]||0)-q*costMult);});return n;});
     const newMk=g.mk+1;
     setGadgets(prev=>prev.map(x=>x.id===gadgetId?{...x,mk:newMk}:x));
@@ -5450,7 +5449,7 @@ function CindervaleAlchemistInner(){
     const enduranceBonus=getSkMod('endurance')>=3?1:0;
     const injPen=injuryPenalty||0;
     if(injPen>0)setInjuryPenalty(0);setInfusionsUsedToday(0); // Clear after applying
-    const baseH=Math.max(3,8+upEff('bonusEnergy')+getFeatureVal('bonusEnergyPerDay')+enduranceBonus+(getFeatureVal('freeAction')?1:0)-injPen);
+    const baseH=Math.max(3,4+upEff('bonusEnergy')+getFeatureVal('bonusEnergyPerDay')+enduranceBonus+(getFeatureVal('freeAction')?1:0)-injPen);
     setDay(d=>d+1);setHours(baseH);setLastCheck(null);const report=[];let totalSal=0;
     const staffEffBonus=getFeatureVal('staffEfficiencyBonus');
     const payrollDisc=getFeatureVal('payrollDiscount');
@@ -7966,10 +7965,12 @@ function CindervaleAlchemistInner(){
                 {qty>1&&<button style={S.btn()} onClick={()=>{modPot(id,-qty);setGold(g=>g+sp*qty);addLog(`Sold ${qty}× ${r.icon}${r.name}. (+${sp*qty}g)`,'info');}}>All ({sp*qty}g)</button>}
               </div>);})}
             {Object.entries(inv).filter(([,q])=>q>0).length>0&&<div style={{fontSize:16,color:TH.gold,marginTop:8,marginBottom:4}}>Sell Ingredients</div>}
-            {Object.entries(inv).filter(([,q])=>q>0).map(([id,qty])=>{const ig=INGR[id];if(!ig)return null;const baseSp=Math.max(1,Math.floor((ig.val||5)*0.4)+getSkMod('haggling')+getSkMod('appraisal'));const sp=Math.floor(baseSp*(1+getFeatureVal('sellBonus')));return(
+            {Object.entries(inv).filter(([,q])=>q>0).map(([id,qty])=>{const ig=INGR[id];if(!ig)return null;const baseSp=Math.max(1,Math.floor((ig.val||5)*0.4)+getSkMod('haggling')+getSkMod('appraisal'));const sp=Math.floor(baseSp*(1+getFeatureVal('sellBonus')));
+              const isHid=HIDDEN_INGR&&HIDDEN_INGR[id];const spThresh=(isHid?12:8)+getFeatureVal('spoilThreshold')+upEff('spoilThreshold');return(
               <div key={id} style={{display:'flex',alignItems:'center',gap:6,padding:'3px 0',fontSize:16}}>
                 <span>{ig.icon}{ig.name} ×{qty}</span><span style={{color:TH.gold,marginLeft:'auto'}}>{sp}g ea</span>
                 <button style={S.btn()} onClick={()=>{modInv(id,-1);setGold(g=>g+sp);addLog(`Sold ${ig.icon}${ig.name}. (+${sp}g)`,'info');}}>Sell 1</button>
+                {qty>spThresh&&<button style={{...S.btn('green'),fontSize:13}} onClick={()=>{const excess=qty-spThresh;modInv(id,-excess);setGold(g=>g+sp*excess);addLog(`Sold ${excess}× ${ig.icon}${ig.name} for ${sp*excess}g (trimmed to safe storage).`,'info');}}>Safe ({qty-spThresh}×{sp}g)</button>}
                 {qty>1&&<button style={S.btn()} onClick={()=>{modInv(id,-qty);setGold(g=>g+sp*qty);addLog(`Sold ${qty}× ${ig.icon}${ig.name}. (+${sp*qty}g)`,'info');}}>All ({sp*qty}g)</button>}
               </div>);})}
           </div>}
@@ -9242,7 +9243,7 @@ function CindervaleAlchemistInner(){
                 <span style={{fontSize:14}}>{cat?.icon||'❔'} Mystery Object {aqLv>=2?<span style={{fontSize:11,color:{common:TH.textDim,uncommon:'#50c070',rare:'#d4a420',legendary:'#c050e0'}[relic.rarity]||TH.textDim}}>({relic.rarity})</span>:''} <span style={{fontSize:11,color:TH.textDim}}>from {relic.region}</span></span>
                 {aqLv>=4
                   ?<button style={{...S.btn('gold'),fontSize:12,padding:'2px 6px'}} onClick={()=>appraiseRelic(relic.id)}>Auto-ID</button>
-                  :<button style={{...S.btn(hours>=1?'def':'dim'),fontSize:12,padding:'2px 6px'}} disabled={hours<1} onClick={()=>appraiseRelic(relic.id)}>Appraise (1⚡ DC{RELIC_APPRAISE_DC[relic.rarity]||11})</button>}
+                  :<button style={{...S.btn('def'),fontSize:12,padding:'2px 6px'}} onClick={()=>appraiseRelic(relic.id)}>Appraise (DC{RELIC_APPRAISE_DC[relic.rarity]||11})</button>}
               </div>;})}
           </div>}
           {/* Appraised relics */}
@@ -9440,6 +9441,7 @@ function CindervaleAlchemistInner(){
             <div key={id} style={{display:'flex',alignItems:'center',gap:6,padding:'3px 0',fontSize:16}}>
               <span style={{color:spColor||TH.text}}>{ig.icon}{ig.name} ×{qty}{spColor&&<span style={{fontSize:11,marginLeft:4,color:spColor}}>⚠️</span>}</span><span style={{color:TH.gold,marginLeft:'auto'}}>{sp}g ea</span>
               <button style={S.btn()} onClick={()=>{modInv(id,-1);setGold(g=>g+sp);addLog(`Sold ${ig.icon}${ig.name} for ${sp}g.`,'info');}}>Sell 1</button>
+              {qty>spThresh&&<button style={{...S.btn('green'),fontSize:13}} onClick={()=>{const excess=qty-spThresh;modInv(id,-excess);setGold(g=>g+sp*excess);addLog(`Sold ${excess}× ${ig.icon}${ig.name} for ${sp*excess}g (trimmed to safe storage).`,'info');}}>Sell to Safe ({qty-spThresh}×{sp}g)</button>}
               {qty>1&&<button style={S.btn()} onClick={()=>{modInv(id,-qty);setGold(g=>g+sp*qty);addLog(`Sold ${qty}× ${ig.icon}${ig.name} for ${sp*qty}g.`,'info');}}>Sell All ({sp*qty}g)</button>}
             </div>);})}
         </div>}
@@ -9579,13 +9581,13 @@ function CindervaleAlchemistInner(){
           <div style={{display:'flex',flexWrap:'wrap',gap:3}}>
             {RECIPES.filter(r=>known.includes(r.id)&&!pubPapers.find(p=>p.id===r.id&&p.type==='recipe')).map(r=>(
               <button key={r.id} style={{...S.tag,cursor:'pointer',background:TH.panelLight,border:'1px solid '+TH.green+'44'}}
-                onClick={()=>doPublishPaper(r.id,'recipe')} disabled={hours<1}>
+                onClick={()=>doPublishPaper(r.id,'recipe')}>
                 {r.icon}{r.name} <span style={{color:TH.green,fontSize:13}}>📝</span>
               </button>
             ))}
             {ENCHANTMENTS.filter(e=>knownEnch.includes(e.id)&&!pubPapers.find(p=>p.id===e.id&&p.type==='enchant')).map(e=>(
               <button key={e.id} style={{...S.tag,cursor:'pointer',background:TH.panelLight,border:'1px solid '+TH.green+'44'}}
-                onClick={()=>doPublishPaper(e.id,'enchant')} disabled={hours<1}>
+                onClick={()=>doPublishPaper(e.id,'enchant')}>
                 {e.icon}{e.name} <span style={{color:TH.green,fontSize:13}}>📝</span>
               </button>
             ))}
