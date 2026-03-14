@@ -4468,11 +4468,12 @@ function CindervaleAlchemistInner(){
     if(qT.extraIngr>=1){const firstIngr=r.ingr[0];cost[firstIngr]=(cost[firstIngr]||0)+qty;}
     if(qT.extraIngr>=2&&r.ingr.length>1){const secondIngr=r.ingr[1];cost[secondIngr]=(cost[secondIngr]||0)+qty;}
     if(qT.extraIngr>=3){const thirdIngr=r.ingr[Math.min(2,r.ingr.length-1)];cost[thirdIngr]=(cost[thirdIngr]||0)+qty;}
-    if(hours<qty){addLog('Need ⚡'+qty+' Energy to brew '+qty+'×'+r.icon+r.name+'. You have ⚡'+hours+' Energy.','error');return;}
+    const batchEnergyCost=Math.ceil(qty/2);
+    if(hours<batchEnergyCost){addLog('Need ⚡'+batchEnergyCost+' Energy to batch brew '+qty+'×'+r.icon+r.name+'. You have ⚡'+hours+' Energy.','error');return;}
     if(!Object.entries(cost).every(([id,q])=>(inv[id]||0)>=q)){addLog('Not enough ingredients for '+qty+'× '+(qT.name!=='Standard'?qT.name+' ':'')+r.icon+r.name+'.','error');return;}
     if(r.faction&&getRL(r.faction)<(r.fReq||0)){addLog('Not enough faction reputation for this recipe.','error');return;}
     snapshot();
-    spendEnergy(qty);
+    spendEnergy(batchEnergyCost);
     Object.entries(cost).forEach(([id,q])=>modInv(id,-q));
     const masteryDisc=getMasteryDiscount(brewCounts,r.id);
     let qualDCMod=qT.dcMod;
@@ -9554,14 +9555,15 @@ function CindervaleAlchemistInner(){
               {/* Brew + Batch buttons */}
               <div style={{display:'flex',gap:3,alignItems:'center',flexWrap:'wrap'}}>
                 {[1,2,3,5].map(n=>{
-                  const canN=fOk&&hours>=n&&Object.entries(selCost).every(([id,q])=>(inv[id]||0)>=q*n);
+                  const batchEC=n===1?1:Math.ceil(n/2);
+                  const canN=fOk&&hours>=batchEC&&Object.entries(selCost).every(([id,q])=>(inv[id]||0)>=q*n);
                   const bc=selBuyCalc(n);
                   return <span key={n} style={{display:'inline-flex',gap:2,alignItems:'center'}}>
                     <button style={{...S.btn(canN?n===1?'gold':'def':'dim'),fontSize:13,padding:'3px 8px'}}
-                      onClick={()=>canN&&(n===1?doCraft(r,selTier):doBatchCraft(r,n,selTier))} disabled={!canN||hours<n}>
-                      {n===1?('⚗️ Brew '+selQT.name):('×'+n)}
+                      onClick={()=>canN&&(n===1?doCraft(r,selTier):doBatchCraft(r,n,selTier))} disabled={!canN||hours<batchEC}>
+                      {n===1?('⚗️ Brew '+selQT.name):('×'+n+' (⚡'+batchEC+')')}
                     </button>
-                    {!canN&&bc.canBuy&&fOk&&hours>=n&&<button style={{fontSize:11,padding:'2px 5px',background:TH.gold,color:TH.bg,border:'none',borderRadius:3,cursor:'pointer',fontFamily:'inherit'}}
+                    {!canN&&bc.canBuy&&fOk&&hours>=batchEC&&<button style={{fontSize:11,padding:'2px 5px',background:TH.gold,color:TH.bg,border:'none',borderRadius:3,cursor:'pointer',fontFamily:'inherit'}}
                       onClick={()=>selDoBuy(n)}>🛒 {bc.total}g</button>}
                   </span>;
                 })}
