@@ -1126,44 +1126,44 @@ const FORTRESS_TYPES={
 const SEASON_LENGTH=7; // days per season
 const SEASONS={
   cindervale:[
-    {id:'spring',name:'Spring',icon:'🌱',color:'#60c060',
+    {id:'spring',name:'Spring',img:'https://jumppiejim-creator.github.io/cindervale-alchemist/season-spring.png',icon:'🌱',color:'#60c060',
       desc:'Renewal season. Flora ingredients bloom across the Ashfields and Ironwood.',
       yieldMod:1,floraYieldBonus:1,travelMod:0,customerMod:0,spoilMod:0,dangerMod:0,
       threatMod:{blight:-1},moraleMod:0,
       flavor:['Fresh shoots push through the ash. The air smells of rain and renewal.','Birdsong fills the Ironwood canopy. A good season for gathering.','The ashbloom carpets entire hillsides in pale green.']},
-    {id:'summer',name:'Summer',icon:'☀️',color:'#d0a030',
+    {id:'summer',name:'Summer',img:'https://jumppiejim-creator.github.io/cindervale-alchemist/season-summer.png',icon:'☀️',color:'#d0a030',
       desc:'Peak season. Best weather, most customers, but Reavers raid more aggressively.',
       yieldMod:0,floraYieldBonus:0,travelMod:0,customerMod:1,spoilMod:0,dangerMod:0,
       threatMod:{reavers:1},moraleMod:0,
       flavor:['Long hot days under a copper sky. The village hums with activity.','Caravans arrive daily. Trade is booming.','The volcanic vents shimmer in the summer heat.']},
-    {id:'autumn',name:'Autumn',icon:'🍂',color:'#c08030',
+    {id:'autumn',name:'Autumn',img:'https://jumppiejim-creator.github.io/cindervale-alchemist/season-autumn.png',icon:'🍂',color:'#c08030',
       desc:'Harvest pressure. Spoilage worsens but quest rewards increase. Unique autumn ingredients appear.',
       yieldMod:0,floraYieldBonus:0,travelMod:0,customerMod:0,spoilMod:-2,dangerMod:0,
       threatMod:{},moraleMod:0,questGoldMod:0.25,
       flavor:['Amber leaves drift across the workshop roof. Time to stockpile.','The air carries the smell of wood smoke and dried herbs.','Frost edges the morning puddles. Winter approaches.']},
-    {id:'winter',name:'Winter',icon:'❄️',color:'#6090c0',
+    {id:'winter',name:'Winter',img:'https://jumppiejim-creator.github.io/cindervale-alchemist/season-winter.png',icon:'❄️',color:'#6090c0',
       desc:'Survival. High-diff regions cost more Energy. Yields drop. Veilbreakers peak. Unique winter ingredients.',
       yieldMod:-1,floraYieldBonus:0,travelMod:1,travelMinDiff:4,customerMod:0,spoilMod:0,dangerMod:5,
       threatMod:{veilbreakers:1},moraleMod:-5,
       flavor:['Snow dusts the ash fields. The Heartforge rim glows warmer than ever.','Ice crystals form on the workshop windows. A hard season for foraging.','The village draws together around the hearths. Cindervale endures.']},
   ],
   ashfall:[
-    {id:'cool',name:'Cool Season',icon:'🌙',color:'#6090c0',
+    {id:'cool',name:'Cool Season',img:'https://jumppiejim-creator.github.io/cindervale-alchemist/season-cool.png',icon:'🌙',color:'#6090c0',
       desc:'Best travel conditions. Caravans run fast. Trade flourishes.',
       yieldMod:0,floraYieldBonus:0,travelMod:-1,customerMod:1,spoilMod:0,dangerMod:-5,
       threatMod:{},moraleMod:0,
       flavor:['Cool desert nights make the days bearable. Caravans roll freely.','The stars blaze overhead. Perfect weather for the Crossing.','A welcome respite from the heat. The bazaar overflows with travelers.']},
-    {id:'bloom',name:'Bloom Season',icon:'🌺',color:'#60c060',
+    {id:'bloom',name:'Bloom Season',img:'https://jumppiejim-creator.github.io/cindervale-alchemist/season-bloom.png',icon:'🌺',color:'#60c060',
       desc:'Rare desert rains. Oasis and Sunscorch yields surge. Sandworms surface.',
       yieldMod:0,floraYieldBonus:2,travelMod:0,customerMod:0,spoilMod:0,dangerMod:5,
       threatMod:{},moraleMod:0,
       flavor:['Rain! Actual rain! The desert transforms overnight into a carpet of flowers.','Puddles form in the dunes. Desert creatures emerge to drink.','The oasis overflows its banks. Herbs grow wild along the waterline.']},
-    {id:'scorching',name:'Scorching Season',icon:'🔥',color:'#d06030',
+    {id:'scorching',name:'Scorching Season',img:'https://jumppiejim-creator.github.io/cindervale-alchemist/season-scorching.png',icon:'🔥',color:'#d06030',
       desc:'Extreme heat. Surface regions cost more. Underground regions thrive. Reavers raid.',
       yieldMod:0,floraYieldBonus:0,travelMod:1,travelMinDiff:3,customerMod:0,spoilMod:-1,dangerMod:5,
       threatMod:{reavers:1},moraleMod:-3,
       flavor:['The sand burns through boot leather. Only fools travel at midday.','Heat mirages dance on the horizon. The Molten Vents feel almost cool by comparison.','The Flamekeepers stoke the sacred fire higher. It barely competes with the sun.']},
-    {id:'dust',name:'Dust Season',icon:'💨',color:'#a08040',
+    {id:'dust',name:'Dust Season',img:'https://jumppiejim-creator.github.io/cindervale-alchemist/season-dust.png',icon:'💨',color:'#a08040',
       desc:'Constant sandstorms. All expeditions more dangerous. Spoilage worsens. Mirage Bazaar thrives.',
       yieldMod:0,floraYieldBonus:0,travelMod:0,customerMod:0,spoilMod:-2,dangerMod:15,
       threatMod:{veilbreakers:1},moraleMod:0,
@@ -7294,7 +7294,9 @@ function CindervaleAlchemistInner(){
 
       {/* MORNING REPORT POPUP — overnight summary */}
       {morningReport&&<div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'#000000cc',display:'flex',alignItems:'center',justifyContent:'center',zIndex:999,padding:16}} onClick={()=>{if(!morningReport?.isGameOver)setMorningReport(null);}}>
-        <div style={{background:`linear-gradient(160deg,${TH.panelAlt},${TH.panel})`,border:`2px solid ${TH.borderGold}`,borderRadius:12,padding:'20px 24px',maxWidth:440,width:'100%',maxHeight:'80vh',overflowY:'auto',boxShadow:`0 0 40px ${TH.gold}20`}} onClick={e=>e.stopPropagation()}>
+        <div style={{background:`linear-gradient(160deg,${TH.panelAlt},${TH.panel})`,border:`2px solid ${TH.borderGold}`,borderRadius:12,padding:'20px 24px',maxWidth:440,width:'100%',maxHeight:'80vh',overflowY:'auto',boxShadow:`0 0 40px ${TH.gold}20`,position:'relative'}} onClick={e=>e.stopPropagation()}>
+          {morningReport.season?.img&&<img src={morningReport.season.img} alt="" style={{position:'absolute',top:0,left:0,width:'100%',height:'100%',objectFit:'cover',opacity:0.12,pointerEvents:'none',borderRadius:10}}/>}
+          <div style={{position:'relative',zIndex:1}}>
           <div style={{textAlign:'center',marginBottom:12}}>
             <Portrait cls={startingClass||'alchemist'} race={charRace} gender={charGender} size={90} style={{marginBottom:8}}/>
             <div style={{fontSize:22,color:TH.gold,letterSpacing:2,marginBottom:4}}>🌅 Dawn of Day {morningReport.dayNum}</div>
@@ -7319,6 +7321,7 @@ function CindervaleAlchemistInner(){
           <div style={{textAlign:'center',marginTop:12}}>
             <button style={{...S.btn('gold'),fontSize:16,padding:'8px 24px'}} onClick={()=>{if(morningReport?.isGameOver){setGameStarted(false);setMorningReport(null);return;}setMorningReport(null);}}>{morningReport?.isGameOver?'Return to Title':'Begin the Day'}</button>
           </div>
+          </div>{/* close z-index wrapper */}
         </div>
       </div>}
 
