@@ -1259,21 +1259,34 @@ const genWeaponName=()=>WEAPON_PREFIXES[Math.floor(Math.random()*WEAPON_PREFIXES
 // ═══ WARDKEEPER SHIELD COMMISSIONS ═══
 const SHIELD_COMMISSIONS=[
   {id:'sc_mine_patrol',name:'Mine Patrol Gear',icon:'⛏️',desc:'"My squad works Shaft Nine. We need armor that shrugs off falling rock and resists the heat."',
-    tier:1,layers:['e_ironbark','e_frost'],faction:'cinderfolk',baseGold:35,baseXp:40},
+    tier:1,layers:['e_ironbark','e_frost'],faction:'cinderfolk',wardTarget:'reavers',baseGold:35,baseXp:40},
   {id:'sc_gate_guard',name:'Gate Guard Kit',icon:'🏰',desc:'"Standing watch all night in ash storms. I need wards against wind and fire."',
-    tier:1,layers:['e_ironbark','e_shield'],faction:'ashwardens',baseGold:40,baseXp:45},
+    tier:1,layers:['e_ironbark','e_shield'],faction:'ashwardens',wardTarget:'reavers',baseGold:40,baseXp:45},
   {id:'sc_pilgrim_cloak',name:'Pilgrim\'s Cloak',icon:'🧥',desc:'"The road to the shrine is dangerous. Protect me from beasts and the cold."',
-    tier:1,layers:['e_beast','e_frost'],faction:'hearthkeepers',baseGold:32,baseXp:38},
+    tier:1,layers:['e_beast','e_frost'],faction:'hearthkeepers',wardTarget:'blight',baseGold:32,baseXp:38},
   {id:'sc_scout_leather',name:'Scout\'s Leather',icon:'🦊',desc:'"I need to move fast and quiet, but still survive an ambush."',
-    tier:2,layers:['e_feather','e_shadow','e_shield'],faction:'ashwardens',baseGold:65,baseXp:70},
+    tier:2,layers:['e_feather','e_shadow','e_shield'],faction:'ashwardens',wardTarget:'reavers',baseGold:65,baseXp:70},
   {id:'sc_forge_apron',name:'Forgemaster\'s Apron',icon:'🔥',desc:'"Working near the vents. One splash of magma and I\'m done without good wards."',
-    tier:2,layers:['e_ironbark','e_forge','e_shield'],faction:'cinderfolk',baseGold:70,baseXp:75},
+    tier:2,layers:['e_ironbark','e_forge','e_shield'],faction:'cinderfolk',wardTarget:'blight',baseGold:70,baseXp:75},
   {id:'sc_veil_robe',name:'Veilwalker Robe',icon:'🌀',desc:'"The Veil tears at unprotected minds. Layer every ward you know on this."',
-    tier:2,layers:['e_spelldrinker','e_shadow','e_shield'],faction:'veilwalkers',baseGold:75,baseXp:80},
+    tier:2,layers:['e_spelldrinker','e_shadow','e_shield'],faction:'veilwalkers',wardTarget:'veilbreakers',baseGold:75,baseXp:80},
   {id:'sc_captain_plate',name:'Captain\'s Plate',icon:'⚔️',desc:'"I lead from the front. This armor needs to stop everything — blade, fire, and magic."',
-    tier:3,layers:['e_ironbark','e_forge','e_spelldrinker'],faction:'ashwardens',baseGold:120,baseXp:130},
+    tier:3,layers:['e_ironbark','e_forge','e_spelldrinker'],faction:'ashwardens',wardTarget:'reavers',baseGold:120,baseXp:130},
   {id:'sc_heartforge_ward',name:'Heartforge Expedition Suit',icon:'💎',desc:'"We\'re going deeper than anyone has in decades. Every layer of protection could save a life."',
-    tier:3,layers:['e_ironbark','e_forge','e_spelldrinker'],faction:'veilwalkers',baseGold:140,baseXp:150},
+    tier:3,layers:['e_ironbark','e_forge','e_spelldrinker'],faction:'veilwalkers',wardTarget:'veilbreakers',baseGold:140,baseXp:150},
+  // ── Threat Ward Commissions (appear at Rising+ threat levels) ──
+  {id:'sc_tw_reavers',name:'Reaver Barricade Wards',icon:'🏴',desc:'"The Reavers are at our gates. We need every barrier warded — NOW."',
+    tier:2,layers:['e_ironbark','e_shield','e_beast','e_forge'],faction:'ashwardens',wardTarget:'reavers',threatReq:'reavers',baseGold:100,baseXp:120,threatReduction:12},
+  {id:'sc_tw_blight',name:'Blight Purification Wards',icon:'🦠',desc:'"The Blight is spreading. Sacred wards on every well, every storehouse, every hearth."',
+    tier:2,layers:['e_frost','e_spelldrinker','e_shield','e_glow'],faction:'hearthkeepers',wardTarget:'blight',threatReq:'blight',baseGold:100,baseXp:120,threatReduction:12},
+  {id:'sc_tw_veilbreakers',name:'Veil Anchor Wards',icon:'💜',desc:'"Reality frays at the edges. Only layered wards can hold the Veil together."',
+    tier:2,layers:['e_spelldrinker','e_shadow','e_shield','e_glow'],faction:'veilwalkers',wardTarget:'veilbreakers',threatReq:'veilbreakers',baseGold:100,baseXp:120,threatReduction:12},
+  {id:'sc_tw_reavers_hard',name:'Siege Warding',icon:'🏴',desc:'"Critical threat. Every wall, every gate, every weapon needs your strongest wards. The Crossing depends on it."',
+    tier:3,layers:['e_ironbark','e_shield','e_beast','e_forge','e_spelldrinker'],faction:'ashwardens',wardTarget:'reavers',threatReq:'reavers',threatMin:50,baseGold:180,baseXp:200,threatReduction:20},
+  {id:'sc_tw_blight_hard',name:'Sacred Cleansing Wards',icon:'🦠',desc:'"The Blight is at Dangerous levels. We need a full purification circuit — every building, every field."',
+    tier:3,layers:['e_frost','e_spelldrinker','e_shield','e_glow','e_forge'],faction:'hearthkeepers',wardTarget:'blight',threatReq:'blight',threatMin:50,baseGold:180,baseXp:200,threatReduction:20},
+  {id:'sc_tw_veilbreakers_hard',name:'Grand Veil Seal',icon:'💜',desc:'"The Veil is tearing open. We need a master wardkeeper to inscribe a five-layer seal. This is existential."',
+    tier:3,layers:['e_spelldrinker','e_shadow','e_shield','e_glow','e_forge'],faction:'veilwalkers',wardTarget:'veilbreakers',threatReq:'veilbreakers',threatMin:50,baseGold:180,baseXp:200,threatReduction:20},
 ];
 
 // ═══ SPELLWEAVER PLANAR ATTUNEMENT ═══
@@ -3121,7 +3134,7 @@ function CindervaleAlchemistInner(){
       commissionN=wkLv>=10?3:wkLv>=6?2:1;
       const maxTier=wkLv>=10?3:wkLv>=6?2:1;
       const maxLayers=wkLv>=6?3:2;
-      const available=SHIELD_COMMISSIONS.filter(c=>c.tier<=maxTier&&c.layers.length<=maxLayers);
+      const available=SHIELD_COMMISSIONS.filter(c=>c.tier<=maxTier&&c.layers.length<=maxLayers&&!c.threatReq);
       const commissions=[];
       const commNames=['Grizzled Miner','Ashwarden Sergeant','Traveling Scholar','Young Recruit','Forge Worker','Veilwalker Initiate','Caravan Guard','Village Elder'];
       for(let i=0;i<commissionN&&available.length>0;i++){
@@ -3130,10 +3143,25 @@ function CindervaleAlchemistInner(){
         commissions.push({id:'sc_'+Math.random().toString(36).slice(2),commissionId:comm.id,clientName:cName,
           layersCompleted:0,layersFailed:0,retryUsed:false,done:false});
       }
+      // ── Threat Ward Commissions (bonus, appear when threats Rising+) ──
+      const curThreats=threats||{reavers:0,blight:0,veilbreakers:0};
+      THREAT_IDS.forEach(tid=>{
+        const tVal=curThreats[tid]||0;
+        if(tVal>=25){
+          const threatComms=SHIELD_COMMISSIONS.filter(c=>c.threatReq===tid&&(!c.threatMin||tVal>=c.threatMin)&&c.layers.length<=maxLayers+2);
+          if(threatComms.length>0){
+            const tc=threatComms[Math.floor(Math.random()*threatComms.length)];
+            const tf=THREAT_FACTIONS.find(f=>f.id===tid);
+            commissions.push({id:'sc_tw_'+Math.random().toString(36).slice(2),commissionId:tc.id,
+              clientName:tf?.name||'Settlement Defense',isThreatWard:true,
+              layersCompleted:0,layersFailed:0,retryUsed:false,done:false});
+          }
+        }
+      });
       setShieldCommissions(commissions);
     } else { setShieldCommissions([]); }
     return{ench:q.length,pot:pQ.length,clinic:clinicN,contracts:contractN,commissions:commissionN};
-  },[classLevels,specs,level,known,knownEnch,getSkMod,upEff,getRL]);
+  },[classLevels,specs,level,known,knownEnch,getSkMod,upEff,getRL,threats]);
   const maxAppr=1+Math.floor(level/3)+(hasUp('ledger')?1:0)+getFeatureVal('maxApprenticeBonus');
   const hasMilestone=id=>milestones.includes(id);
   const earnMilestone=(id)=>{
@@ -4561,6 +4589,15 @@ function CindervaleAlchemistInner(){
         // Bonus referral for perfect completion
         const referral=ratio>=1;
         setGold(g=>g+goldReward);gainXP(xpReward);if(repReward>0)addRep(comm.faction,repReward);
+        // ── Wardkeeper threat reduction ──
+        if(comm.wardTarget&&ratio>=0.66){
+          const enchLv=classLevels.enchanter||0;
+          const baseReduc=comm.threatReduction||(enchLv>=8?5:enchLv>=5?4:3);
+          const finalReduc=ratio>=1?baseReduc:Math.floor(baseReduc*0.6);
+          setThreats(prev=>{const n={...prev};n[comm.wardTarget]=Math.max(0,(n[comm.wardTarget]||0)-finalReduc);return n;});
+          const threatName=THREAT_FACTIONS.find(tf=>tf.id===comm.wardTarget)?.name||comm.wardTarget;
+          addLog(`🛡️ ${threatName} threat reduced by ${finalReduc}! Your wards protect the settlement.`,'quest');
+        }
         const PERFECT=['"Every layer holds. This is masterwork — I\'ll send my whole squad to you."','"*tests the wards* Flawless. The Wardens will hear of this."'];
         const GOOD=['"Most of the wards took. It\'ll do for now. Fair payment."','"Not perfect, but solid enough for the field."'];
         const PARTIAL=['"*frowns* Only partial protection. I\'ll pay, but not full price."'];
@@ -8327,12 +8364,15 @@ function CindervaleAlchemistInner(){
             const currentLayerIdx=sc.layersCompleted+sc.layersFailed;
             const currentEnchId=currentLayerIdx<totalLayers?comm.layers[currentLayerIdx]:null;
             const currentEnch=currentEnchId?ENCHANTMENTS.find(e=>e.id===currentEnchId):null;
-            return(<div key={sc.id} style={{padding:'8px 10px',background:sc.done?TH.green+'08':TH.panelLight,borderRadius:6,marginBottom:6,border:'1px solid '+(sc.done?TH.green+'44':TH.border),opacity:sc.done?0.6:1}}>
+            return(<div key={sc.id} style={{padding:'8px 10px',background:sc.isThreatWard?(getThreatColor(threats[comm.wardTarget]||0)+'10'):sc.done?TH.green+'08':TH.panelLight,borderRadius:6,marginBottom:6,border:'1px solid '+(sc.isThreatWard?getThreatColor(threats[comm.wardTarget]||0)+'66':sc.done?TH.green+'44':TH.border),opacity:sc.done?0.6:1}}>
               <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
                 <span style={{fontSize:16,color:TH.textBright}}>{comm.icon} {sc.clientName} <span style={{fontSize:13,color:TH.textDim}}>· {comm.name}</span></span>
                 {sc.done&&<span style={{color:TH.green,fontSize:13}}>✅ Complete ({sc.layersCompleted}/{totalLayers})</span>}
               </div>
               <div style={{fontSize:14,fontStyle:'italic',color:TH.textDim,margin:'4px 0'}}>{comm.desc}</div>
+              {comm.wardTarget&&!sc.done&&<div style={{fontSize:12,color:getThreatColor(threats[comm.wardTarget]||0),marginBottom:4}}>
+                {THREAT_FACTIONS.find(tf=>tf.id===comm.wardTarget)?.icon} Reduces {THREAT_FACTIONS.find(tf=>tf.id===comm.wardTarget)?.name} threat by {comm.threatReduction||(classLevels.enchanter>=8?5:classLevels.enchanter>=5?4:3)} on completion
+              </div>}
               {/* Layer progress bar */}
               <div style={{display:'flex',gap:3,margin:'6px 0'}}>
                 {comm.layers.map((enchId,i)=>{
@@ -8352,9 +8392,9 @@ function CindervaleAlchemistInner(){
                 })}
               </div>
               {!sc.done&&currentEnch&&<div style={{...S.row,marginTop:4}}>
-                <button style={{...S.btn(hours>=1?'gold':'dim'),fontSize:14}} disabled={hours<1}
+                <button style={{...S.btn('gold'),fontSize:14}}
                   onClick={()=>inscribeCommissionLayer(sc.id)}>
-                  ✨ Inscribe {currentEnch.icon} {currentEnch.name} (DC{currentEnch.dc||12}) — 1h
+                  ✨ Inscribe {currentEnch.icon} {currentEnch.name} (DC{currentEnch.dc||12})
                 </button>
                 {sc.retryUsed&&<span style={{fontSize:12,color:TH.textDim,marginLeft:6}}>Retry used</span>}
               </div>}
