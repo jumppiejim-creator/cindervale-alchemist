@@ -395,6 +395,7 @@ function CindervaleAlchemistInner(){
   const [confirmRest,setConfirmRest]=useState(false);
   const [confirmAlign,setConfirmAlign]=useState(null); // null or faction id
   const [nightExpPending,setNightExpPending]=useState(false); // show night expedition picker after rest
+  const [deferredNewDay,setDeferredNewDay]=useState(false); // delay newDay() until after night expedition completes
   const [news,setNews]=useState([]);
 
   // ─── ALL REFS ───
@@ -2971,6 +2972,7 @@ function CindervaleAlchemistInner(){
   const doNightExpedition=(regId,siteId)=>{
     const reg=locRegions.find(r=>r.id===regId);if(!reg)return;
     setNightExpPending(false);
+    let foundRelic=null;
     const nightSite=siteId?reg.sites?.find(s=>s.id===siteId):null;
     const nightHours=getFeatureVal('nightBonusHours')||3;
     const nightDC=reg.dc+2; // +2 DC at night
@@ -4824,7 +4826,7 @@ function CindervaleAlchemistInner(){
           );
         })()}
         <div style={S.row}>
-          {getFeatureVal('nightExpeditions')>0&&<button style={{...S.btn('def'),background:`${TH.purple}30`,border:`1px solid ${TH.purple}`,color:TH.textBright}} onClick={()=>{setConfirmRest(false);newDay();setNightExpPending(true);setScreen('map');}}>🌙 Rest & Night Forage</button>}
+          {getFeatureVal('nightExpeditions')>0&&<button style={{...S.btn('def'),background:`${TH.purple}30`,border:`1px solid ${TH.purple}`,color:TH.textBright}} onClick={()=>{setConfirmRest(false);setDeferredNewDay(true);setNightExpPending(true);setScreen('map');}}>🌙 Rest & Night Forage</button>}
           <button style={S.btn('gold')} onClick={()=>{setConfirmRest(false);newDay();setScreen('map');}}>Yes, Rest</button>
           <button style={S.btn('dim')} onClick={()=>setConfirmRest(false)}>Cancel</button>
         </div>
@@ -4944,7 +4946,7 @@ function CindervaleAlchemistInner(){
             })}
           </div>
           <div style={{textAlign:'center'}}>
-            <button style={S.btn('dim')} onClick={()=>setNightExpPending(false)}>Skip — Just Sleep</button>
+            <button style={S.btn('dim')} onClick={()=>{setNightExpPending(false);setDeferredNewDay(false);newDay();}}>Skip — Just Sleep</button>
           </div>
         </div>
       </div>);
@@ -8472,7 +8474,7 @@ function CindervaleAlchemistInner(){
       </>}
 
       {/* ═══ RESULT POPUP with animated dice ═══ */}
-      {resultPopup&&!expQ.length&&<DicePopup key={resultPopup.t} popup={resultPopup} LC={LC} TH={TH} S={S} onClose={()=>setResultPopup(null)} playSfx={playSfx}/>}
+      {resultPopup&&!expQ.length&&<DicePopup key={resultPopup.t} popup={resultPopup} LC={LC} TH={TH} S={S} onClose={()=>{setResultPopup(null);if(deferredNewDay){setDeferredNewDay(false);newDay();}}} playSfx={playSfx}/>}
 
       {/* ═══ EXPEDITION HOUR POPUP ═══ */}
       {expQ.length>0&&<ExpeditionHourPopup hr={expQ[0]} TH={TH} S={S} LC={LC} INGR={INGR} FACTIONS={FACTIONS} onOk={advanceExpedition} onSkipAll={skipAllExpedition} remaining={expQ.length} playSfx={playSfx}/>}
