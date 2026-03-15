@@ -5653,7 +5653,7 @@ function CindervaleAlchemistInner(){
           </div>
           {showShop&&<div>
             <div style={{fontSize:16,color:TH.gold,marginBottom:4}}>Buy Ingredients{dayFlags.includes('bargain_day')?' — 🏷️ Half Price Today!':''}</div>
-            {SHOP_I.map(item=>{let bp=getBuyPrice(Math.max(1,item.price-Math.floor(getSkMod('haggling')/2)));if(dayFlags.includes('bargain_day'))bp=Math.max(1,Math.floor(bp/2));const have=inv[item.id]||0;return(
+            {[...SHOP_I].sort((a,b)=>(INGR[a.id]?.name||'').localeCompare(INGR[b.id]?.name||'')).map(item=>{let bp=getBuyPrice(Math.max(1,item.price-Math.floor(getSkMod('haggling')/2)));if(dayFlags.includes('bargain_day'))bp=Math.max(1,Math.floor(bp/2));const have=inv[item.id]||0;return(
               <div key={item.id} style={{display:'flex',alignItems:'center',gap:6,padding:'3px 0',fontSize:16}}>
                 <span>{INGR[item.id]?.icon} {INGR[item.id]?.name}</span>
                 <span style={{fontSize:14,color:TH.textDim}}>×{have}</span>
@@ -5663,7 +5663,7 @@ function CindervaleAlchemistInner(){
               </div>);})}
             {procureItems.length>0&&<>
               <div style={{fontSize:16,color:TH.purple,marginTop:8,marginBottom:4}}>📦 Procurement — Rare Finds (today only)</div>
-              {procureItems.map(item=>{let bp=getBuyPrice(Math.max(1,item.price-Math.floor(getSkMod('haggling')/2)));const have=inv[item.id]||0;return(
+              {[...procureItems].sort((a,b)=>(a.name||'').localeCompare(b.name||'')).map(item=>{let bp=getBuyPrice(Math.max(1,item.price-Math.floor(getSkMod('haggling')/2)));const have=inv[item.id]||0;return(
                 <div key={item.id} style={{display:'flex',alignItems:'center',gap:6,padding:'3px 0',fontSize:16,background:TH.purple+'08',borderRadius:3,paddingLeft:4}}>
                   <span>{item.icon} {item.name}</span>
                   <span style={{fontSize:14,color:TH.textDim}}>×{have}</span>
