@@ -4923,6 +4923,24 @@ function CindervaleAlchemistInner(){
           {hiredAppr.reduce((s,a)=>s+a.salary,0)>0&&<span>Payroll: {hiredAppr.reduce((s,a)=>s+a.salary,0)}g. </span>}
           {hiredAppr.reduce((s,a)=>s+a.salary,0)>gold&&<div style={{color:TH.red,marginTop:4}}>⚠️ You can't cover payroll! ({hiredAppr.reduce((s,a)=>s+a.salary,0)}g needed, {gold}g available)</div>}
         </div>
+        {/* Unused free actions warning */}
+        {(()=>{
+          const unused=[];
+          const freeRes=getFeatureVal('freeResearchPerDay');const freeResUsed=dayFlags.filter(f=>f==='free_research_used').length;
+          if(freeRes>freeResUsed)unused.push({icon:'📖',name:'Free Research',remaining:freeRes-freeResUsed,nav:'research'});
+          if(getFeatureVal('freeCraft')&&!dayFlags.includes('free_craft_used'))unused.push({icon:'✨',name:'Free Craft',remaining:1,nav:'workshop'});
+          if(unused.length===0)return null;
+          return <div style={{marginBottom:10,padding:'10px 12px',background:'#c0604015',borderRadius:6,border:'1px solid #c0604055'}}>
+            <div style={{fontSize:15,color:'#e08050',fontWeight:'bold',marginBottom:4}}>⚠️ Unused Free Actions!</div>
+            <div style={{fontSize:14,color:TH.text,lineHeight:1.6}}>
+              {unused.map(u=><div key={u.name} style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:2}}>
+                <span>{u.icon} <b>{u.name}</b> — {u.remaining} remaining today</span>
+                <button style={{...S.btn('def'),fontSize:12,padding:'2px 8px'}} onClick={()=>{setConfirmRest(false);setScreen(u.nav);}}>{u.icon} Use it</button>
+              </div>)}
+            </div>
+            <div style={{fontSize:13,color:'#c08060',fontStyle:'italic',marginTop:4}}>These free actions don't cost energy and will be lost when you rest.</div>
+          </div>;
+        })()}
         {getFeatureVal('nightExpeditions')>0&&(()=>{
           const nightH=getFeatureVal('nightBonusHours')||3;
           return(
