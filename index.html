@@ -38,6 +38,22 @@ const Tone = window.Tone;
 //  CINDERVALE ALCHEMIST v5.2 — Expansion Update
 // ═══════════════════════════════════════════════════════════════
 
+// ── Threat Alert Vibes (extend EVENT_VIBES from game-data.js) ──
+if(typeof EVENT_VIBES!=='undefined'){
+  EVENT_VIBES.threat_rise={bg:'linear-gradient(160deg,#1a1008,#2a1a0a)',border:'#c08030',text:'#e8c060',
+    scene:'⚠️',sceneSize:48,title:'Threat Rising',ambiance:'Troubling reports from the frontier...',
+    particles:['⚔️','🔥','💀','🌑','⚠️','🏴']};
+  EVENT_VIBES.threat_danger={bg:'linear-gradient(160deg,#1a0808,#2a0a0a)',border:'#c03030',text:'#e86060',
+    scene:'🚨',sceneSize:48,title:'Threat Escalation',ambiance:'The situation grows dire. Prepare your defenses.',
+    particles:['💀','🔥','⚔️','🩸','🚨','☠️']};
+  EVENT_VIBES.threat_critical={bg:'linear-gradient(160deg,#1a0018,#2a0020)',border:'#a020a0',text:'#e060e0',
+    scene:'☠️',sceneSize:48,title:'CRITICAL THREAT',ambiance:'Devastation looms if nothing is done.',
+    particles:['☠️','💀','🔥','⚡','🌑','💢']};
+  EVENT_VIBES.threat_decrease={bg:'linear-gradient(160deg,#081a10,#0a2a1a)',border:'#30c060',text:'#60e890',
+    scene:'🛡️',sceneSize:48,title:'Threat Subsiding',ambiance:'Your efforts are paying off.',
+    particles:['🛡️','✨','🌿','💚','🕊️','⭐']};
+}
+
 
 // ═══ PORTRAITS ═══
 const _portraitCache={};
@@ -3495,6 +3511,42 @@ function CindervaleAlchemistInner(){
       return tf.icon+' '+tf.name+': '+getThreatLabel(newThreats[tid])+' ('+newThreats[tid]+'/100)';
     });
     if(threatReport.length>0)report.push({n:'⚔️ Threats',i:'⚔️',r:threatReport.join(' | '),t:THREAT_IDS.some(tid=>newThreats[tid]>=50)?'bad':'warn'});
+    // ── Detect threat tier changes for dramatic popups ──
+    const TIER_ORDER=['calm','rising','dangerous','critical'];
+    const threatAlerts=[];
+    THREAT_IDS.forEach(tid=>{
+      const oldTier=getThreatTier(threats[tid]||0);
+      const newTier=getThreatTier(newThreats[tid]);
+      if(oldTier===newTier)return;
+      const tf=THREAT_FACTIONS[tid];
+      const oldIdx=TIER_ORDER.indexOf(oldTier);const newIdx=TIER_ORDER.indexOf(newTier);
+      if(newIdx>oldIdx){
+        // Threat escalated
+        const vibe=newTier==='critical'?'threat_critical':newTier==='dangerous'?'threat_danger':'threat_rise';
+        const descriptions={
+          rising:{reavers:`${tf.icon} Scouts report ${tf.name} raiding parties forming on the horizon. Caravans are being rerouted.`,
+            blight:`${tf.icon} Strange mold has appeared on wild herbs near the village. The ${tf.name} is spreading.`,
+            veilbreakers:`${tf.icon} The Veil shimmers oddly at dawn. ${tf.name} activity has been detected.`},
+          dangerous:{reavers:`${tf.icon} ${tf.name} have been spotted near the town walls! Travelers warn of ambushes on every road.`,
+            blight:`${tf.icon} The ${tf.name} is rotting entire groves. Your ingredients may be at risk — check your stores.`,
+            veilbreakers:`${tf.icon} Reality fractures have appeared near the market. The ${tf.name} grow bolder.`},
+          critical:{reavers:`${tf.icon} ${tf.name} are at your gates! Gold stores and supply lines are under direct threat.`,
+            blight:`${tf.icon} The ${tf.name} has reached catastrophic levels. Ingredient corruption is inevitable without intervention.`,
+            veilbreakers:`${tf.icon} The Veil is tearing open. ${tf.name} are pouring through — this cannot hold.`}
+        };
+        const text=descriptions[newTier]?.[tid]||`${tf.icon} ${tf.name} threat has escalated to ${getThreatLabel(newThreats[tid])}!`;
+        const tips={rising:'Consider assigning staff to patrol or building outposts to slow the threat.',
+          dangerous:'Fulfill defense quests and bolster faction reputation to push back. Time is running short.',
+          critical:'URGENT: Fulfill defense requests immediately or suffer severe penalties each morning.'};
+        threatAlerts.push({text,vibe,result:{msg:tips[newTier]||''},flavor:null});
+        addLog(`⚔️ ${tf.icon} ${tf.name}: escalated to ${getThreatLabel(newThreats[tid])}!`,'error');
+      } else if(newIdx<oldIdx){
+        // Threat decreased
+        const text=`${tf.icon} ${tf.name} threat has receded to ${getThreatLabel(newThreats[tid])}. Your defenses held.`;
+        threatAlerts.push({text,vibe:'threat_decrease',result:{msg:'Keep up the pressure — threats can always return.'},flavor:null});
+        addLog(`🛡️ ${tf.icon} ${tf.name}: reduced to ${getThreatLabel(newThreats[tid])}.`,'info');
+      }
+    });
     setThreats(newThreats);
 
     // Brand repeat customers (Brand Master)
@@ -3629,11 +3681,20 @@ function CindervaleAlchemistInner(){
       if(firedEvents.length>=2)break; // max 2 events per day
     }
     setDayFlags(newFlags);
+    // Combine threat alerts + town events into one popup queue (threats first — more urgent)
+    const allPopupEvents=[
+      ...threatAlerts.map(e=>({text:e.text,vibe:e.vibe,result:e.result,flavor:e.flavor})),
+      ...firedEvents.map(e=>({text:e.text,vibe:e.vibe||'social',result:e.result,flavor:e.flavor}))
+    ];
     if(firedEvents.length>0){
       const evtSummary=firedEvents.map(e=>e.text).join(' · ');
       nw.push({icon:'🏘️',text:'Town: '+evtSummary,to:'map',label:'📜 Journal',color:TH.orange});
-      // Queue dramatic event popup
-      setEventPopup({events:firedEvents.map(e=>({text:e.text,vibe:e.vibe||'social',result:e.result,flavor:e.flavor})),idx:0});
+    }
+    if(threatAlerts.length>0){
+      nw.push({icon:'⚔️',text:threatAlerts.length+' threat'+( threatAlerts.length>1?'s':'')+' changed status!',to:'map',label:'⚔️ Threats',color:'#c03030'});
+    }
+    if(allPopupEvents.length>0){
+      setEventPopup({events:allPopupEvents,idx:0});
     }
     // ── Board Quests ──
     const newBQ=genBoardQuests(curLv,day+1,getFeatureVal('doubleQuestRefresh')?2:0);
