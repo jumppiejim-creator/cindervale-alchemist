@@ -4868,7 +4868,7 @@ function CindervaleAlchemistInner(){
       })()}
 
       {/* LEFT SIDEBAR — Adventure Journal */}
-      <div className="cv-sidebar-left" style={{...S.sidebar,display:'none',position:'relative',zIndex:1}}>
+      <div className="cv-sidebar-left" style={{...S.sidebar,display:'none',position:'relative'}}>
         <div style={S.sideSec}>
           <div style={S.sideHd}>📜 Adventure Journal</div>
           <div ref={el=>{if(el)el.scrollTop=el.scrollHeight;}} style={{maxHeight:'calc(100vh - 160px)',overflowY:'auto',overflowAnchor:'none'}}>
@@ -8816,7 +8816,7 @@ function CindervaleAlchemistInner(){
       </div>{/* end center column */}
 
       {/* RIGHT SIDEBAR — Contextual Info */}
-      <div className="cv-sidebar-right" style={{...S.sidebar,display:'none',position:'relative',zIndex:1}}>
+      <div className="cv-sidebar-right" style={{...S.sidebar,display:'none',position:'relative'}}>
 
         {/* MAP screen — overview */}
         {screen==='map'&&<>
