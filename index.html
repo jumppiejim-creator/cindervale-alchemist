@@ -4942,7 +4942,7 @@ function CindervaleAlchemistInner(){
 
       {/* MORNING REPORT POPUP — overnight summary */}
       {morningReport&&<div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'#000000cc',display:'flex',alignItems:'center',justifyContent:'center',zIndex:999,padding:8}} onClick={()=>{if(!morningReport?.isGameOver)setMorningReport(null);}}>
-        <div style={{background:`linear-gradient(160deg,${TH.panelAlt},${TH.panel})`,border:`2px solid ${TH.borderGold}`,borderRadius:12,padding:'20px 24px',maxWidth:680,width:'100%',maxHeight:'90vh',overflowY:'auto',boxShadow:`0 0 40px ${TH.gold}20`,position:'relative'}} onClick={e=>e.stopPropagation()}>
+        <div style={{background:`linear-gradient(160deg,${TH.panelAlt},${TH.panel})`,border:`2px solid ${TH.borderGold}`,borderRadius:12,padding:'20px 24px',maxWidth:960,width:'calc(100% - 16px)',maxHeight:'92vh',overflowY:'auto',boxShadow:`0 0 40px ${TH.gold}20`,position:'relative'}} onClick={e=>e.stopPropagation()}>
           {morningReport.season?.img&&<img src={morningReport.season.img} alt="" style={{position:'absolute',top:0,left:0,width:'100%',height:'100%',objectFit:'cover',opacity:0.12,pointerEvents:'none',borderRadius:10}}/>}
           <div style={{position:'relative',zIndex:1}}>
           <div style={{textAlign:'center',marginBottom:12}}>
