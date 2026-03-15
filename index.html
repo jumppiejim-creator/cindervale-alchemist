@@ -4269,7 +4269,7 @@ function CindervaleAlchemistInner(){
           </div>}
 
           {/* Location Selection Modal */}
-          {showLocationSelect&&<div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'#000000dd',display:'flex',alignItems:'center',justifyContent:'center',zIndex:999,padding:16}}
+          {showLocationSelect&&<div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'#000000dd',display:'flex',alignItems:'center',justifyContent:'center',zIndex:9999,padding:16}}
             onClick={()=>setShowLocationSelect(false)}>
             <div style={{background:TH.bg,border:'2px solid '+TH.gold,borderRadius:12,padding:20,maxWidth:500,width:'100%'}} onClick={e=>e.stopPropagation()}>
               <div style={{fontSize:22,color:TH.gold,textAlign:'center',marginBottom:12}}>{window._pendingTorch?'🔥 Pass the Torch — Choose Location':'Choose Your Location'}
@@ -4484,7 +4484,7 @@ function CindervaleAlchemistInner(){
         </div>
 
         {/* ═══ CLASS DETAIL POPUP ═══ */}
-        {(()=>{const detailCls=classDetail?CLASSES[classDetail]:null;return detailCls?<div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'#000000dd',display:'flex',alignItems:'center',justifyContent:'center',zIndex:999,padding:12}} onClick={()=>setClassDetail(null)}>
+        {(()=>{const detailCls=classDetail?CLASSES[classDetail]:null;return detailCls?<div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'#000000dd',display:'flex',alignItems:'center',justifyContent:'center',zIndex:9999,padding:12}} onClick={()=>setClassDetail(null)}>
           <div style={{background:`linear-gradient(160deg,${TH.panelAlt},${TH.panel})`,border:`2px solid ${detailCls.color}`,borderRadius:12,padding:0,maxWidth:640,width:'100%',maxHeight:'90vh',overflowY:'auto',boxShadow:`0 0 60px ${detailCls.color}30`}} onClick={e=>e.stopPropagation()}>
 
             {/* Sticky Header */}
@@ -4635,7 +4635,7 @@ function CindervaleAlchemistInner(){
   );
 
   const SaveOverlay=()=>showSaveMenu?(
-    <div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'#000000cc',display:'flex',alignItems:'center',justifyContent:'center',zIndex:999}} onClick={()=>setShowSaveMenu(false)}>
+    <div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'#000000cc',display:'flex',alignItems:'center',justifyContent:'center',zIndex:9999}} onClick={()=>setShowSaveMenu(false)}>
       <div style={{...S.card,maxWidth:400,width:'90%',padding:20}} onClick={e=>e.stopPropagation()}>
         {/* Pass the Torch */}
         {getLvl(xp)>=9&&<div style={{...S.card,borderColor:'#c050e044',marginBottom:8}}>
@@ -4941,7 +4941,7 @@ function CindervaleAlchemistInner(){
       </div>}
 
       {/* MORNING REPORT POPUP — overnight summary */}
-      {morningReport&&<div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'#000000cc',display:'flex',alignItems:'center',justifyContent:'center',zIndex:999,padding:8}} onClick={()=>{if(!morningReport?.isGameOver)setMorningReport(null);}}>
+      {morningReport&&<div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'#000000cc',display:'flex',alignItems:'center',justifyContent:'center',zIndex:99999,padding:8}} onClick={()=>{if(!morningReport?.isGameOver)setMorningReport(null);}}>
         <div style={{background:`linear-gradient(160deg,${TH.panelAlt},${TH.panel})`,border:`2px solid ${TH.borderGold}`,borderRadius:12,padding:'20px 24px',maxWidth:960,width:'calc(100% - 16px)',maxHeight:'92vh',overflowY:'auto',boxShadow:`0 0 40px ${TH.gold}20`,position:'relative'}} onClick={e=>e.stopPropagation()}>
           {morningReport.season?.img&&<img src={morningReport.season.img} alt="" style={{position:'absolute',top:0,left:0,width:'100%',height:'100%',objectFit:'cover',opacity:0.12,pointerEvents:'none',borderRadius:10}}/>}
           <div style={{position:'relative',zIndex:1}}>
@@ -4980,7 +4980,7 @@ function CindervaleAlchemistInner(){
         const vibe=EVENT_VIBES[evt.vibe]||EVENT_VIBES.social;
         const isLast=eventPopup.idx>=eventPopup.events.length-1;
         const particles=vibe.particles;
-        return <div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'#000000ee',display:'flex',alignItems:'center',justifyContent:'center',zIndex:999,padding:16}}
+        return <div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'#000000ee',display:'flex',alignItems:'center',justifyContent:'center',zIndex:9999,padding:16}}
           onClick={()=>{if(isLast)setEventPopup(null);else setEventPopup(p=>({...p,idx:p.idx+1}));}}>
           <div style={{background:vibe.bg,border:'2px solid '+vibe.border,borderRadius:16,padding:'28px 24px',maxWidth:460,width:'100%',maxHeight:'85vh',overflowY:'auto',boxShadow:'0 0 80px '+vibe.border+'40',position:'relative',textAlign:'center'}} onClick={e=>e.stopPropagation()}>
             {/* Floating particles */}
@@ -5020,7 +5020,7 @@ function CindervaleAlchemistInner(){
         const nightRegs=locRegions.filter(r=>level>=regUnlock(r)&&(!r.faction||getRL(r.faction)>=(r.fReq||0)));
         const nightH=getFeatureVal('nightBonusHours')||3;
         const nightDR=getFeatureVal('nightDangerReduction');
-        return(<div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'#000000cc',display:'flex',alignItems:'center',justifyContent:'center',zIndex:999,padding:16}}>
+        return(<div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'#000000cc',display:'flex',alignItems:'center',justifyContent:'center',zIndex:9999,padding:16}}>
         <div style={{background:`linear-gradient(160deg,${TH.panelAlt},${TH.panel})`,border:`2px solid ${TH.purple}`,borderRadius:12,padding:'20px 24px',maxWidth:540,width:'100%',maxHeight:'85vh',overflowY:'auto',boxShadow:`0 0 40px ${TH.purple}30`}} onClick={e=>e.stopPropagation()}>
           <div style={{textAlign:'center',marginBottom:12}}>
             <div style={{fontSize:22,color:TH.purple,letterSpacing:2,marginBottom:4}}>🌙 Night Expedition</div>
@@ -5067,7 +5067,7 @@ function CindervaleAlchemistInner(){
         const info=getExpeditionInfo(reg);const canGo=!locked&&info&&info.gatherHours>=1;
         const imgUrl=ZONE_IMGS[reg.id];
         const pickN=reg.pick||reg.ingr.length;
-        return(<div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'#000000dd',display:'flex',alignItems:'center',justifyContent:'center',zIndex:998,padding:12}} onClick={()=>setZonePopup(null)}>
+        return(<div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'#000000dd',display:'flex',alignItems:'center',justifyContent:'center',zIndex:9998,padding:12}} onClick={()=>setZonePopup(null)}>
           <div style={{background:`linear-gradient(160deg,${TH.panelAlt},${TH.panel})`,border:`2px solid ${reg.color||TH.border}`,borderRadius:12,maxWidth:580,width:'100%',maxHeight:'90vh',overflowY:'auto',boxShadow:`0 0 60px ${reg.color||TH.gold}30`}} onClick={e=>e.stopPropagation()}>
             {/* Zone Illustration Header */}
             {imgUrl&&<div style={{position:'relative',width:'100%',borderRadius:'10px 10px 0 0',overflow:'hidden',maxHeight:240}}>
@@ -5716,7 +5716,7 @@ function CindervaleAlchemistInner(){
         </div>
 
         {/* Milestone notification popup */}
-        {newMilestone&&<div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'#000000aa',zIndex:999,display:'flex',alignItems:'center',justifyContent:'center'}} onClick={()=>setNewMilestone(null)}>
+        {newMilestone&&<div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'#000000aa',zIndex:9999,display:'flex',alignItems:'center',justifyContent:'center'}} onClick={()=>setNewMilestone(null)}>
           <div style={{background:TH.panel,border:`2px solid ${TH.gold}`,borderRadius:10,padding:'24px 32px',textAlign:'center',maxWidth:340,boxShadow:`0 0 40px ${TH.goldDim}`}} onClick={e=>e.stopPropagation()}>
             <div style={{fontSize:15,color:TH.textDim,letterSpacing:2,textTransform:'uppercase',marginBottom:4}}>Milestone Reached</div>
             <div style={{fontSize:32,marginBottom:4}}>{newMilestone.icon}</div>
@@ -8293,7 +8293,7 @@ function CindervaleAlchemistInner(){
         </div>
         {/* Alignment Confirmation Dialog */}
         {confirmAlign&&(()=>{const f=FACTIONS[confirmAlign];return(
-          <div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'rgba(0,0,0,.7)',zIndex:999,display:'flex',alignItems:'center',justifyContent:'center'}}>
+          <div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'rgba(0,0,0,.7)',zIndex:9999,display:'flex',alignItems:'center',justifyContent:'center'}}>
             <div style={{background:TH.panel,border:'2px solid '+f.color,borderRadius:10,padding:20,maxWidth:360,margin:16}}>
               <div style={{fontSize:18,fontWeight:'bold',color:f.color,marginBottom:8}}>{f.icon} Align with {f.name}?</div>
               <div style={{fontSize:14,color:TH.textBright,marginBottom:8}}>
@@ -8709,7 +8709,7 @@ function CindervaleAlchemistInner(){
       {expQ.length>0&&<ExpeditionHourPopup hr={expQ[0]} TH={TH} S={S} LC={LC} INGR={INGR} FACTIONS={FACTIONS} onOk={advanceExpedition} onSkipAll={skipAllExpedition} remaining={expQ.length} playSfx={playSfx}/>}
 
       {/* Field Brew Phase (Wildcrafter) */}
-      {fieldBrewPhase&&expQ.length===0&&<div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'#000000dd',display:'flex',alignItems:'center',justifyContent:'center',zIndex:998,padding:12}}>
+      {fieldBrewPhase&&expQ.length===0&&<div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'#000000dd',display:'flex',alignItems:'center',justifyContent:'center',zIndex:9998,padding:12}}>
         <div style={{background:TH.bg,border:'2px solid #60a040',borderRadius:12,padding:16,maxWidth:480,width:'100%',maxHeight:'85vh',overflow:'auto'}}>
           <div style={{fontSize:20,color:'#60a040',textAlign:'center',marginBottom:8}}>🌿 Field Brewing</div>
           <div style={{fontSize:14,color:TH.textDim,textAlign:'center',marginBottom:8}}>
@@ -9012,7 +9012,7 @@ function NpcDlg({npc,dlgLine,setDlgLine,setDlgNpc,availQ,aQ,acceptQ,compQ,qP,S,q
 
   // Modal overlay styles
   const overlay={position:'fixed',top:0,left:0,right:0,bottom:0,background:'rgba(0,0,0,.75)',
-    zIndex:998,display:'flex',alignItems:'center',justifyContent:'center',padding:12};
+    zIndex:9998,display:'flex',alignItems:'center',justifyContent:'center',padding:12};
   const modal={position:'relative',background:TH.panel,border:`2px solid ${npc.portrait?.ring||TH.borderGold}`,
     borderRadius:12,maxWidth:560,width:'100%',maxHeight:'90vh',overflow:'auto',
     boxShadow:`0 0 30px ${npc.portrait?.ring||TH.gold}33, 0 8px 32px rgba(0,0,0,.6)`};
