@@ -3155,6 +3155,7 @@ function CindervaleAlchemistInner(){
     const dualTask=getFeatureVal('dualStaffTasks');
     // Process staff tasks synchronously (report entries must exist before morning report)
     const staffDiscR=[];const staffDiscE=[]; // track discoveries within this loop to prevent duplicates
+    const patrolReduc={reavers:0,blight:0,veilbreakers:0}; // accumulate patrol threat reductions
     const updatedAppr=hiredAppr.map(ap=>{
       const apSalary=Math.max(1,Math.floor(ap.salary*(1-payrollDisc)*halfPay));
       totalSal+=apSalary;const task=apprTasks[ap.id];
@@ -3176,6 +3177,7 @@ function CindervaleAlchemistInner(){
         if(task.type==='shopkeep'&&fx.shopEff)eff*=(1+fx.shopEff);
         if((task.type==='research_task')&&fx.researchEff)eff*=(1+fx.researchEff);
         if(task.type==='construct'&&fx.enchantEff)eff*=(1+fx.enchantEff);
+        if(task.type==='patrol'&&fx.patrolEff)eff*=(1+fx.patrolEff);
       });
       eff=Math.max(0.2,Math.min(eff,3.0));
       const traitXpMult=(ap.traits||[]).reduce((m,t)=>m*(1+(TRAIT_FX[t]?.xpMult||0)),1);
@@ -3243,6 +3245,25 @@ function CindervaleAlchemistInner(){
           else report.push({n:ap.name,i:ap.icon,r:`🔨 ${u.icon}${u.name}: ${Math.min(100,next)}% (+${progress}%)`,t:'ok'});
           {const _xpGain=Math.floor(8*axp);_xpAdded[ap.id]=(_xpAdded[ap.id]||0)+_xpGain;setApprXP(p=>({...p,[ap.id]:(p[ap.id]||0)+_xpGain}));};
         } else report.push({n:ap.name,i:ap.icon,r:`${u?'Already built':'Unknown upgrade'}`,t:'idle'});
+      } else if(task.type==='patrol'&&task.target){
+        const tf=THREAT_FACTIONS[task.target];
+        if(tf){
+          const curThreat=(threats[task.target]||0);
+          if(curThreat>0||patrolReduc[task.target]<curThreat){
+            const reduction=Math.floor(3+eff*4);
+            patrolReduc[task.target]=(patrolReduc[task.target]||0)+reduction;
+            report.push({n:ap.name,i:ap.icon,r:`🛡️ Patrol: ${tf.icon}${tf.name} -${reduction}`,t:'ok'});
+            // Small chance to find intel (bonus threat reduction)
+            if(Math.random()<0.15*eff){
+              const bonus=Math.floor(2+eff*2);
+              patrolReduc[task.target]=(patrolReduc[task.target]||0)+bonus;
+              report.push({n:ap.name,i:ap.icon,r:`🔍 Intel found! Extra -${bonus} ${tf.icon}${tf.name}`,t:'ok'});
+            }
+          } else {
+            report.push({n:ap.name,i:ap.icon,r:`🛡️ ${tf.icon}${tf.name}: All clear, no threat.`,t:'idle'});
+          }
+          {const _xpGain=Math.floor(10*axp);_xpAdded[ap.id]=(_xpAdded[ap.id]||0)+_xpGain;setApprXP(p=>({...p,[ap.id]:(p[ap.id]||0)+_xpGain}));}
+        } else report.push({n:ap.name,i:ap.icon,r:'Unknown threat target.',t:'fail'});
       }
       const traitMorale=(ap.traits||[]).reduce((s,t)=>s+(TRAIT_FX[t]?.moraleDelta||0),0);
       return{...ap,morale:Math.min(100,Math.max(20,ap.morale+(upEff('morale')||0)+2+getFeatureVal('healMorale')+traitMorale+(curSeason.moraleMod||0)))};
@@ -3416,6 +3437,8 @@ function CindervaleAlchemistInner(){
     if((classLevels.merchant||0)>=4)newThreats.veilbreakers=Math.max(0,newThreats.veilbreakers-1);
     // Brand Master: famous brands reduce veilbreakers
     (brands||[]).forEach(b=>{if(b.sold>=80)newThreats.veilbreakers=Math.max(0,newThreats.veilbreakers-5);});
+    // Staff patrol reductions (accumulated during staff loop)
+    THREAT_IDS.forEach(tid=>{if(patrolReduc[tid]>0)newThreats[tid]=Math.max(0,(newThreats[tid]||0)-patrolReduc[tid]);});
     // Antiquarian Arsenal completion reduces reavers
     if((museum.weapons||0)>=(RELIC_SETS.weapons?.needed||4))newThreats.reavers=Math.max(0,newThreats.reavers-10);
 
@@ -7916,7 +7939,7 @@ function CindervaleAlchemistInner(){
               <div style={{fontSize:14,color:TH.textDim,margin:'3px 0'}}>
                 Stats: {Object.entries(ap.baseStat).map(([s,v])=><span key={s} style={{marginRight:5,color:STATS[s]?.color||TH.text,cursor:'help'}} title={STATS[s]?.name+' '+v+' (mod '+(getMod(v)>=0?'+':'')+getMod(v)+'). '+({tec:'Used for brewing & foraging efficiency',com:'Used for shopkeeping gold earned',acu:'Used for research discovery chance',dis:'Used for construction speed & endurance',inu:'Used for attunement & intuition checks',cre:'Used for creative & experimental tasks'}[s]||'')}>{STATS[s]?.icon||s} {v}</span>)}
               </div>
-              <div style={{fontSize:14,color:TH.text,marginBottom:3}}>Task: <b style={{color:task?TH.gold:TH.textDim}}>{task?TASK_TYPES[task.type]?.icon+' '+TASK_TYPES[task.type]?.name+(task.target?' ('+(task.type==='forage'?(locRegions.find(r=>r.id===task.target)?.name||task.target):task.type==='brew'?(RECIPES.find(r=>r.id===task.target)?.name||task.target):task.type==='construct'?(UPGRADES[task.target]?.name||task.target):task.target)+')':''):'None — assign below'}</b>
+              <div style={{fontSize:14,color:TH.text,marginBottom:3}}>Task: <b style={{color:task?TH.gold:TH.textDim}}>{task?TASK_TYPES[task.type]?.icon+' '+TASK_TYPES[task.type]?.name+(task.target?' ('+(task.type==='forage'?(locRegions.find(r=>r.id===task.target)?.name||task.target):task.type==='brew'?(RECIPES.find(r=>r.id===task.target)?.name||task.target):task.type==='construct'?(UPGRADES[task.target]?.name||task.target):task.type==='patrol'?(THREAT_FACTIONS[task.target]?.name||task.target):task.target)+')':''):'None — assign below'}</b>
                 {task&&<span style={{fontSize:13,color:TH.textDim}}> — {TASK_TYPES[task.type]?.desc}</span>}
               </div>
               <div style={{display:'flex',flexWrap:'wrap',gap:3,fontSize:14,marginBottom:4}}>
@@ -7934,6 +7957,8 @@ function CindervaleAlchemistInner(){
                 <button style={{...S.btn(task?.type==='research_task'?'gold':'def'),fontSize:14,padding:'2px 6px'}} onClick={()=>assignTask(ap.id,'research_task',null)} title={TASK_TYPES.research_task.desc}>📚 Research</button>
                 <select onChange={e=>{if(e.target.value)assignTask(ap.id,'construct',e.target.value);}} value={task?.type==='construct'?task.target:''} title={TASK_TYPES.construct.desc} style={{padding:'2px 4px',background:TH.panelLight,color:TH.text,border:'1px solid '+TH.border,borderRadius:3,fontFamily:'inherit',fontSize:14}}>
                   <option value="">🔨...</option>{Object.values(UPGRADES).filter(u=>!upgrades.includes(u.id)&&(!u.req||upgrades.includes(u.req))).map(u=><option key={u.id} value={u.id}>{u.icon}{u.name}{(constructProgress[u.id]||0)>0?` (${constructProgress[u.id]}%)`:''}</option>)}</select>
+                <select onChange={e=>{if(e.target.value)assignTask(ap.id,'patrol',e.target.value);}} value={task?.type==='patrol'?task.target:''} title={TASK_TYPES.patrol?.desc||'Patrol against threats'} style={{padding:'2px 4px',background:TH.panelLight,color:TH.text,border:'1px solid '+TH.border,borderRadius:3,fontFamily:'inherit',fontSize:14}}>
+                  <option value="">🛡️...</option>{THREAT_IDS.map(tid=><option key={tid} value={tid}>{THREAT_FACTIONS[tid]?.icon} {THREAT_FACTIONS[tid]?.name} ({threats[tid]||0}/100)</option>)}</select>
                 <button style={{...S.btn('red'),fontSize:14,padding:'2px 6px'}} onClick={()=>setConfirmFire(confirmFire===ap.id?null:ap.id)} title="Dismiss this employee">{confirmFire===ap.id?'Cancel':'🔥 Dismiss'}</button>
               </div>
               {confirmFire===ap.id&&<div style={{marginTop:4,padding:'6px 8px',background:TH.red+'15',border:'1px solid '+TH.red+'44',borderRadius:4,display:'flex',alignItems:'center',justifyContent:'space-between'}}>

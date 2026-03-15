@@ -454,8 +454,11 @@ var TRAIT_FX={
   'Eccentric':{moraleDelta:-1,researchEff:0.08,desc:'-1 morale/day, +8% research'},
   'Strong':{forageEff:0.12,desc:'+12% foraging efficiency'},
   'Blunt':{shopEff:-0.10,desc:'-10% shopkeeping efficiency'},
+  'Vigilant':{patrolEff:0.20,desc:'+20% patrol efficiency'},
+  'Night Owl':{patrolEff:0.12,forageEff:-0.06,desc:'+12% patrol, -6% foraging efficiency'},
+  'Watchful':{patrolEff:0.10,shopEff:0.06,desc:'+10% patrol, +6% shopkeeping efficiency'},
 };
-var SPEC_MATCH={forage:'foraging',brew:'brewing',shopkeep:'shopkeeping',research_task:'research',construct:'building'};
+var SPEC_MATCH={forage:'foraging',brew:'brewing',shopkeep:'shopkeeping',research_task:'research',construct:'building',patrol:'patrolling'};
 
 var AP_POOL=[
   {id:'ap_korrin',name:'Korrin Ashfoot',icon:'👦',personality:'Eager dwarf, steady hands.',baseStat:{tec:12,dis:11,inu:9},specialty:'brewing',salary:5,traits:['Quick Learner','Clumsy']},
@@ -483,6 +486,11 @@ var AP_POOL=[
   {id:'ap_lira',name:'Lira Miragecatcher',icon:'🧝‍♀️',personality:'Half-elf drawn to the Mirage Bazaar\'s mysteries.',loc:'ashfall',baseStat:{inu:14,acu:12,cre:11},specialty:'enchanting',salary:8,traits:['Arcane Gifted','Eccentric']},
   {id:'ap_baz',name:'Baz Saltbeard',icon:'🧔‍♂️',personality:'Grizzled dwarf who ran a competing shop that failed.',loc:'ashfall',baseStat:{tec:12,com:12,dis:11},specialty:'shopkeeping',salary:7,traits:['Experienced','Set in Ways']},
   {id:'ap_holt',name:'Holt Cinderforge',icon:'👷',personality:'Blacksmith\'s son looking for a change.',baseStat:{tec:13,dis:12,com:9},specialty:'foraging',salary:5,traits:['Strong','Blunt']},
+  // ═══ PATROL SPECIALISTS ═══
+  {id:'ap_garren',name:'Garren Shieldwall',icon:'💂',personality:'Former town guard captain, retired but restless.',baseStat:{dis:14,tec:11,com:10},specialty:'patrolling',salary:8,traits:['Vigilant','Tireless']},
+  {id:'ap_nell',name:'Nell Hawkeye',icon:'🧝‍♀️',personality:'Half-elf ranger who patrols the forest road.',baseStat:{dis:13,inu:12,tec:10},specialty:'patrolling',salary:7,traits:['Watchful','Fleet-Footed']},
+  {id:'ap_soraya',name:'Soraya Dustblade',icon:'⚔️',personality:'Dustwalker veteran turned freelance guard.',loc:'ashfall',baseStat:{dis:14,tec:12,inu:10},specialty:'patrolling',salary:8,traits:['Vigilant','Experienced']},
+  {id:'ap_malik',name:'Malik Ashwatch',icon:'🛡️',personality:'Night watchman from the Crossing, knows every shadow.',loc:'ashfall',baseStat:{dis:13,inu:13,com:9},specialty:'patrolling',salary:7,traits:['Night Owl','Keen Senses']},
 ];
 var TASK_TYPES={
   forage:{name:'Forage',icon:'⛏️',stat:'tec',desc:'Sends staff to gather ingredients from a region overnight. Higher TEC = more items found.'},
@@ -490,6 +498,7 @@ var TASK_TYPES={
   shopkeep:{name:'Shop',icon:'🏪',stat:'com',desc:'Tends the shop counter, earning gold based on level and COM stat. Reliable daily income.'},
   research_task:{name:'Research',icon:'📚',stat:'acu',desc:'Studies texts overnight. Chance to discover new recipes or enchantments. Higher ACU = better discovery odds.'},
   construct:{name:'Construct',icon:'🔨',stat:'dis',desc:'Preps a workshop upgrade overnight. Higher DIS = faster progress. When complete, gold cost -40% and one material requirement waived.'},
+  patrol:{name:'Patrol',icon:'🛡️',stat:'dis',desc:'Patrols against a rival faction threat overnight. Higher DIS = more threat reduced. Vigilant staff excel at this.'},
 };
 
 // ═══ GAME DATA ═══
