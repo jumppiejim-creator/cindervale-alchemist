@@ -3116,6 +3116,7 @@ function CindervaleAlchemistInner(){
     const _xpAdded={}; // Track XP gains for level-up detection
     const dualTask=getFeatureVal('dualStaffTasks');
     // Process staff tasks synchronously (report entries must exist before morning report)
+    const staffDiscR=[];const staffDiscE=[]; // track discoveries within this loop to prevent duplicates
     const updatedAppr=hiredAppr.map(ap=>{
       const apSalary=Math.max(1,Math.floor(ap.salary*(1-payrollDisc)*halfPay));
       totalSal+=apSalary;const task=apprTasks[ap.id];
@@ -3180,16 +3181,16 @@ function CindervaleAlchemistInner(){
         const g=Math.floor((5+level*2+aLvl*3)*eff*(1+upEff('sellBonus')+getFeatureVal('sellBonus')));setGold(gg=>gg+g);
         report.push({n:ap.name,i:ap.icon,r:`Shop: +${g}g`,t:'ok'});{const _xpGain=Math.floor(12*axp);_xpAdded[ap.id]=(_xpAdded[ap.id]||0)+_xpGain;setApprXP(p=>({...p,[ap.id]:(p[ap.id]||0)+_xpGain}));};
       } else if(task.type==='research_task'){
-        const undP=RECIPES.filter(r=>!known.includes(r.id)&&level>=r.unlock&&(!r.faction||getRL(r.faction)>=(r.fReq||0))&&canCraftAtLocation(r.ingr)&&!r.fieldOnly);
-        const undE=ENCHANTMENTS.filter(e=>!knownEnch.includes(e.id)&&(!e.faction||getRL(e.faction)>=(e.fReq||0))&&canCraftAtLocation(e.ingr));
+        const undP=RECIPES.filter(r=>!known.includes(r.id)&&!staffDiscR.includes(r.id)&&level>=r.unlock&&(!r.faction||getRL(r.faction)>=(r.fReq||0))&&canCraftAtLocation(r.ingr)&&!r.fieldOnly);
+        const undE=ENCHANTMENTS.filter(e=>!knownEnch.includes(e.id)&&!staffDiscE.includes(e.id)&&(!e.faction||getRL(e.faction)>=(e.fReq||0))&&canCraftAtLocation(e.ingr));
         const discoveryChance=0.15+eff*0.2;
         if(Math.random()<discoveryChance){
           if((undP.length>0&&Math.random()<0.5)||undE.length===0){
-            if(undP.length>0){const d=undP[Math.floor(Math.random()*undP.length)];setKnown(p=>[...p,d.id]);
+            if(undP.length>0){const d=undP[Math.floor(Math.random()*undP.length)];staffDiscR.push(d.id);setKnown(p=>[...p,d.id]);
               report.push({n:ap.name,i:ap.icon,r:`Discovered ${d.icon}${d.name}!`,t:'ok'});}
             else report.push({n:ap.name,i:ap.icon,r:'Studied. No breakthrough.',t:'idle'});
           } else if(undE.length>0){
-            const d=undE[Math.floor(Math.random()*undE.length)];setKnownEnch(p=>[...p,d.id]);
+            const d=undE[Math.floor(Math.random()*undE.length)];staffDiscE.push(d.id);setKnownEnch(p=>[...p,d.id]);
             report.push({n:ap.name,i:ap.icon,r:`Inscription: ${d.icon}${d.name}!`,t:'ok'});
           }
         } else report.push({n:ap.name,i:ap.icon,r:'Studied. No breakthrough.',t:'idle'});
