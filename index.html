@@ -4832,7 +4832,8 @@ function CindervaleAlchemistInner(){
             {id:'tavern',icon:'🍺',label:'Tavern',img:'tavern'},
             {id:'worldmap',icon:'🗺️',label:'Wilds',img:'wilds'},
             {id:'quests',icon:'📜',label:'Quests',img:'tavern'},
-            {id:'factions',icon:'🛡️',label:'Factions',img:'chapel'},
+            {id:'factions',icon:'🏛️',label:'Factions',img:'chapel'},
+            {id:'threats',icon:'⚔️',label:'Threats',img:'wilds'},
             {id:'staff',icon:'👥',label:'Staff',img:'workshop'},
             {id:'character',icon:'📋',label:'Character',img:'map'},
           ].map(nav=>{
@@ -8314,6 +8315,121 @@ function CindervaleAlchemistInner(){
               </div>
             </div>
           </div>);})()}
+      </>}
+
+      {/* ═══════════ THREATS ═══════════ */}
+      {screen==='threats'&&<>
+        <BackBar title="Rival Factions & Threats" icon="⚔️"/>
+        {/* Overview */}
+        <div style={{...S.card,padding:'10px 14px'}}>
+          <div style={{fontSize:14,color:TH.textDim,lineHeight:1.5}}>
+            Three rival forces threaten {gameLocation==='ashfall'?'Ashfall Crossing':'Cindervale'}. As threats grow, they impose escalating penalties on your operations. Assign staff to <b style={{color:TH.gold}}>🛡️ Patrol</b>, fulfill <b style={{color:TH.gold}}>defense requests</b>, build <b style={{color:TH.gold}}>outposts</b>, and raise <b style={{color:TH.gold}}>faction reputation</b> to push them back.
+          </div>
+        </div>
+        {/* Per-threat cards */}
+        {THREAT_IDS.map(tid=>{
+          const val=threats[tid]||0;const tf=THREAT_FACTIONS[tid];const tier=getThreatTier(val);
+          const tierColor=getThreatColor(val);const tierLabel=getThreatLabel(val);
+          const penalties=tf.penalties||{};
+          const curPenalties=tier!=='calm'?penalties[tier]:null;
+          // Find staff patrolling this threat
+          const patrollers=hiredAppr.filter(ap=>{const t=apprTasks[ap.id];return t&&t.type==='patrol'&&t.target===tid;});
+          // Find outposts suppressing this threat
+          const suppressingOPs=outposts.filter(op=>{
+            if(!op.built)return false;const reg=REGIONS.find(r=>r.id===op.regionId);if(!reg)return false;
+            return reg.diff>=5||(tid==='blight'&&reg.diff>=3)||(tid==='reavers'&&reg.diff<3);
+          });
+          // Faction mitigation
+          const factionMitigators={reavers:['ashwardens','dustwalkers'],blight:['cinderfolk','flamekeepers'],veilbreakers:['veilwalkers']};
+          const helpingFactions=(factionMitigators[tid]||[]).filter(fid=>getRepLvl(fRep[fid]||0)>=3);
+          // Class mitigation
+          const classMit={blight:(classLevels.warden||0)>=4,veilbreakers:(classLevels.merchant||0)>=4};
+          // Defense quests for this threat
+          const myDQ=defenseQuests.filter(dq=>dq.threatId===tid);
+          // Daily growth info
+          const growthInfo={reavers:day>3?'Grows +3/day'+(gold>200?' (+1 wealth tax)':''):'Starts after Day 3',
+            blight:day>5?'Grows +2/day + extra from foraging dangerous regions':'Starts after Day 5',
+            veilbreakers:day>10?'Grows +3/day':'Starts after Day 10'};
+          return <div key={tid} style={{...S.card,borderColor:tierColor+'66',borderWidth:tier==='critical'?2:1,boxShadow:tier!=='calm'?'0 0 15px '+tierColor+'20':'none'}}>
+            {/* Header */}
+            <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:8}}>
+              <span style={{fontSize:32}}>{tf.icon}</span>
+              <div style={{flex:1}}>
+                <div style={{fontSize:18,fontWeight:'bold',color:tierColor}}>{tf.name}</div>
+                <div style={{fontSize:13,color:TH.textDim}}>{tf.desc}</div>
+              </div>
+              <div style={{textAlign:'right'}}>
+                <div style={{fontSize:22,fontWeight:'bold',color:tierColor}}>{val}</div>
+                <div style={{fontSize:12,color:tierColor}}>{tierLabel}</div>
+              </div>
+            </div>
+            {/* Threat bar */}
+            <div style={{height:12,background:TH.bg,borderRadius:6,border:'1px solid '+TH.border,overflow:'hidden',marginBottom:8}}>
+              <div style={{height:'100%',width:val+'%',background:`linear-gradient(90deg,${tierColor}88,${tierColor})`,borderRadius:6,transition:'width 0.3s'}}/>
+            </div>
+            {/* Tier thresholds */}
+            <div style={{display:'flex',justifyContent:'space-between',fontSize:11,color:TH.textDim,marginBottom:10,padding:'0 2px'}}>
+              <span style={{color:val<25?TH.green:TH.textDim,fontWeight:tier==='calm'?'bold':'normal'}}>Calm (0-24)</span>
+              <span style={{color:tier==='rising'?'#c0c020':TH.textDim,fontWeight:tier==='rising'?'bold':'normal'}}>Rising (25-49)</span>
+              <span style={{color:tier==='dangerous'?'#d08020':TH.textDim,fontWeight:tier==='dangerous'?'bold':'normal'}}>Dangerous (50-74)</span>
+              <span style={{color:tier==='critical'?'#cc2020':TH.textDim,fontWeight:tier==='critical'?'bold':'normal'}}>Critical (75+)</span>
+            </div>
+            {/* Growth rate */}
+            <div style={{fontSize:13,color:TH.textDim,marginBottom:8,padding:'4px 8px',background:TH.bg,borderRadius:4}}>
+              📈 <b>Growth:</b> {growthInfo[tid]} · <b>Natural decay:</b> -1/day (above 10)
+            </div>
+            {/* Current penalties */}
+            <div style={{marginBottom:8,padding:'8px 10px',background:tier==='calm'?TH.green+'08':tierColor+'10',borderRadius:6,border:'1px solid '+(tier==='calm'?TH.green+'33':tierColor+'33')}}>
+              <div style={{fontSize:14,fontWeight:'bold',color:tier==='calm'?TH.green:tierColor,marginBottom:4}}>
+                {tier==='calm'?'✅ No Active Penalties':'⚠️ Active Penalties — '+tierLabel}
+              </div>
+              {tier==='calm'&&<div style={{fontSize:13,color:TH.green}}>This threat is under control. Keep it below 25 to avoid penalties.</div>}
+              {tid==='reavers'&&tier!=='calm'&&<div style={{fontSize:13,color:TH.text,lineHeight:1.6}}>
+                {curPenalties?.expDangerMult>1&&<div>⚔️ Expedition danger increased by <b style={{color:tierColor}}>+{Math.round((curPenalties.expDangerMult-1)*100)}%</b></div>}
+                {curPenalties?.staffYieldMult<1&&<div>📦 Staff foraging yield reduced by <b style={{color:tierColor}}>{Math.round((1-curPenalties.staffYieldMult)*100)}%</b></div>}
+                {curPenalties?.shelfTheftChance>0&&<div>🏴 <b style={{color:tierColor}}>{Math.round(curPenalties.shelfTheftChance*100)}%</b> chance of overnight shelf theft</div>}
+              </div>}
+              {tid==='blight'&&tier!=='calm'&&<div style={{fontSize:13,color:TH.text,lineHeight:1.6}}>
+                {curPenalties?.spoilMult>1&&<div>🧪 Ingredient spoilage rate increased by <b style={{color:tierColor}}>×{curPenalties.spoilMult}</b></div>}
+                {curPenalties?.contaminateChance>0&&<div>🦠 <b style={{color:tierColor}}>{Math.round(curPenalties.contaminateChance*100)}%</b> chance that quality brews get contaminated to Standard</div>}
+                {curPenalties?.ingrLossChance>0&&<div>💀 <b style={{color:tierColor}}>{Math.round(curPenalties.ingrLossChance*100)}%</b> chance of overnight ingredient corruption</div>}
+              </div>}
+              {tid==='veilbreakers'&&tier!=='calm'&&<div style={{fontSize:13,color:TH.text,lineHeight:1.6}}>
+                {curPenalties?.enchDCBonus>0&&<div>✨ Enchanting DC increased by <b style={{color:tierColor}}>+{curPenalties.enchDCBonus}</b></div>}
+                {curPenalties?.discoveryMult<1&&<div>📚 Research discovery chance reduced by <b style={{color:tierColor}}>{Math.round((1-curPenalties.discoveryMult)*100)}%</b></div>}
+                {curPenalties?.enchPayMult<1&&<div>💰 Enchantment customer pay reduced by <b style={{color:tierColor}}>{Math.round((1-curPenalties.enchPayMult)*100)}%</b></div>}
+                {curPenalties?.custDropChance>0&&<div>👤 <b style={{color:tierColor}}>{Math.round(curPenalties.custDropChance*100)}%</b> chance customers don't show up</div>}
+              </div>}
+            </div>
+            {/* Your Defenses */}
+            <div style={{marginBottom:8,padding:'8px 10px',background:TH.panel,borderRadius:6,border:'1px solid '+TH.border}}>
+              <div style={{fontSize:14,fontWeight:'bold',color:TH.gold,marginBottom:6}}>🛡️ Your Defenses</div>
+              <div style={{fontSize:13,color:TH.text,lineHeight:1.8}}>
+                {patrollers.length>0?<div>👥 <b>Patrol Staff:</b> {patrollers.map(ap=>ap.icon+' '+ap.name).join(', ')} <span style={{color:TH.green}}>(-{patrollers.length*5}~{patrollers.length*8}/day est.)</span></div>
+                  :<div style={{color:TH.textDim}}>👥 No staff assigned to patrol this threat. <span style={{color:TH.gold,cursor:'pointer',textDecoration:'underline'}} onClick={()=>setScreen('staff')}>Go to Staff Hall →</span></div>}
+                {suppressingOPs.length>0&&<div>🏗️ <b>Outposts:</b> {suppressingOPs.length} outpost{suppressingOPs.length>1?'s':''} suppressing <span style={{color:TH.green}}>(-{suppressingOPs.length*outpostSuppressAmt}/day)</span></div>}
+                {helpingFactions.length>0&&<div>🏛️ <b>Faction Aid:</b> {helpingFactions.map(fid=>FACTIONS[fid]?.icon+' '+FACTIONS[fid]?.name+' (Trusted)').join(', ')} <span style={{color:TH.green}}>(-1/day each)</span></div>}
+                {classMit[tid]&&<div>📋 <b>Class Ability:</b> {tid==='blight'?'Warden Lv4':'Merchant Lv4'} <span style={{color:TH.green}}>(-1/day)</span></div>}
+                {patrollers.length===0&&suppressingOPs.length===0&&helpingFactions.length===0&&!classMit[tid]&&<div style={{color:'#c06040',fontStyle:'italic'}}>No active defenses — this threat will grow unchecked!</div>}
+              </div>
+            </div>
+            {/* Defense Quests */}
+            {myDQ.length>0&&<div style={{padding:'8px 10px',background:tierColor+'08',borderRadius:6,border:'1px solid '+tierColor+'33'}}>
+              <div style={{fontSize:14,fontWeight:'bold',color:TH.gold,marginBottom:4}}>📋 Defense Requests</div>
+              {myDQ.map(dq=>{
+                const have=dq.type==='deliver'?Object.entries(pots).filter(([pid])=>getBaseRecipeId(pid)===dq.target).reduce((s,[,c])=>s+c,0):(inv[dq.target]||0);
+                const canFill=have>=dq.qty;
+                const target=dq.type==='deliver'?RECIPES.find(r=>r.id===dq.target):INGR[dq.target];
+                return <div key={dq.id} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'6px 8px',marginBottom:4,background:canFill?TH.green+'10':TH.panel,borderRadius:4,border:'1px solid '+(canFill?TH.green+'44':TH.border)}}>
+                  <div>
+                    <div style={{fontSize:14,color:TH.textBright}}>{dq.desc}</div>
+                    <div style={{fontSize:12,color:TH.textDim}}>{have}/{dq.qty} ready · Reward: {tf.icon} -{dq.reward} threat, +{dq.reward*3} XP</div>
+                  </div>
+                  <button style={{...S.btn(canFill?'gold':'dim'),fontSize:13,padding:'4px 10px'}} disabled={!canFill} onClick={()=>completeDefenseQuest(dq.id)}>Fulfill</button>
+                </div>;})}
+            </div>}
+            {myDQ.length===0&&val>0&&<div style={{fontSize:13,color:TH.textDim,fontStyle:'italic',padding:'4px 8px'}}>No defense requests available for this threat right now. New ones appear each morning when threats are active.</div>}
+          </div>;})}
       </>}
 
       {/* ═══════════ CHARACTER (Stats + Skills + Pack) ═══════════ */}
