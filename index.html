@@ -3360,10 +3360,10 @@ function CindervaleAlchemistInner(){
     const newThreats={...(threats||{reavers:0,blight:0,veilbreakers:0})};
     // Threat growth
     if(curDay>3)newThreats.reavers=Math.min(100,(newThreats.reavers||0)+3+(gold>200?1:0));
+    if(curDay>5)newThreats.blight=Math.min(100,(newThreats.blight||0)+2);
     if(curDay>10)newThreats.veilbreakers=Math.min(100,(newThreats.veilbreakers||0)+3);
     // Seasonal threat modifier
     if(curSeason.threatMod){Object.entries(curSeason.threatMod).forEach(([tid,mod])=>{newThreats[tid]=Math.min(100,Math.max(0,(newThreats[tid]||0)+mod));});}
-    if(curDay>10)newThreats.veilbreakers=Math.min(100,(newThreats.veilbreakers||0)+3);
     // Blight grows from expedition activity (tracked via dayFlags)
     const expDiff=dayFlags.filter(f=>f.startsWith('exp_diff_')).map(f=>+f.split('_')[2]);
     expDiff.forEach(d=>{if(d>=3)newThreats.blight=Math.min(100,(newThreats.blight||0)+(d>=5?3:2));});
