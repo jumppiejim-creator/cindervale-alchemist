@@ -609,20 +609,31 @@ function CindervaleAlchemistInner(){
     [baseId,baseId+'_F',baseId+'_M',baseId+'_G'].forEach(pid=>{total+=(pots[pid]||0)+(shelves[pid]||0);});
     return total;
   };
-  // Consume potions: inventory first (std→fine→mw), then shelves (std→fine→mw)
+  // Consume potions: inventory first (std→fine→mw→gm), then shelves. Returns quality breakdown.
   const consumePots=(baseId,qty)=>{
-    let rem=qty;
+    let rem=qty;const consumed={std:0,fine:0,mw:0,gm:0};
+    const suffixes=[['',  'std'],['_F','fine'],['_M','mw'],['_G','gm']];
     // From inventory first
-    [baseId,baseId+'_F',baseId+'_M',baseId+'_G'].forEach(pid=>{
-      const have=pots[pid]||0;if(rem>0&&have>0){const take=Math.min(rem,have);modPot(pid,-take);rem-=take;}
+    suffixes.forEach(([sfx,tier])=>{
+      const pid=baseId+sfx;const have=pots[pid]||0;if(rem>0&&have>0){const take=Math.min(rem,have);modPot(pid,-take);rem-=take;consumed[tier]+=take;}
     });
     // Then from shelves
     if(rem>0){
-      [baseId,baseId+'_F',baseId+'_M',baseId+'_G'].forEach(pid=>{
-        const have=shelves[pid]||0;if(rem>0&&have>0){const take=Math.min(rem,have);
-          setShelves(p=>{const n={...p};n[pid]=(n[pid]||0)-take;if(n[pid]<=0)delete n[pid];return n;});rem-=take;}
+      suffixes.forEach(([sfx,tier])=>{
+        const pid=baseId+sfx;const have=shelves[pid]||0;if(rem>0&&have>0){const take=Math.min(rem,have);
+          setShelves(p=>{const n={...p};n[pid]=(n[pid]||0)-take;if(n[pid]<=0)delete n[pid];return n;});rem-=take;consumed[tier]+=take;}
       });
     }
+    return consumed;
+  };
+  // Calculate quality bonus multiplier from consumed breakdown: avg of QUALITY.sellMult across consumed potions
+  const qualityBonusMult=(consumed)=>{
+    const total=consumed.std+consumed.fine+consumed.mw+consumed.gm;if(total===0)return{mult:1,label:''};
+    const mults={std:1,fine:QUALITY.fine?.sellMult||1.5,mw:QUALITY.mw?.sellMult||2,gm:QUALITY.gm?.sellMult||3};
+    const avg=(consumed.std*mults.std+consumed.fine*mults.fine+consumed.mw*mults.mw+consumed.gm*mults.gm)/total;
+    if(avg<=1.01)return{mult:1,label:''};
+    const parts=[];if(consumed.fine)parts.push(consumed.fine+'× Fine');if(consumed.mw)parts.push(consumed.mw+'× Masterwork');if(consumed.gm)parts.push(consumed.gm+'× Grandmaster');
+    return{mult:avg,label:parts.length>0?' | ✨ Quality bonus ('+parts.join(', ')+'): ×'+avg.toFixed(1):''};
   };
   const gainXP=(base)=>{const mult=1+getFeatureVal('xpMultiplier');setXp(x=>x+Math.floor(base*mult));};
   const getBuyPrice=(basePrice)=>{const disc=getFeatureVal('buyDiscount');return Math.max(1,Math.floor(basePrice*(1-disc)));};
@@ -1433,15 +1444,19 @@ function CindervaleAlchemistInner(){
       if((inv[dq.target]||0)<dq.qty){addLog('Need '+dq.qty+'× '+(INGR[dq.target]?.name||dq.target)+' (have '+(inv[dq.target]||0)+').','error');return;}
     }
     snapshot();
-    // Consume
-    if(dq.type==='deliver'){let rem=dq.qty;[dq.target,dq.target+'_F',dq.target+'_M'].forEach(pid=>{const have=pots[pid]||0;if(rem>0&&have>0){const take=Math.min(rem,have);modPot(pid,-take);rem-=take;}});}
+    // Consume and track quality
+    let dqConsumed={std:0,fine:0,mw:0,gm:0};
+    if(dq.type==='deliver'){const c=consumePots(dq.target,dq.qty);Object.keys(c).forEach(k=>{dqConsumed[k]+=c[k];});}
     else if(dq.type==='gather')modInv(dq.target,-dq.qty);
-    // Reduce threat
-    setThreats(p=>{const n={...p};n[dq.threatId]=Math.max(0,(n[dq.threatId]||0)-dq.reward);return n;});
+    const dqQB=qualityBonusMult(dqConsumed);
+    // Reduce threat (quality bonus increases reduction)
+    const threatReduc=Math.floor(dq.reward*dqQB.mult);
+    setThreats(p=>{const n={...p};n[dq.threatId]=Math.max(0,(n[dq.threatId]||0)-threatReduc);return n;});
     setDefenseQuests(p=>p.filter(q=>q.id!==dqId));
-    gainXP(Math.floor(dq.reward*3));
+    const dqXp=Math.floor(dq.reward*3*dqQB.mult);
+    gainXP(dqXp);
     const tf=THREAT_FACTIONS[dq.threatId];
-    addLog('🛡️ Defense quest complete! '+tf?.icon+' '+tf?.name+' threat reduced by '+dq.reward+'. (+'+Math.floor(dq.reward*3)+' XP)','quest');
+    addLog('🛡️ Defense quest complete! '+tf?.icon+' '+tf?.name+' threat reduced by '+threatReduc+(dqQB.mult>1?' (base '+dq.reward+')':'')+'. (+'+dqXp+' XP)'+(dqQB.label?dqQB.label:''),'quest');
   };
 
     // ═══ BRAND HELPERS (Brand Master) ═══
@@ -2022,11 +2037,12 @@ function CindervaleAlchemistInner(){
   const doFillOrder=(cust)=>{
     const have=countAllPots(getBaseRecipeId(cust.potionId));if(have<cust.qty){addLog('Not enough '+cust.potionIcon+cust.potionName+' to fill this order.','error');return;}
     snapshot();
-    consumePots(getBaseRecipeId(cust.potionId),cust.qty);
-    const totalPay=cust.payPer*cust.qty;const totalXp=cust.xpPer*cust.qty;
+    const custConsumed=consumePots(getBaseRecipeId(cust.potionId),cust.qty);
+    const custQB=qualityBonusMult(custConsumed);
+    const totalPay=Math.floor(cust.payPer*cust.qty*custQB.mult);const totalXp=Math.floor(cust.xpPer*cust.qty*custQB.mult);
     setGold(g=>g+totalPay);gainXP(totalXp);
     setPotCustQ(p=>p.filter(c=>c!==cust));
-    showResult('🧪 Order Filled!','craft',cust.customer+' buys '+cust.qty+'× '+cust.potionIcon+cust.potionName+'\n+'+totalPay+'g  +'+totalXp+' XP');
+    showResult('🧪 Order Filled!','craft',cust.customer+' buys '+cust.qty+'× '+cust.potionIcon+cust.potionName+'\n+'+totalPay+'g  +'+totalXp+' XP'+(custQB.label?'\n'+custQB.label:''));
   };
   const dismissPotCust=(cust)=>setPotCustQ(p=>p.filter(c=>c!==cust));
 
@@ -2882,17 +2898,21 @@ function CindervaleAlchemistInner(){
   };
   const compQ=q=>{
     snapshot();
-    if(q.type==='deliver')consumePots(q.target,q.count);else if(q.type==='gather')modInv(q.target,-q.count);else if(q.type==='multi')q.targets.forEach(t=>consumePots(t,1));
+    let qConsumed={std:0,fine:0,mw:0,gm:0};
+    if(q.type==='deliver'){const c=consumePots(q.target,q.count);Object.keys(c).forEach(k=>{qConsumed[k]+=c[k];});}
+    else if(q.type==='gather')modInv(q.target,-q.count);
+    else if(q.type==='multi')q.targets.forEach(t=>{const c=consumePots(t,1);Object.keys(c).forEach(k=>{qConsumed[k]+=c[k];});});
+    const qQB=qualityBonusMult(qConsumed);
     setAQ(p=>p.filter(a=>a.id!==q.id));setDoneQ(p=>[...p,q.id]);const loreXp=getSkMod('lore')*4;
     const qGoldB=1+getFeatureVal('questGoldBonus')+(getSeason(day,gameLocation).questGoldMod||0);const qRepB=1+getFeatureVal('questRepBonus');const qXpB=1+getFeatureVal('questXPBonus');
-    const qGold=Math.floor(q.gold*qGoldB*GOLD_MULT);
-    gainXP(Math.floor((q.xp+loreXp)*qXpB));setGold(g=>g+qGold);
+    const qGold=Math.floor(q.gold*qGoldB*qQB.mult*GOLD_MULT);
+    gainXP(Math.floor((q.xp+loreXp)*qXpB*qQB.mult));setGold(g=>g+qGold);
     if(q.items?.length)q.items.forEach(id=>modInv(id,1));if(q.faction&&q.fRep)addRep(q.faction,Math.floor(q.fRep*qRepB));
     // Temple Healing: restore 1 energy on quest completion
     const questER=getFeatureVal('questEnergyRestore');if(questER>0){setHours(h=>h+questER);addLog('\u26a1 Temple Healing: +'+questER+' Energy restored!','info');}
     // Faction tier 3 bonus: chance for bonus faction resource on quest complete
     if(q.faction){const fRes=FACTIONS[q.faction]?.res;if(fRes){const dropChance=getFeatureVal('factionBonusDrop_'+fRes);if(dropChance>0&&Math.random()<dropChance){modInv(fRes,1);addLog(`✨ Faction bonus: +1 ${INGR[fRes]?.icon||''} ${INGR[fRes]?.name||fRes} from ${FACTIONS[q.faction].name} reputation!`,'info');}}}
-    addLog(`✅ "${q.name}" complete! ${q.giver} rewards you with ${qGold}g and grateful thanks. (+${q.xp+loreXp}XP${loreXp>0?' incl. 📖Lore +'+loreXp:''}${qGoldB>1?' +Scholar bonus':''}${q.faction?' | '+FACTIONS[q.faction]?.icon+'+'+Math.floor(q.fRep*qRepB)+' rep':''})`,'quest');
+    addLog(`✅ "${q.name}" complete! ${q.giver} rewards you with ${qGold}g and grateful thanks. (+${Math.floor((q.xp+loreXp)*qXpB*qQB.mult)}XP${loreXp>0?' incl. 📖Lore +'+loreXp:''}${qGoldB>1?' +Scholar bonus':''}${qQB.label}${q.faction?' | '+FACTIONS[q.faction]?.icon+'+'+Math.floor(q.fRep*qRepB)+' rep':''})`,'quest');
     if([...doneQ,q.id].length>=QUESTS.length)earnMilestone('all_quests');
     // Faction chain completion milestones
     if(q.id==='fc_ash3')earnMilestone('ash_chain');
@@ -2941,18 +2961,20 @@ function CindervaleAlchemistInner(){
   };
   const completeBQ=(bq)=>{
     snapshot();
-    if(bq.type==='deliver')consumePots(bq.target,bq.count);
+    let bqConsumed={std:0,fine:0,mw:0,gm:0};
+    if(bq.type==='deliver'){const c=consumePots(bq.target,bq.count);Object.keys(c).forEach(k=>{bqConsumed[k]+=c[k];});}
     else if(bq.type==='gather')modInv(bq.target,-bq.count);
+    const bqQB=qualityBonusMult(bqConsumed);
     setActiveBQ(p=>p.filter(q=>q.id!==bq.id));
     setDoneBQCount(c=>c+1);
     const bqLoreXp=getSkMod('lore')*4;
     const bqGoldB=1+getFeatureVal('questGoldBonus');const bqRepB=1+getFeatureVal('questRepBonus');const bqXpB=1+getFeatureVal('questXPBonus');
-    const bqGold=Math.floor(bq.gold*bqGoldB*GOLD_MULT);
-    gainXP(Math.floor((bq.xp+bqLoreXp)*bqXpB));setGold(g=>g+bqGold);
+    const bqGold=Math.floor(bq.gold*bqGoldB*bqQB.mult*GOLD_MULT);
+    gainXP(Math.floor((bq.xp+bqLoreXp)*bqXpB*bqQB.mult));setGold(g=>g+bqGold);
     if(bq.faction&&bq.fRep)addRep(bq.faction,Math.floor(bq.fRep*bqRepB));
     const bqER=getFeatureVal('questEnergyRestore');if(bqER>0){setHours(h=>h+bqER);addLog('\u26a1 Temple Healing: +'+bqER+' Energy restored!','info');}
     if(bq.faction){const fRes=FACTIONS[bq.faction]?.res;if(fRes){const dropChance=getFeatureVal('factionBonusDrop_'+fRes);if(dropChance>0&&Math.random()<dropChance){modInv(fRes,1);addLog(`✨ Faction bonus: +1 ${INGR[fRes]?.icon||''} ${INGR[fRes]?.name||fRes} from ${FACTIONS[bq.faction].name} reputation!`,'info');}}}
-    addLog(`✅ Board request complete: ${bq.name} — +${bq.gold}g, +${bq.xp}XP${bq.faction?' | '+FACTIONS[bq.faction]?.icon+'+'+Math.floor(bq.fRep*bqRepB)+' rep':''}`,'quest');
+    addLog(`✅ Board request complete: ${bq.name} — +${bqGold}g, +${Math.floor((bq.xp+bqLoreXp)*bqXpB*bqQB.mult)}XP${bqQB.label}${bq.faction?' | '+FACTIONS[bq.faction]?.icon+'+'+Math.floor(bq.fRep*bqRepB)+' rep':''}`,'quest');
     if(doneBQCount+1>=20)earnMilestone('board_veteran');
     // Archivist lore fragment from board quests
     if(specs.scholar==='archivist'){
@@ -6939,7 +6961,11 @@ function CindervaleAlchemistInner(){
               const ingrStatus=Object.entries(ingrNeeded).map(([id,q])=>({id,need:q,have:inv[id]||0,ok:(inv[id]||0)>=q}));
               return <div key={potId} style={{padding:'6px 8px',background:done?TH.green+'10':TH.panel,borderRadius:5,marginBottom:4,border:'1px solid '+(done?TH.green+'44':TH.border)}}>
                 <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-                  <span style={{fontSize:15,color:done?TH.green:TH.textBright,fontWeight:'bold'}}>{r.icon} {r.name}</span>
+                  <span style={{fontSize:15,color:done?TH.green:TH.textBright,fontWeight:'bold',cursor:known.includes(potId)?'pointer':'default',textDecoration:known.includes(potId)?'underline':'none',textDecorationColor:known.includes(potId)?(done?TH.green+'66':TH.gold+'66'):'transparent',textUnderlineOffset:3}} onClick={()=>{
+                    if(!known.includes(potId))return;
+                    const el=document.getElementById('recipe-'+potId);
+                    if(el){el.scrollIntoView({behavior:'smooth',block:'center'});el.style.transition='box-shadow 0.3s';el.style.boxShadow='0 0 20px '+TH.gold+'80';setTimeout(()=>{el.style.boxShadow='none';},1500);}
+                  }}>{r.icon} {r.name}{known.includes(potId)?<span style={{fontSize:11,color:TH.textDim,marginLeft:4}}>↓</span>:''}</span>
                   <span style={{fontSize:14,color:done?TH.green:have>0?TH.gold:TH.red,fontWeight:'bold'}}>{have}/{needed} {done&&'\u2705'}</span>
                 </div>
                 {!done&&<div style={{fontSize:12,color:TH.textDim,marginTop:2}}>
@@ -7075,7 +7101,7 @@ function CindervaleAlchemistInner(){
             return{needed,allShop,total,canBuy:allShop&&total>0&&total<=gold};
           };
           const doBuy=(n)=>{const{needed}=buyCalc(n);Object.entries(needed).forEach(([id,q])=>{const si=SHOP_I.find(i=>i.id===id);if(si){const bp=getBuyPrice(Math.max(1,si.price-hagMod));for(let i=0;i<q;i++){setGold(g=>g-bp);modInv(id,1);}}});};
-          return(<div key={r.id} style={{padding:'6px 8px',background:TH.panelLight,borderRadius:4,marginBottom:4,border:`1px solid ${can&&fOk?TH.borderGold:TH.border}`,opacity:fOk?1:.5}}>
+          return(<div key={r.id} id={'recipe-'+r.id} style={{padding:'6px 8px',background:TH.panelLight,borderRadius:4,marginBottom:4,border:`1px solid ${can&&fOk?TH.borderGold:TH.border}`,opacity:fOk?1:.5}}>
             <div style={{display:'flex',justifyContent:'space-between'}}><span style={{fontSize:16,color:TH.textBright}}>{r.icon}{r.name}{(()=>{const br=getBrandForRecipe(r.id);return br?<span style={{fontSize:11,color:'#d0a060',marginLeft:4}}>{br.icon}{br.name}</span>:null;})()}</span>
               <span style={{fontSize:14}}><span style={{color:TH.textDim}}>DC{adjDC}{masteryD>0?' (-'+masteryD+')':''}</span> <span style={{color:successPct>=70?TH.green:successPct>=40?TH.gold:TH.red,fontSize:13}}>{successPct}%</span></span></div>
             {r.desc&&<div style={{fontSize:14,color:TH.textDim,fontStyle:'italic',margin:'2px 0'}}>{r.desc}</div>}
