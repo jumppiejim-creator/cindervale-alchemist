@@ -39,6 +39,10 @@ const Tone = window.Tone;
 // ═══════════════════════════════════════════════════════════════
 
 // ── Threat Alert Vibes (extend EVENT_VIBES from game-data.js) ──
+// Safety: ensure Hollow March constants exist even if game-data.js is cached
+if(typeof HOLLOW_MARCH==='undefined')var HOLLOW_MARCH={triggerLevel:10,wavesForTorch:5,finalStandWave:10,waveIntervalMin:5,waveIntervalMax:7,demandPools:{potion:{label:'Supply',icon:'⚗️',scaling:w=>({qty:Math.ceil(w*0.8)+1,reward:{xp:40+w*15,gold:20+w*8}})},ingredient:{label:'Gather',icon:'🌿',scaling:w=>({qty:Math.ceil(w*1.5)+3,reward:{xp:25+w*10,gold:15+w*5}})},enchantment:{label:'Enchant',icon:'✨',scaling:w=>({qty:Math.ceil(w*0.5)+1,reward:{xp:50+w*20,gold:25+w*10}})},gold:{label:'Fund',icon:'💰',scaling:w=>({qty:30+w*15,reward:{xp:30+w*12,threatReduc:8+w*2}})},staff:{label:'Deploy',icon:'👥',scaling:w=>({qty:1+Math.floor(w/3),reward:{xp:35+w*10,threatReduc:10+w*3}})}},waveFlavor:['Scouts report movement beyond the Veil.','The ground trembles.','Ashwarden patrols have gone silent.','Villagers whisper of shadows.','The sky darkens.','Bells toll across the valley.','The Veil tears open.','Every faction rallies.','The earth groans.','This is the crucible.','The final wave crashes.'],failurePenalties:{threatSpike:8,staffInjuryChance:0.25,ingrLossCount:3},waveRewards:w=>({xp:100+w*50,gold:50+w*25,threatReduc:5,recipeUnlock:w%3===0}),marchRecipes:['march_fortify','march_veilseal','march_rallying_cry','march_ironwall'],finalStandRewards:{xp:2000,gold:500,title:'Defender of the Vale',threatCap:25}};
+if(typeof MARCH_RECIPES==='undefined')var MARCH_RECIPES=[];
+if(typeof DEF!=='undefined'&&!DEF.hollowMarch)DEF.hollowMarch={active:false,wave:0,nextWaveDay:0,demands:[],history:[],finalStandAvailable:false,finalStandComplete:false,marchRecipesUnlocked:[]};
 if(typeof EVENT_VIBES!=='undefined'){
   EVENT_VIBES.threat_rise={bg:'linear-gradient(160deg,#1a1008,#2a1a0a)',border:'#c08030',text:'#e8c060',
     scene:'⚠️',sceneSize:48,title:'Threat Rising',ambiance:'Troubling reports from the frontier...',
@@ -317,7 +321,7 @@ function CindervaleAlchemistInner(){
   const [threats,setThreats]=useState({reavers:0,blight:0,veilbreakers:0});
   const [outposts,setOutposts]=useState([]); // [{id,regionId,built,daysLeft,recipe,storedIngr,fortress}]
   const [defenseQuests,setDefenseQuests]=useState([]); // [{id,threatId,type,target,qty,reward,desc}] // [{id,name,icon,recipes:[recipeId,...],sold:0}]
-  const [hollowMarch,setHollowMarch]=useState(DEF.hollowMarch);
+  const [hollowMarch,setHollowMarch]=useState(DEF?.hollowMarch||{active:false,wave:0,nextWaveDay:0,demands:[],history:[],finalStandAvailable:false,finalStandComplete:false,marchRecipesUnlocked:[]});
   const [showBrandMgr,setShowBrandMgr]=useState(false);
   const [brandOrders,setBrandOrders]=useState([]); // [{brandId,recipeId,qty,price,expires}] // {haul:{ashbloom:3,...}, brewsLeft:2, regDiff:3}
   const [txSource,setTxSource]=useState(null); // transmute source ingredient
@@ -500,7 +504,7 @@ function CindervaleAlchemistInner(){
     setDailyReport(s.dailyReport||[]);setEnchQ(s.enchQ||[]);setPotCustQ(s.potCustQ||[]);setClinicPatients(s.clinicPatients||[]);setVenomContracts(s.venomContracts||[]);setForgedWeapons(s.forgedWeapons||[]);setShieldCommissions(s.shieldCommissions||[]);setPlanarFocus(s.planarFocus||null);setGadgets(s.gadgets||[]);setBlueprints(s.blueprints||[]);setFieldJournal(s.fieldJournal||[]);setLoreFragments(s.loreFragments||[]);setCompanions(s.companions||[]);setCaravans(s.caravans||[]);setSupplyChains(s.supplyChains||[]);setCaravanRuns(s.caravanRuns||{});setTrainingSessions(s.trainingSessions||{});setFactionHarmony(s.factionHarmony||{});setPrestigeLevels(s.prestigeLevels||{});setAutomata(s.automata||[]);setCustomPatterns(s.customPatterns||[]);setMappedRegions(s.mappedRegions||[]);setActiveBuffs(s.activeBuffs||{});setDebt(s.debt||0);setDisabledUpgrades(s.disabledUpgrades||[]);setShopLocked(s.shopLocked||false);setInjuryPenalty(s.injuryPenalty||0);setStaffInjuries(s.staffInjuries||{});setShelves(s.shelves||{});setLastCheck(null);setNews([]);setMorningReport(null);
     setBoardQ(s.boardQ||[]);setActiveBQ(s.activeBQ||[]);setDoneBQCount(s.doneBQCount||0);setDayFlags(s.dayFlags||[]);setKnownEnch(s.knownEnch&&s.knownEnch.length>0?s.knownEnch:['e_sharp','e_glow','e_ironbark','e_feather','e_windwalk','e_rootbind']);
     setBrewCounts(s.brewCounts||{});setProcureItems(s.procureItems||[]);setPubPapers(s.pubPapers||[]);setConstructProgress(s.constructProgress||{});
-    setSelHex(null);setVBuild('workshop');setDlgNpc(null);setShowShop(false);setQuestDlg(null);setPendingLevelUp(null);setSelectedSite(s.selectedSite||null);if(s.lineage)setLineage(s.lineage);setBrands(s.brands||[]);setBrandOrders(s.brandOrders||[]);setRelics(s.relics||[]);setMuseum(s.museum||{pottery:0,tablets:0,jewelry:0,mechanisms:0,weapons:0});setThreats(s.threats||{reavers:0,blight:0,veilbreakers:0});setOutposts(s.outposts||[]);setDefenseQuests(s.defenseQuests||[]);setHollowMarch(s.hollowMarch||DEF.hollowMarch);
+    setSelHex(null);setVBuild('workshop');setDlgNpc(null);setShowShop(false);setQuestDlg(null);setPendingLevelUp(null);setSelectedSite(s.selectedSite||null);if(s.lineage)setLineage(s.lineage);setBrands(s.brands||[]);setBrandOrders(s.brandOrders||[]);setRelics(s.relics||[]);setMuseum(s.museum||{pottery:0,tablets:0,jewelry:0,mechanisms:0,weapons:0});setThreats(s.threats||{reavers:0,blight:0,veilbreakers:0});setOutposts(s.outposts||[]);setDefenseQuests(s.defenseQuests||[]);setHollowMarch(s.hollowMarch||DEF?.hollowMarch||{active:false,wave:0,nextWaveDay:0,demands:[],history:[],finalStandAvailable:false,finalStandComplete:false,marchRecipesUnlocked:[]});
   },[]);
 
   // ─── ALL EFFECTS (before any return!) ───
@@ -1568,8 +1572,8 @@ function CindervaleAlchemistInner(){
       }],idx:0});
     }
   };
-  const marchWavesCleared=(hollowMarch?.history||[]).filter(h=>h.met===h.total).length+(hollowMarch?.demands?.every(d=>d.met)&&hollowMarch?.wave>0?1:0);
-  const canPassTorch=getLvl(xp)>=9&&(marchWavesCleared>=HOLLOW_MARCH.wavesForTorch||hollowMarch?.finalStandComplete||!hollowMarch?.active);
+  const marchWavesCleared=(hollowMarch?.history||[]).filter(h=>h.met===h.total).length+((hollowMarch?.demands||[]).every(d=>d.met)&&hollowMarch?.wave>0?1:0);
+  const canPassTorch=getLvl(xp)>=9&&(marchWavesCleared>=(typeof HOLLOW_MARCH!=='undefined'?HOLLOW_MARCH.wavesForTorch:5)||hollowMarch?.finalStandComplete||!hollowMarch?.active);
 
     // ═══ BRAND HELPERS (Brand Master) ═══
   const getBrandForRecipe=(recipeId)=>brands.find(b=>b.recipes.includes(recipeId));
@@ -3673,7 +3677,7 @@ function CindervaleAlchemistInner(){
     // ═══ HOLLOW MARCH PROCESSING ═══
     const marchAlerts=[];
     const curLevel=getLvl(xp);
-    let updMarch={...(hollowMarch||DEF.hollowMarch)};
+    let updMarch={...(hollowMarch||DEF?.hollowMarch||{active:false,wave:0,nextWaveDay:0,demands:[],history:[],finalStandAvailable:false,finalStandComplete:false,marchRecipesUnlocked:[]})};
     // Activation check: level 10+ (displayLevel 11+) and not yet active
     if(!updMarch.active&&curLevel>=HOLLOW_MARCH.triggerLevel){
       updMarch.active=true;
