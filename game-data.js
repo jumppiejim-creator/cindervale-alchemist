@@ -553,22 +553,22 @@ var weightedPick=(weights,n)=>{
 };
 
 var REGIONS=[
-  {id:'ashfields',loc:'cindervale',name:'Ashfields',icon:'🏜️',color:'#5a4a3a',ingr:['ashbloom','ironroot_bark','ash_salt','cinder_moss','char_root','wind_dust','ember_petal','soot_crystal'],pick:3,sites:[
+  {id:'ashfields',loc:'cindervale',name:'Ashfields',icon:'🏜️',color:'#5a4a3a',ingr:['ashbloom','ironroot_bark','ash_salt','cinder_moss','char_root','wind_dust','ember_petal','soot_crystal','warden_sigil'],pick:3,sites:[
       {id:'old_road',name:'The Old Road',icon:'🛤️',desc:'Cracked flagstones where ashbloom grows thick between broken cartwheel ruts.',
-        weights:{ashbloom:28,ironroot_bark:22,ash_salt:8,cinder_moss:8,char_root:9,wind_dust:9,ember_petal:8,soot_crystal:8}},
+        weights:{ashbloom:26,ironroot_bark:20,ash_salt:8,cinder_moss:8,char_root:9,wind_dust:9,ember_petal:8,soot_crystal:7,warden_sigil:5}},
       {id:'ember_drifts',name:'Ember Drifts',icon:'🌬️',desc:'Wind-sculpted ash dunes that catch ember seeds and crystallized dust.',
-        weights:{ashbloom:7,ironroot_bark:7,ash_salt:8,cinder_moss:8,char_root:7,wind_dust:23,ember_petal:28,soot_crystal:12}},
+        weights:{ashbloom:7,ironroot_bark:7,ash_salt:7,cinder_moss:7,char_root:7,wind_dust:23,ember_petal:27,soot_crystal:12,warden_sigil:3}},
       {id:'scorched_basin',name:'Scorched Basin',icon:'🕳️',desc:'A shallow crater where mineral salts and crystals form on the baked surface.',
-        weights:{ashbloom:7,ironroot_bark:7,ash_salt:25,cinder_moss:9,char_root:9,wind_dust:7,ember_petal:8,soot_crystal:28}},
+        weights:{ashbloom:7,ironroot_bark:7,ash_salt:24,cinder_moss:8,char_root:8,wind_dust:7,ember_petal:8,soot_crystal:27,warden_sigil:4}},
     ],diff:1,unlock:0,time:1,yield:[2,4],dc:8,
     flavor:['Grey ash crunches underfoot as pale blooms peek through the drifts.','Wind scatters ash like snow across the barren expanse.','A familiar trail — Ashbloom grows thick along the old road.']},
-  {id:'ironwood',loc:'cindervale',name:'Ironwood',icon:'🌲',color:'#2a3a2a',ingr:['ironroot_bark','ashbloom','embercap','ironwood_sap','thornvine','bark_resin','moss_amber','amber_sap','beetle_shell'],pick:3,sites:[
+  {id:'ironwood',loc:'cindervale',name:'Ironwood',icon:'🌲',color:'#2a3a2a',ingr:['ironroot_bark','ashbloom','embercap','ironwood_sap','thornvine','bark_resin','moss_amber','amber_sap','beetle_shell','warden_sigil'],pick:3,sites:[
       {id:'root_halls',name:'The Root Halls',icon:'🌳',desc:'Massive exposed root systems form natural hallways beneath ancient trees.',
-        weights:{ironroot_bark:26,ashbloom:7,embercap:7,ironwood_sap:24,thornvine:7,bark_resin:10,moss_amber:7,amber_sap:7,beetle_shell:5}},
+        weights:{ironroot_bark:24,ashbloom:7,embercap:7,ironwood_sap:22,thornvine:7,bark_resin:10,moss_amber:7,amber_sap:7,beetle_shell:5,warden_sigil:4}},
       {id:'amber_hollow',name:'Amber Hollow',icon:'🟡',desc:'A sheltered depression where golden sap pools and slowly hardens into amber.',
-        weights:{ironroot_bark:6,ashbloom:6,embercap:7,ironwood_sap:8,thornvine:6,bark_resin:8,moss_amber:23,amber_sap:28,beetle_shell:8}},
+        weights:{ironroot_bark:6,ashbloom:6,embercap:7,ironwood_sap:8,thornvine:6,bark_resin:8,moss_amber:22,amber_sap:26,beetle_shell:7,warden_sigil:4}},
       {id:'thornveil_edge',name:'Thornveil Edge',icon:'🌿',desc:'Dense thorny undergrowth at the forest border — fungi thrive in the decay.',
-        weights:{ironroot_bark:7,ashbloom:7,embercap:25,ironwood_sap:6,thornvine:26,bark_resin:7,moss_amber:6,amber_sap:6,beetle_shell:10}},
+        weights:{ironroot_bark:7,ashbloom:7,embercap:23,ironwood_sap:6,thornvine:24,bark_resin:7,moss_amber:6,amber_sap:6,beetle_shell:9,warden_sigil:5}},
     ],diff:2,unlock:1,time:1,yield:[2,4],dc:10,
     flavor:['Ancient trees with bark like hammered iron loom overhead.','The forest floor is soft with decay — perfect for Embercap.','Ironwood roots grip stone like fingers. Good harvesting here.']},
   {id:'fungal_caves',loc:'cindervale',name:'Fungal Caves',icon:'🍄',color:'#3a2a3a',ingr:['embercap','gloomcap','spore_dust','cave_lichen','biolumen_gel','mycelium_thread','echo_fungus','ghost_silk'],pick:3,sites:[
@@ -589,22 +589,22 @@ var REGIONS=[
         weights:{hearthstone:24,ashite:9,crystal_shard:7,mineral_clay:10,geode_dust:7,resonance_ore:7,singing_quartz:8,copper_vein:28}},
     ],diff:3,unlock:3,time:2,yield:[2,4],dc:13,
     flavor:['Crystals hum with deep resonance as you descend into the hollow.','Hearthstone veins glitter in your lantern light like trapped stars.','The Cinderfolk carved these paths long ago. Their pick-marks still show.']},
-  {id:'moonlit_glade',loc:'cindervale',name:'Moonlit Glade',icon:'🌙',color:'#2a2a4a',ingr:['moonpetal','starwort','nightdew','lunar_moss','dew_crystal','silver_lichen','moth_scale','dream_pollen'],pick:3,sites:[
+  {id:'moonlit_glade',loc:'cindervale',name:'Moonlit Glade',icon:'🌙',color:'#2a2a4a',ingr:['moonpetal','starwort','nightdew','lunar_moss','dew_crystal','silver_lichen','moth_scale','dream_pollen','veil_shard'],pick:3,sites:[
       {id:'moonpool',name:'The Moonpool',icon:'🪷',desc:'A still reflecting pool surrounded by luminous moonpetal blooms.',
-        weights:{moonpetal:28,starwort:8,nightdew:24,lunar_moss:8,dew_crystal:9,silver_lichen:8,moth_scale:7,dream_pollen:8}},
+        weights:{moonpetal:26,starwort:7,nightdew:22,lunar_moss:8,dew_crystal:8,silver_lichen:7,moth_scale:7,dream_pollen:7,veil_shard:8}},
       {id:'silver_grove',name:'Silver Grove',icon:'🌿',desc:'Ancient trees wrapped in silvery lichen under perpetual moonlight.',
-        weights:{moonpetal:7,starwort:12,nightdew:7,lunar_moss:24,dew_crystal:8,silver_lichen:27,moth_scale:8,dream_pollen:7}},
+        weights:{moonpetal:7,starwort:11,nightdew:7,lunar_moss:22,dew_crystal:7,silver_lichen:25,moth_scale:7,dream_pollen:7,veil_shard:7}},
       {id:'moth_sanctuary',name:'Moth Sanctuary',icon:'🦋',desc:'Where giant lunar moths gather by thousands, shedding iridescent scales.',
-        weights:{moonpetal:8,starwort:9,nightdew:8,lunar_moss:7,dew_crystal:8,silver_lichen:7,moth_scale:28,dream_pollen:25}},
+        weights:{moonpetal:7,starwort:8,nightdew:7,lunar_moss:7,dew_crystal:7,silver_lichen:7,moth_scale:27,dream_pollen:23,veil_shard:7}},
     ],diff:3,unlock:4,time:2,yield:[2,4],dc:14,
     flavor:['Silver light filters through canopy gaps where Moonpetals bloom.','The glade feels outside of time — quiet, luminous, sacred.','Starwort grows only where moonlight touches earth directly.']},
-  {id:'volcanic_vents',loc:'cindervale',name:'Volcanic Vents',icon:'🌋',color:'#4a2a1a',ingr:['volcanic_essence','embervein','sulfur_bloom','magma_salt','obsidian_flake','thermal_clay','lava_pearl','pyrestone'],pick:3,sites:[
+  {id:'volcanic_vents',loc:'cindervale',name:'Volcanic Vents',icon:'🌋',color:'#4a2a1a',ingr:['volcanic_essence','embervein','sulfur_bloom','magma_salt','obsidian_flake','thermal_clay','lava_pearl','pyrestone','sacred_ember'],pick:3,sites:[
       {id:'sulfur_flats',name:'Sulfur Flats',icon:'🟡',desc:'Flat crusted ground painted yellow with sulfur deposits and steaming clay.',
-        weights:{volcanic_essence:8,embervein:7,sulfur_bloom:28,magma_salt:9,obsidian_flake:7,thermal_clay:24,lava_pearl:8,pyrestone:9}},
+        weights:{volcanic_essence:7,embervein:7,sulfur_bloom:26,magma_salt:9,obsidian_flake:7,thermal_clay:22,lava_pearl:8,pyrestone:8,sacred_ember:6}},
       {id:'magma_wells',name:'Magma Wells',icon:'🔴',desc:'Deep pools of cooling magma where rare minerals condense at the edges.',
-        weights:{volcanic_essence:25,embervein:12,sulfur_bloom:7,magma_salt:22,obsidian_flake:8,thermal_clay:8,lava_pearl:10,pyrestone:8}},
+        weights:{volcanic_essence:23,embervein:11,sulfur_bloom:7,magma_salt:20,obsidian_flake:7,thermal_clay:7,lava_pearl:9,pyrestone:8,sacred_ember:8}},
       {id:'obsidian_ridge',name:'Obsidian Ridge',icon:'🖤',desc:'Sharp black glass formations with embedded pyrestones glowing like trapped embers.',
-        weights:{volcanic_essence:7,embervein:9,sulfur_bloom:7,obsidian_flake:28,thermal_clay:7,magma_salt:7,lava_pearl:8,pyrestone:27}},
+        weights:{volcanic_essence:7,embervein:8,sulfur_bloom:7,obsidian_flake:26,thermal_clay:7,magma_salt:7,lava_pearl:7,pyrestone:25,sacred_ember:6}},
     ],diff:4,unlock:5,time:3,yield:[2,4],dc:15,
     flavor:['Sulfurous heat blasts from cracks in the scorched earth.','Embervein ore glows cherry-red near the active vents.','The ground trembles. You work quickly, gathering what you can.']},
   {id:'deep_mines',loc:'cindervale',name:'Deep Mines',icon:'⛏️',color:'#3a3a40',ingr:['ashite','hearthstone','embervein','deep_iron','shadow_quartz','echo_stone','dark_amber','mithril_dust','void_salt','deep_crystal'],pick:3,sites:[
