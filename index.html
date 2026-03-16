@@ -6546,39 +6546,67 @@ function CindervaleAlchemistInner(){
           })}
         </div>}
 
-        {/* ═══ ELIXIR CABINET — Personal buff potions, separate from trade stock ═══ */}
+        {/* ═══ ELIXIR CABINET — Full brew & drink interface for personal buff potions ═══ */}
         {(()=>{
-          const elixirPots=Object.entries(pots).filter(([id,q])=>{
-            if(q<=0)return false;
-            const baseId=getBaseRecipeId(id);
-            const r=RECIPES.find(rx=>rx.id===baseId);
-            return r&&r.buff&&ELIXIR_BUFFS[r.buff];
-          });
-          if(elixirPots.length===0)return null;
+          const elixirRecipes=RECIPES.filter(r=>known.includes(r.id)&&r.buff&&ELIXIR_BUFFS[r.buff]);
+          if(elixirRecipes.length===0)return null;
           return <div style={{...S.card,borderColor:'#50a0a044',background:'linear-gradient(135deg,#14110c,#0e1418)'}}>
-            <div style={S.cT}>🧪 Elixir Cabinet <span style={{fontSize:13,color:TH.textDim,fontWeight:'normal'}}>— personal buff potions (drink to activate)</span></div>
-            <div style={{display:'flex',flexDirection:'column',gap:6}}>
-              {elixirPots.map(([id,qty])=>{
-                const baseId=getBaseRecipeId(id);
-                const r=RECIPES.find(rx=>rx.id===baseId);if(!r)return null;
+            <div style={S.cT}>🧪 Elixir Cabinet <span style={{fontSize:13,color:TH.textDim,fontWeight:'normal'}}>— personal buff potions (brew & drink)</span></div>
+            <div style={{display:'flex',flexDirection:'column',gap:8}}>
+              {elixirRecipes.map(r=>{
                 const buff=ELIXIR_BUFFS[r.buff];if(!buff)return null;
-                const pq=getPotQuality(id);const qT=QUALITY[pq]||QUALITY.std;
+                const cost={};r.ingr.forEach(id=>{cost[id]=(cost[id]||0)+1;});
+                const canBrew=Object.entries(cost).every(([id,q])=>(inv[id]||0)>=q)&&hours>=1;
+                const fOk=!r.faction||getRL(r.faction)>=(r.fReq||0);
+                const masteryD=getMasteryDiscount(brewCounts,r.id);
+                const adjDC=Math.max(5,r.dc-masteryD);
+                const craftSk=r.stat==='inu'?'attunement':r.stat==='tec'?'precision':r.stat==='acu'?'research':'improvisation';
+                const totalMod=getSkMod(craftSk)+upEff('craftSkillBonus')+getFeatureVal('craftBonus');
+                const successPct=Math.min(95,Math.max(5,Math.floor((21-(adjDC-totalMod))/20*100)));
+                // Find owned stock (all quality variants)
+                const ownedPots=Object.entries(pots).filter(([id,q])=>q>0&&getBaseRecipeId(id)===r.id);
+                const totalOwned=ownedPots.reduce((s,[,q])=>s+q,0);
                 const isActive=activeBuffs[r.buff]?.daysLeft>0;
-                const bonusDays=pq==='gm'?2:pq==='mw'?1:0;
-                return <div key={id} style={{padding:'8px 10px',background:isActive?TH.green+'08':TH.panel,borderRadius:6,border:'1px solid '+(isActive?TH.green+'44':'#50a0a033')}}>
-                  <div style={{display:'flex',alignItems:'center',gap:8}}>
-                    <span style={{fontSize:24}}>{buff.icon}</span>
+                return <div key={r.id} style={{padding:'10px 12px',background:isActive?TH.green+'06':TH.panel,borderRadius:6,border:'1px solid '+(isActive?TH.green+'33':'#50a0a033')}}>
+                  {/* Header: icon, name, buff, active status */}
+                  <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:6}}>
+                    <span style={{fontSize:28}}>{buff.icon}</span>
                     <div style={{flex:1}}>
-                      <div style={{fontSize:15,color:isActive?TH.green:'#70c0c0',fontWeight:'bold'}}>
-                        {buff.name}{qT.icon?' '+qT.icon:''} <span style={{fontSize:13,color:TH.textDim,fontWeight:'normal'}}>×{qty}</span>
-                        {isActive&&<span style={{fontSize:12,color:TH.green,marginLeft:6}}>✓ Active ({activeBuffs[r.buff].daysLeft}d)</span>}
+                      <div style={{fontSize:16,color:isActive?TH.green:'#70c0c0',fontWeight:'bold'}}>
+                        {buff.name}
+                        {totalOwned>0&&<span style={{fontSize:13,color:TH.textDim,fontWeight:'normal',marginLeft:6}}>×{totalOwned} in stock</span>}
+                        {isActive&&<span style={{fontSize:12,color:TH.green,marginLeft:6}}>✓ Active ({activeBuffs[r.buff].daysLeft}d remaining)</span>}
                       </div>
-                      <div style={{fontSize:13,color:TH.textDim,lineHeight:1.4}}>{buff.buffDesc}{bonusDays>0?' (+'+bonusDays+' bonus day from '+qT.name+')':''}</div>
+                      <div style={{fontSize:13,color:'#50a0a0'}}>{buff.buffDesc} ({buff.duration}d{buff.legendary?' ★ Legendary':''})</div>
                     </div>
-                    <button style={{...S.btn(isActive?'dim':'green'),fontSize:14,padding:'6px 14px'}} disabled={isActive}
+                  </div>
+                  {/* Desc */}
+                  <div style={{fontSize:13,color:TH.textDim,fontStyle:'italic',marginBottom:6}}>{r.desc}</div>
+                  {/* Ingredients */}
+                  <div style={{display:'flex',flexWrap:'wrap',gap:2,marginBottom:6}}>
+                    {Object.entries(cost).map(([id,q])=>{
+                      const have=(inv[id]||0)>=q;
+                      return <span key={id} style={{...S.tag,fontSize:13,borderColor:have?TH.green+'88':TH.red+'88'}}>
+                        {INGR[id]?.icon}{INGR[id]?.name} <b style={{color:have?TH.green:TH.red}}>{inv[id]||0}/{q}</b>
+                      </span>;
+                    })}
+                    <span style={{fontSize:12,color:TH.textDim,alignSelf:'center',marginLeft:4}}>DC{adjDC}{masteryD>0?' (-'+masteryD+')':''} · {successPct}%</span>
+                  </div>
+                  {/* Action buttons */}
+                  <div style={{display:'flex',gap:6,flexWrap:'wrap',alignItems:'center'}}>
+                    <button style={{...S.btn(canBrew&&fOk?'gold':'dim'),fontSize:14,padding:'5px 14px'}}
+                      disabled={!canBrew||!fOk}
+                      onClick={()=>brew(r.id,'std')}>
+                      ⚗️ Brew{!canBrew&&hours>=1?' (need ingredients)':!canBrew?' (no energy)':''}
+                    </button>
+                    {totalOwned>0&&<button style={{...S.btn(isActive?'dim':'green'),fontSize:14,padding:'5px 14px'}}
+                      disabled={isActive}
                       onClick={()=>consumeElixir(r.buff)}>
                       {isActive?'✓ Active':'🧪 Drink'}
-                    </button>
+                    </button>}
+                    {totalOwned>0&&ownedPots.some(([id])=>getPotQuality(id)!=='std')&&
+                      <span style={{fontSize:12,color:TH.gold}}>★ {ownedPots.filter(([id])=>getPotQuality(id)!=='std').map(([id,q])=>{const pq=getPotQuality(id);return QUALITY[pq]?.icon+' '+QUALITY[pq]?.name+' ×'+q;}).join(', ')}</span>
+                    }
                   </div>
                 </div>;
               })}
@@ -7666,8 +7694,8 @@ function CindervaleAlchemistInner(){
           {relics.length===0&&<div style={{fontSize:14,color:TH.textDim,textAlign:'center',padding:6}}>Go on expeditions to discover relics! (15% chance per hour)</div>}
         </div>}
 
-        <div style={S.card}><div style={S.cT}>{'\u2697\ufe0f'} Recipes ({known.filter(id=>!RECIPES.find(r=>r.id===id)?.fieldOnly).length}/{RECIPES.filter(r=>!r.fieldOnly&&canCraftAtLocation(r.ingr)).length})</div>
-        {RECIPES.filter(r=>known.includes(r.id)&&!r.fieldOnly).map(r=>{
+        <div style={S.card}><div style={S.cT}>{'\u2697\ufe0f'} Recipes ({known.filter(id=>{const rx=RECIPES.find(r=>r.id===id);return rx&&!rx.fieldOnly&&!(rx.buff&&ELIXIR_BUFFS[rx.buff]);}).length}/{RECIPES.filter(r=>!r.fieldOnly&&!(r.buff&&ELIXIR_BUFFS[r.buff])&&canCraftAtLocation(r.ingr)).length})</div>
+        {RECIPES.filter(r=>known.includes(r.id)&&!r.fieldOnly&&!(r.buff&&ELIXIR_BUFFS[r.buff])).map(r=>{
           const cost={};r.ingr.forEach(id=>{cost[id]=(cost[id]||0)+1;});const can=Object.entries(cost).every(([id,q])=>(inv[id]||0)>=q);
           const fOk=!r.faction||getRL(r.faction)>=(r.fReq||0);const masteryD=getMasteryDiscount(brewCounts,r.id);const adjDC=Math.max(5,r.dc-masteryD);
           // Calculate success chance for display (Standard quality)
