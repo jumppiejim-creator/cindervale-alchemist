@@ -3153,6 +3153,9 @@ function CindervaleAlchemistInner(){
     if(q.id==='fc_hk3')earnMilestone('hk_chain');
     if(q.id==='fc_vw3')earnMilestone('vw_chain');
     if(q.id==='fc_cf3')earnMilestone('cf_chain');
+    if(q.id==='fc_sm3')earnMilestone('sm_chain');
+    if(q.id==='fc_fk3')earnMilestone('fk_chain');
+    if(q.id==='fc_dw3')earnMilestone('dw_chain');
     // ═══ ARCHIVIST LORE FRAGMENT DISCOVERY ═══
     if(specs.scholar==='archivist'){
       const arcLv=classLevels.scholar||0;
@@ -8800,7 +8803,7 @@ function CindervaleAlchemistInner(){
         </div>
         {/* Faction Quest Chains */}
         <div style={S.card}><div style={S.cT}>⛓️ Faction Quest Chains</div>
-        {Object.entries(FACTIONS).map(([fid,f])=>{
+        {Object.entries(locFactions).map(([fid,f])=>{
           const chainQs=QUESTS.filter(q=>q.chain===fid);
           if(!chainQs.length)return null;
           const rl=getRepLvl(fRep[fid]||0);
@@ -8855,7 +8858,8 @@ function CindervaleAlchemistInner(){
             </div>
             {Object.entries(FACTIONS).map(([fid,f])=>{
               const rep=fRep[fid]||0;const rl=getRepLvl(rep);
-              const chainDone=['fc_ash3','fc_hk3','fc_vw3','fc_cf3'].find(id=>id.includes(fid.slice(0,3))&&doneQ.includes(id));
+              const chainMap={ashwardens:'fc_ash3',hearthkeepers:'fc_hk3',veilwalkers:'fc_vw3',cinderfolk:'fc_cf3',sand_merchants:'fc_sm3',flamekeepers:'fc_fk3',dustwalkers:'fc_dw3'};
+              const chainDone=chainMap[fid]&&doneQ.includes(chainMap[fid]);
               const canAlign=rl>=5&&chainDone;
               const reqRevered=rl<5;const reqChain=rl>=5&&!chainDone;
               return(
