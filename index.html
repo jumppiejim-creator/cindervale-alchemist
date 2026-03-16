@@ -675,7 +675,7 @@ function CindervaleAlchemistInner(){
   const gainXP=(base)=>{const mult=1+getFeatureVal('xpMultiplier');setXp(x=>x+Math.floor(base*mult));};
   const getBuyPrice=(basePrice)=>{const disc=getFeatureVal('buyDiscount');return Math.max(1,Math.floor(basePrice*(1-disc)));};
   const regUnlock=(reg)=>Math.max(0,reg.unlock-getFeatureVal('bonusRegionSlot'));
-  const addRep=(fid,a)=>{const repB=1+getFeatureVal('repGainBonus');const dblRep=getFeatureVal('doubleRep')?2:1;const gain=Math.floor(a*repB*dblRep*(1+getSkMod('persuasion')*0.04));setFRep(p=>{const oldRep=p[fid]||0;const cap=(factionAlign&&factionAlign!==fid)?REP_TH[4]:99999;const newRep=Math.min(cap,Math.max(0,oldRep+gain));const oldLvl=getRepLvl(oldRep);const newLvl=getRepLvl(newRep);if(newLvl>oldLvl){const f=FACTIONS[fid];const tb=f?.tierBonuses?.[newLvl-1];if(tb)addLog(`🏛️ ${f.icon} ${f.name}: ${REP_LVS[newLvl]} unlocked — ${tb.name}!`,'quest');}return{...p,[fid]:newRep};});};
+  const addRep=(fid,a)=>{const repB=1+getFeatureVal('repGainBonus');const dblRep=getFeatureVal('doubleRep')?2:1;const gain=Math.floor(a*repB*dblRep*(1+getSkMod('persuasion')*0.04));setFRep(p=>{const oldRep=p[fid]||0;const newRep=Math.max(0,oldRep+gain);const oldLvl=getRepLvl(oldRep);const newLvl=getRepLvl(newRep);if(newLvl>oldLvl){const f=FACTIONS[fid];const tb=f?.tierBonuses?.[newLvl-1];if(tb)addLog(`🏛️ ${f.icon} ${f.name}: ${REP_LVS[newLvl]} unlocked — ${tb.name}!`,'quest');}return{...p,[fid]:newRep};});};
   const getRL=fid=>getRepLvl(fRep[fid]||0);
 
   const genCust=useCallback(()=>{
@@ -8764,7 +8764,7 @@ function CindervaleAlchemistInner(){
           </div>
         </div>
         <div style={S.card}><div style={S.cT}>🛡️ Factions</div>
-        {Object.entries(locFactions).map(([fid,f])=>{const rep=fRep[fid]||0;const rl=getRepLvl(rep);const nxt=rl<REP_TH.length-1?REP_TH[rl+1]:null;const isAligned=factionAlign===fid;const isCapped=factionAlign&&factionAlign!==fid;
+        {Object.entries(locFactions).map(([fid,f])=>{const rep=fRep[fid]||0;const rl=getRepLvl(rep);const nxt=rl<REP_TH.length-1?REP_TH[rl+1]:null;const isAligned=factionAlign===fid;
           const activeBonuses=f.tierBonuses.filter((_,i)=>i<rl&&Object.keys(f.tierBonuses[i].effects).length>0).length+(isAligned?1:0);
           return(
           <div key={fid} style={{padding:'8px 10px',background:isAligned?f.color+'12':TH.panelLight,borderRadius:6,marginBottom:8,border:isAligned?`2px solid ${f.color}`:`1px solid ${TH.border}`}}>
@@ -8772,7 +8772,7 @@ function CindervaleAlchemistInner(){
               <span style={{color:f.color,fontWeight:'bold',fontSize:16}}>{f.icon} {f.name}{isAligned?' ⚔️':''}</span>
               <div style={{display:'flex',alignItems:'center',gap:8}}>
                 {activeBonuses>0&&<span style={{fontSize:12,padding:'1px 6px',background:TH.green+'22',color:TH.green,borderRadius:8,border:'1px solid '+TH.green+'44'}}>✨ {activeBonuses} active</span>}
-                <span style={{fontSize:14,color:isCapped?TH.red:TH.textDim,fontWeight:rl>=5?'bold':'normal'}}>{REP_LVS[rl]}{isCapped?' 🔒':''}</span>
+                <span style={{fontSize:14,color:TH.textDim,fontWeight:rl>=5?'bold':'normal'}}>{REP_LVS[rl]}</span>
               </div>
             </div>
             {/* Segmented tier progress bar */}
@@ -8846,12 +8846,12 @@ function CindervaleAlchemistInner(){
               </div>
             </div>
             <div style={{fontSize:14,color:TH.textBright,marginBottom:6,padding:'4px 8px',background:TH.panel,borderRadius:4}}>{f.alignBonus.desc}</div>
-            <div style={{fontSize:12,color:TH.textDim,fontStyle:'italic'}}>⚠️ Other factions capped at Honored ({REP_TH[4]} rep)</div>
+            <div style={{fontSize:12,color:TH.green,fontStyle:'italic'}}>✅ Exclusive bonus — all other faction rewards remain active</div>
           </div>);})():(
           <div>
             <div style={{fontSize:14,color:TH.textDim,marginBottom:10,lineHeight:1.5}}>
-              Swear allegiance to a faction for <b style={{color:TH.gold}}>powerful exclusive bonuses</b>. 
-              Trade-off: other factions permanently capped at Honored.
+              Swear allegiance to a faction for <b style={{color:TH.gold}}>a powerful exclusive bonus</b> on top of all existing rewards. 
+              No reputation is lost — this is a pure upgrade. Choose wisely though — alignment is permanent!
             </div>
             {Object.entries(FACTIONS).map(([fid,f])=>{
               const rep=fRep[fid]||0;const rl=getRepLvl(rep);
@@ -8885,14 +8885,12 @@ function CindervaleAlchemistInner(){
               <div style={{fontSize:14,color:TH.textBright,marginBottom:8}}>
                 <b>You will gain:</b><br/>{f.alignBonus.desc}
               </div>
-              <div style={{fontSize:14,color:'#e65c50',marginBottom:12}}>
-                <b>⚠️ Trade-off:</b><br/>All other factions will be permanently capped at Honored ({REP_TH[4]} rep).
-                Any rep above {REP_TH[4]} in other factions will be lost. This choice is permanent!
+              <div style={{fontSize:14,color:'#c0a060',marginBottom:12}}>
+                <b>ℹ️ Note:</b><br/>Alignment is permanent for this character. You gain a powerful exclusive bonus on top of all existing faction rewards — no reputation is lost.
               </div>
               <div style={{display:'flex',gap:8}}>
                 <button style={{...S.btn('gold'),flex:1}} onClick={()=>{
                   setFactionAlign(confirmAlign);
-                  setFRep(p=>{const n={...p};Object.keys(n).forEach(fid=>{if(fid!==confirmAlign)n[fid]=Math.min(n[fid],REP_TH[4]);});return n;});
                   addLog(`⚔️ You have aligned with the ${f.name}! ${f.alignBonus.name} activated.`,'story');
                   setConfirmAlign(null);
                   earnMilestone('faction_aligned');
