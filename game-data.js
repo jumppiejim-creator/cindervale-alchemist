@@ -627,11 +627,11 @@ var REGIONS=[
     flavor:['The air crackles with dormant power this close to the Heartforge.','Even cold, the Heartforge radiates something ancient and immense.','The rim is treacherous — but the rarest materials gather here.']},
   // ═══ ASHFALL CROSSING REGIONS ═══
   {id:'sunscorch_flats',loc:'ashfall',name:'Sunscorch Flats',icon:'☀️',color:'#8a7a3a',
-    ingr:['sunpetal','dustite','scorchroot','ashbloom','ash_salt','wind_dust'],pick:3,sites:[
+    ingr:['sunpetal','dustite','scorchroot','ashbloom','ash_salt','wind_dust','sand_merchant_seal'],pick:3,sites:[
       {id:'af_nomad_trail',name:'Nomad Trail',icon:'🐪',desc:'Ancient caravan path with hardy desert plants.',
-        weights:{sunpetal:30,dustite:25,scorchroot:20,ashbloom:10,ash_salt:8,wind_dust:7}},
+        weights:{sunpetal:28,dustite:23,scorchroot:18,ashbloom:9,ash_salt:7,wind_dust:7,sand_merchant_seal:8}},
       {id:'af_dust_bowl',name:'Dust Bowl',icon:'🌪️',desc:'Windswept depression where dustite concentrates.',
-        weights:{dustite:35,scorchroot:20,sunpetal:15,wind_dust:15,ash_salt:10,ashbloom:5}},
+        weights:{dustite:33,scorchroot:19,sunpetal:14,wind_dust:14,ash_salt:9,ashbloom:5,sand_merchant_seal:6}},
     ],diff:1,unlock:0,time:1,yield:[2,4],dc:8,
     flavor:['The relentless sun beats down on cracked earth.','Heat shimmers rise from the flats like liquid glass.']},
   {id:'salt_caverns',loc:'ashfall',name:'Salt Caverns',icon:'🧂',color:'#6a7a8a',
@@ -641,9 +641,9 @@ var REGIONS=[
     ],diff:2,unlock:1,time:1,yield:[2,4],dc:10,
     flavor:['Salt crystals catch your torchlight, scattering rainbows across damp walls.']},
   {id:'obsidian_wastes',loc:'ashfall',name:'Obsidian Wastes',icon:'🖤',color:'#2a2a3a',
-    ingr:['obsidian_shard','ashite','embervein','scorchroot','dustite','volcanic_essence'],pick:3,sites:[
+    ingr:['obsidian_shard','ashite','embervein','scorchroot','dustite','volcanic_essence','dustwalker_compass'],pick:3,sites:[
       {id:'af_glass_fields',name:'Glass Fields',icon:'🔮',desc:'Vast plains of razor-sharp volcanic glass.',
-        weights:{obsidian_shard:30,ashite:22,embervein:18,scorchroot:12,dustite:10,volcanic_essence:8}},
+        weights:{obsidian_shard:28,ashite:20,embervein:16,scorchroot:11,dustite:9,volcanic_essence:8,dustwalker_compass:8}},
     ],diff:2,unlock:2,time:2,yield:[2,4],dc:11,
     flavor:['Black glass crunches underfoot. One wrong step and you bleed.']},
   {id:'sandworm_tunnels',loc:'ashfall',name:'Sandworm Tunnels',icon:'🪱',color:'#7a6a3a',
@@ -653,27 +653,27 @@ var REGIONS=[
     ],diff:3,unlock:3,time:2,yield:[2,4],dc:13,
     flavor:['The tunnels vibrate with distant movement. Something very large lives down here.']},
   {id:'oasis_grove',loc:'ashfall',name:'Oasis Grove',icon:'🌴',color:'#3a6a4a',
-    ingr:['dewdrop_lily','moonpetal','sacred_ember','sunpetal','starwort','dream_pollen'],pick:3,sites:[
+    ingr:['dewdrop_lily','moonpetal','flamekeeper_ember','sunpetal','starwort','dream_pollen'],pick:3,sites:[
       {id:'af_spring',name:'Hidden Spring',icon:'💧',desc:'Crystal-clear water surrounded by rare blooms.',
-        weights:{dewdrop_lily:30,moonpetal:25,sacred_ember:15,sunpetal:12,starwort:10,dream_pollen:8}},
+        weights:{dewdrop_lily:30,moonpetal:25,flamekeeper_ember:15,sunpetal:12,starwort:10,dream_pollen:8}},
     ],diff:3,unlock:4,time:2,yield:[2,4],dc:14,faction:'flamekeepers',fReq:2,
     flavor:['Water. Actual flowing water, in the middle of the desert. Impossibly lush.']},
   {id:'molten_vents',loc:'ashfall',name:'Molten Vents',icon:'🌋',color:'#6a2a2a',
-    ingr:['magma_diamond','living_ember','forge_heart_shard','volcanic_essence','embervein','obsidian_shard'],pick:3,sites:[
+    ingr:['magma_diamond','living_ember','forge_heart_shard','volcanic_essence','embervein','obsidian_shard','flamekeeper_ember'],pick:3,sites:[
       {id:'af_caldera',name:'The Caldera',icon:'🔥',desc:'Active volcanic crater. Incredibly dangerous.',
-        weights:{magma_diamond:25,living_ember:25,forge_heart_shard:15,volcanic_essence:15,embervein:12,obsidian_shard:8}},
+        weights:{magma_diamond:23,living_ember:23,forge_heart_shard:14,volcanic_essence:13,embervein:11,obsidian_shard:7,flamekeeper_ember:9}},
     ],diff:4,unlock:5,time:3,yield:[2,4],dc:15,
     flavor:['The heat is beyond anything you have experienced. Lava glows through cracks.']},
   {id:'mirage_bazaar',loc:'ashfall',name:'Mirage Bazaar',icon:'🏜️',color:'#5a3a6a',
-    ingr:['mirage_dust','veil_shard','prismatic_ash','crystal_salt','sandsilk','deep_crystal'],pick:3,sites:[
+    ingr:['mirage_dust','dustwalker_compass','prismatic_ash','crystal_salt','sandsilk','sand_merchant_seal'],pick:3,sites:[
       {id:'af_phantom_stalls',name:'Phantom Stalls',icon:'👻',desc:'Ghostly market stalls that fade in and out of existence.',
-        weights:{mirage_dust:30,veil_shard:22,prismatic_ash:18,crystal_salt:12,sandsilk:10,deep_crystal:8}},
+        weights:{mirage_dust:30,dustwalker_compass:20,prismatic_ash:18,crystal_salt:12,sandsilk:10,sand_merchant_seal:10}},
     ],diff:4,unlock:6,time:3,yield:[2,4],dc:16,faction:'dustwalkers',fReq:2,
     flavor:['The bazaar shimmers into existence around you.']},
   {id:'buried_temple',loc:'ashfall',name:'Buried Temple',icon:'🏛️',color:'#4a3a2a',
-    ingr:['ancient_resin','temple_gold','deep_crystal','mirage_dust','sacred_ember','veil_shard'],pick:3,sites:[
+    ingr:['ancient_resin','temple_gold','sand_merchant_seal','mirage_dust','flamekeeper_ember','dustwalker_compass'],pick:3,sites:[
       {id:'af_sanctum',name:'Inner Sanctum',icon:'⚱️',desc:'The heart of the temple. Untouched for millennia.',
-        weights:{temple_gold:25,ancient_resin:25,deep_crystal:18,mirage_dust:12,sacred_ember:12,veil_shard:8}},
+        weights:{temple_gold:25,ancient_resin:25,sand_merchant_seal:15,mirage_dust:12,flamekeeper_ember:12,dustwalker_compass:11}},
     ],diff:5,unlock:8,time:4,yield:[2,4],dc:18,
     flavor:['Stone doors grind open on hinges that have not moved in a thousand years.']},
 ];
@@ -741,8 +741,8 @@ var RECIPES=[
   {id:'venom_antidote',name:'Venom Antidote',icon:'🐍',ingr:['venomgland','dewdrop_lily','crystal_salt'],dc:14,xp:80,stat:'acu',unlock:3,desc:'Neutralizes the deadliest desert venoms.'},
   {id:'mirage_elixir',name:'Mirage Elixir',icon:'✨',ingr:['mirage_dust','dewdrop_lily','sandsilk'],dc:16,xp:100,stat:'inu',unlock:5,desc:'Grants brief glimpses of hidden things.'},
   {id:'desert_iron_flask',name:'Desert Iron Flask',icon:'⚱️',ingr:['obsidian_shard','ancient_resin','crystal_salt'],dc:15,xp:90,stat:'tec',unlock:4,desc:'Unbreakable container that preserves any liquid.'},
-  {id:'temple_restoration',name:'Temple Restoration',icon:'🏛️',ingr:['temple_gold','ancient_resin','sacred_ember'],dc:18,xp:140,stat:'acu',unlock:7,desc:'Repairs ancient artifacts. Immensely valuable.'},
-  {id:'oasis_blessing',name:'Oasis Blessing',icon:'💧',ingr:['dewdrop_lily','sacred_ember','moonpetal','mirage_dust'],dc:20,xp:180,stat:'inu',unlock:8,desc:'Legendary desert restorative.'},
+  {id:'temple_restoration',name:'Temple Restoration',icon:'🏛️',ingr:['temple_gold','ancient_resin','flamekeeper_ember'],dc:18,xp:140,stat:'acu',unlock:7,desc:'Repairs ancient artifacts. Immensely valuable.'},
+  {id:'oasis_blessing',name:'Oasis Blessing',icon:'💧',ingr:['dewdrop_lily','flamekeeper_ember','moonpetal','mirage_dust'],dc:20,xp:180,stat:'inu',unlock:8,desc:'Legendary desert restorative.'},
 
   // ═══ ASHFALL EXPANSION RECIPES ═══
   {id:'dust_shield',name:'Dust Shield Potion',icon:'☕',ingr:['dustite','ashbloom'],dc:8,xp:40,stat:'tec',unlock:0,desc:'Coats the skin in hardened dust. Blocks minor abrasions.'},
@@ -758,12 +758,12 @@ var RECIPES=[
   {id:'venom_oil',name:'Venom Oil',icon:'☠️',ingr:['venomgland','scorchroot'],dc:14,xp:80,stat:'tec',unlock:4,desc:'Concentrated weapon poison. Handle with extreme caution.'},
   {id:'mirage_bomb',name:'Mirage Bomb',icon:'💥',ingr:['mirage_dust','wind_dust','dustite'],dc:14,xp:80,stat:'cre',unlock:4,desc:'Creates a blinding flash of illusory images on detonation.'},
   {id:'oasis_draught',name:'Oasis Draught',icon:'🌴',ingr:['dewdrop_lily','moonpetal'],dc:13,xp:75,stat:'inu',unlock:4,desc:'Restores vitality as if spending a day at the oasis.'},
-  {id:'crystal_resonance',name:'Crystal Resonance Tonic',icon:'🔔',ingr:['crystal_salt','deep_crystal','echo_fungus'],dc:16,xp:100,stat:'acu',unlock:5,desc:'Attunes the drinker to magical frequencies.'},
+  {id:'crystal_resonance',name:'Crystal Resonance Tonic',icon:'🔔',ingr:['crystal_salt','sand_merchant_seal','echo_fungus'],dc:16,xp:100,stat:'acu',unlock:5,desc:'Attunes the drinker to magical frequencies.'},
   {id:'volcanic_salve',name:'Volcanic Salve',icon:'🌋',ingr:['volcanic_essence','obsidian_shard','scorchroot'],dc:15,xp:90,stat:'tec',unlock:5,desc:'Burns like fire but heals like nothing else.'},
   {id:'dream_draught',name:'Dream Draught',icon:'💭',ingr:['dream_pollen','dewdrop_lily','mirage_dust'],dc:17,xp:120,stat:'inu',unlock:6,desc:'Induces prophetic visions. Not for the faint of heart.'},
-  {id:'temple_incense',name:'Temple Incense',icon:'🧯',ingr:['ancient_resin','sacred_ember'],dc:16,xp:110,stat:'inu',unlock:6,faction:'flamekeepers',fReq:2,desc:'Sacred incense that purifies spaces and calms the mind.'},
+  {id:'temple_incense',name:'Temple Incense',icon:'🧯',ingr:['ancient_resin','flamekeeper_ember'],dc:16,xp:110,stat:'inu',unlock:6,faction:'flamekeepers',fReq:2,desc:'Sacred incense that purifies spaces and calms the mind.'},
   {id:'sandworm_antitoxin',name:'Sandworm Antitoxin',icon:'🧪',ingr:['venomgland','sandsilk','crystal_salt'],dc:15,xp:95,stat:'acu',unlock:5,desc:'Broad-spectrum antitoxin effective against all desert venoms.'},
-  {id:'dust_diamond',name:'Dust Diamond Elixir',icon:'💎',ingr:['deep_crystal','dustite','temple_gold'],dc:19,xp:160,stat:'acu',unlock:7,desc:'Crystallized time. Said to slow aging.'},
+  {id:'dust_diamond',name:'Dust Diamond Elixir',icon:'💎',ingr:['sand_merchant_seal','dustite','temple_gold'],dc:19,xp:160,stat:'acu',unlock:7,desc:'Crystallized time. Said to slow aging.'},
   {id:'forge_ember_tonic',name:'Forge Ember Tonic',icon:'🔥',ingr:['volcanic_essence','embervein','ancient_resin'],dc:18,xp:140,stat:'tec',unlock:7,desc:'Liquid fire that tempers the body like steel.'},
 
   // ═══ ASHFALL CARTOGRAPHER HIDDEN INGREDIENT RECIPES ═══
@@ -781,7 +781,7 @@ var RECIPES=[
     desc:'Primordial fire from a dragon nesting site. The ultimate crafting accelerant for 2 days.',buff:'dragon_fire_flask'},
   {id:'spirit_draught',name:'Spirit Draught',icon:'👻',ingr:['spirit_essence','mirage_dust','sandsilk'],xp:100,unlock:7,dc:17,stat:'inu',
     desc:'Concentrated mirage essence. Grants spectral perception — boosts all skills for 3 days.',buff:'spirit_draught'},
-  {id:'vault_elixir',name:'Vault Gold Elixir',icon:'🏆',ingr:['vault_gold','ancient_resin','deep_crystal'],xp:160,unlock:8,dc:20,stat:'acu',
+  {id:'vault_elixir',name:'Vault Gold Elixir',icon:'🏆',ingr:['vault_gold','ancient_resin','sand_merchant_seal'],xp:160,unlock:8,dc:20,stat:'acu',
     desc:'Alchemically perfect gold in liquid form. The Ashfall equivalent of the Primordial Elixir.',buff:'vault_elixir'},
 
   // ═══ FIELD-ONLY RECIPES (Wildcrafter) ═══
