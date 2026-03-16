@@ -230,6 +230,7 @@ function CindervaleAlchemistInner(){
   const [lineage,setLineage]=useState(null); // Lineage data persisted across runs
   const [showTorch,setShowTorch]=useState(false);
   const [showLocationSelect,setShowLocationSelect]=useState(false);
+  const [showLegacyPicker,setShowLegacyPicker]=useState(false);
   const [torchApprentice,setTorchApprentice]=useState(null);
 
   // ═══ LINEAGE PERSISTENCE ═══
@@ -329,6 +330,7 @@ function CindervaleAlchemistInner(){
   const [outposts,setOutposts]=useState([]); // [{id,regionId,built,daysLeft,recipe,storedIngr,fortress}]
   const [defenseQuests,setDefenseQuests]=useState([]); // [{id,threatId,type,target,qty,reward,desc}] // [{id,name,icon,recipes:[recipeId,...],sold:0}]
   const [hollowMarch,setHollowMarch]=useState(DEF?.hollowMarch||{active:false,wave:0,nextWaveDay:0,demands:[],history:[],finalStandAvailable:false,finalStandComplete:false,marchRecipesUnlocked:[]});
+  const [legacyFeature,setLegacyFeature]=useState(null); // {name,desc,icon,color,source,effects}
   const [showBrandMgr,setShowBrandMgr]=useState(false);
   const [brandOrders,setBrandOrders]=useState([]); // [{brandId,recipeId,qty,price,expires}] // {haul:{ashbloom:3,...}, brewsLeft:2, regDiff:3}
   const [txSource,setTxSource]=useState(null); // transmute source ingredient
@@ -467,8 +469,10 @@ function CindervaleAlchemistInner(){
     if(museumBonuses&&museumBonuses[effectKey])total+=museumBonuses[effectKey];
     // Mentor bonuses from lineage
     if(mentorBonuses[effectKey])total+=mentorBonuses[effectKey];
+    // Legacy feature from mentor (inherited via Pass the Torch)
+    if(legacyFeature?.effects?.[effectKey]!=null){const v=legacyFeature.effects[effectKey];total+=typeof v==='number'?v:v===true?1:0;}
     return total;
-  },[classLevels,specs,playerFeats,fRep,factionAlign,loreFragments,activeBuffs,mentorBonuses,museumBonuses]);
+  },[classLevels,specs,playerFeats,fRep,factionAlign,loreFragments,activeBuffs,mentorBonuses,museumBonuses,legacyFeature]);
   const hasFeature=useCallback((effectKey)=>{
     for(const [cid,lv] of Object.entries(classLevels)){
       const cls=CLASSES[cid];if(!cls)continue;
@@ -489,8 +493,8 @@ function CindervaleAlchemistInner(){
     phase,charName,charRace,charGender,stats,ptsLeft,skRanks,skPts,skProgress,classLevels,specs,playerFeats,asiSpent,startingClass,
     screen,day,hours,gameLocation,xp,gold,inv,pots,known,aQ,doneQ,
     log:log.slice(-30),milestones,fRep,factionAlign,upgrades,hiredAppr,apprTasks,apprXP,enchQ,potCustQ,clinicPatients,venomContracts,forgedWeapons,shieldCommissions,planarFocus,gadgets,blueprints,fieldJournal,loreFragments,companions,caravans,supplyChains,caravanRuns,trainingSessions,factionHarmony,prestigeLevels,automata,customPatterns,mappedRegions,activeBuffs,debt,disabledUpgrades,shopLocked,injuryPenalty,staffInjuries,shelves,dailyReport,
-    boardQ,activeBQ,doneBQCount,dayFlags,knownEnch,brewCounts,procureItems,pubPapers,selectedSite,constructProgress,lineage,brands,brandOrders,relics,museum,threats,outposts,defenseQuests,hollowMarch,
-  }),[phase,charName,charRace,charGender,stats,ptsLeft,skRanks,skPts,skProgress,classLevels,specs,playerFeats,asiSpent,startingClass,screen,day,hours,xp,gold,inv,pots,known,aQ,doneQ,log,milestones,fRep,factionAlign,upgrades,hiredAppr,apprTasks,apprXP,enchQ,potCustQ,clinicPatients,venomContracts,forgedWeapons,shieldCommissions,planarFocus,gadgets,blueprints,fieldJournal,loreFragments,companions,caravans,supplyChains,caravanRuns,trainingSessions,factionHarmony,prestigeLevels,automata,customPatterns,mappedRegions,activeBuffs,debt,disabledUpgrades,shopLocked,injuryPenalty,staffInjuries,shelves,dailyReport,boardQ,activeBQ,doneBQCount,dayFlags,knownEnch,brewCounts,procureItems,constructProgress,selectedSite,lineage,brands,brandOrders,relics,museum,threats,outposts,defenseQuests,hollowMarch]);
+    boardQ,activeBQ,doneBQCount,dayFlags,knownEnch,brewCounts,procureItems,pubPapers,selectedSite,constructProgress,lineage,brands,brandOrders,relics,museum,threats,outposts,defenseQuests,hollowMarch,legacyFeature,
+  }),[phase,charName,charRace,charGender,stats,ptsLeft,skRanks,skPts,skProgress,classLevels,specs,playerFeats,asiSpent,startingClass,screen,day,hours,xp,gold,inv,pots,known,aQ,doneQ,log,milestones,fRep,factionAlign,upgrades,hiredAppr,apprTasks,apprXP,enchQ,potCustQ,clinicPatients,venomContracts,forgedWeapons,shieldCommissions,planarFocus,gadgets,blueprints,fieldJournal,loreFragments,companions,caravans,supplyChains,caravanRuns,trainingSessions,factionHarmony,prestigeLevels,automata,customPatterns,mappedRegions,activeBuffs,debt,disabledUpgrades,shopLocked,injuryPenalty,staffInjuries,shelves,dailyReport,boardQ,activeBQ,doneBQCount,dayFlags,knownEnch,brewCounts,procureItems,constructProgress,selectedSite,lineage,brands,brandOrders,relics,museum,threats,outposts,defenseQuests,hollowMarch,legacyFeature]);
 
   const restoreState=useCallback((s)=>{
     if(!s)return;
@@ -518,7 +522,7 @@ function CindervaleAlchemistInner(){
     setDailyReport(s.dailyReport||[]);setEnchQ(s.enchQ||[]);setPotCustQ(s.potCustQ||[]);setClinicPatients(s.clinicPatients||[]);setVenomContracts(s.venomContracts||[]);setForgedWeapons(s.forgedWeapons||[]);setShieldCommissions(s.shieldCommissions||[]);setPlanarFocus(s.planarFocus||null);setGadgets(s.gadgets||[]);setBlueprints(s.blueprints||[]);setFieldJournal(s.fieldJournal||[]);setLoreFragments(s.loreFragments||[]);setCompanions(s.companions||[]);setCaravans(s.caravans||[]);setSupplyChains(s.supplyChains||[]);setCaravanRuns(s.caravanRuns||{});setTrainingSessions(s.trainingSessions||{});setFactionHarmony(s.factionHarmony||{});setPrestigeLevels(s.prestigeLevels||{});setAutomata(s.automata||[]);setCustomPatterns(s.customPatterns||[]);setMappedRegions(s.mappedRegions||[]);setActiveBuffs(s.activeBuffs||{});setDebt(s.debt||0);setDisabledUpgrades(s.disabledUpgrades||[]);setShopLocked(s.shopLocked||false);setInjuryPenalty(s.injuryPenalty||0);setStaffInjuries(s.staffInjuries||{});setShelves(s.shelves||{});setLastCheck(null);setNews([]);setMorningReport(null);
     setBoardQ(s.boardQ||[]);setActiveBQ(s.activeBQ||[]);setDoneBQCount(s.doneBQCount||0);setDayFlags(s.dayFlags||[]);setKnownEnch(s.knownEnch&&s.knownEnch.length>0?s.knownEnch:['e_sharp','e_glow','e_ironbark','e_feather','e_windwalk','e_rootbind']);
     setBrewCounts(s.brewCounts||{});setProcureItems(s.procureItems||[]);setPubPapers(s.pubPapers||[]);setConstructProgress(s.constructProgress||{});
-    setSelHex(null);setVBuild('workshop');setDlgNpc(null);setShowShop(false);setQuestDlg(null);setPendingLevelUp(null);setSelectedSite(s.selectedSite||null);if(s.lineage)setLineage(s.lineage);setBrands(s.brands||[]);setBrandOrders(s.brandOrders||[]);setRelics(s.relics||[]);setMuseum(s.museum||{pottery:0,tablets:0,jewelry:0,mechanisms:0,weapons:0});setThreats(s.threats||{reavers:0,blight:0,veilbreakers:0});setOutposts(s.outposts||[]);setDefenseQuests(s.defenseQuests||[]);setHollowMarch(s.hollowMarch||DEF?.hollowMarch||{active:false,wave:0,nextWaveDay:0,demands:[],history:[],finalStandAvailable:false,finalStandComplete:false,marchRecipesUnlocked:[]});
+    setSelHex(null);setVBuild('workshop');setDlgNpc(null);setShowShop(false);setQuestDlg(null);setPendingLevelUp(null);setSelectedSite(s.selectedSite||null);if(s.lineage)setLineage(s.lineage);setBrands(s.brands||[]);setBrandOrders(s.brandOrders||[]);setRelics(s.relics||[]);setMuseum(s.museum||{pottery:0,tablets:0,jewelry:0,mechanisms:0,weapons:0});setThreats(s.threats||{reavers:0,blight:0,veilbreakers:0});setOutposts(s.outposts||[]);setDefenseQuests(s.defenseQuests||[]);setHollowMarch(s.hollowMarch||DEF?.hollowMarch||{active:false,wave:0,nextWaveDay:0,demands:[],history:[],finalStandAvailable:false,finalStandComplete:false,marchRecipesUnlocked:[]});setLegacyFeature(s.legacyFeature||null);
   },[]);
 
   // ─── ALL EFFECTS (before any return!) ───
@@ -826,11 +830,17 @@ function CindervaleAlchemistInner(){
       threats:{reavers:0,blight:0,veilbreakers:0},outposts:[],defenseQuests:[],
     };
     restoreState(defState);setLog([]);setGameStarted(true);
+    if(inheritData?.legacyFeature)setLegacyFeature(inheritData.legacyFeature);
+    else setLegacyFeature(null);
     if(inheritData?.intro)addLog(inheritData.intro,'story');
     else addLog(locData.intro,'story');
+    if(inheritData?.legacyFeature){
+      const lf=inheritData.legacyFeature;
+      addLog(`📜 Mentor's Legacy: ${lf.icon} ${lf.name} — ${lf.desc} (from ${lf.source})`,'story');
+    }
   };
 
-  const passTorch=(apprentice,heirloomUpgrade,selectedLoc)=>{
+  const passTorch=(apprentice,heirloomUpgrade,selectedLoc,selectedLegacy)=>{
     // Build generation record
     const topRecipes=Object.entries(brewCounts).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([id])=>id);
     // Determine mentor type from highest-invested class — prestige first (since prestige also inflates parent class levels)
@@ -846,6 +856,7 @@ function CindervaleAlchemistInner(){
       daysPlayed:day,goldEarned:gold,potionsBrewed:Object.values(brewCounts).reduce((s,v)=>s+v,0),
       topRecipes,mentorBonus:{type:mentorType.type,val:mentorType.val},
       heirloomUpgrade,apprenticeName:apprentice.name,
+      legacyFeature:selectedLegacy||null,
     };
     // Build or extend lineage
     const newLineage=lineage?{...lineage,generations:[...lineage.generations,gen],totalGenerations:lineage.totalGenerations+1}
@@ -859,10 +870,49 @@ function CindervaleAlchemistInner(){
       fRep:Object.fromEntries(Object.entries(fRep).map(([k,v])=>([k,Math.floor(v/3)]))),
       museum:museum||{pottery:0,tablets:0,jewelry:0,mechanisms:0,weapons:0},
       intro:apprentice.name+' sets out from '+LOCATIONS[gameLocation]?.name+', carrying the lessons of '+charName+'. A new chapter begins.',
+      legacyFeature:selectedLegacy||null,
     };
     // Start new game at selected location
     setShowTorch(false);setTorchApprentice(null);
     newGame(selectedLoc,inheritData);
+  };
+  // Compute available legacy features from current build
+  const getLegacyOptions=()=>{
+    const options=[];
+    // Specialization features: for each class with a spec, offer highest unlocked spec feature
+    Object.entries(specs).forEach(([cid,specId])=>{
+      if(!specId)return;
+      const cls=CLASSES[cid];if(!cls)return;
+      const spec=cls.specs?.[specId];if(!spec)return;
+      const clsLv=classLevels[cid]||0;
+      // Find highest spec feature at or below class level
+      const eligible=spec.features.filter(f=>f.classLv<=clsLv&&f.effects);
+      if(eligible.length===0)return;
+      const best=eligible.reduce((a,b)=>b.classLv>a.classLv?b:a);
+      options.push({
+        type:'spec',classId:cid,specId,name:best.name,desc:best.desc,lv:best.classLv,
+        icon:spec.icon,color:spec.color||cls.color,
+        source:`${cls.icon} ${cls.name} — ${spec.icon} ${spec.name} Lv${best.classLv}`,
+        effects:{...best.effects},
+      });
+    });
+    // Prestige features: for each prestige class with levels, offer highest feature
+    Object.entries(prestigeLevels||{}).forEach(([pcId,pcLv])=>{
+      if(pcLv<1)return;
+      const pc=PRESTIGE_CLASSES?.[pcId];if(!pc)return;
+      const eligible=pc.features.filter(f=>f.lv<=pcLv);
+      if(eligible.length===0)return;
+      const best=eligible.reduce((a,b)=>b.lv>a.lv?b:a);
+      const efx=best.effects||best.legacyEffects;
+      if(!efx)return;
+      options.push({
+        type:'prestige',prestigeId:pcId,name:best.name,desc:best.desc,lv:best.lv,
+        icon:pc.icon,color:pc.color,
+        source:`${pc.icon} ${pc.name} Lv${best.lv}`,
+        effects:{...efx},
+      });
+    });
+    return options;
   };
   const [showImport,setShowImport]=useState(false);
   const [importText,setImportText]=useState('');
@@ -4544,6 +4594,16 @@ function CindervaleAlchemistInner(){
               <span style={{fontSize:12,marginLeft:4,color:'#c050e0'}}>{MENTOR_TYPES[gen.mentorClass||gen.class]?.icon} {MENTOR_TYPES[gen.mentorClass||gen.class]?.desc}</span>
             </div>)}
             <div style={{fontSize:13,color:'#c050e0',marginTop:4}}>Active bonuses: {Object.entries(getMentorBonuses()).map(([k,v])=>k+' +'+v).join(', ')||'None'}</div>
+            {legacyFeature&&<div style={{marginTop:6,padding:'6px 10px',background:'#c050e010',borderRadius:6,border:'1px solid #c050e033'}}>
+              <div style={{fontSize:14,color:'#c050e0',fontWeight:'bold'}}>{legacyFeature.icon} Mentor's Legacy: {legacyFeature.name}</div>
+              <div style={{fontSize:12,color:TH.textDim}}>{legacyFeature.source} — {legacyFeature.desc}</div>
+              <div style={{display:'flex',gap:3,flexWrap:'wrap',marginTop:4}}>
+                {Object.entries(legacyFeature.effects||{}).map(([k,v])=>{
+                  const label=typeof v==='boolean'?k.replace(/([A-Z])/g,' $1').toLowerCase():(typeof v==='number'&&v<1&&v>0?'+'+Math.round(v*100)+'%':'+'+v)+' '+k.replace(/([A-Z])/g,' $1').toLowerCase();
+                  return <span key={k} style={{fontSize:11,padding:'1px 5px',background:'#c050e015',border:'1px solid #c050e033',borderRadius:3,color:'#c050e0'}}>{label}</span>;
+                })}
+              </div>
+            </div>}
           </div>}
 
           {/* Location Selection Modal */}
@@ -4557,7 +4617,7 @@ function CindervaleAlchemistInner(){
                 onClick={()=>{setShowLocationSelect(false);
                   if(window._pendingTorch){
                     const pt=window._pendingTorch;window._pendingTorch=null;
-                    passTorch(pt.apprentice,pt.heirloom,loc.id);
+                    passTorch(pt.apprentice,pt.heirloom,loc.id,pt.legacy);
                   } else {newGame(loc.id);}
                 }}>
                 <div style={{fontSize:18,color:TH.gold,fontWeight:'bold'}}>{loc.icon} {loc.name}</div>
@@ -4567,6 +4627,61 @@ function CindervaleAlchemistInner(){
               <button style={{...S.btn('dim'),width:'100%',marginTop:4}} onClick={()=>setShowLocationSelect(false)}>Cancel</button>
             </div>
           </div>}
+
+          {/* Legacy Feature Picker Modal */}
+          {showLegacyPicker&&(()=>{
+            const options=getLegacyOptions();
+            return <div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'#000000dd',display:'flex',alignItems:'center',justifyContent:'center',zIndex:9999,padding:16}}
+              onClick={()=>setShowLegacyPicker(false)}>
+              <div style={{background:TH.bg,border:'2px solid #c050e0',borderRadius:12,padding:20,maxWidth:600,width:'100%',maxHeight:'90vh',overflowY:'auto'}} onClick={e=>e.stopPropagation()}>
+                <div style={{fontSize:22,color:'#c050e0',textAlign:'center',marginBottom:4}}>📜 Mentor's Legacy</div>
+                <div style={{fontSize:14,color:TH.textDim,textAlign:'center',marginBottom:12,lineHeight:1.5}}>
+                  Choose one mastered technique to pass to your apprentice. This feature will be active from Day 1 of their journey — a permanent gift from {charName}'s expertise.
+                </div>
+                {options.length===0&&<div style={{fontSize:14,color:TH.textDim,textAlign:'center',padding:20}}>
+                  No specialization or prestige features to pass on. The mentor bonus from your highest class will still apply.
+                </div>}
+                <div style={{display:'flex',flexDirection:'column',gap:8,marginBottom:12}}>
+                  {options.map((opt,i)=>{
+                    const effectList=Object.entries(opt.effects||{}).map(([k,v])=>{
+                      if(typeof v==='boolean')return k.replace(/([A-Z])/g,' $1').toLowerCase();
+                      if(typeof v==='number'&&v<1&&v>0)return '+'+Math.round(v*100)+'% '+k.replace(/([A-Z])/g,' $1').toLowerCase();
+                      return '+'+v+' '+k.replace(/([A-Z])/g,' $1').toLowerCase();
+                    });
+                    return <div key={i} style={{padding:'12px 14px',background:TH.panel,borderRadius:8,border:'2px solid '+TH.border,cursor:'pointer',transition:'all .15s'}}
+                      onMouseEnter={e=>{e.currentTarget.style.borderColor=opt.color;e.currentTarget.style.boxShadow='0 0 12px '+opt.color+'33';}}
+                      onMouseLeave={e=>{e.currentTarget.style.borderColor=TH.border;e.currentTarget.style.boxShadow='none';}}
+                      onClick={()=>{
+                        if(window._pendingTorch)window._pendingTorch.legacy=opt;
+                        setShowLegacyPicker(false);
+                        setShowLocationSelect(true);
+                      }}>
+                      <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:4}}>
+                        <span style={{fontSize:28}}>{opt.icon}</span>
+                        <div style={{flex:1}}>
+                          <div style={{fontSize:16,color:opt.color,fontWeight:'bold'}}>{opt.name}</div>
+                          <div style={{fontSize:13,color:TH.textDim}}>{opt.source}</div>
+                        </div>
+                        <div style={{fontSize:12,color:opt.type==='prestige'?'#c050e0':opt.color,background:(opt.type==='prestige'?'#c050e0':opt.color)+'15',padding:'2px 8px',borderRadius:4}}>{opt.type==='prestige'?'★ Prestige':'Specialization'}</div>
+                      </div>
+                      <div style={{fontSize:14,color:TH.text,marginBottom:6,lineHeight:1.4}}>{opt.desc}</div>
+                      <div style={{display:'flex',flexWrap:'wrap',gap:4}}>
+                        {effectList.map((e,j)=><span key={j} style={{fontSize:12,padding:'2px 6px',background:opt.color+'15',border:'1px solid '+opt.color+'33',borderRadius:3,color:opt.color}}>{e}</span>)}
+                      </div>
+                    </div>;
+                  })}
+                </div>
+                <div style={{display:'flex',gap:8}}>
+                  <button style={{...S.btn('dim'),flex:1}} onClick={()=>{
+                    if(window._pendingTorch)window._pendingTorch.legacy=null;
+                    setShowLegacyPicker(false);
+                    setShowLocationSelect(true);
+                  }}>Skip — No Legacy Feature</button>
+                  <button style={{...S.btn('dim')}} onClick={()=>setShowLegacyPicker(false)}>Cancel</button>
+                </div>
+              </div>
+            </div>;
+          })()}
 
           {/* Cross-device save transfer */}
           <div style={{...S.card,marginTop:12,textAlign:'left'}}>
@@ -4938,14 +5053,13 @@ function CindervaleAlchemistInner(){
               <div style={{display:'flex',flexWrap:'wrap',gap:3,marginBottom:8}}>
                 {upgrades.map(uid=>{const u=UPGRADES[uid];return u?<button key={uid} style={{...S.btn('def'),fontSize:12,padding:'2px 6px'}}
                   onClick={()=>{
-                    setShowLocationSelect(true);
-                    // Store pending torch data for after location selection
-                    window._pendingTorch={apprentice:torchApprentice,heirloom:uid};
+                    window._pendingTorch={apprentice:torchApprentice,heirloom:uid,legacy:null};
+                    setShowLegacyPicker(true);
                   }}>{u.icon} {u.name}</button>:null;})}
                 <button style={{...S.btn('dim'),fontSize:12,padding:'2px 6px'}}
                   onClick={()=>{
-                    setShowLocationSelect(true);
-                    window._pendingTorch={apprentice:torchApprentice,heirloom:null};
+                    window._pendingTorch={apprentice:torchApprentice,heirloom:null,legacy:null};
+                    setShowLegacyPicker(true);
                   }}>No heirloom</button>
               </div>
             </div>}
@@ -9415,6 +9529,10 @@ function CindervaleAlchemistInner(){
             {Object.entries(classLevels).filter(([cid])=>CLASSES[cid]).map(([cid,lv])=>{const c=CLASSES[cid];return<div key={cid} style={{fontSize:13,color:c.color,marginBottom:2}}>{c.icon} {c.name} Lv{lv}</div>;})}
             <div style={{fontSize:13,color:TH.textDim,marginTop:4}}>Character Level: {displayLevel}</div>
             <div style={{fontSize:13,color:TH.textDim}}>XP: {xp}{nextXp?' / '+nextXp:''}</div>
+            {legacyFeature&&<div style={{marginTop:4,padding:'4px 6px',background:'#c050e010',borderRadius:4,border:'1px solid #c050e022'}}>
+              <div style={{fontSize:12,color:'#c050e0',fontWeight:'bold'}}>{legacyFeature.icon} {legacyFeature.name}</div>
+              <div style={{fontSize:11,color:TH.textDim}}>Mentor's Legacy</div>
+            </div>}
             {displayLevel>=10&&hiredAppr.length>0&&canPassTorch&&<button style={{...S.btn('gold'),fontSize:12,padding:'3px 8px',marginTop:6,width:'100%'}} onClick={()=>setShowSaveMenu(true)}>🔥 Pass the Torch</button>}
             {displayLevel>=10&&hiredAppr.length>0&&!canPassTorch&&hollowMarch?.active&&<div style={{fontSize:11,color:'#a040c0',marginTop:4}}>💀 Clear {HOLLOW_MARCH.wavesForTorch-marchWavesCleared} more March wave{HOLLOW_MARCH.wavesForTorch-marchWavesCleared!==1?'s':''} to unlock torch</div>}
           </div>
