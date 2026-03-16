@@ -388,7 +388,7 @@ var UPGRADES={
   garden:{id:'garden',name:'Garden',icon:'🌱',cat:'Comfort',desc:'Free daily herbs.',cost:{gold:45,ashbloom:5},effect:{dailyHerbs:true},tier:1,req:null},
   garden_2:{id:'garden_2',name:'Greenhouse',icon:'🌿',cat:'Comfort',desc:'Free rare herbs.',cost:{gold:150,moonpetal:3,sacred_ember:1},effect:{dailyRareHerbs:true},tier:2,req:'garden'},
   library:{id:'library',name:'Library',icon:'📚',cat:'Advanced',desc:'Research/Lore +2.',cost:{gold:120,veil_shard:1},effect:{researchBonus:2},tier:2,req:null},
-  forge:{id:'forge',name:'Forge',icon:'🔨',cat:'Advanced',desc:'Artificer recipes.',cost:{gold:180,embervein:5,ashite:8},effect:{enableForge:true},tier:2,req:'runic_tools'},
+  forge:{id:'forge',name:'Forge',icon:'🔨',cat:'Advanced',desc:'+2 craft bonus, +1 daily enchant customer, +5% double batch chance.',cost:{gold:180,embervein:5,ashite:8},effect:{craftSkillBonus:2,extraCustomers:1,doubleBatch:0.05},tier:2,req:'runic_tools'},
   leyline:{id:'leyline',name:'Ley Line Tap',icon:'⚡',cat:'Advanced',desc:'+1 free research/day, daily veil shard.',cost:{gold:300,veil_shard:3,deep_crystal:2},effect:{freeResearchPerDay:1,dailyVeil:true},tier:3,req:'library'},
 };
 
@@ -696,7 +696,7 @@ var RECIPES=[
   {id:'celestial_balm',name:'Celestial Balm',icon:'✨',ingr:['starwort','moonpetal','hearthstone'],xp:90,unlock:7,dc:17,stat:'inu',desc:'Rare and precious — this balm can cure ailments beyond mortal medicine.'},
   {id:'forgeheart_tincture',name:'Forgeheart Tincture',icon:'💜',ingr:['forge_scale','primordial_ash','hearthstone'],xp:110,unlock:8,dc:19,stat:'cre',desc:'Essence of the Heartforge itself. Grants brief but immense resistance to all harm.'},
   {id:'forge_catalyst',name:'Forge Catalyst',icon:'⚡',ingr:['embercap','hearthstone','volcanic_essence'],xp:120,unlock:9,dc:20,stat:'cre',desc:'The legendary compound that could reignite the Heartforge itself.'},
-  {id:'warden_ward',name:'Warden\'s Ward',icon:'🔰',ingr:['warden_sigil','ironroot_bark','hearthstone'],xp:100,unlock:6,dc:15,stat:'dis',faction:'ashwardens',fReq:3,desc:'Ashwarden patrol wards — planted along roads to repel creatures from the vents.'},
+  {id:'warden_ward',name:'Warden\'s Ward',icon:'🔰',ingr:['warden_sigil','ironroot_bark','hearthstone'],xp:100,unlock:6,dc:15,stat:'dis',faction:'ashwardens',fReq:2,desc:'Ashwarden patrol wards — planted along roads to repel creatures from the vents.'},
   {id:'holy_flame',name:'Holy Flame',icon:'🕯️',ingr:['sacred_ember','ashbloom','starwort'],xp:100,unlock:6,dc:15,stat:'inu',faction:'hearthkeepers',fReq:3,desc:'A sacred fire that purifies corruption and lights the way for the faithful.'},
   {id:'veil_sight',name:'Veil Sight',icon:'🔮',ingr:['veil_shard','moonpetal','gloomcap'],xp:100,unlock:6,dc:15,stat:'inu',faction:'veilwalkers',fReq:3,desc:'Opens the drinker\'s eyes to things hidden between the folds of reality.'},
   // New recipes using expanded ingredients
