@@ -528,6 +528,20 @@ function CindervaleAlchemistInner(){
   // ─── ALL EFFECTS (before any return!) ───
   // (scroll removed — was jarring during multi-action sequences)
 
+  // Retroactive sync: ensure all mapped hidden areas have their recipes/enchantments in known lists
+  useEffect(()=>{
+    if(!mappedRegions||mappedRegions.length===0||typeof HIDDEN_REGIONS==='undefined')return;
+    const toLearnR=[];const toLearnE=[];
+    mappedRegions.forEach(hrId=>{
+      const hr=HIDDEN_REGIONS.find(h=>h.id===hrId);if(!hr)return;
+      const hrIngr=new Set(hr.ingr);
+      RECIPES.filter(r=>!known.includes(r.id)&&r.buff&&r.ingr.some(id=>hrIngr.has(id))).forEach(r=>toLearnR.push(r.id));
+      ENCHANTMENTS.filter(e=>!knownEnch.includes(e.id)&&e.ingr.some(id=>hrIngr.has(id))).forEach(e=>toLearnE.push(e.id));
+    });
+    if(toLearnR.length>0){setKnown(prev=>{const n=[...prev];toLearnR.forEach(id=>{if(!n.includes(id))n.push(id);});return n;});addLog('📜 Mentor\'s notes reveal forgotten recipes: '+toLearnR.map(id=>{const r=RECIPES.find(rx=>rx.id===id);return r?r.icon+' '+r.name:id;}).join(', '),'quest');}
+    if(toLearnE.length>0){setKnownEnch(prev=>{const n=[...prev];toLearnE.forEach(id=>{if(!n.includes(id))n.push(id);});return n;});addLog('📜 Ancient patterns emerge from mapped terrain: '+toLearnE.map(id=>{const e=ENCHANTMENTS.find(ex=>ex.id===id);return e?e.icon+' '+e.name:id;}).join(', '),'quest');}
+  },[mappedRegions.length]); // Only re-run when mappedRegions count changes
+
   useEffect(()=>{
     (async()=>{
       setLoadingSlots(true);
@@ -1225,6 +1239,18 @@ function CindervaleAlchemistInner(){
             // Grant bonus ingredients from the hidden area immediately
             const yieldN=hr.yieldRange[0]+Math.floor(Math.random()*(hr.yieldRange[1]-hr.yieldRange[0]+1));
             for(let i=0;i<yieldN;i++){const id=hr.ingr[Math.floor(Math.random()*hr.ingr.length)];hourG[id]=(hourG[id]||0)+1;}
+            // ═══ AUTO-LEARN: Tag recipes & enchantments for post-loop learning ═══
+            const hrIngr=new Set(hr.ingr);
+            const newRecipes=RECIPES.filter(r=>!known.includes(r.id)&&r.ingr.some(id=>hrIngr.has(id))&&r.buff);
+            const newEnch=ENCHANTMENTS.filter(e=>!knownEnch.includes(e.id)&&e.ingr.some(id=>hrIngr.has(id)));
+            if(newRecipes.length>0||newEnch.length>0){
+              const learned=[];
+              newRecipes.forEach(r=>learned.push(r.icon+' '+r.name));
+              newEnch.forEach(e=>learned.push(e.icon+' '+e.name));
+              hiddenDisc.learnedRecipes=learned;
+              hiddenDisc._newRecipeIds=newRecipes.map(r=>r.id);
+              hiddenDisc._newEnchIds=newEnch.map(e=>e.id);
+            }
           } else {
             hiddenDisc={...hr,mapped:false};
           }
@@ -1335,6 +1361,18 @@ function CindervaleAlchemistInner(){
     }
     const newMaps=queue.filter(q=>q.hiddenDisc?.mapped).map(q=>q.hiddenDisc.id);
     if(newMaps.length>0)setMappedRegions(prev=>[...new Set([...prev,...newMaps])]);
+    // Auto-learn recipes & enchantments from newly mapped hidden areas
+    const allNewRecipeIds=[];const allNewEnchIds=[];
+    queue.forEach(q=>{
+      if(q.hiddenDisc?.mapped&&q.hiddenDisc._newRecipeIds)allNewRecipeIds.push(...q.hiddenDisc._newRecipeIds);
+      if(q.hiddenDisc?.mapped&&q.hiddenDisc._newEnchIds)allNewEnchIds.push(...q.hiddenDisc._newEnchIds);
+    });
+    if(allNewRecipeIds.length>0)setKnown(prev=>{const n=[...prev];allNewRecipeIds.forEach(id=>{if(!n.includes(id))n.push(id);});return n;});
+    if(allNewEnchIds.length>0)setKnownEnch(prev=>{const n=[...prev];allNewEnchIds.forEach(id=>{if(!n.includes(id))n.push(id);});return n;});
+    if(allNewRecipeIds.length>0||allNewEnchIds.length>0){
+      const allLearned=[...allNewRecipeIds.map(id=>{const r=RECIPES.find(rx=>rx.id===id);return r?r.icon+' '+r.name:id;}),...allNewEnchIds.map(id=>{const e=ENCHANTMENTS.find(ex=>ex.id===id);return e?e.icon+' '+e.name:id;})];
+      addLog('📜 Hidden area knowledge unlocked: '+allLearned.join(', '),'quest');
+    }
     setExpQ(queue);
   };
   // Advance expedition — apply one hour's effects, shift queue
@@ -6508,6 +6546,46 @@ function CindervaleAlchemistInner(){
           })}
         </div>}
 
+        {/* ═══ ELIXIR CABINET — Personal buff potions, separate from trade stock ═══ */}
+        {(()=>{
+          const elixirPots=Object.entries(pots).filter(([id,q])=>{
+            if(q<=0)return false;
+            const baseId=getBaseRecipeId(id);
+            const r=RECIPES.find(rx=>rx.id===baseId);
+            return r&&r.buff&&ELIXIR_BUFFS[r.buff];
+          });
+          if(elixirPots.length===0)return null;
+          return <div style={{...S.card,borderColor:'#50a0a044',background:'linear-gradient(135deg,#14110c,#0e1418)'}}>
+            <div style={S.cT}>🧪 Elixir Cabinet <span style={{fontSize:13,color:TH.textDim,fontWeight:'normal'}}>— personal buff potions (drink to activate)</span></div>
+            <div style={{display:'flex',flexDirection:'column',gap:6}}>
+              {elixirPots.map(([id,qty])=>{
+                const baseId=getBaseRecipeId(id);
+                const r=RECIPES.find(rx=>rx.id===baseId);if(!r)return null;
+                const buff=ELIXIR_BUFFS[r.buff];if(!buff)return null;
+                const pq=getPotQuality(id);const qT=QUALITY[pq]||QUALITY.std;
+                const isActive=activeBuffs[r.buff]?.daysLeft>0;
+                const bonusDays=pq==='gm'?2:pq==='mw'?1:0;
+                return <div key={id} style={{padding:'8px 10px',background:isActive?TH.green+'08':TH.panel,borderRadius:6,border:'1px solid '+(isActive?TH.green+'44':'#50a0a033')}}>
+                  <div style={{display:'flex',alignItems:'center',gap:8}}>
+                    <span style={{fontSize:24}}>{buff.icon}</span>
+                    <div style={{flex:1}}>
+                      <div style={{fontSize:15,color:isActive?TH.green:'#70c0c0',fontWeight:'bold'}}>
+                        {buff.name}{qT.icon?' '+qT.icon:''} <span style={{fontSize:13,color:TH.textDim,fontWeight:'normal'}}>×{qty}</span>
+                        {isActive&&<span style={{fontSize:12,color:TH.green,marginLeft:6}}>✓ Active ({activeBuffs[r.buff].daysLeft}d)</span>}
+                      </div>
+                      <div style={{fontSize:13,color:TH.textDim,lineHeight:1.4}}>{buff.buffDesc}{bonusDays>0?' (+'+bonusDays+' bonus day from '+qT.name+')':''}</div>
+                    </div>
+                    <button style={{...S.btn(isActive?'dim':'green'),fontSize:14,padding:'6px 14px'}} disabled={isActive}
+                      onClick={()=>consumeElixir(r.buff)}>
+                      {isActive?'✓ Active':'🧪 Drink'}
+                    </button>
+                  </div>
+                </div>;
+              })}
+            </div>
+          </div>;
+        })()}
+
         {/* ═══ APOTHECARY CLINIC ═══ */}
         {clinicPatients.length>0&&<div style={{...S.card,borderColor:'#6a9a6a',background:'#6a9a6a08'}}>
           <div style={S.cT}>🏥 Apothecary Clinic — {clinicPatients.filter(p=>!p.prescribed).length} patient{clinicPatients.filter(p=>!p.prescribed).length!==1?'s':''} waiting</div>
@@ -10115,7 +10193,9 @@ function ExpeditionHourPopup({hr,TH,S,LC,INGR,FACTIONS,onOk,onSkipAll,remaining,
           <div style={{fontSize:16,color:TH.textBright,marginBottom:2}}>{hr.hiddenDisc.icon} {hr.hiddenDisc.name}</div>
           <div style={{fontSize:14,color:TH.textDim,fontStyle:'italic'}}>{hr.hiddenDisc.desc||''}</div>
           {hr.hiddenDisc.mapped?
-            <div style={{fontSize:14,color:'#50a0a0',marginTop:4}}>Added to your Atlas! Unique ingredients now available when foraging here.</div>:
+            <div style={{fontSize:14,color:'#50a0a0',marginTop:4}}>Added to your Atlas! Unique ingredients now available when foraging here.
+              {hr.hiddenDisc.learnedRecipes&&hr.hiddenDisc.learnedRecipes.length>0&&<div style={{marginTop:4,color:TH.gold}}>📜 Recipes learned: {hr.hiddenDisc.learnedRecipes.join(', ')}</div>}
+            </div>:
             <div style={{fontSize:14,color:'#a0a060',marginTop:4}}>You sensed a hidden path but could not map it. Try again next expedition.</div>}
         </div>}
 
