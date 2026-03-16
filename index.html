@@ -6596,7 +6596,7 @@ function CindervaleAlchemistInner(){
                   <div style={{display:'flex',gap:6,flexWrap:'wrap',alignItems:'center'}}>
                     <button style={{...S.btn(canBrew&&fOk?'gold':'dim'),fontSize:14,padding:'5px 14px'}}
                       disabled={!canBrew||!fOk}
-                      onClick={()=>brew(r.id,'std')}>
+                      onClick={()=>doCraft(r,'std')}>
                       ⚗️ Brew{!canBrew&&hours>=1?' (need ingredients)':!canBrew?' (no energy)':''}
                     </button>
                     {totalOwned>0&&<button style={{...S.btn(isActive?'dim':'green'),fontSize:14,padding:'5px 14px'}}
