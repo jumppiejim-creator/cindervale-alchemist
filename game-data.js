@@ -802,6 +802,8 @@ var RECIPES=[
   {id:'sandstorm_brew',name:'Sandstorm Brew',icon:'🌪️',ingr:['dust_amber','obsidian_shard','dustite'],xp:70,unlock:4,dc:14,stat:'tec',
     desc:'Infused with the fury of the sandstorms. Grants resistance to wind and abrasion.'},
 ];
+// Append March recipes to main RECIPES array (gated by known[] — learned during Hollow March waves)
+MARCH_RECIPES.forEach(r=>RECIPES.push(r));
 // Enchantment categories: weapon, armor, other (jewelry/clothing/accessories)
 var ENCHANTMENTS=[
   // WEAPON enchantments
@@ -2458,7 +2460,71 @@ var EVENT_VIBES={
   gossip:{icon:'💬',title:'Village Whispers',bg:'linear-gradient(180deg,#100a08 0%,#201810 25%,#302820 50%,#403830 75%,#504840 100%)',
     scene:'☕',sceneSize:60,border:'#a08060',text:'#c0a080',
     particles:['💬','☕','👀','🤫'],ambiance:'Marta leans in conspiratorially...'},
+  hollow_march:{icon:'💀',title:'The Hollow March',bg:'linear-gradient(180deg,#0a0008 0%,#180818 25%,#281030 50%,#381848 75%,#482060 100%)',
+    scene:'💀',sceneSize:80,border:'#a040c0',text:'#c060e0',
+    particles:['💀','⚔️','🔮','🌑'],ambiance:'The earth trembles. The Hollow March advances...'},
+  hollow_victory:{icon:'🏆',title:'Victory!',bg:'linear-gradient(180deg,#0a1008 0%,#1a2818 25%,#2a4028 50%,#3a5838 75%,#4a7048 100%)',
+    scene:'🏆',sceneSize:80,border:'#d4a420',text:'#ffe848',
+    particles:['🏆','⭐','🎉','✨'],ambiance:'The defenders cheer! Cindervale stands!'},
+  hollow_final:{icon:'👑',title:'The Final Stand',bg:'linear-gradient(180deg,#1a0a00 0%,#2a1a08 25%,#4a2a10 50%,#6a3a18 75%,#8a4a20 100%)',
+    scene:'👑',sceneSize:90,border:'#ffd700',text:'#ffe848',
+    particles:['👑','⚡','🔥','💎'],ambiance:'This is the end. Everything you\'ve built comes down to this moment.'},
 };
+
+// ═══ THE HOLLOW MARCH — Endgame Invasion Event ═══
+var HOLLOW_MARCH={
+  triggerLevel:10, // displayLevel 11 (internal 10)
+  wavesForTorch:5, // must clear 5 waves before Pass the Torch
+  finalStandWave:10, // unlocks after wave 10
+  waveIntervalMin:5,waveIntervalMax:7,
+  // Demand types: potions, ingredients, enchantments, gold, staff assignment
+  demandPools:{
+    potion:{label:'Supply',icon:'⚗️',scaling:(wave)=>({qty:Math.ceil(wave*0.8)+1,reward:{xp:40+wave*15,gold:20+wave*8}})},
+    ingredient:{label:'Gather',icon:'🌿',scaling:(wave)=>({qty:Math.ceil(wave*1.5)+3,reward:{xp:25+wave*10,gold:15+wave*5}})},
+    enchantment:{label:'Enchant',icon:'✨',scaling:(wave)=>({qty:Math.ceil(wave*0.5)+1,reward:{xp:50+wave*20,gold:25+wave*10}})},
+    gold:{label:'Fund',icon:'💰',scaling:(wave)=>({qty:30+wave*15,reward:{xp:30+wave*12,threatReduc:8+wave*2}})},
+    staff:{label:'Deploy',icon:'👥',scaling:(wave)=>({qty:1+Math.floor(wave/3),reward:{xp:35+wave*10,threatReduc:10+wave*3}})},
+  },
+  // Wave flavor text
+  waveFlavor:[
+    'Scouts report movement beyond the Veil. Something is coming.',
+    'The ground trembles with distant footsteps. The March begins.',
+    'Ashwarden patrols have gone silent on the eastern road.',
+    'Villagers whisper of shadows massing at the forest edge.',
+    'The sky darkens. The Hollow March draws nearer.',
+    'Bells toll across the valley. Cindervale braces for impact.',
+    'The Veil tears open in shimmering gashes. They pour through.',
+    'Every faction rallies. This wave will test everything you\'ve built.',
+    'The earth itself groans under the weight of the advancing horde.',
+    'This is the crucible. Everything you\'ve done leads to this moment.',
+    'The final wave crashes against Cindervale\'s defenses. Hold the line.',
+  ],
+  // Failure consequences per unmet demand
+  failurePenalties:{threatSpike:8,staffInjuryChance:0.25,ingrLossCount:3},
+  // Victory rewards per wave (beyond individual demand rewards)
+  waveRewards:(wave)=>({
+    xp:100+wave*50,
+    gold:50+wave*25,
+    threatReduc:5, // -5 to all threats
+    // Every 3rd wave: unique recipe unlock
+    recipeUnlock:wave%3===0,
+  }),
+  // Unique recipes unlocked every 3rd wave
+  marchRecipes:['march_fortify','march_veilseal','march_rallying_cry','march_ironwall'],
+  // Final Stand rewards
+  finalStandRewards:{xp:2000,gold:500,title:'Defender of the Vale',threatCap:25},
+};
+// March-exclusive recipes (added to RECIPES pool when unlocked)
+var MARCH_RECIPES=[
+  {id:'march_fortify',name:'Fortification Draught',icon:'🏰',ingr:['ironroot_bark','hearthstone','volcanic_essence'],xp:120,unlock:10,dc:16,stat:'tec',
+    desc:'A legendary potion that hardens walls and wards. Reduces all threats by 10 when brewed during the March.',marchEffect:{threatReduc:10}},
+  {id:'march_veilseal',name:'Veilseal Elixir',icon:'🔮',ingr:['moonpetal','echo_stone','ghost_silk'],xp:130,unlock:10,dc:17,stat:'inu',
+    desc:'Seals tears in the Veil. Reduces Veilbreaker threat by 20 when brewed during the March.',marchEffect:{threatReduc:20,threat:'veilbreakers'}},
+  {id:'march_rallying_cry',name:'Rallying Cry Tonic',icon:'📯',ingr:['embervein','starwort','ironwood_sap'],xp:110,unlock:10,dc:15,stat:'com',
+    desc:'Inspires defenders to fight harder. Grants +2 Energy next day and reduces Reaver threat by 15.',marchEffect:{threatReduc:15,threat:'reavers',bonusEnergy:2}},
+  {id:'march_ironwall',name:'Ironwall Concentrate',icon:'🛡️',ingr:['deep_iron','forge_scale','thermal_clay'],xp:140,unlock:10,dc:18,stat:'tec',
+    desc:'Coats fortifications in alchemical iron. Reduces Blight threat by 20 and grants staff injury immunity for 3 days.',marchEffect:{threatReduc:20,threat:'blight',staffShield:3}},
+];
 
 var BQ_GIVERS=['Farmer Aldric','Widow Maren','Trader Osric','Healer Senna','Guard Brennick','Smith Torva','Elder Yara','Prospector Jax','Herbalist Neve','Cook Brindle','Captain Voss','Pilgrim Elowen','Shepherd Grynn','Scribe Felton','Chandler Rue'];
 var BQ_TEMPLATES=[
@@ -2532,4 +2598,4 @@ var genBoardQuests=(level,day,bonusQuests=0)=>{
   return quests;
 };
 
-var DEF={phase:'identity',charName:'',charRace:null,charGender:null,stats:{cre:10,inu:10,acu:10,tec:10,com:10,dis:10},ptsLeft:12,skRanks:{},skPts:0,classLevels:{},specs:{},playerFeats:[],asiSpent:[],startingClass:null,screen:'map',day:1,hours:4,gameLocation:'cindervale',xp:0,gold:15,inv:{ashbloom:3,hearthstone:1,embercap:1},pots:{},known:['healing_salve'],aQ:[],doneQ:[],log:[],milestones:[],fRep:{ashwardens:0,hearthkeepers:0,veilwalkers:0,cinderfolk:0},upgrades:[],hiredAppr:[],apprTasks:{},apprXP:{},boardQ:[],activeBQ:[],doneBQCount:0,dayFlags:[],knownEnch:['e_sharp','e_glow','e_ironbark','e_feather','e_windwalk','e_rootbind'],constructProgress:{}};
+var DEF={phase:'identity',charName:'',charRace:null,charGender:null,stats:{cre:10,inu:10,acu:10,tec:10,com:10,dis:10},ptsLeft:12,skRanks:{},skPts:0,classLevels:{},specs:{},playerFeats:[],asiSpent:[],startingClass:null,screen:'map',day:1,hours:4,gameLocation:'cindervale',xp:0,gold:15,inv:{ashbloom:3,hearthstone:1,embercap:1},pots:{},known:['healing_salve'],aQ:[],doneQ:[],log:[],milestones:[],fRep:{ashwardens:0,hearthkeepers:0,veilwalkers:0,cinderfolk:0},upgrades:[],hiredAppr:[],apprTasks:{},apprXP:{},boardQ:[],activeBQ:[],doneBQCount:0,dayFlags:[],knownEnch:['e_sharp','e_glow','e_ironbark','e_feather','e_windwalk','e_rootbind'],constructProgress:{},hollowMarch:{active:false,wave:0,nextWaveDay:0,demands:[],history:[],finalStandAvailable:false,finalStandComplete:false,marchRecipesUnlocked:[]}};
