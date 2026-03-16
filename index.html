@@ -333,12 +333,19 @@ function CindervaleAlchemistInner(){
   const locQuests=QUESTS.filter(q=>{if(q.id.startsWith('aq'))return gameLocation==='ashfall';if(q.id.startsWith('q')||q.id.startsWith('fc_'))return gameLocation==='cindervale';return true;});
   const locApprentices=AP_POOL.filter(a=>!a.loc||a.loc===gameLocation);
 
-  // Ingredients available at current location (computed from locRegions)
+  // Ingredients available at current location (computed from locRegions + mapped hidden areas)
   const locIngredients=React.useMemo(()=>{
     const s=new Set();
     locRegions.forEach(r=>r.ingr.forEach(id=>s.add(id)));
+    // Cartographer: mapped hidden areas make their ingredients locally available
+    if((prestigeLevels.cartographer||0)>=1&&typeof HIDDEN_REGIONS!=='undefined'){
+      HIDDEN_REGIONS.filter(hr=>{
+        const parentReg=locRegions.find(r=>r.id===hr.region);
+        return parentReg&&mappedRegions.includes(hr.id);
+      }).forEach(hr=>hr.ingr.forEach(id=>s.add(id)));
+    }
     return s;
-  },[locRegions]);
+  },[locRegions,mappedRegions,prestigeLevels]);
   const canCraftAtLocation=(ingrList)=>ingrList.every(id=>locIngredients.has(id));
 
   const pickHex=(regId)=>{setSelHex(regId);setZonePopup(regId);const reg=locRegions.find(r=>r.id===regId);setSelFlavor(reg?.flavor?reg.flavor[Math.floor(Math.random()*reg.flavor.length)]:'');};
@@ -918,7 +925,7 @@ function CindervaleAlchemistInner(){
     setHours(0);
     const fl=reg.flavor?reg.flavor[Math.floor(Math.random()*reg.flavor.length)]:'';
     if(fl)addLog(fl,'story');
-    const curSiteName=selectedSite?.regId===reg.id?reg.sites?.find(s=>s.id===selectedSite.siteId)?.name:null;
+    const curSiteName=selectedSite?.regId===reg.id?(selectedSite.isHidden?HIDDEN_REGIONS.find(hr=>hr.id===selectedSite.siteId)?.name:reg.sites?.find(s=>s.id===selectedSite.siteId)?.name):null;
     if(curSiteName)addLog(`📍 Foraging at ${curSiteName}.`,'info');
     if(targetIngr&&reg.ingr.includes(targetIngr))addLog(`🎯 Targeting ${INGR[targetIngr]?.icon||''}${INGR[targetIngr]?.name||targetIngr}${getFeatureVal('targetNoYieldPenalty')?' (Tracker: no penalty!)':' (-25% yield)'}.`,'info');
     // Pre-compute all hours
@@ -932,10 +939,18 @@ function CindervaleAlchemistInner(){
       const isCrit=ext.roll===20;
       const hourG={};
       const pickN=reg.pick||reg.ingr.length;
-      const curSite=selectedSite?.regId===reg.id?reg.sites?.find(s=>s.id===selectedSite.siteId):null;
+      const curSite=selectedSite?.regId===reg.id&&!selectedSite.isHidden?reg.sites?.find(s=>s.id===selectedSite.siteId):null;
+      const curHiddenSite=selectedSite?.regId===reg.id&&selectedSite.isHidden?HIDDEN_REGIONS.find(hr=>hr.id===selectedSite.siteId):null;
       // Targeted foraging: build weighted pick with 2x target, 0.5x others
       let picked;
-      if(curSite){picked=weightedPick(curSite.weights,pickN);}
+      if(curHiddenSite){
+        // Hidden area: unique ingredients weighted heavily, plus region ingredients at low weight
+        const hidWeights={};
+        curHiddenSite.ingr.forEach(id=>{hidWeights[id]=35;});
+        reg.ingr.forEach(id=>{if(!hidWeights[id])hidWeights[id]=Math.floor(30/reg.ingr.length)||1;});
+        picked=weightedPick(hidWeights,pickN);
+      }
+      else if(curSite){picked=weightedPick(curSite.weights,pickN);}
       else if(targetIngr&&reg.ingr.includes(targetIngr)){
         const tgtWeights={};reg.ingr.forEach(id=>{tgtWeights[id]=id===targetIngr?60:10;});
         picked=weightedPick(tgtWeights,pickN);
@@ -1204,7 +1219,7 @@ function CindervaleAlchemistInner(){
         if(!canLegendary&&foundRelic.rarity==='legendary')foundRelic.rarity='rare';
       }
       queue.push({
-        hourNum:h,totalHours:hoursLeft,regName:curSite?reg.name+' — '+curSite.name:reg.name,regIcon:reg.icon,travelTime:info.travelTime,diff:reg.diff||1,
+        hourNum:h,totalHours:hoursLeft,regName:curHiddenSite?reg.name+' — 🗺️ '+curHiddenSite.name:curSite?reg.name+' — '+curSite.name:reg.name,regIcon:reg.icon,travelTime:info.travelTime,diff:reg.diff||1,
         ext,gathered:{...hourG},xp:hxp+(event?.effectXp||0),event,
         cumGathered:{...cumG},cumXp,isFinal:false,divBonus,effBonus,luckyBonus,attuneBonus,discovery,companionEnc,hiddenDisc,
       });
@@ -5454,10 +5469,51 @@ function CindervaleAlchemistInner(){
                 </div>
               </>}
 
+              {/* ═══ MAPPED HIDDEN AREAS (Cartographer) ═══ */}
+              {(()=>{
+                const cLv=prestigeLevels.cartographer||0;
+                if(cLv<1)return null;
+                const regionHidden=HIDDEN_REGIONS.filter(hr=>hr.region===reg.id&&(!hr.legendary||cLv>=5));
+                if(regionHidden.length===0)return null;
+                const mapped=regionHidden.filter(hr=>mappedRegions.includes(hr.id));
+                const unmapped=regionHidden.filter(hr=>!mappedRegions.includes(hr.id));
+                return <div style={{marginBottom:12}}>
+                  <div style={{fontSize:15,color:'#50a0a0',fontWeight:'bold',marginBottom:6,borderTop:'1px solid #50a0a033',paddingTop:8}}>🗺️ Hidden Areas <span style={{fontSize:12,color:TH.textDim,fontWeight:'normal'}}>— Cartographer-exclusive foraging sites</span></div>
+                  {mapped.map(hr=>{
+                    const isSelected=selectedSite?.regId===reg.id&&selectedSite?.siteId===hr.id&&selectedSite?.isHidden;
+                    return <div key={hr.id} style={{padding:'10px 12px',marginBottom:6,background:isSelected?'#50a0a015':TH.bg,borderRadius:6,border:`1px solid ${isSelected?'#50a0a0':TH.border}`,cursor:canGo?'pointer':'default',transition:'all .15s'}}
+                      onClick={()=>{if(canGo)setSelectedSite({regId:reg.id,siteId:hr.id,isHidden:true});}}
+                      onMouseEnter={e=>{if(canGo)e.currentTarget.style.borderColor='#50a0a0';}}
+                      onMouseLeave={e=>{if(!isSelected)e.currentTarget.style.borderColor=TH.border;}}>
+                      <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:4}}>
+                        <span style={{fontSize:18}}>{hr.icon}</span>
+                        <div style={{flex:1}}>
+                          <div style={{fontSize:16,color:isSelected?'#70e0e0':'#70c0c0',fontWeight:'bold'}}>{hr.name}{isSelected?' ✓':''} <span style={{fontSize:11,color:TH.green,fontWeight:'normal'}}>✓ Mapped</span></div>
+                          <div style={{fontSize:13,color:TH.textDim,lineHeight:1.4}}>{hr.desc}</div>
+                        </div>
+                      </div>
+                      <div style={{display:'flex',gap:4,flexWrap:'wrap',marginTop:4}}>
+                        {hr.ingr.map(id=>{
+                          const isHidIngr=HIDDEN_INGR&&HIDDEN_INGR[id];
+                          return <span key={id} style={{display:'inline-flex',alignItems:'center',gap:3,fontSize:13,padding:'2px 6px',borderRadius:3,background:isHidIngr?'#50a0a015':'transparent',border:'1px solid '+(isHidIngr?'#50a0a044':TH.border+'44')}}>
+                            {INGR[id]?.icon} <b style={{color:isHidIngr?'#70c0c0':TH.text}}>{INGR[id]?.name}</b>
+                            <span style={{color:TH.textDim}}>({inv[id]||0})</span>
+                            {isHidIngr&&<span style={{fontSize:11,color:'#50a0a0'}}>~35%</span>}
+                          </span>;
+                        })}
+                      </div>
+                    </div>;
+                  })}
+                  {unmapped.map(hr=><div key={hr.id} style={{padding:'8px 10px',marginBottom:3,background:TH.bg,borderRadius:6,border:'1px dashed #50a0a022',opacity:0.6}}>
+                    <div style={{fontSize:13,color:TH.textDim}}>❓ Undiscovered hidden area — forage here to find it {hr.legendary&&<span style={{color:'#d4a420'}}>(★ Legendary)</span>}</div>
+                  </div>)}
+                </div>;
+              })()}
+
               {/* Action buttons */}
               <div style={{display:'flex',gap:6,flexWrap:'wrap',alignItems:'center'}}>
                 {canGo&&selectedSite?.regId===reg.id&&<button style={{...S.btn('gold'),flex:1,fontSize:16}} onClick={()=>{setZonePopup(null);doHarvest();}}>
-                  ⛏️ Forage at {reg.sites?.find(s=>s.id===selectedSite.siteId)?.name||'selected site'}{targetIngr&&reg.ingr.includes(targetIngr)?' 🎯 '+INGR[targetIngr]?.icon:''}
+                  ⛏️ Forage at {selectedSite.isHidden?(HIDDEN_REGIONS.find(hr=>hr.id===selectedSite.siteId)?.name||'hidden area'):(reg.sites?.find(s=>s.id===selectedSite.siteId)?.name||'selected site')}{targetIngr&&reg.ingr.includes(targetIngr)?' 🎯 '+INGR[targetIngr]?.icon:''}
                 </button>}
                 {canGo&&<button style={{...S.btn(selectedSite?.regId===reg.id?'def':'gold'),flex:selectedSite?.regId===reg.id?0:1,fontSize:14}} onClick={()=>{setSelectedSite(null);setZonePopup(null);doHarvest();}}>
                   🎲 Random{targetIngr&&reg.ingr.includes(targetIngr)?' 🎯 '+INGR[targetIngr]?.icon:''}
@@ -6287,7 +6343,7 @@ function CindervaleAlchemistInner(){
                 {canGo?`📍 Choose Forage Site in ${reg.name}`:hours<1?'No Energy':`Need ⚡${reg.time+1}+ (have ⚡${hours})`}
               </button>
               {canGo&&selectedSite?.regId===reg.id&&<button style={{...S.btn('green'),fontSize:14}} onClick={doHarvest}>
-                ⛏️ Quick Forage ({reg.sites?.find(s=>s.id===selectedSite.siteId)?.name||'selected'})
+                ⛏️ Quick Forage ({selectedSite.isHidden?(HIDDEN_REGIONS.find(hr=>hr.id===selectedSite.siteId)?.name||'hidden'):(reg.sites?.find(s=>s.id===selectedSite.siteId)?.name||'selected')})
               </button>}
             </div>
             {canGo&&<div style={{fontSize:13,color:TH.textDim,marginTop:3,textAlign:'center'}}>⚠️ This will use all remaining ⚡{hours} Energy — plan crafting & shop tasks first!</div>}

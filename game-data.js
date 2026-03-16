@@ -766,6 +766,24 @@ var RECIPES=[
   {id:'dust_diamond',name:'Dust Diamond Elixir',icon:'💎',ingr:['deep_crystal','dustite','temple_gold'],dc:19,xp:160,stat:'acu',unlock:7,desc:'Crystallized time. Said to slow aging.'},
   {id:'forge_ember_tonic',name:'Forge Ember Tonic',icon:'🔥',ingr:['volcanic_essence','embervein','ancient_resin'],dc:18,xp:140,stat:'tec',unlock:7,desc:'Liquid fire that tempers the body like steel.'},
 
+  // ═══ ASHFALL CARTOGRAPHER HIDDEN INGREDIENT RECIPES ═══
+  {id:'oasis_bloom_tonic',name:'Oasis Bloom Tonic',icon:'🌵',ingr:['desert_bloom','sunpetal','crystal_salt'],xp:80,unlock:5,dc:14,stat:'inu',
+    desc:'Distilled from the Buried Oasis bloom. Boosts commerce and customer relations for 3 days.',buff:'oasis_bloom_tonic'},
+  {id:'singing_salt_brew',name:'Singing Salt Brew',icon:'🎵',ingr:['singing_salt','crystal_salt','brine_moss'],xp:85,unlock:5,dc:14,stat:'acu',
+    desc:'Harmonic salt crystals dissolved into a resonant tonic. Sharpens enchanting for 3 days.',buff:'singing_salt_brew'},
+  {id:'glass_bloom_elixir',name:'Glass Bloom Elixir',icon:'🖤',ingr:['glass_bloom','obsidian_shard','scorchroot'],xp:90,unlock:6,dc:15,stat:'tec',
+    desc:'Volcanic glass essence — grants incredible precision for 3 days.',buff:'glass_bloom_elixir'},
+  {id:'queen_silk_draught',name:'Queen Silk Draught',icon:'👑',ingr:['queen_silk','venomgland','sandsilk'],xp:95,unlock:6,dc:16,stat:'tec',
+    desc:'Woven sandworm silk dissolved into liquid armor. Reduces ingredient loss for 3 days.',buff:'queen_silk_draught'},
+  {id:'moonwell_philter',name:'Moonwell Philter',icon:'🌙',ingr:['moonwell_water','dewdrop_lily','moonpetal'],xp:95,unlock:6,dc:16,stat:'inu',
+    desc:'Water from the hidden moonwell. Massively boosts research and discovery for 4 days.',buff:'moonwell_philter'},
+  {id:'dragon_fire_flask',name:'Dragon Fire Flask',icon:'🐉',ingr:['dragon_ash','living_ember','volcanic_essence'],xp:110,unlock:7,dc:18,stat:'tec',
+    desc:'Primordial fire from a dragon nesting site. The ultimate crafting accelerant for 2 days.',buff:'dragon_fire_flask'},
+  {id:'spirit_draught',name:'Spirit Draught',icon:'👻',ingr:['spirit_essence','mirage_dust','sandsilk'],xp:100,unlock:7,dc:17,stat:'inu',
+    desc:'Concentrated mirage essence. Grants spectral perception — boosts all skills for 3 days.',buff:'spirit_draught'},
+  {id:'vault_elixir',name:'Vault Gold Elixir',icon:'🏆',ingr:['vault_gold','ancient_resin','deep_crystal'],xp:160,unlock:8,dc:20,stat:'acu',
+    desc:'Alchemically perfect gold in liquid form. The Ashfall equivalent of the Primordial Elixir.',buff:'vault_elixir'},
+
   // ═══ FIELD-ONLY RECIPES (Wildcrafter) ═══
   {id:'vitality_draught',name:'Vitality Draught',icon:'🌿',ingr:['_any_herb','_any_herb2','_any_herb3'],dc:13,xp:70,stat:'inu',unlock:0,fieldOnly:true,
     desc:'Heals 1 staff injury immediately. Must be brewed from fresh ingredients in the field.'},
@@ -868,6 +886,24 @@ var ENCHANTMENTS=[
   {id:'e_mirage_step',name:'Mirage Step',icon:'✨',cat:'other',ingr:['mirage_dust','dustite'],xp:75,dc:14,desc:'Footsteps leave illusory duplicates, confusing pursuers.'},
   {id:'e_deep_crystal',name:'Deep Crystal Focus',icon:'💠',cat:'other',ingr:['deep_crystal','crystal_salt'],xp:90,dc:16,desc:'Amplifies magical resonance. Spells cast through it hit harder.'},
   {id:'e_resin_coat',name:'Ancient Resin Coat',icon:'🪵',cat:'armor',ingr:['ancient_resin','sandsilk'],xp:85,dc:15,desc:'Fossilized resin creates an amber-like protective layer.'},
+  // ═══ CARTOGRAPHER HIDDEN INGREDIENT ENCHANTMENTS ═══
+  {id:'e_prismatic',name:'Prismatic Edge',icon:'🌈',cat:'weapon',ingr:['prismatic_ash','thermal_bloom'],xp:95,dc:16,desc:'Refracts light along the blade — strikes shimmer with disorienting color. Cartographer-exclusive.'},
+  {id:'e_canopy_ward',name:'Canopy Ward',icon:'🍃',cat:'armor',ingr:['canopy_moss','sky_amber'],xp:90,dc:15,desc:'Armor wrapped in sky-moss grows lighter and deflects arrows. Cartographer-exclusive.'},
+  {id:'e_deep_pearl',name:'Abyssal Luster',icon:'🫧',cat:'other',ingr:['deep_pearl','crystal_mycelium'],xp:95,dc:16,desc:'Jewelry polished with cave pearl. The wearer sees clearly in total darkness. Cartographer-exclusive.'},
+  {id:'e_harmonic',name:'Harmonic Resonance',icon:'🔔',cat:'weapon',ingr:['harmonic_crystal','resonance_dust'],xp:100,dc:17,desc:'The weapon vibrates at frequencies that shatter wards and barriers. Cartographer-exclusive.'},
+  {id:'e_moonlight',name:'Moonlight Shroud',icon:'🌙',cat:'armor',ingr:['liquid_moonlight','silver_lotus'],xp:100,dc:17,desc:'Armor draped in liquid moonlight. The wearer becomes harder to see at night. Cartographer-exclusive.'},
+  {id:'e_magma_core',name:'Magma Core',icon:'🔥',cat:'weapon',ingr:['magma_diamond','living_ember'],xp:110,dc:18,desc:'A diamond of liquid fire set into the weapon. Burns hotter than dragonfire. Cartographer-exclusive.'},
+  {id:'e_mithril_thread',name:'Mithril Threading',icon:'⚪',cat:'armor',ingr:['deep_mithril','shadow_ore'],xp:110,dc:18,desc:'Mithril woven through every seam. Lighter than silk, stronger than steel. Cartographer-exclusive.'},
+  {id:'e_primordial',name:'Primordial Inscription',icon:'⚡',cat:'other',ingr:['primordial_spark','forge_heart_shard'],xp:150,dc:20,desc:'The rune language of creation itself. The ultimate enchantment. Cartographer-exclusive.'},
+  // ═══ ASHFALL CARTOGRAPHER HIDDEN INGREDIENT ENCHANTMENTS ═══
+  {id:'e_oasis_bloom',name:'Oasis Bloom',icon:'🌵',cat:'other',ingr:['desert_bloom','sunpetal'],xp:85,dc:14,desc:'Jewelry blooms with desert flowers. The wearer radiates charisma. Cartographer-exclusive.'},
+  {id:'e_singing_edge',name:'Singing Edge',icon:'🎵',cat:'weapon',ingr:['singing_salt','crystal_salt'],xp:90,dc:15,desc:'The blade hums at a frequency that disrupts magical shields. Cartographer-exclusive.'},
+  {id:'e_glass_guard',name:'Glass Guard',icon:'🖤',cat:'armor',ingr:['glass_bloom','obsidian_shard'],xp:95,dc:16,desc:'Obsidian glass fragments embedded in armor shatter on impact, cutting attackers. Cartographer-exclusive.'},
+  {id:'e_queen_weave',name:'Queen\'s Weave',icon:'👑',cat:'armor',ingr:['queen_silk','venomgland'],xp:100,dc:17,desc:'Sandworm queen silk woven into armor. Lighter, stronger, and mildly venomous. Cartographer-exclusive.'},
+  {id:'e_moonwell',name:'Moonwell Blessing',icon:'🌙',cat:'other',ingr:['moonwell_water','dewdrop_lily'],xp:100,dc:17,desc:'Starlit water consecrates the item. The wearer heals slowly in moonlight. Cartographer-exclusive.'},
+  {id:'e_dragon_brand',name:'Dragon Brand',icon:'🐉',cat:'weapon',ingr:['dragon_ash','living_ember'],xp:115,dc:18,desc:'Branded with primordial dragonfire. The weapon cannot be quenched. Cartographer-exclusive.'},
+  {id:'e_spirit_veil',name:'Spirit Veil',icon:'👻',cat:'armor',ingr:['spirit_essence','mirage_dust'],xp:110,dc:18,desc:'Armor phases between real and mirage. Attacks sometimes pass through. Cartographer-exclusive.'},
+  {id:'e_vault_seal',name:'Vault Seal',icon:'🏆',cat:'other',ingr:['vault_gold','ancient_resin'],xp:155,dc:20,desc:'The seal of the Buried Temple. The ultimate Ashfall enchantment. Cartographer-exclusive.'},
 ];
 // ═══ LOCATIONS ═══
 var LOCATIONS={
@@ -1913,6 +1949,31 @@ var ELIXIR_BUFFS={
   essence_wild:{id:'essence_wild',name:'Essence of the Wild',icon:'🌍',duration:5,
     desc:'+3 extraction, +2 yield, +1 Energy/day for 5 days.',
     effects:{extractionBonus:3,forageYieldBonus:2,bonusEnergyPerDay:1},buffDesc:'+3 extraction, +2 yield, +1 Energy for 5 days'},
+  // ═══ ASHFALL CARTOGRAPHER ELIXIR BUFFS ═══
+  oasis_bloom_tonic:{id:'oasis_bloom_tonic',name:'Oasis Bloom Tonic',icon:'🌵',duration:3,
+    desc:'Desert bloom fragrance charms customers and sharpens negotiation.',
+    effects:{customerPayBonus:0.25,customerBonus:1,sellBonus:0.15},buffDesc:'+25% customer pay, +1 customer, +15% sell for 3 days'},
+  singing_salt_brew:{id:'singing_salt_brew',name:'Singing Salt Brew',icon:'🎵',duration:3,
+    desc:'Harmonic resonance attunes your hands to magical frequencies.',
+    effects:{enchantBonus:3,enchantSuccessFlat:6},buffDesc:'+3 inscription, +6 enchant bonus for 3 days'},
+  glass_bloom_elixir:{id:'glass_bloom_elixir',name:'Glass Bloom Elixir',icon:'🖤',duration:3,
+    desc:'Volcanic glass precision flows through your fingers.',
+    effects:{craftBonus:3,craftFloor:6},buffDesc:'+3 craft, min roll 6 for 3 days'},
+  queen_silk_draught:{id:'queen_silk_draught',name:'Queen Silk Draught',icon:'👑',duration:3,
+    desc:'Sandworm silk coats your workspace — nothing sticks, nothing is wasted.',
+    effects:{salvagePercent:0.75,saveIngredientChance:0.30},buffDesc:'+75% salvage, +30% ingredient save for 3 days'},
+  moonwell_philter:{id:'moonwell_philter',name:'Moonwell Philter',icon:'🌙',duration:4,
+    desc:'Starlit water clarifies the mind beyond mortal limits.',
+    effects:{discoveryChanceBonus:0.30,xpMultiplier:0.25,freeResearchPerDay:1},buffDesc:'+30% discovery, +25% XP, +1 free research for 4 days'},
+  dragon_fire_flask:{id:'dragon_fire_flask',name:'Dragon Fire Flask',icon:'🐉',duration:2,
+    desc:'Primordial dragon fire. Dangerous, unstoppable, magnificent.',
+    effects:{craftBonus:6,doubleBatchChance:0.35,firstBrewFree:true},buffDesc:'+6 craft, +35% double batch, free first brew for 2 days'},
+  spirit_draught:{id:'spirit_draught',name:'Spirit Draught',icon:'👻',duration:3,
+    desc:'The mirage realm bleeds through. You see everything more clearly.',
+    effects:{extractionBonus:2,craftBonus:2,enchantBonus:2,discoveryChanceBonus:0.10},buffDesc:'+2 to extraction/craft/enchant, +10% discovery for 3 days'},
+  vault_elixir:{id:'vault_elixir',name:'Vault Gold Elixir',icon:'🏆',duration:5,legendary:true,
+    desc:'Temple gold in liquid form. The ultimate Ashfall consumable.',
+    effects:{craftBonus:4,xpMultiplier:0.30,sellBonus:0.30,customerPayBonus:0.25,enchantBonus:3},buffDesc:'+4 craft, +30% XP, +30% sell, +25% pay, +3 enchant for 5 days'},
 };
 
 var POT_LINES={
