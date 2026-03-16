@@ -5186,19 +5186,24 @@ function CindervaleAlchemistInner(){
         {/* Unused free actions warning */}
         {(()=>{
           const unused=[];
-          const freeRes=getFeatureVal('freeResearchPerDay');const freeResUsed=dayFlags.filter(f=>f==='free_research_used').length;
+          const freeRes=getFeatureVal('freeResearchPerDay')+upEff('freeResearchPerDay');const freeResUsed=dayFlags.filter(f=>f==='free_research_used').length;
           if(freeRes>freeResUsed)unused.push({icon:'📖',name:'Free Research',remaining:freeRes-freeResUsed,nav:'research'});
-          if(getFeatureVal('freeCraft')&&!dayFlags.includes('free_craft_used'))unused.push({icon:'✨',name:'Free Craft',remaining:1,nav:'workshop'});
+          const freeCraftVal=getFeatureVal('freeCraft')+upEff('freeCraft');
+          if(freeCraftVal>0&&!dayFlags.includes('free_craft_used'))unused.push({icon:'✨',name:'Free Craft (no ingredients)',remaining:1,nav:'workshop'});
+          const freeBrew=getFeatureVal('firstBrewFree')+upEff('firstBrewFree');
+          if(freeBrew>0&&!dayFlags.includes('first_brew_used'))unused.push({icon:'⚗️',name:'Free Brew (no energy cost)',remaining:1,nav:'workshop'});
+          const earlyRise=getFeatureVal('firstActionFree')+upEff('firstActionFree');
+          if(earlyRise>0&&!dayFlags.includes('first_action_used'))unused.push({icon:'🌅',name:'Early Riser (first action free)',remaining:1,nav:'workshop'});
           if(unused.length===0)return null;
-          return <div style={{marginBottom:10,padding:'10px 12px',background:'#c0604015',borderRadius:6,border:'1px solid #c0604055'}}>
-            <div style={{fontSize:15,color:'#e08050',fontWeight:'bold',marginBottom:4}}>⚠️ Unused Free Actions!</div>
+          return <div style={{marginBottom:10,padding:'10px 12px',background:'#c0604015',borderRadius:6,border:'2px solid #c0604088',boxShadow:'0 0 12px #c0604020'}}>
+            <div style={{fontSize:16,color:'#e08050',fontWeight:'bold',marginBottom:6}}>⚠️ Unused Free Actions!</div>
             <div style={{fontSize:14,color:TH.text,lineHeight:1.6}}>
-              {unused.map(u=><div key={u.name} style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:2}}>
-                <span>{u.icon} <b>{u.name}</b> — {u.remaining} remaining today</span>
-                <button style={{...S.btn('def'),fontSize:12,padding:'2px 8px'}} onClick={()=>{setConfirmRest(false);setScreen(u.nav);}}>{u.icon} Use it</button>
+              {unused.map(u=><div key={u.name} style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:4,padding:'3px 6px',background:TH.panel,borderRadius:4,border:'1px solid '+TH.border}}>
+                <span>{u.icon} <b>{u.name}</b> — {u.remaining} remaining</span>
+                <button style={{...S.btn('gold'),fontSize:12,padding:'3px 10px'}} onClick={()=>{setConfirmRest(false);setScreen(u.nav);}}>{u.icon} Use it →</button>
               </div>)}
             </div>
-            <div style={{fontSize:13,color:'#c08060',fontStyle:'italic',marginTop:4}}>These free actions don't cost energy and will be lost when you rest.</div>
+            <div style={{fontSize:13,color:'#c08060',fontStyle:'italic',marginTop:6}}>⚡ These free actions don't cost energy and will be lost when you rest!</div>
           </div>;
         })()}
         {getFeatureVal('nightExpeditions')>0&&(()=>{
