@@ -802,8 +802,6 @@ var RECIPES=[
   {id:'sandstorm_brew',name:'Sandstorm Brew',icon:'🌪️',ingr:['dust_amber','obsidian_shard','dustite'],xp:70,unlock:4,dc:14,stat:'tec',
     desc:'Infused with the fury of the sandstorms. Grants resistance to wind and abrasion.'},
 ];
-// Append March recipes to main RECIPES array (gated by known[] — learned during Hollow March waves)
-MARCH_RECIPES.forEach(r=>RECIPES.push(r));
 // Enchantment categories: weapon, armor, other (jewelry/clothing/accessories)
 var ENCHANTMENTS=[
   // WEAPON enchantments
@@ -2525,6 +2523,8 @@ var MARCH_RECIPES=[
   {id:'march_ironwall',name:'Ironwall Concentrate',icon:'🛡️',ingr:['deep_iron','forge_scale','thermal_clay'],xp:140,unlock:10,dc:18,stat:'tec',
     desc:'Coats fortifications in alchemical iron. Reduces Blight threat by 20 and grants staff injury immunity for 3 days.',marchEffect:{threatReduc:20,threat:'blight',staffShield:3}},
 ];
+// Append March recipes to main RECIPES array (gated by known[] — learned during Hollow March waves)
+MARCH_RECIPES.forEach(r=>RECIPES.push(r));
 
 var BQ_GIVERS=['Farmer Aldric','Widow Maren','Trader Osric','Healer Senna','Guard Brennick','Smith Torva','Elder Yara','Prospector Jax','Herbalist Neve','Cook Brindle','Captain Voss','Pilgrim Elowen','Shepherd Grynn','Scribe Felton','Chandler Rue'];
 var BQ_TEMPLATES=[
