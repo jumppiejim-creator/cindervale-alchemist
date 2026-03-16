@@ -345,7 +345,7 @@ function CindervaleAlchemistInner(){
     const s=new Set();
     locRegions.forEach(r=>r.ingr.forEach(id=>s.add(id)));
     // Cartographer: mapped hidden areas make their ingredients locally available
-    if((prestigeLevels.cartographer||0)>=1&&typeof HIDDEN_REGIONS!=='undefined'){
+    if((prestigeLevels?.cartographer||0)>=1&&typeof HIDDEN_REGIONS!=='undefined'){
       HIDDEN_REGIONS.filter(hr=>{
         const parentReg=locRegions.find(r=>r.id===hr.region);
         return parentReg&&mappedRegions.includes(hr.id);
