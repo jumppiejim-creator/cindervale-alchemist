@@ -27,11 +27,18 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
 <script src="portraits.js"></script>
 <script src="location-images.js"></script>
-<script src="game-data.js"></script>
+<script src="game-data.js?v=20260315b"></script>
 <script src="npc-portraits.js"></script>
 <script type="text/babel" data-type="module">
 const { useState, useEffect, useCallback, useRef, Component, createElement } = React;
 const Tone = window.Tone;
+
+// ═══ CRITICAL: Detect if game-data.js failed to load ═══
+if(typeof FACTIONS==='undefined'||typeof CLASSES==='undefined'||typeof RECIPES==='undefined'){
+  console.error('⚠️ GAME-DATA.JS FAILED TO LOAD! Check that game-data.js is deployed and accessible. Attempting to show error...');
+  document.getElementById('root').innerHTML='<div style="padding:40px;color:#c0b088;font-family:serif;text-align:center;background:#0d0b08;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center"><h1 style="color:#d4a420">⚠️ game-data.js Failed to Load</h1><p>The game data file did not load properly. This is usually a caching issue.</p><p><b>Fix:</b> Hard refresh (Ctrl+Shift+R), clear browser cache, or open in incognito/private window.</p><p style="color:#6a6050;font-size:14px">If the problem persists, verify that game-data.js is deployed alongside index.html on your server.</p><button onclick="location.reload(true)" style="margin-top:20px;padding:10px 30px;font-size:18px;background:#d4a420;color:#0d0b08;border:none;border-radius:6px;cursor:pointer;font-family:serif">🔄 Force Reload</button></div>';
+  throw new Error('game-data.js not loaded');
+}
 
 
 // ═══════════════════════════════════════════════════════════════
