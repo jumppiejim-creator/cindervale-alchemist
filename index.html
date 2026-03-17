@@ -8549,6 +8549,7 @@ function CindervaleAlchemistInner(){
                   <option value="">🔨...</option>{Object.values(UPGRADES).filter(u=>!upgrades.includes(u.id)&&(!u.req||upgrades.includes(u.req))).map(u=><option key={u.id} value={u.id}>{u.icon}{u.name}{(constructProgress[u.id]||0)>0?` (${constructProgress[u.id]}%)`:''}</option>)}</select>
                 <select onChange={e=>{if(e.target.value)assignTask(ap.id,'patrol',e.target.value);}} value={task?.type==='patrol'?task.target:''} title={TASK_TYPES.patrol?.desc||'Patrol against threats'} style={{padding:'2px 4px',background:TH.panelLight,color:TH.text,border:'1px solid '+TH.border,borderRadius:3,fontFamily:'inherit',fontSize:14}}>
                   <option value="">🛡️...</option>{THREAT_IDS.map(tid=><option key={tid} value={tid}>{THREAT_FACTIONS[tid]?.icon} {THREAT_FACTIONS[tid]?.name} ({threats[tid]||0}/100)</option>)}</select>
+                <button style={{...S.btn(!task||task.type==='idle'?'gold':'def'),fontSize:14,padding:'2px 6px'}} onClick={()=>setApprTasks(p=>{const n={...p};delete n[ap.id];return n;})} title="Unassign — staff rests and is available for March deployment">💤 Idle</button>
                 <button style={{...S.btn('red'),fontSize:14,padding:'2px 6px'}} onClick={()=>setConfirmFire(confirmFire===ap.id?null:ap.id)} title="Dismiss this employee">{confirmFire===ap.id?'Cancel':'🔥 Dismiss'}</button>
               </div>
               {confirmFire===ap.id&&<div style={{marginTop:4,padding:'6px 8px',background:TH.red+'15',border:'1px solid '+TH.red+'44',borderRadius:4,display:'flex',alignItems:'center',justifyContent:'space-between'}}>
@@ -9067,13 +9068,16 @@ function CindervaleAlchemistInner(){
                     {d.met?'✅ ':''}{d.desc}
                   </div>
                   <div style={{fontSize:12,color:TH.textDim}}>
-                    {d.met?'Fulfilled!':`${have}/${d.qty} ready`}
+                    {d.met?'Fulfilled!'
+                      :d.type==='staff'?`${have}/${d.qty} idle staff available`+(have<d.qty?' — reassign busy staff on the Staff screen to make them idle':'')
+                      :d.type==='enchantment'?`${have}/${d.qty} Energy available (costs Energy to deploy enchantment teams)`
+                      :`${have}/${d.qty} ready`}
                     {!d.met&&d.reward&&<span> · Reward: {d.reward.xp?'+'+d.reward.xp+' XP ':''}{d.reward.gold?'+'+d.reward.gold+'g ':''}{d.reward.threatReduc?'-'+Math.floor(d.reward.threatReduc/3)+' threats':''}</span>}
                   </div>
                 </div>
                 {!d.met&&<button style={{...S.btn(canFill?'gold':'dim'),fontSize:13,padding:'6px 12px',marginLeft:8}} disabled={!canFill}
                   onClick={()=>fulfillMarchDemand(d.id)}>
-                  {canFill?'Fulfill':'Need More'}
+                  {canFill?(d.type==='staff'?'Deploy':'Fulfill'):'Need More'}
                 </button>}
               </div>;
             })}
