@@ -1683,7 +1683,7 @@ function CindervaleAlchemistInner(){
     }
   };
   const marchWavesCleared=(hollowMarch?.history||[]).filter(h=>h.met===h.total).length+((hollowMarch?.demands||[]).every(d=>d.met)&&hollowMarch?.wave>0?1:0);
-  const canPassTorch=getLvl(xp)>=9&&(marchWavesCleared>=(typeof HOLLOW_MARCH!=='undefined'?HOLLOW_MARCH.wavesForTorch:5)||hollowMarch?.finalStandComplete||!hollowMarch?.active);
+  const canPassTorch=getLvl(xp)>=9&&(marchWavesCleared>=(typeof HOLLOW_MARCH!=='undefined'?HOLLOW_MARCH.wavesForTorch:5)||hollowMarch?.finalStandComplete);
 
     // ═══ BRAND HELPERS (Brand Master) ═══
   const getBrandForRecipe=(recipeId)=>brands.find(b=>b.recipes.includes(recipeId));
@@ -5077,9 +5077,9 @@ function CindervaleAlchemistInner(){
           <div style={{fontSize:14,color:TH.textDim,marginBottom:8,lineHeight:1.5}}>
             Your legacy lives on. Choose an apprentice to carry your knowledge forward. They will found their own workshop at a new location.
           </div>
-          {hollowMarch?.active&&!hollowMarch?.finalStandComplete&&marchWavesCleared<HOLLOW_MARCH.wavesForTorch?<div style={{padding:'8px 12px',background:'#40102066',borderRadius:6,border:'1px solid #a040c044',marginBottom:8}}>
+          {!canPassTorch?<div style={{padding:'8px 12px',background:'#40102066',borderRadius:6,border:'1px solid #a040c044',marginBottom:8}}>
             <div style={{fontSize:14,color:'#c060e0',marginBottom:4}}>💀 The Hollow March blocks your path</div>
-            <div style={{fontSize:13,color:TH.textDim}}>Clear {HOLLOW_MARCH.wavesForTorch} waves before passing the torch. Progress: <b style={{color:'#c060e0'}}>{marchWavesCleared}/{HOLLOW_MARCH.wavesForTorch}</b> waves cleared.</div>
+            <div style={{fontSize:13,color:TH.textDim}}>{hollowMarch?.active?'Clear '+HOLLOW_MARCH.wavesForTorch+' waves before passing the torch. Progress: ':'The March has not yet begun. Survive the coming invasion to earn the right to pass on your legacy. Need: '}<b style={{color:'#c060e0'}}>{marchWavesCleared}/{HOLLOW_MARCH.wavesForTorch}</b> waves cleared.</div>
           </div>
           :hiredAppr.length===0?<div style={{fontSize:14,color:TH.textDim}}>Hire an apprentice first — they will become your successor.</div>
           :showTorch?<div>
@@ -9642,7 +9642,7 @@ function CindervaleAlchemistInner(){
               <div style={{fontSize:11,color:TH.textDim}}>Mentor's Legacy</div>
             </div>}
             {displayLevel>=10&&hiredAppr.length>0&&canPassTorch&&<button style={{...S.btn('gold'),fontSize:12,padding:'3px 8px',marginTop:6,width:'100%'}} onClick={()=>setShowSaveMenu(true)}>🔥 Pass the Torch</button>}
-            {displayLevel>=10&&hiredAppr.length>0&&!canPassTorch&&hollowMarch?.active&&<div style={{fontSize:11,color:'#a040c0',marginTop:4}}>💀 Clear {HOLLOW_MARCH.wavesForTorch-marchWavesCleared} more March wave{HOLLOW_MARCH.wavesForTorch-marchWavesCleared!==1?'s':''} to unlock torch</div>}
+            {displayLevel>=10&&hiredAppr.length>0&&!canPassTorch&&<div style={{fontSize:11,color:'#a040c0',marginTop:4}}>{hollowMarch?.active?'💀 Clear '+(HOLLOW_MARCH.wavesForTorch-marchWavesCleared)+' more March wave'+(HOLLOW_MARCH.wavesForTorch-marchWavesCleared!==1?'s':'')+' to unlock torch':'💀 The Hollow March must begin before passing the torch'}</div>}
           </div>
         </>}
 
