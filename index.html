@@ -231,8 +231,10 @@ function CindervaleAlchemistInner(){
   const [lineage,setLineage]=useState(null); // Lineage data persisted across runs
   const [showTorch,setShowTorch]=useState(false);
   const [showLocationSelect,setShowLocationSelect]=useState(false);
-  const [showLegacyPicker,setShowLegacyPicker]=useState(false);
   const [torchApprentice,setTorchApprentice]=useState(null);
+  const [torchStep,setTorchStep]=useState(0); // 0=closed, 1=apprentice, 2=heirloom, 3=legacy, 4=location
+  const [torchHeirloom,setTorchHeirloom]=useState(null);
+  const [torchLegacy,setTorchLegacy]=useState(null);
 
   // ═══ LINEAGE PERSISTENCE ═══
   const LINEAGE_KEY='cindervale_lineage';
@@ -888,43 +890,59 @@ function CindervaleAlchemistInner(){
       legacyFeature:selectedLegacy||null,
     };
     // Start new game at selected location
-    setShowTorch(false);setTorchApprentice(null);
+    setShowTorch(false);setTorchApprentice(null);setTorchStep(0);setTorchHeirloom(null);setTorchLegacy(null);
     newGame(selectedLoc,inheritData);
   };
   // Compute available legacy features from current build
   const getLegacyOptions=()=>{
     const options=[];
-    // Specialization features: for each class with a spec, offer highest unlocked spec feature
+    // Specialization features: merge ALL features up to highest unlocked level
     Object.entries(specs).forEach(([cid,specId])=>{
       if(!specId)return;
       const cls=CLASSES[cid];if(!cls)return;
       const spec=cls.specs?.[specId];if(!spec)return;
       const clsLv=classLevels[cid]||0;
-      // Find highest spec feature at or below class level
       const eligible=spec.features.filter(f=>f.classLv<=clsLv&&f.effects);
       if(eligible.length===0)return;
       const best=eligible.reduce((a,b)=>b.classLv>a.classLv?b:a);
+      // Merge ALL effects from all features up to this level
+      const mergedEffects={};
+      const featureChain=eligible.sort((a,b)=>a.classLv-b.classLv);
+      featureChain.forEach(f=>{Object.entries(f.effects).forEach(([k,v])=>{
+        if(typeof v==='boolean')mergedEffects[k]=true;
+        else mergedEffects[k]=(mergedEffects[k]||0)+v;
+      });});
       options.push({
-        type:'spec',classId:cid,specId,name:best.name,desc:best.desc,lv:best.classLv,
+        type:'spec',classId:cid,specId,name:spec.name+' Legacy',desc:best.name+' (Lv'+best.classLv+') and all prerequisite features.',lv:best.classLv,
         icon:spec.icon,color:spec.color||cls.color,
         source:`${cls.icon} ${cls.name} — ${spec.icon} ${spec.name} Lv${best.classLv}`,
-        effects:{...best.effects},
+        effects:mergedEffects,
+        featureChain:featureChain.map(f=>({name:f.name,lv:f.classLv,desc:f.desc})),
       });
     });
-    // Prestige features: for each prestige class with levels, offer highest feature
+    // Prestige features: merge ALL features up to highest unlocked level
     Object.entries(prestigeLevels||{}).forEach(([pcId,pcLv])=>{
       if(pcLv<1)return;
       const pc=PRESTIGE_CLASSES?.[pcId];if(!pc)return;
       const eligible=pc.features.filter(f=>f.lv<=pcLv);
       if(eligible.length===0)return;
       const best=eligible.reduce((a,b)=>b.lv>a.lv?b:a);
-      const efx=best.effects||best.legacyEffects;
-      if(!efx)return;
+      const mergedEffects={};
+      const featureChain=eligible.sort((a,b)=>a.lv-b.lv);
+      featureChain.forEach(f=>{
+        const efx=f.effects||f.legacyEffects;if(!efx)return;
+        Object.entries(efx).forEach(([k,v])=>{
+          if(typeof v==='boolean')mergedEffects[k]=true;
+          else mergedEffects[k]=(mergedEffects[k]||0)+v;
+        });
+      });
+      if(Object.keys(mergedEffects).length===0)return;
       options.push({
-        type:'prestige',prestigeId:pcId,name:best.name,desc:best.desc,lv:best.lv,
+        type:'prestige',prestigeId:pcId,name:pc.name+' Legacy',desc:best.name+' (Lv'+best.lv+') and all prerequisite features.',lv:best.lv,
         icon:pc.icon,color:pc.color,
         source:`${pc.icon} ${pc.name} Lv${best.lv}`,
-        effects:{...efx},
+        effects:mergedEffects,
+        featureChain:featureChain.map(f=>({name:f.name,lv:f.lv,desc:f.desc})),
       });
     });
     return options;
@@ -4703,82 +4721,21 @@ function CindervaleAlchemistInner(){
             </div>}
           </div>}
 
-          {/* Location Selection Modal */}
+          {/* Location Selection Modal (new game only, not torch) */}
           {showLocationSelect&&<div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'#000000dd',display:'flex',alignItems:'center',justifyContent:'center',zIndex:9999,padding:16}}
             onClick={()=>setShowLocationSelect(false)}>
             <div style={{background:TH.bg,border:'2px solid '+TH.gold,borderRadius:12,padding:20,maxWidth:500,width:'100%'}} onClick={e=>e.stopPropagation()}>
-              <div style={{fontSize:22,color:TH.gold,textAlign:'center',marginBottom:12}}>{window._pendingTorch?'🔥 Pass the Torch — Choose Location':'Choose Your Location'}
-              {lineage&&!window._pendingTorch&&<div style={{fontSize:13,color:TH.textDim,textAlign:'center',marginBottom:4}}>Starting with {lineage.name} legacy bonuses. <button style={{fontSize:12,color:'#c050e0',background:'none',border:'none',cursor:'pointer',textDecoration:'underline',fontFamily:'inherit'}} onClick={()=>{if(confirm('Start a completely fresh game with no legacy bonuses?'))setLineage(null);}}>Start Fresh Instead</button></div>}</div>
+              <div style={{fontSize:22,color:TH.gold,textAlign:'center',marginBottom:12}}>Choose Your Location
+              {lineage&&<div style={{fontSize:13,color:TH.textDim,textAlign:'center',marginBottom:4}}>Starting with {lineage.name} legacy bonuses. <button style={{fontSize:12,color:'#c050e0',background:'none',border:'none',cursor:'pointer',textDecoration:'underline',fontFamily:'inherit'}} onClick={()=>{if(confirm('Start a completely fresh game with no legacy bonuses?'))setLineage(null);}}>Start Fresh Instead</button></div>}</div>
               {lineage&&<div style={{fontSize:13,color:'#c050e0',textAlign:'center',marginBottom:8}}>🏰 {lineage.name} · Generation {lineage.totalGenerations+1}</div>}
               {Object.values(LOCATIONS).map(loc=><div key={loc.id} style={{padding:'12px 14px',background:TH.panel,borderRadius:8,marginBottom:8,border:'2px solid '+TH.border,cursor:'pointer'}}
-                onClick={()=>{setShowLocationSelect(false);
-                  if(window._pendingTorch){
-                    const pt=window._pendingTorch;window._pendingTorch=null;
-                    passTorch(pt.apprentice,pt.heirloom,loc.id,pt.legacy);
-                  } else {newGame(loc.id);}
-                }}>
+                onClick={()=>{setShowLocationSelect(false);newGame(loc.id);}}>
                 <div style={{fontSize:18,color:TH.gold,fontWeight:'bold'}}>{loc.icon} {loc.name}</div>
                 <div style={{fontSize:14,color:TH.textDim,marginTop:3,lineHeight:1.4}}>{loc.desc}</div>
-                {loc.id!=='cindervale'&&(!lineage||lineage.totalGenerations<1)&&<div style={{fontSize:12,color:'#c050e0',marginTop:4}}>✨ Unlocked after your first torch pass (or play directly!)</div>}
               </div>)}
               <button style={{...S.btn('dim'),width:'100%',marginTop:4}} onClick={()=>setShowLocationSelect(false)}>Cancel</button>
             </div>
           </div>}
-
-          {/* Legacy Feature Picker Modal */}
-          {showLegacyPicker&&(()=>{
-            const options=getLegacyOptions();
-            return <div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'#000000dd',display:'flex',alignItems:'center',justifyContent:'center',zIndex:9999,padding:16}}
-              onClick={()=>setShowLegacyPicker(false)}>
-              <div style={{background:TH.bg,border:'2px solid #c050e0',borderRadius:12,padding:20,maxWidth:600,width:'100%',maxHeight:'90vh',overflowY:'auto'}} onClick={e=>e.stopPropagation()}>
-                <div style={{fontSize:22,color:'#c050e0',textAlign:'center',marginBottom:4}}>📜 Mentor's Legacy</div>
-                <div style={{fontSize:14,color:TH.textDim,textAlign:'center',marginBottom:12,lineHeight:1.5}}>
-                  Choose one mastered technique to pass to your apprentice. This feature will be active from Day 1 of their journey — a permanent gift from {charName}'s expertise.
-                </div>
-                {options.length===0&&<div style={{fontSize:14,color:TH.textDim,textAlign:'center',padding:20}}>
-                  No specialization or prestige features to pass on. The mentor bonus from your highest class will still apply.
-                </div>}
-                <div style={{display:'flex',flexDirection:'column',gap:8,marginBottom:12}}>
-                  {options.map((opt,i)=>{
-                    const effectList=Object.entries(opt.effects||{}).map(([k,v])=>{
-                      if(typeof v==='boolean')return k.replace(/([A-Z])/g,' $1').toLowerCase();
-                      if(typeof v==='number'&&v<1&&v>0)return '+'+Math.round(v*100)+'% '+k.replace(/([A-Z])/g,' $1').toLowerCase();
-                      return '+'+v+' '+k.replace(/([A-Z])/g,' $1').toLowerCase();
-                    });
-                    return <div key={i} style={{padding:'12px 14px',background:TH.panel,borderRadius:8,border:'2px solid '+TH.border,cursor:'pointer',transition:'all .15s'}}
-                      onMouseEnter={e=>{e.currentTarget.style.borderColor=opt.color;e.currentTarget.style.boxShadow='0 0 12px '+opt.color+'33';}}
-                      onMouseLeave={e=>{e.currentTarget.style.borderColor=TH.border;e.currentTarget.style.boxShadow='none';}}
-                      onClick={()=>{
-                        if(window._pendingTorch)window._pendingTorch.legacy=opt;
-                        setShowLegacyPicker(false);
-                        setShowLocationSelect(true);
-                      }}>
-                      <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:4}}>
-                        <span style={{fontSize:28}}>{opt.icon}</span>
-                        <div style={{flex:1}}>
-                          <div style={{fontSize:16,color:opt.color,fontWeight:'bold'}}>{opt.name}</div>
-                          <div style={{fontSize:13,color:TH.textDim}}>{opt.source}</div>
-                        </div>
-                        <div style={{fontSize:12,color:opt.type==='prestige'?'#c050e0':opt.color,background:(opt.type==='prestige'?'#c050e0':opt.color)+'15',padding:'2px 8px',borderRadius:4}}>{opt.type==='prestige'?'★ Prestige':'Specialization'}</div>
-                      </div>
-                      <div style={{fontSize:14,color:TH.text,marginBottom:6,lineHeight:1.4}}>{opt.desc}</div>
-                      <div style={{display:'flex',flexWrap:'wrap',gap:4}}>
-                        {effectList.map((e,j)=><span key={j} style={{fontSize:12,padding:'2px 6px',background:opt.color+'15',border:'1px solid '+opt.color+'33',borderRadius:3,color:opt.color}}>{e}</span>)}
-                      </div>
-                    </div>;
-                  })}
-                </div>
-                <div style={{display:'flex',gap:8}}>
-                  <button style={{...S.btn('dim'),flex:1}} onClick={()=>{
-                    if(window._pendingTorch)window._pendingTorch.legacy=null;
-                    setShowLegacyPicker(false);
-                    setShowLocationSelect(true);
-                  }}>Skip — No Legacy Feature</button>
-                  <button style={{...S.btn('dim')}} onClick={()=>setShowLegacyPicker(false)}>Cancel</button>
-                </div>
-              </div>
-            </div>;
-          })()}
 
           {/* Cross-device save transfer */}
           <div style={{...S.card,marginTop:12,textAlign:'left'}}>
@@ -5130,39 +5087,11 @@ function CindervaleAlchemistInner(){
         {/* Pass the Torch */}
         {getLvl(xp)>=9&&<div style={{...S.card,borderColor:'#c050e044',marginBottom:8}}>
           <div style={{...S.cT,color:'#c050e0'}}>🔥 Pass the Torch</div>
-          <div style={{fontSize:14,color:TH.textDim,marginBottom:8,lineHeight:1.5}}>
-            Your legacy lives on. Choose an apprentice to carry your knowledge forward. They will found their own workshop at a new location.
+          {!canPassTorch?<div style={{padding:'6px 10px',background:'#40102066',borderRadius:6,border:'1px solid #a040c044'}}>
+            <div style={{fontSize:13,color:TH.textDim}}>{hollowMarch?.active?'Clear '+(HOLLOW_MARCH.wavesForTorch-marchWavesCleared)+' more wave'+(HOLLOW_MARCH.wavesForTorch-marchWavesCleared!==1?'s':'')+'.':'The March must begin first.'} <b style={{color:'#c060e0'}}>{marchWavesCleared}/{HOLLOW_MARCH.wavesForTorch}</b></div>
           </div>
-          {!canPassTorch?<div style={{padding:'8px 12px',background:'#40102066',borderRadius:6,border:'1px solid #a040c044',marginBottom:8}}>
-            <div style={{fontSize:14,color:'#c060e0',marginBottom:4}}>💀 The Hollow March blocks your path</div>
-            <div style={{fontSize:13,color:TH.textDim}}>{hollowMarch?.active?'Clear '+HOLLOW_MARCH.wavesForTorch+' waves before passing the torch. Progress: ':'The March has not yet begun. Survive the coming invasion to earn the right to pass on your legacy. Need: '}<b style={{color:'#c060e0'}}>{marchWavesCleared}/{HOLLOW_MARCH.wavesForTorch}</b> waves cleared.</div>
-          </div>
-          :hiredAppr.length===0?<div style={{fontSize:14,color:TH.textDim}}>Hire an apprentice first — they will become your successor.</div>
-          :showTorch?<div>
-            <div style={{fontSize:15,color:TH.gold,marginBottom:6}}>Choose your successor:</div>
-            {hiredAppr.map(ap=><button key={ap.id} style={{...S.btn('def'),display:'block',width:'100%',marginBottom:4,textAlign:'left',fontSize:14}}
-              onClick={()=>setTorchApprentice(ap)}>
-              {ap.icon} {ap.name} — {ap.specialty} specialist
-            </button>)}
-            {torchApprentice&&<div style={{marginTop:8,padding:10,background:TH.panel,borderRadius:6,border:'1px solid '+TH.border}}>
-              <div style={{fontSize:16,color:TH.gold,marginBottom:6}}>{torchApprentice.icon} {torchApprentice.name} will carry your legacy</div>
-              <div style={{fontSize:13,color:TH.textDim,marginBottom:4}}>Choose an heirloom upgrade to pass forward:</div>
-              <div style={{display:'flex',flexWrap:'wrap',gap:3,marginBottom:8}}>
-                {upgrades.map(uid=>{const u=UPGRADES[uid];return u?<button key={uid} style={{...S.btn('def'),fontSize:12,padding:'2px 6px'}}
-                  onClick={()=>{
-                    window._pendingTorch={apprentice:torchApprentice,heirloom:uid,legacy:null};
-                    setShowLegacyPicker(true);
-                  }}>{u.icon} {u.name}</button>:null;})}
-                <button style={{...S.btn('dim'),fontSize:12,padding:'2px 6px'}}
-                  onClick={()=>{
-                    window._pendingTorch={apprentice:torchApprentice,heirloom:null,legacy:null};
-                    setShowLegacyPicker(true);
-                  }}>No heirloom</button>
-              </div>
-            </div>}
-            <button style={{...S.btn('dim'),marginTop:4}} onClick={()=>{setShowTorch(false);setTorchApprentice(null);}}>Cancel</button>
-          </div>
-          :<button style={{...S.btn('gold'),fontSize:15}} onClick={()=>setShowTorch(true)}>🔥 Pass the Torch</button>}
+          :hiredAppr.length===0?<div style={{fontSize:14,color:TH.textDim}}>Hire an apprentice first.</div>
+          :<button style={{...S.btn('gold'),fontSize:15,width:'100%'}} onClick={()=>{setTorchStep(1);setTorchApprentice(null);setTorchHeirloom(null);setTorchLegacy(null);setShowSaveMenu(false);}}>🔥 Pass the Torch</button>}
         </div>}
                 <div style={S.cT}>💾 Save / Load</div>
         {[1,2].map(i=>{const data=saveSlots[i-1];return(
@@ -5187,6 +5116,150 @@ function CindervaleAlchemistInner(){
   return(
     <div style={S.app}><link href="https://fonts.googleapis.com/css2?family=Almendra:wght@400;700&display=swap" rel="stylesheet"/>
       <SaveOverlay/>
+      {/* ═══ PASS THE TORCH — Stepped Modal ═══ */}
+      {torchStep>0&&<div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'#000000dd',display:'flex',alignItems:'center',justifyContent:'center',zIndex:10000,padding:16}}
+        onClick={()=>setTorchStep(0)}>
+        <div style={{background:TH.bg,border:'2px solid #c050e0',borderRadius:12,padding:24,maxWidth:620,width:'100%',maxHeight:'90vh',overflowY:'auto'}} onClick={e=>e.stopPropagation()}>
+          {/* Step indicator */}
+          <div style={{display:'flex',gap:4,justifyContent:'center',marginBottom:16}}>
+            {['Successor','Heirloom','Legacy','Location'].map((label,i)=>{
+              const step=i+1;const active=torchStep===step;const done=torchStep>step;
+              return <div key={i} style={{display:'flex',alignItems:'center',gap:4}}>
+                <div style={{width:28,height:28,borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',fontSize:14,fontWeight:'bold',
+                  background:done?'#c050e0':active?TH.gold+'33':'transparent',border:'2px solid '+(done?'#c050e0':active?TH.gold:TH.border),
+                  color:done?TH.bg:active?TH.gold:TH.textDim}}>{done?'✓':step}</div>
+                <span style={{fontSize:13,color:active?TH.gold:done?'#c050e0':TH.textDim,fontWeight:active?'bold':'normal'}}>{label}</span>
+                {i<3&&<span style={{color:TH.border,margin:'0 2px'}}>→</span>}
+              </div>;
+            })}
+          </div>
+          <div style={{fontSize:20,color:'#c050e0',textAlign:'center',marginBottom:4}}>🔥 Pass the Torch</div>
+          <div style={{fontSize:13,color:TH.textDim,textAlign:'center',marginBottom:16}}>{charName}'s legacy lives on through their apprentice.</div>
+
+          {/* Step 1: Choose Successor */}
+          {torchStep===1&&<>
+            <div style={{fontSize:16,color:TH.gold,marginBottom:8}}>Choose your successor:</div>
+            <div style={{display:'flex',flexDirection:'column',gap:6}}>
+              {hiredAppr.map(ap=>{const sel=torchApprentice?.id===ap.id;return(
+                <div key={ap.id} style={{padding:'10px 14px',background:sel?TH.gold+'15':TH.panel,borderRadius:8,border:'2px solid '+(sel?TH.gold:TH.border),cursor:'pointer',transition:'all .15s'}}
+                  onClick={()=>setTorchApprentice(ap)}>
+                  <div style={{display:'flex',alignItems:'center',gap:8}}>
+                    <span style={{fontSize:24}}>{ap.icon}</span>
+                    <div style={{flex:1}}>
+                      <div style={{fontSize:16,color:sel?TH.gold:TH.textBright,fontWeight:'bold'}}>{ap.name}{sel&&<span style={{fontSize:13,marginLeft:6}}>✓ Selected</span>}</div>
+                      <div style={{fontSize:13,color:TH.textDim}}>{ap.specialty} specialist · Level {getApprLvl(ap.id)}</div>
+                    </div>
+                  </div>
+                </div>);})}
+            </div>
+            <div style={{display:'flex',gap:8,marginTop:16}}>
+              <button style={{...S.btn(torchApprentice?'gold':'dim'),flex:1,fontSize:15,padding:'8px 0'}} disabled={!torchApprentice}
+                onClick={()=>setTorchStep(2)}>Next: Choose Heirloom →</button>
+              <button style={{...S.btn('dim'),padding:'8px 16px'}} onClick={()=>setTorchStep(0)}>Cancel</button>
+            </div>
+          </>}
+
+          {/* Step 2: Choose Heirloom */}
+          {torchStep===2&&<>
+            <div style={{fontSize:16,color:TH.gold,marginBottom:4}}>Choose an heirloom upgrade for {torchApprentice?.name}:</div>
+            <div style={{fontSize:13,color:TH.textDim,marginBottom:10}}>Your apprentice starts with this workshop upgrade already built.</div>
+            <div style={{display:'flex',flexDirection:'column',gap:6}}>
+              {upgrades.map(uid=>{const u=UPGRADES[uid];if(!u)return null;const sel=torchHeirloom===uid;return(
+                <div key={uid} style={{padding:'8px 12px',background:sel?TH.gold+'15':TH.panel,borderRadius:6,border:'2px solid '+(sel?TH.gold:TH.border),cursor:'pointer',transition:'all .15s'}}
+                  onClick={()=>setTorchHeirloom(sel?null:uid)}>
+                  <div style={{display:'flex',alignItems:'center',gap:6}}>
+                    <span style={{fontSize:20}}>{u.icon}</span>
+                    <div style={{flex:1}}>
+                      <div style={{fontSize:15,color:sel?TH.gold:TH.textBright,fontWeight:sel?'bold':'normal'}}>{u.name}{sel&&<span style={{fontSize:12,marginLeft:6}}>✓</span>}</div>
+                      <div style={{fontSize:12,color:TH.textDim}}>{u.desc}</div>
+                    </div>
+                  </div>
+                </div>);})}
+            </div>
+            <div style={{display:'flex',gap:8,marginTop:16}}>
+              <button style={{...S.btn('dim'),padding:'8px 16px'}} onClick={()=>setTorchStep(1)}>← Back</button>
+              <button style={{...S.btn('gold'),flex:1,fontSize:15,padding:'8px 0'}}
+                onClick={()=>setTorchStep(3)}>Next: Choose Legacy →</button>
+            </div>
+            <div style={{fontSize:12,color:TH.textDim,textAlign:'center',marginTop:4}}>{torchHeirloom?UPGRADES[torchHeirloom]?.icon+' '+UPGRADES[torchHeirloom]?.name+' selected':'No heirloom selected (that\'s ok)'}</div>
+          </>}
+
+          {/* Step 3: Choose Legacy Feature */}
+          {torchStep===3&&(()=>{
+            const options=getLegacyOptions();
+            const fmtEffect=(k,v)=>{
+              if(typeof v==='boolean')return k.replace(/([A-Z])/g,' $1').toLowerCase();
+              if(typeof v==='number'&&v<1&&v>0)return '+'+Math.round(v*100)+'% '+k.replace(/([A-Z])/g,' $1').toLowerCase();
+              return '+'+v+' '+k.replace(/([A-Z])/g,' $1').toLowerCase();
+            };
+            return <>
+              <div style={{fontSize:16,color:'#c050e0',marginBottom:4}}>📜 Choose a Legacy Feature for {torchApprentice?.name}:</div>
+              <div style={{fontSize:13,color:TH.textDim,marginBottom:10,lineHeight:1.5}}>
+                Pass on mastered techniques. Your apprentice gains ALL features in the chain from Day 1 — a permanent gift from {charName}'s expertise.
+              </div>
+              {options.length===0&&<div style={{padding:16,textAlign:'center',color:TH.textDim}}>No specialization or prestige features to pass on. Mentor bonuses from your class will still apply.</div>}
+              <div style={{display:'flex',flexDirection:'column',gap:8}}>
+                {options.map((opt,i)=>{const sel=torchLegacy===opt;return(
+                  <div key={i} style={{padding:'12px 14px',background:sel?opt.color+'15':TH.panel,borderRadius:8,border:'2px solid '+(sel?opt.color:TH.border),cursor:'pointer',transition:'all .15s'}}
+                    onClick={()=>setTorchLegacy(sel?null:opt)}>
+                    <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:4}}>
+                      <span style={{fontSize:28}}>{opt.icon}</span>
+                      <div style={{flex:1}}>
+                        <div style={{fontSize:16,color:sel?opt.color:TH.textBright,fontWeight:'bold'}}>{opt.name}{sel&&<span style={{fontSize:12,marginLeft:6}}>✓ Selected</span>}</div>
+                        <div style={{fontSize:13,color:TH.textDim}}>{opt.source}</div>
+                      </div>
+                      <div style={{fontSize:12,color:opt.type==='prestige'?'#c050e0':opt.color,background:(opt.type==='prestige'?'#c050e0':opt.color)+'15',padding:'2px 8px',borderRadius:4}}>{opt.type==='prestige'?'★ Prestige':'Specialization'}</div>
+                    </div>
+                    {/* Feature chain */}
+                    {opt.featureChain&&<div style={{fontSize:12,color:TH.textDim,marginBottom:4,paddingLeft:36}}>
+                      Includes: {opt.featureChain.map(f=>'Lv'+f.lv+' '+f.name).join(' → ')}
+                    </div>}
+                    {/* Merged effects */}
+                    <div style={{display:'flex',flexWrap:'wrap',gap:4,paddingLeft:36}}>
+                      {Object.entries(opt.effects||{}).map(([k,v])=>
+                        <span key={k} style={{fontSize:12,padding:'2px 6px',background:opt.color+'15',border:'1px solid '+opt.color+'33',borderRadius:3,color:opt.color}}>{fmtEffect(k,v)}</span>
+                      )}
+                    </div>
+                  </div>);})}
+              </div>
+              <div style={{display:'flex',gap:8,marginTop:16}}>
+                <button style={{...S.btn('dim'),padding:'8px 16px'}} onClick={()=>setTorchStep(2)}>← Back</button>
+                <button style={{...S.btn('gold'),flex:1,fontSize:15,padding:'8px 0'}}
+                  onClick={()=>setTorchStep(4)}>Next: Choose Location →</button>
+              </div>
+              <div style={{fontSize:12,color:TH.textDim,textAlign:'center',marginTop:4}}>{torchLegacy?torchLegacy.icon+' '+torchLegacy.name+' selected':'No legacy selected (that\'s ok)'}</div>
+            </>;
+          })()}
+
+          {/* Step 4: Choose Location & Confirm */}
+          {torchStep===4&&<>
+            <div style={{fontSize:16,color:TH.gold,marginBottom:4}}>Choose where {torchApprentice?.name} will begin:</div>
+            {/* Summary */}
+            <div style={{padding:'8px 12px',background:TH.panel,borderRadius:6,marginBottom:12,border:'1px solid #c050e033'}}>
+              <div style={{fontSize:13,color:TH.textDim}}>
+                <b style={{color:TH.textBright}}>Successor:</b> {torchApprentice?.icon} {torchApprentice?.name}
+                {torchHeirloom&&<span> · <b style={{color:TH.textBright}}>Heirloom:</b> {UPGRADES[torchHeirloom]?.icon} {UPGRADES[torchHeirloom]?.name}</span>}
+                {torchLegacy&&<span> · <b style={{color:'#c050e0'}}>Legacy:</b> {torchLegacy.icon} {torchLegacy.name}</span>}
+              </div>
+            </div>
+            <div style={{display:'flex',flexDirection:'column',gap:8}}>
+              {Object.values(LOCATIONS).map(loc=>(
+                <div key={loc.id} style={{padding:'14px 16px',background:TH.panel,borderRadius:8,border:'2px solid '+TH.border,cursor:'pointer',transition:'all .15s'}}
+                  onMouseEnter={e=>{e.currentTarget.style.borderColor=TH.gold;e.currentTarget.style.boxShadow='0 0 12px '+TH.gold+'33';}}
+                  onMouseLeave={e=>{e.currentTarget.style.borderColor=TH.border;e.currentTarget.style.boxShadow='none';}}
+                  onClick={()=>{passTorch(torchApprentice,torchHeirloom,loc.id,torchLegacy);}}>
+                  <div style={{fontSize:18,color:TH.gold,fontWeight:'bold'}}>{loc.icon} {loc.name}</div>
+                  <div style={{fontSize:14,color:TH.textDim,marginTop:3,lineHeight:1.4}}>{loc.desc}</div>
+                </div>
+              ))}
+            </div>
+            <div style={{display:'flex',gap:8,marginTop:16}}>
+              <button style={{...S.btn('dim'),padding:'8px 16px'}} onClick={()=>setTorchStep(3)}>← Back</button>
+              <button style={{...S.btn('dim'),flex:1}} onClick={()=>setTorchStep(0)}>Cancel</button>
+            </div>
+          </>}
+        </div>
+      </div>}
       {/* ═══ DEBUG PANEL ═══ */}
       {debugMode&&gameStarted&&<>
         <div style={{position:'fixed',bottom:8,right:8,zIndex:1001}}>
