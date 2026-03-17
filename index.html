@@ -47,7 +47,8 @@ if(typeof FACTIONS==='undefined'||typeof CLASSES==='undefined'||typeof RECIPES==
 
 // ── Threat Alert Vibes (extend EVENT_VIBES from game-data.js) ──
 // Safety: ensure Hollow March constants exist even if game-data.js is cached
-if(typeof HOLLOW_MARCH==='undefined')var HOLLOW_MARCH={triggerLevel:10,wavesForTorch:5,finalStandWave:10,waveIntervalMin:5,waveIntervalMax:7,demandPools:{potion:{label:'Supply',icon:'⚗️',scaling:w=>({qty:Math.ceil(w*0.8)+1,reward:{xp:40+w*15,gold:20+w*8}})},ingredient:{label:'Gather',icon:'🌿',scaling:w=>({qty:Math.ceil(w*1.5)+3,reward:{xp:25+w*10,gold:15+w*5}})},enchantment:{label:'Enchant',icon:'✨',scaling:w=>({qty:Math.ceil(w*0.5)+1,reward:{xp:50+w*20,gold:25+w*10}})},gold:{label:'Fund',icon:'💰',scaling:w=>({qty:30+w*15,reward:{xp:30+w*12,threatReduc:8+w*2}})},staff:{label:'Deploy',icon:'👥',scaling:w=>({qty:1+Math.floor(w/3),reward:{xp:35+w*10,threatReduc:10+w*3}})}},waveFlavor:['Scouts report movement beyond the Veil.','The ground trembles.','Ashwarden patrols have gone silent.','Villagers whisper of shadows.','The sky darkens.','Bells toll across the valley.','The Veil tears open.','Every faction rallies.','The earth groans.','This is the crucible.','The final wave crashes.'],failurePenalties:{threatSpike:8,staffInjuryChance:0.25,ingrLossCount:3},waveRewards:w=>({xp:100+w*50,gold:50+w*25,threatReduc:5,recipeUnlock:w%3===0}),marchRecipes:['march_fortify','march_veilseal','march_rallying_cry','march_ironwall'],finalStandRewards:{xp:2000,gold:500,title:'Defender of the Vale',threatCap:25}};
+if(typeof HOLLOW_MARCH==='undefined')var HOLLOW_MARCH={triggerLevel:10,wavesForTorch:5,finalStandWave:10,waveInterval:function(w){return w<=3?{min:5,max:7}:w<=6?{min:4,max:5}:{min:3,max:4};},crisisCount:function(w){return w<=2?2:w<=5?3:w<=8?4:5;},baseDC:function(w){return 14+w;},goldCost:function(w){return 80+w*60+Math.floor(w*w*8);},potionQty:function(w){return Math.ceil(w*0.6)+1;},ingrQty:function(w){return 3+Math.ceil(w*1.2);},energyCost:function(w){return Math.min(4,1+Math.floor(w/3));},staffQty:function(w){return 1+Math.floor(w/4);},crisisReward:function(w){return{xp:60+w*25,gold:25+w*15};},masteryThreshold:5,masteryReward:function(w){return{xp:40+w*15,gold:20+w*10,threatReduc:3+w};},failurePenalty:function(w){return{threatSpike:12+w*2,staffInjury:true,ingrLossCount:3+Math.floor(w/2),goldLoss:20+w*15,upgradeDisableDays:w>=6?3:0};},waveRewards:function(w){return{xp:150+w*60,gold:60+w*30,threatReduc:5+Math.floor(w/2),recipeUnlock:w%3===0};},marchRecipes:['march_fortify','march_veilseal','march_rallying_cry','march_ironwall'],finalStandCrises:6,finalStandDCBonus:4,finalStandRewards:{xp:3000,gold:800,title:'Defender of the Vale',threatCap:25},waveFlavor:['Scouts report movement.','The ground trembles.','Patrols have gone silent.','Shadows mass at the edge.','The sky darkens.','Bells toll.','The Veil tears open.','Every faction rallies.','The earth groans.','This is the crucible.','The final wave.']};
+if(typeof CRISIS_TEMPLATES==='undefined')var CRISIS_TEMPLATES=[];
 if(typeof MARCH_RECIPES==='undefined')var MARCH_RECIPES=[];
 if(typeof DEF!=='undefined'&&!DEF.hollowMarch)DEF.hollowMarch={active:false,wave:0,nextWaveDay:0,demands:[],history:[],finalStandAvailable:false,finalStandComplete:false,marchRecipesUnlocked:[]};
 if(typeof EVENT_VIBES!=='undefined'){
@@ -1575,52 +1576,68 @@ function CindervaleAlchemistInner(){
   };
 
   // ═══ HOLLOW MARCH ACTIONS ═══
-  const fulfillMarchDemand=(demandId)=>{
+  const fulfillMarchDemand=(crisisId,solutionId)=>{
     const hm=hollowMarch;if(!hm?.active)return;
-    const demand=hm.demands.find(d=>d.id===demandId);if(!demand||demand.met)return;
+    const crisis=hm.demands.find(d=>d.id===crisisId);if(!crisis||crisis.resolved)return;
+    const solution=crisis.solutions.find(s=>s.id===solutionId);if(!solution)return;
     snapshot();
-    // Check and consume resources based on type
-    if(demand.type==='potion'){
-      const have=Object.entries(pots).filter(([pid])=>getBaseRecipeId(pid)===demand.target).reduce((s,[,c])=>s+c,0);
-      if(have<demand.qty){addLog('Need '+demand.qty+'× '+(RECIPES.find(r=>r.id===demand.target)?.name||demand.target)+' (have '+have+').','error');return;}
-      consumePots(demand.target,demand.qty);
-    } else if(demand.type==='ingredient'){
-      if((inv[demand.target]||0)<demand.qty){addLog('Need '+demand.qty+'× '+(INGR[demand.target]?.name||demand.target)+' (have '+(inv[demand.target]||0)+').','error');return;}
-      modInv(demand.target,-demand.qty);
-    } else if(demand.type==='enchantment'){
-      // Enchantment demands: player must have performed N enchantments this wave (tracked via met flag — simplified: just require energy)
-      if(hours<demand.qty){addLog('Need '+demand.qty+' Energy to deploy enchantment teams (have '+hours+').','error');return;}
-      setHours(h=>h-demand.qty);
-    } else if(demand.type==='gold'){
-      if(gold<demand.qty){addLog('Need '+demand.qty+'g (have '+gold+'g).','error');return;}
-      setGold(g=>g-demand.qty);
-    } else if(demand.type==='staff'){
+    // Check and consume resources
+    const cost=solution.cost;
+    if(cost.type==='potion'){
+      const have=Object.entries(pots).filter(([pid])=>getBaseRecipeId(pid)===cost.target).reduce((s,[,c])=>s+c,0);
+      if(have<cost.qty){addLog('Need '+cost.qty+'× '+(cost.targetName||cost.target)+' (have '+have+').','error');return;}
+      consumePots(cost.target,cost.qty);
+    } else if(cost.type==='ingredients'){
+      if((inv[cost.target]||0)<cost.qty){addLog('Need '+cost.qty+'× '+(cost.targetName||cost.target)+' (have '+(inv[cost.target]||0)+').','error');return;}
+      modInv(cost.target,-cost.qty);
+    } else if(cost.type==='gold'){
+      if(gold<cost.qty){addLog('Need '+cost.qty+'g (have '+gold+'g).','error');return;}
+      setGold(g=>g-cost.qty);
+    } else if(cost.type==='staff'){
       const availStaff=hiredAppr.filter(ap=>!apprTasks[ap.id]||apprTasks[ap.id].type==='idle');
-      if(availStaff.length<demand.qty){addLog('Need '+demand.qty+' idle staff (have '+availStaff.length+'). Reassign staff first.','error');return;}
-      // Auto-assign first N idle staff to patrol the worst threat
+      if(availStaff.length<cost.qty){addLog('Need '+cost.qty+' idle staff (have '+availStaff.length+'). Set staff to 💤 Idle first.','error');return;}
       const worstThreat=THREAT_IDS.reduce((a,b)=>(threats[a]||0)>=(threats[b]||0)?a:b);
-      const toAssign=availStaff.slice(0,demand.qty);
-      const newTasks={...apprTasks};
-      toAssign.forEach(ap=>{newTasks[ap.id]={type:'patrol',target:worstThreat};});
-      setApprTasks(newTasks);
+      const toAssign=availStaff.slice(0,cost.qty);
+      const newTasks={...apprTasks};toAssign.forEach(ap=>{newTasks[ap.id]={type:'patrol',target:worstThreat};});setApprTasks(newTasks);
+    } else if(cost.type==='enchant'||cost.type==='combat'){
+      if(hours<cost.qty){addLog('Need '+cost.qty+' Energy (have '+hours+').','error');return;}
+      setHours(h=>h-cost.qty);
     }
-    // Mark demand as met
-    const updDemands=hm.demands.map(d=>d.id===demandId?{...d,met:true}:d);
+    // Skill check (if applicable — gold/staff are auto-success)
+    let success=true,mastery=false,rollResult=null;
+    if(solution.dc>0&&solution.skill){
+      const ch=pureCheck(solution.skill,solution.dc);
+      const craftB=getFeatureVal('craftBonus')+upEff('craftSkillBonus');
+      ch.total+=craftB;
+      success=ch.total>=solution.dc;
+      mastery=success&&(ch.total>=solution.dc+HOLLOW_MARCH.masteryThreshold);
+      rollResult={roll:ch.natural,total:ch.total,dc:solution.dc,skill:solution.skill};
+    }
+    // Apply result
+    const updDemands=hm.demands.map(d=>d.id===crisisId?{...d,resolved:true,chosenSolution:solutionId,result:{success,mastery,roll:rollResult}}:d);
     const updMarch={...hm,demands:updDemands};
     setHollowMarch(updMarch);
-    // Grant individual demand reward
-    if(demand.reward.xp)gainXP(demand.reward.xp);
-    if(demand.reward.gold)setGold(g=>g+demand.reward.gold);
-    if(demand.reward.threatReduc){THREAT_IDS.forEach(tid=>{setThreats(p=>({...p,[tid]:Math.max(0,(p[tid]||0)-Math.floor(demand.reward.threatReduc/3))}));});}
-    const rText=[];
-    if(demand.reward.xp)rText.push('+'+demand.reward.xp+' XP');
-    if(demand.reward.gold)rText.push('+'+demand.reward.gold+'g');
-    if(demand.reward.threatReduc)rText.push('-'+Math.floor(demand.reward.threatReduc/3)+' all threats');
-    addLog('💀✅ March demand fulfilled: '+demand.desc+' → '+rText.join(', '),'quest');
-    // Check if all demands met
-    if(updDemands.every(d=>d.met)){
-      addLog('🏆 ALL Wave '+hm.wave+' demands met! Cindervale holds!','quest');
+    if(success){
+      const rwd=solution.reward||{};
+      if(rwd.xp)gainXP(rwd.xp);
+      if(rwd.gold)setGold(g=>g+rwd.gold);
+      if(mastery){
+        const mRwd=HOLLOW_MARCH.masteryReward(hm.wave);
+        if(mRwd.xp)gainXP(mRwd.xp);if(mRwd.gold)setGold(g=>g+mRwd.gold);
+        if(mRwd.threatReduc)THREAT_IDS.forEach(tid=>{setThreats(p=>({...p,[tid]:Math.max(0,(p[tid]||0)-Math.floor(mRwd.threatReduc/3))}));});
+      }
+      const rText=[rwd.xp?'+'+rwd.xp+' XP':'',rwd.gold?'+'+rwd.gold+'g':''].filter(Boolean).join(', ');
+      const mText=mastery?' ★ MASTERY! '+[HOLLOW_MARCH.masteryReward(hm.wave).xp?'+'+HOLLOW_MARCH.masteryReward(hm.wave).xp+' XP':'',HOLLOW_MARCH.masteryReward(hm.wave).gold?'+'+HOLLOW_MARCH.masteryReward(hm.wave).gold+'g':''].filter(Boolean).join(', '):'';
+      addLog(`💀✅ ${crisis.icon} ${crisis.name}: ${solution.icon} ${solution.label} succeeded!${rollResult?' ('+rollResult.total+' vs DC'+rollResult.dc+')':''} ${rText}${mText}`,'quest');
+    } else {
+      // Failed skill check — crisis counts as attempted but failed
+      addLog(`💀❌ ${crisis.icon} ${crisis.name}: ${solution.icon} ${solution.label} FAILED! (${rollResult?.total||0} vs DC${rollResult?.dc||0}) Resources consumed but crisis unresolved.`,'error');
     }
+    // Check if all crises resolved successfully
+    const allResolved=updDemands.every(d=>d.resolved);
+    const allSuccess=updDemands.every(d=>d.resolved&&d.result?.success);
+    if(allResolved&&allSuccess)addLog('🏆 ALL Wave '+hm.wave+' crises resolved! The defenses hold!','quest');
+    else if(allResolved)addLog('⚠️ Wave '+hm.wave+' crises all attempted — '+updDemands.filter(d=>d.result?.success).length+'/'+updDemands.length+' succeeded.','quest');
   };
 
   const reinforceWards=()=>{
@@ -1649,40 +1666,62 @@ function CindervaleAlchemistInner(){
   const attemptFinalStand=()=>{
     if(!hollowMarch?.finalStandAvailable||hollowMarch?.finalStandComplete)return;
     snapshot();
-    // Final Stand: a dramatic multi-check challenge
-    const checks=['inscription','precision','attunement','endurance','persuasion','research'];
+    // Final Stand: rapid-fire crisis gauntlet — 6 crises, each with a skill check, no rest between
+    const wave=hollowMarch.wave;
+    const dc=HOLLOW_MARCH.baseDC(wave)+(HOLLOW_MARCH.finalStandDCBonus||4);
+    // Pick 6 unique templates
+    const templates=[...(typeof CRISIS_TEMPLATES!=='undefined'?CRISIS_TEMPLATES:[])];
+    const shuffled=templates.sort(()=>Math.random()-0.5).slice(0,HOLLOW_MARCH.finalStandCrises||6);
+    // For each crisis, pick the best non-gold solution and auto-resolve with a check
+    // This tests breadth — uses different skills each time
+    const usedSkills=new Set();
     let successes=0;const results=[];
-    checks.forEach(sk=>{
-      const mod=getSkMod(sk);
-      const roll=Math.floor(Math.random()*20)+1+mod;
-      const dc=14;
+    shuffled.forEach(tmpl=>{
+      // Pick a skill-based solution, preferring unused skills
+      const skillSols=tmpl.solutions.filter(s=>s.skill&&s.dc!==0);
+      let sol=skillSols.find(s=>!usedSkills.has(s.skill))||skillSols[0];
+      if(!sol)sol=tmpl.solutions[0]; // fallback
+      usedSkills.add(sol.skill);
+      const sk=sol.skill||'discipline';
+      const mod=getSkMod(sk)+getFeatureVal('craftBonus')+upEff('craftSkillBonus');
+      const natural=Math.floor(Math.random()*20)+1;
+      const roll=natural+mod;
       const pass=roll>=dc;
+      const mastery=pass&&roll>=dc+HOLLOW_MARCH.masteryThreshold;
       if(pass)successes++;
-      results.push({skill:SKILLS[sk]?.name||sk,roll,mod,dc,pass});
+      results.push({crisis:tmpl.name,icon:tmpl.icon,solution:sol.label,solIcon:sol.icon,skill:SKILLS[sk]?.name||sk,skillId:sk,natural,mod,roll,dc,pass,mastery});
+      // Failure consequence: immediate threat spike + staff injury
+      if(!pass){
+        THREAT_IDS.forEach(tid=>{setThreats(p=>({...p,[tid]:Math.min(100,(p[tid]||0)+8)}));});
+        if(hiredAppr.length>0){
+          const victim=hiredAppr[Math.floor(Math.random()*hiredAppr.length)];
+          const newInj={...(staffInjuries||{})};newInj[victim.id]=2;setStaffInjuries(newInj);
+        }
+      }
     });
-    const victory=successes>=4; // Need 4/6 checks
+    const needed=Math.ceil((HOLLOW_MARCH.finalStandCrises||6)*0.67); // Need ~67% (4/6)
+    const victory=successes>=needed;
     if(victory){
       const fs=HOLLOW_MARCH.finalStandRewards;
       setXp(x=>x+fs.xp);setGold(g=>g+fs.gold);
       setThreats(p=>{const n={...p};THREAT_IDS.forEach(tid=>{n[tid]=Math.min(fs.threatCap,n[tid]||0);});return n;});
       setHollowMarch(prev=>({...prev,finalStandComplete:true,demands:[]}));
-      addLog(`👑 THE FINAL STAND IS WON! ${charName} has broken the Hollow March forever! +${fs.xp} XP, +${fs.gold}g. All threats capped at ${fs.threatCap}.`,'quest');
+      const masteryCount=results.filter(r=>r.mastery).length;
+      addLog(`👑 THE FINAL STAND IS WON! ${charName} has broken the Hollow March! +${fs.xp} XP, +${fs.gold}g. Threats capped at ${fs.threatCap}.${masteryCount>0?' ★ '+masteryCount+' masterful victories!':''}`,'quest');
       setEventPopup({events:[{
-        text:`👑 The Hollow March is Broken!\n\n${charName} stands atop the ward-stones as the last of the invaders dissolve into mist. The Veil seals shut with a sound like a cathedral bell.\n\nCindervale is safe. Your legacy is assured.\n\nChecks: ${results.map(r=>(r.pass?'✅':'❌')+' '+r.skill+' ('+r.roll+' vs DC '+r.dc+')').join('\n')}\n\n${successes}/6 passed. Victory!\n\n+${fs.xp} XP, +${fs.gold}g\nAll threats permanently capped at ${fs.threatCap}\nTitle earned: "${fs.title}"`,
+        text:`👑 The Hollow March is Broken!\n\n${charName} stands atop the ward-stones as the last invaders dissolve into mist. The Veil seals with a sound like a cathedral bell.\n\n${results.map(r=>`${r.pass?'✅':'❌'} ${r.icon} ${r.crisis} — ${r.solIcon} ${r.solution}\n   ${r.skill}: ${r.natural}+${r.mod}=${r.roll} vs DC${r.dc}${r.mastery?' ★ MASTERY':''}`).join('\n')}\n\n${successes}/${results.length} crises overcome (needed ${needed}). Victory!\n\n+${fs.xp} XP, +${fs.gold}g\nAll threats capped at ${fs.threatCap}\nTitle: "${fs.title}"`,
         vibe:'hollow_final',result:{msg:'The March is over. You may still Pass the Torch when ready.'},flavor:null
       }],idx:0});
     } else {
-      // Failure — harsh but not permanent
-      THREAT_IDS.forEach(tid=>{setThreats(p=>({...p,[tid]:Math.min(100,(p[tid]||0)+15)}));});
-      addLog(`💀 The Final Stand FAILED (${successes}/6 checks). Threats spiked +15. You can try again after the next wave.`,'error');
-      setHollowMarch(prev=>({...prev,finalStandAvailable:false})); // Re-unlocks next wave
+      addLog(`💀 The Final Stand FAILED (${successes}/${results.length}, needed ${needed}). Threats spiked. Try again after the next wave.`,'error');
+      setHollowMarch(prev=>({...prev,finalStandAvailable:false}));
       setEventPopup({events:[{
-        text:`💀 The Final Stand Failed\n\nThe wards crack under the strain. You're forced to retreat.\n\nChecks: ${results.map(r=>(r.pass?'✅':'❌')+' '+r.skill+' ('+r.roll+' vs DC '+r.dc+')').join('\n')}\n\n${successes}/6 passed (need 4). All threats +15.\n\nThe Final Stand will be available again after the next wave.`,
+        text:`💀 The Final Stand Failed\n\nThe wards crack. You're forced to retreat.\n\n${results.map(r=>`${r.pass?'✅':'❌'} ${r.icon} ${r.crisis} — ${r.solIcon} ${r.solution}\n   ${r.skill}: ${r.natural}+${r.mod}=${r.roll} vs DC${r.dc}`).join('\n')}\n\n${successes}/${results.length} passed (needed ${needed}).\nEach failure spiked threats +8 and injured a staff member.\n\nThe Final Stand returns after the next wave.`,
         vibe:'hollow_march',result:{msg:'Regroup. Build your skills. Try again.'},flavor:null
       }],idx:0});
     }
   };
-  const marchWavesCleared=(hollowMarch?.history||[]).filter(h=>h.met===h.total).length+((hollowMarch?.demands||[]).every(d=>d.met)&&hollowMarch?.wave>0?1:0);
+  const marchWavesCleared=(hollowMarch?.history||[]).filter(h=>h.met===h.total).length+((hollowMarch?.demands||[]).every(d=>d.resolved&&d.result?.success)&&hollowMarch?.wave>0&&(hollowMarch?.demands||[]).length>0?1:0);
   const canPassTorch=getLvl(xp)>=9&&(marchWavesCleared>=(typeof HOLLOW_MARCH!=='undefined'?HOLLOW_MARCH.wavesForTorch:5)||hollowMarch?.finalStandComplete);
 
     // ═══ BRAND HELPERS (Brand Master) ═══
@@ -3802,35 +3841,39 @@ function CindervaleAlchemistInner(){
     }
     // Wave arrival
     if(updMarch.active&&curDay>=updMarch.nextWaveDay&&!updMarch.finalStandComplete){
-      // First: resolve any unmet demands from previous wave
+      // First: resolve any unresolved crises from previous wave (failures)
       const prevDemands=updMarch.demands||[];
-      const unmetDemands=prevDemands.filter(d=>!d.met);
-      if(unmetDemands.length>0&&updMarch.wave>0){
-        // Failure cascade: spike threats, injure staff, lose ingredients
-        const fp=HOLLOW_MARCH.failurePenalties;
-        unmetDemands.forEach(d=>{
+      const failedCrises=prevDemands.filter(d=>!d.resolved||!d.result?.success);
+      if(failedCrises.length>0&&updMarch.wave>0){
+        const fp=HOLLOW_MARCH.failurePenalty(updMarch.wave);
+        failedCrises.forEach(d=>{
           THREAT_IDS.forEach(tid=>{newThreats[tid]=Math.min(100,(newThreats[tid]||0)+fp.threatSpike);});
-          addLog(`💀 UNMET: ${d.desc} — all threats spiked +${fp.threatSpike}!`,'error');
-        });
-        // Staff injury chance
-        hiredAppr.forEach(ap=>{
-          if(Math.random()<fp.staffInjuryChance){
-            const newInj={...(staffInjuries||{})};newInj[ap.id]=2; // 2-day injury
-            setStaffInjuries(newInj);
-            addLog(`🤕 ${ap.icon} ${ap.name} was injured during the March! (2 days)`,'error');
+          addLog(`💀 CRISIS FAILED: ${d.icon} ${d.name} — all threats +${fp.threatSpike}!`,'error');
+          // Guaranteed staff injury per failed crisis
+          if(fp.staffInjury&&hiredAppr.length>0){
+            const uninjured=hiredAppr.filter(ap=>!(staffInjuries||{})[ap.id]);
+            const victim=uninjured.length>0?uninjured[Math.floor(Math.random()*uninjured.length)]:hiredAppr[Math.floor(Math.random()*hiredAppr.length)];
+            if(victim){const newInj={...(staffInjuries||{})};newInj[victim.id]=3;setStaffInjuries(newInj);addLog(`🤕 ${victim.icon} ${victim.name} was injured! (3 days)`,'error');}
+          }
+          // Lose rare ingredients (weighted toward valuable ones)
+          const ingrSorted=Object.entries(inv).filter(([,q])=>q>0).sort((a,b)=>(INGR[b[0]]?.val||5)-(INGR[a[0]]?.val||5));
+          for(let li=0;li<fp.ingrLossCount&&ingrSorted.length>0;li++){
+            const [pick]=ingrSorted[Math.min(li,ingrSorted.length-1)];
+            const lostQty=Math.min(inv[pick]||0,2+Math.floor(Math.random()*3));
+            if(lostQty>0){modInv(pick,-lostQty);addLog(`💀 Lost ${lostQty}× ${INGR[pick]?.icon||''}${INGR[pick]?.name||pick}!`,'error');}
+          }
+          // Gold penalty
+          if(fp.goldLoss>0&&gold>0){const loss=Math.min(gold,fp.goldLoss);setGold(g=>g-loss);addLog(`💀 Looters took ${loss}g during the chaos!`,'error');}
+          // Upgrade disable at high waves
+          if(fp.upgradeDisableDays>0&&upgrades.length>0){
+            const activeUps=upgrades.filter(u=>!disabledUpgrades.includes(u));
+            if(activeUps.length>0){const pick=activeUps[Math.floor(Math.random()*activeUps.length)];setDisabledUpgrades(p=>[...p,pick]);addLog(`💀 ${UPGRADES[pick]?.icon||''} ${UPGRADES[pick]?.name||pick} damaged! Disabled for ${fp.upgradeDisableDays} days.`,'error');}
           }
         });
-        // Ingredient loss
-        const ingrKeys=Object.entries(inv).filter(([,q])=>q>0).map(([id])=>id);
-        for(let i=0;i<fp.ingrLossCount&&ingrKeys.length>0;i++){
-          const pick=ingrKeys[Math.floor(Math.random()*ingrKeys.length)];
-          const lostQty=Math.min(inv[pick]||0,Math.floor(Math.random()*3)+1);
-          if(lostQty>0){modInv(pick,-lostQty);addLog(`💀 Lost ${lostQty}× ${INGR[pick]?.icon||''}${INGR[pick]?.name||pick} to the March!`,'error');}
-        }
-        report.push({n:'💀 March Failure',i:'💀',r:unmetDemands.length+' demand'+(unmetDemands.length>1?'s':'')+' unmet! Threats spiked, losses sustained.',t:'bad'});
+        report.push({n:'💀 March Failure',i:'💀',r:failedCrises.length+' crisis'+(failedCrises.length>1?'es':'')+' failed! Severe losses sustained.',t:'bad'});
       }
-      // Record completed demands in history
-      const metCount=prevDemands.filter(d=>d.met).length;
+      // Record resolved crises in history
+      const metCount=prevDemands.filter(d=>d.resolved&&d.result?.success).length;
       if(updMarch.wave>0){
         updMarch.history.push({wave:updMarch.wave,met:metCount,total:prevDemands.length,day:curDay});
       }
@@ -3844,44 +3887,56 @@ function CindervaleAlchemistInner(){
           vibe:'hollow_final',result:{msg:'Visit the Threats tab to attempt the Final Stand. This is optional — you can continue clearing waves or Pass the Torch.'},flavor:null});
         addLog('👑 THE FINAL STAND IS NOW AVAILABLE. Visit Threats tab to attempt it.','quest');
       }
-      // Generate new demands (2-3 per wave, scaling with wave number)
-      const demandCount=2+Math.floor(Math.random()*(wave>=8?2:1)); // 2-3, higher waves get 3-4
-      const demandTypes=Object.keys(HOLLOW_MARCH.demandPools);
+      // Generate crises from templates (multiple solution paths per crisis)
+      const crisisCount=HOLLOW_MARCH.crisisCount(wave);
+      const templates=[...(typeof CRISIS_TEMPLATES!=='undefined'?CRISIS_TEMPLATES:[])];
       const newDemands=[];
-      const usedTypes=new Set();
-      for(let i=0;i<demandCount;i++){
-        let dtype;
-        do{dtype=demandTypes[Math.floor(Math.random()*demandTypes.length)];}while(usedTypes.has(dtype)&&usedTypes.size<demandTypes.length);
-        usedTypes.add(dtype);
-        const pool=HOLLOW_MARCH.demandPools[dtype];
-        const {qty,reward}=pool.scaling(wave);
-        let target=null,targetName='',targetIcon='';
-        if(dtype==='potion'){
-          const potRecipes=RECIPES.filter(r=>known.includes(r.id)&&!r.fieldOnly&&canCraftAtLocation(r.ingr));
-          if(potRecipes.length>0){const r=potRecipes[Math.floor(Math.random()*potRecipes.length)];target=r.id;targetName=r.name;targetIcon=r.icon;}
-          else{target='healing_salve';targetName='Healing Salve';targetIcon='💚';}
-        } else if(dtype==='ingredient'){
-          const regIngr=[];locRegions.forEach(r=>r.ingr.forEach(id=>{if(INGR[id])regIngr.push(id);}));
-          if(regIngr.length>0){const id=regIngr[Math.floor(Math.random()*regIngr.length)];target=id;targetName=INGR[id]?.name||id;targetIcon=INGR[id]?.icon||'🌿';}
-          else{target='ashbloom';targetName='Ashbloom';targetIcon='🌺';}
-        } else if(dtype==='enchantment'){
-          const knownE=knownEnch||[];
-          if(knownE.length>0){const eid=knownE[Math.floor(Math.random()*knownE.length)];const e=ENCHANTMENTS.find(x=>x.id===eid);target=eid;targetName=e?.name||eid;targetIcon=e?.icon||'✨';}
-          else{target='e_sharp';targetName='Sharpening';targetIcon='⚔️';}
-        }
-        const desc=dtype==='gold'?`${pool.icon} Fund defenses: ${qty}g`
-          :dtype==='staff'?`${pool.icon} Deploy ${qty} staff to patrol`
-          :`${pool.icon} ${pool.label} ${qty}× ${targetIcon}${targetName}`;
-        newDemands.push({id:'hm_'+curDay+'_'+i,type:dtype,target,qty,reward,desc,met:false});
+      const usedTemplates=new Set();
+      for(let i=0;i<crisisCount&&templates.length>0;i++){
+        let tIdx;
+        do{tIdx=Math.floor(Math.random()*templates.length);}while(usedTemplates.has(templates[tIdx].id)&&usedTemplates.size<templates.length);
+        const tmpl=templates[tIdx];usedTemplates.add(tmpl.id);
+        const dc=HOLLOW_MARCH.baseDC(wave);
+        const reward=HOLLOW_MARCH.crisisReward(wave);
+        // Build solutions with concrete costs
+        const solutions=tmpl.solutions.map(sol=>{
+          const s={...sol,dc,reward:{...reward}};
+          if(sol.costType==='potion'){
+            const potRecipes=RECIPES.filter(r=>known.includes(r.id)&&!r.fieldOnly&&canCraftAtLocation(r.ingr)&&!(r.buff&&ELIXIR_BUFFS[r.buff]));
+            // Prefer harder recipes at higher waves
+            const sorted=[...potRecipes].sort((a,b)=>b.dc-a.dc);
+            const pickPool=wave>=6?sorted.slice(0,Math.max(3,Math.floor(sorted.length/3))):sorted.slice(0,Math.max(5,Math.floor(sorted.length/2)));
+            const r=pickPool.length>0?pickPool[Math.floor(Math.random()*pickPool.length)]:potRecipes[0]||{id:'healing_salve',name:'Healing Salve',icon:'💚'};
+            s.cost={type:'potion',target:r.id,qty:HOLLOW_MARCH.potionQty(wave),targetName:r.name,targetIcon:r.icon};
+          } else if(sol.costType==='enchant'){
+            s.cost={type:'enchant',qty:HOLLOW_MARCH.energyCost(wave)};
+          } else if(sol.costType==='combat'){
+            s.cost={type:'combat',qty:HOLLOW_MARCH.energyCost(wave)};
+          } else if(sol.costType==='gold'){
+            s.dc=0; // auto-success
+            s.cost={type:'gold',qty:HOLLOW_MARCH.goldCost(wave)};
+          } else if(sol.costType==='ingredients'){
+            // Pick rare ingredients from local regions (prefer faction resources, hidden)
+            const regIngr=[];locRegions.forEach(r=>r.ingr.forEach(id=>{if(INGR[id]&&INGR[id].val>=15)regIngr.push(id);}));
+            const pick=regIngr.length>0?regIngr[Math.floor(Math.random()*regIngr.length)]:'ashbloom';
+            s.cost={type:'ingredients',target:pick,qty:HOLLOW_MARCH.ingrQty(wave),targetName:INGR[pick]?.name||pick,targetIcon:INGR[pick]?.icon||'🌿'};
+          } else if(sol.costType==='staff'){
+            s.dc=0; // auto-success
+            s.cost={type:'staff',qty:HOLLOW_MARCH.staffQty(wave)};
+          }
+          return s;
+        });
+        newDemands.push({id:'hm_'+curDay+'_'+i,templateId:tmpl.id,name:tmpl.name,icon:tmpl.icon,narrative:tmpl.narrative,solutions,resolved:false,chosenSolution:null,result:null});
       }
       updMarch.demands=newDemands;
-      updMarch.nextWaveDay=curDay+HOLLOW_MARCH.waveIntervalMin+Math.floor(Math.random()*(HOLLOW_MARCH.waveIntervalMax-HOLLOW_MARCH.waveIntervalMin+1));
-      // Wave reward for clearing previous wave (if all demands met)
-      if(updMarch.wave>1&&metCount===prevDemands.length&&prevDemands.length>0){
+      const wInt=HOLLOW_MARCH.waveInterval(wave);
+      updMarch.nextWaveDay=curDay+wInt.min+Math.floor(Math.random()*(wInt.max-wInt.min+1));
+      // Wave reward for clearing previous wave (count resolved crises)
+      const resolvedCount=prevDemands.filter(d=>d.resolved&&d.result?.success).length;
+      if(updMarch.wave>1&&resolvedCount===prevDemands.length&&prevDemands.length>0){
         const wr=HOLLOW_MARCH.waveRewards(wave-1);
         setXp(x=>x+wr.xp);setGold(g=>g+wr.gold);
         THREAT_IDS.forEach(tid=>{newThreats[tid]=Math.max(0,(newThreats[tid]||0)-wr.threatReduc);});
-        // Recipe unlock every 3rd wave
         if(wr.recipeUnlock){
           const nextRecipe=MARCH_RECIPES.find(r=>!updMarch.marchRecipesUnlocked.includes(r.id));
           if(nextRecipe){
@@ -3891,26 +3946,27 @@ function CindervaleAlchemistInner(){
             report.push({n:'Recipe Unlocked',i:nextRecipe.icon,r:nextRecipe.name+' — '+nextRecipe.desc,t:'ok'});
           }
         }
-        marchAlerts.push({text:`🏆 Wave ${wave-1} Victory!\n\nAll demands met. Cindervale's defenses hold!\n\n+${wr.xp} XP, +${wr.gold}g, -${wr.threatReduc} all threats${wr.recipeUnlock?' + NEW RECIPE':''}`,
+        marchAlerts.push({text:`🏆 Wave ${wave-1} Victory!\n\nAll crises resolved. The defenses hold!\n\n+${wr.xp} XP, +${wr.gold}g, -${wr.threatReduc} all threats${wr.recipeUnlock?' + NEW RECIPE':''}`,
           vibe:'hollow_victory',result:{msg:'Wave '+(wave)+' arrives on Day '+updMarch.nextWaveDay+'. Prepare!'},flavor:null});
         addLog(`🏆 Wave ${wave-1} CLEARED! +${wr.xp} XP, +${wr.gold}g`,'quest');
       } else if(updMarch.wave>1&&prevDemands.length>0){
-        marchAlerts.push({text:`💀 Wave ${wave-1} — Partial Failure\n\nOnly ${metCount}/${prevDemands.length} demands met. The March punishes weakness.`,
-          vibe:'hollow_march',result:{msg:'Unmet demands spike threats and cause losses. Wave '+(wave)+' arrives Day '+updMarch.nextWaveDay+'.'},flavor:null});
+        const failCount=prevDemands.filter(d=>!d.resolved||!d.result?.success).length;
+        marchAlerts.push({text:`💀 Wave ${wave-1} — ${failCount} Crisis Failure${failCount>1?'s':''}\n\n${resolvedCount}/${prevDemands.length} crises resolved. The March punishes weakness.`,
+          vibe:'hollow_march',result:{msg:'Each failed crisis causes severe damage. Wave '+(wave)+' arrives Day '+updMarch.nextWaveDay+'.'},flavor:null});
       }
       // Wave announcement
       const flavorIdx=Math.min(wave-1,HOLLOW_MARCH.waveFlavor.length-1);
-      marchAlerts.push({text:`💀 Wave ${wave} of the Hollow March\n\n${HOLLOW_MARCH.waveFlavor[flavorIdx]}\n\n${newDemands.length} demands must be met before Day ${updMarch.nextWaveDay}.`,
-        vibe:'hollow_march',result:{msg:'Visit the Threats tab to view and fulfill March demands.'},flavor:null});
-      addLog(`💀 HOLLOW MARCH Wave ${wave}: ${newDemands.length} demands. Deadline: Day ${updMarch.nextWaveDay}.`,'error');
-      report.push({n:'💀 Wave '+wave,i:'💀',r:newDemands.length+' demands due by Day '+updMarch.nextWaveDay,t:'bad'});
+      marchAlerts.push({text:`💀 Wave ${wave} of the Hollow March\n\n${HOLLOW_MARCH.waveFlavor[flavorIdx]}\n\n${newDemands.length} crises demand your attention before Day ${updMarch.nextWaveDay}. Choose your approach wisely.`,
+        vibe:'hollow_march',result:{msg:'Visit the Threats tab to view crises and choose solutions.'},flavor:null});
+      addLog(`💀 HOLLOW MARCH Wave ${wave}: ${newDemands.length} crises. Deadline: Day ${updMarch.nextWaveDay}.`,'error');
+      report.push({n:'💀 Wave '+wave,i:'💀',r:newDemands.length+' crises due by Day '+updMarch.nextWaveDay,t:'bad'});
     }
     // Active march: show countdown in report
     if(updMarch.active&&!updMarch.finalStandComplete&&updMarch.demands.length>0){
       const daysLeft=updMarch.nextWaveDay-curDay;
-      const metCount=updMarch.demands.filter(d=>d.met).length;
+      const resolvedOK=updMarch.demands.filter(d=>d.resolved&&d.result?.success).length;
       if(daysLeft>0){
-        report.push({n:'💀 March Status',i:'💀',r:`Wave ${updMarch.wave}: ${metCount}/${updMarch.demands.length} demands met. ${daysLeft} day${daysLeft>1?'s':''} until next wave.`,t:metCount>=updMarch.demands.length?'ok':'warn'});
+        report.push({n:'💀 March Status',i:'💀',r:`Wave ${updMarch.wave}: ${resolvedOK}/${updMarch.demands.length} crises resolved. ${daysLeft} day${daysLeft>1?'s':''} remaining.`,t:resolvedOK>=updMarch.demands.length?'ok':'warn'});
       }
     }
     setHollowMarch(updMarch);
@@ -9049,40 +9105,78 @@ function CindervaleAlchemistInner(){
             </div>
           </div>}
 
-          {/* Current demands */}
+          {/* Current crises */}
           {hollowMarch.demands.length>0&&!hollowMarch.finalStandComplete&&<>
-            <div style={{fontSize:15,fontWeight:'bold',color:TH.gold,marginBottom:6}}>📋 Wave {hollowMarch.wave} Demands</div>
-            {hollowMarch.demands.map(d=>{
-              let have=0;
-              if(d.type==='potion')have=Object.entries(pots).filter(([pid])=>getBaseRecipeId(pid)===d.target).reduce((s,[,c])=>s+c,0);
-              else if(d.type==='ingredient')have=inv[d.target]||0;
-              else if(d.type==='gold')have=gold;
-              else if(d.type==='staff')have=hiredAppr.filter(ap=>!apprTasks[ap.id]||apprTasks[ap.id].type==='idle').length;
-              else if(d.type==='enchantment')have=hours;
-              const canFill=!d.met&&have>=d.qty;
-              return <div key={d.id} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'8px 10px',marginBottom:4,
-                background:d.met?TH.green+'12':canFill?TH.gold+'10':TH.panel,borderRadius:6,
-                border:'1px solid '+(d.met?TH.green+'44':canFill?TH.gold+'33':'#a040c033')}}>
-                <div style={{flex:1}}>
-                  <div style={{fontSize:14,color:d.met?TH.green:TH.textBright}}>
-                    {d.met?'✅ ':''}{d.desc}
-                  </div>
-                  <div style={{fontSize:12,color:TH.textDim}}>
-                    {d.met?'Fulfilled!'
-                      :d.type==='staff'?`${have}/${d.qty} idle staff available`+(have<d.qty?' — reassign busy staff on the Staff screen to make them idle':'')
-                      :d.type==='enchantment'?`${have}/${d.qty} Energy available (costs Energy to deploy enchantment teams)`
-                      :`${have}/${d.qty} ready`}
-                    {!d.met&&d.reward&&<span> · Reward: {d.reward.xp?'+'+d.reward.xp+' XP ':''}{d.reward.gold?'+'+d.reward.gold+'g ':''}{d.reward.threatReduc?'-'+Math.floor(d.reward.threatReduc/3)+' threats':''}</span>}
+            <div style={{fontSize:15,fontWeight:'bold',color:TH.gold,marginBottom:6}}>⚔️ Wave {hollowMarch.wave} Crises — Choose Your Approach</div>
+            {hollowMarch.demands.map(crisis=>{
+              const resolved=crisis.resolved;
+              const succeeded=resolved&&crisis.result?.success;
+              const failed=resolved&&!crisis.result?.success;
+              const mastery=succeeded&&crisis.result?.mastery;
+              return <div key={crisis.id} style={{padding:'12px 14px',marginBottom:10,background:succeeded?TH.green+'08':failed?TH.red+'08':TH.panel,
+                borderRadius:8,border:'2px solid '+(succeeded?TH.green+'66':failed?TH.red+'66':'#a040c044')}}>
+                {/* Crisis header */}
+                <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:6}}>
+                  <span style={{fontSize:28}}>{crisis.icon}</span>
+                  <div style={{flex:1}}>
+                    <div style={{fontSize:16,fontWeight:'bold',color:succeeded?TH.green:failed?TH.red:'#c060e0'}}>{crisis.name}
+                      {mastery&&<span style={{fontSize:12,color:TH.gold,marginLeft:6}}>★ MASTERY</span>}
+                      {succeeded&&!mastery&&<span style={{fontSize:12,color:TH.green,marginLeft:6}}>✅ Resolved</span>}
+                      {failed&&<span style={{fontSize:12,color:TH.red,marginLeft:6}}>❌ Failed</span>}
+                    </div>
+                    <div style={{fontSize:13,color:TH.textDim,fontStyle:'italic',lineHeight:1.3}}>{crisis.narrative}</div>
                   </div>
                 </div>
-                {!d.met&&<button style={{...S.btn(canFill?'gold':'dim'),fontSize:13,padding:'6px 12px',marginLeft:8}} disabled={!canFill}
-                  onClick={()=>fulfillMarchDemand(d.id)}>
-                  {canFill?(d.type==='staff'?'Deploy':'Fulfill'):'Need More'}
-                </button>}
+                {/* Resolved result */}
+                {resolved&&crisis.result?.roll&&<div style={{fontSize:13,padding:'4px 8px',background:TH.bg,borderRadius:4,marginBottom:6,color:succeeded?TH.green:TH.red}}>
+                  Roll: {crisis.result.roll.total} vs DC{crisis.result.roll.dc} ({crisis.result.roll.skill}) — {succeeded?'Success':'Failure'}{mastery?' ★ Mastery bonus!':''}
+                </div>}
+                {/* Solution options (only if not resolved) */}
+                {!resolved&&<div style={{display:'flex',flexDirection:'column',gap:6}}>
+                  {crisis.solutions.map(sol=>{
+                    const cost=sol.cost;
+                    let have=0,canDo=false,costDesc='';
+                    if(cost.type==='potion'){
+                      have=Object.entries(pots).filter(([pid])=>getBaseRecipeId(pid)===cost.target).reduce((s,[,c])=>s+c,0);
+                      canDo=have>=cost.qty;costDesc=`${have}/${cost.qty} ${cost.targetIcon||'⚗️'}${cost.targetName||cost.target}`;
+                    } else if(cost.type==='ingredients'){
+                      have=inv[cost.target]||0;canDo=have>=cost.qty;
+                      costDesc=`${have}/${cost.qty} ${cost.targetIcon||'🌿'}${cost.targetName||cost.target}`;
+                    } else if(cost.type==='gold'){
+                      have=gold;canDo=have>=cost.qty;costDesc=`${cost.qty}g (have ${gold}g)`;
+                    } else if(cost.type==='staff'){
+                      have=hiredAppr.filter(ap=>!apprTasks[ap.id]||apprTasks[ap.id].type==='idle').length;
+                      canDo=have>=cost.qty;costDesc=`${have}/${cost.qty} idle staff`;
+                    } else if(cost.type==='enchant'||cost.type==='combat'){
+                      have=hours;canDo=have>=cost.qty;costDesc=`${cost.qty} Energy (have ${hours})`;
+                    }
+                    const successPct=sol.dc>0&&sol.skill?Math.min(95,Math.max(5,Math.floor((21-(sol.dc-(getSkMod(sol.skill)+getFeatureVal('craftBonus')+upEff('craftSkillBonus'))))/20*100))):100;
+                    return <div key={sol.id} style={{display:'flex',alignItems:'center',gap:8,padding:'8px 10px',background:canDo?sol.dc===0?TH.gold+'08':'#c060e008':TH.bg,
+                      borderRadius:6,border:'1px solid '+(canDo?sol.dc===0?TH.gold+'44':'#c060e033':TH.border+'44')}}>
+                      <span style={{fontSize:22}}>{sol.icon}</span>
+                      <div style={{flex:1}}>
+                        <div style={{fontSize:14,fontWeight:'bold',color:canDo?TH.textBright:TH.textDim}}>{sol.label}
+                          {sol.dc>0&&<span style={{fontSize:12,fontWeight:'normal',marginLeft:6,color:successPct>=60?TH.green:successPct>=35?TH.gold:TH.red}}>DC{sol.dc} · {successPct}%</span>}
+                          {sol.dc===0&&<span style={{fontSize:12,fontWeight:'normal',marginLeft:6,color:TH.green}}>Auto-success</span>}
+                        </div>
+                        <div style={{fontSize:12,color:TH.textDim}}>{sol.desc}</div>
+                        <div style={{fontSize:12,color:canDo?TH.gold:TH.red,marginTop:2}}>Cost: {costDesc}</div>
+                      </div>
+                      <button style={{...S.btn(canDo?'gold':'dim'),fontSize:13,padding:'6px 14px',minWidth:70}} disabled={!canDo}
+                        onClick={()=>fulfillMarchDemand(crisis.id,sol.id)}>
+                        {canDo?'Go':'Need More'}
+                      </button>
+                    </div>;
+                  })}
+                </div>}
+                {/* Chosen solution display when resolved */}
+                {resolved&&<div style={{fontSize:13,color:TH.textDim,marginTop:4}}>
+                  Solution: {crisis.solutions.find(s=>s.id===crisis.chosenSolution)?.icon} {crisis.solutions.find(s=>s.id===crisis.chosenSolution)?.label}
+                </div>}
               </div>;
             })}
-            <div style={{fontSize:12,color:TH.textDim,marginTop:6,fontStyle:'italic'}}>
-              Unmet demands at wave deadline will spike all threats, injure staff, and destroy ingredients.
+            <div style={{fontSize:12,color:TH.textDim,marginTop:6,fontStyle:'italic',padding:'6px 10px',background:'#c0202010',borderRadius:4,border:'1px solid #c0202033'}}>
+              ⚠️ Unresolved crises at wave deadline cause: threat spikes (+{12+hollowMarch.wave*2} per crisis), guaranteed staff injuries, rare ingredient loss, gold looting{hollowMarch.wave>=6?', and upgrade damage':''}. Failed skill checks also count as unresolved.
             </div>
           </>}
 
@@ -9102,8 +9196,9 @@ function CindervaleAlchemistInner(){
           {hollowMarch.finalStandAvailable&&!hollowMarch.finalStandComplete&&<div style={{marginTop:10,padding:'12px 14px',background:'linear-gradient(135deg,#2a1a0a,#1a0a2a)',borderRadius:8,border:'2px solid #ffd70066',boxShadow:'0 0 20px #ffd70020'}}>
             <div style={{fontSize:18,fontWeight:'bold',color:'#ffd700',marginBottom:4}}>👑 The Final Stand</div>
             <div style={{fontSize:13,color:TH.text,marginBottom:8,lineHeight:1.5}}>
-              Attempt to break the Hollow March forever. This is a 6-skill challenge (Inscription, Precision, Attunement, Endurance, Persuasion, Research) — you need 4/6 successes vs DC 14.
-              Failure spikes all threats by +15 but you can try again after the next wave.
+              A gauntlet of {HOLLOW_MARCH.finalStandCrises||6} crises in rapid succession. Each tests a different skill against DC {HOLLOW_MARCH.baseDC(hollowMarch.wave)+(HOLLOW_MARCH.finalStandDCBonus||4)}.
+              Need {Math.ceil((HOLLOW_MARCH.finalStandCrises||6)*0.67)}/{HOLLOW_MARCH.finalStandCrises||6} successes. Failed crises spike threats and injure staff immediately.
+              Failure locks the Final Stand until after the next wave.
             </div>
             <button style={{...S.btn('gold'),fontSize:16,padding:'8px 20px',width:'100%',background:'linear-gradient(90deg,#8a6a00,#d4a420)',boxShadow:'0 0 10px #d4a42040'}}
               onClick={attemptFinalStand}>👑 Attempt the Final Stand</button>

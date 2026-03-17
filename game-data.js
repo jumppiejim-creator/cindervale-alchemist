@@ -2572,47 +2572,123 @@ var EVENT_VIBES={
 
 // ═══ THE HOLLOW MARCH — Endgame Invasion Event ═══
 var HOLLOW_MARCH={
-  triggerLevel:10, // displayLevel 11 (internal 10)
-  wavesForTorch:5, // must clear 5 waves before Pass the Torch
-  finalStandWave:10, // unlocks after wave 10
-  waveIntervalMin:5,waveIntervalMax:7,
-  // Demand types: potions, ingredients, enchantments, gold, staff assignment
-  demandPools:{
-    potion:{label:'Supply',icon:'⚗️',scaling:(wave)=>({qty:Math.ceil(wave*0.8)+1,reward:{xp:40+wave*15,gold:20+wave*8}})},
-    ingredient:{label:'Gather',icon:'🌿',scaling:(wave)=>({qty:Math.ceil(wave*1.5)+3,reward:{xp:25+wave*10,gold:15+wave*5}})},
-    enchantment:{label:'Enchant',icon:'✨',scaling:(wave)=>({qty:Math.ceil(wave*0.5)+1,reward:{xp:50+wave*20,gold:25+wave*10}})},
-    gold:{label:'Fund',icon:'💰',scaling:(wave)=>({qty:30+wave*15,reward:{xp:30+wave*12,threatReduc:8+wave*2}})},
-    staff:{label:'Deploy',icon:'👥',scaling:(wave)=>({qty:1+Math.floor(wave/3),reward:{xp:35+wave*10,threatReduc:10+wave*3}})},
-  },
-  // Wave flavor text
+  triggerLevel:10,wavesForTorch:5,finalStandWave:10,
+  // Wave intervals compress as waves progress
+  waveInterval:function(w){return w<=3?{min:5,max:7}:w<=6?{min:4,max:5}:{min:3,max:4};},
+  // Crisis count per wave (escalates)
+  crisisCount:function(w){return w<=2?2:w<=5?3:w<=8?4:5;},
+  // Base DC for skill checks: 14 + wave (so wave 1=15, wave 10=24)
+  baseDC:function(w){return 14+w;},
+  // Gold cost for mercenary/bribe solutions (escalates steeply)
+  goldCost:function(w){return 80+w*60+Math.floor(w*w*8);},
+  // Potion quantity for brewing solutions
+  potionQty:function(w){return Math.ceil(w*0.6)+1;},
+  // Ingredient quantity for gathering solutions
+  ingrQty:function(w){return 3+Math.ceil(w*1.2);},
+  // Energy cost for direct-action solutions
+  energyCost:function(w){return Math.min(4,1+Math.floor(w/3));},
+  // Staff deployment count
+  staffQty:function(w){return 1+Math.floor(w/4);},
+  // Reward per crisis solved
+  crisisReward:function(w){return{xp:60+w*25,gold:25+w*15};},
+  // Masterwork bonus: beat DC by 5+ 
+  masteryThreshold:5,
+  masteryReward:function(w){return{xp:40+w*15,gold:20+w*10,threatReduc:3+w};},
+  // Failure consequences per UNMET crisis (much harsher)
+  failurePenalty:function(w){return{threatSpike:12+w*2,staffInjury:true,ingrLossCount:3+Math.floor(w/2),goldLoss:20+w*15,upgradeDisableDays:w>=6?3:0};},
+  // Wave victory rewards
+  waveRewards:function(w){return{xp:150+w*60,gold:60+w*30,threatReduc:5+Math.floor(w/2),recipeUnlock:w%3===0};},
+  marchRecipes:['march_fortify','march_veilseal','march_rallying_cry','march_ironwall'],
+  finalStandCrises:6, // 6 crises in rapid succession
+  finalStandDCBonus:4, // +4 DC on top of wave DC
+  finalStandRewards:{xp:3000,gold:800,title:'Defender of the Vale',threatCap:25},
   waveFlavor:[
     'Scouts report movement beyond the Veil. Something is coming.',
     'The ground trembles with distant footsteps. The March begins.',
-    'Ashwarden patrols have gone silent on the eastern road.',
-    'Villagers whisper of shadows massing at the forest edge.',
+    'Patrols have gone silent on the eastern road.',
+    'Villagers whisper of shadows massing at the edge of town.',
     'The sky darkens. The Hollow March draws nearer.',
-    'Bells toll across the valley. Cindervale braces for impact.',
+    'Bells toll across the valley. Brace for impact.',
     'The Veil tears open in shimmering gashes. They pour through.',
     'Every faction rallies. This wave will test everything you\'ve built.',
     'The earth itself groans under the weight of the advancing horde.',
     'This is the crucible. Everything you\'ve done leads to this moment.',
-    'The final wave crashes against Cindervale\'s defenses. Hold the line.',
+    'The final wave crashes against the defenses. Hold the line.',
   ],
-  // Failure consequences per unmet demand
-  failurePenalties:{threatSpike:8,staffInjuryChance:0.25,ingrLossCount:3},
-  // Victory rewards per wave (beyond individual demand rewards)
-  waveRewards:(wave)=>({
-    xp:100+wave*50,
-    gold:50+wave*25,
-    threatReduc:5, // -5 to all threats
-    // Every 3rd wave: unique recipe unlock
-    recipeUnlock:wave%3===0,
-  }),
-  // Unique recipes unlocked every 3rd wave
-  marchRecipes:['march_fortify','march_veilseal','march_rallying_cry','march_ironwall'],
-  // Final Stand rewards
-  finalStandRewards:{xp:2000,gold:500,title:'Defender of the Vale',threatCap:25},
 };
+// Crisis templates — each has multiple solution paths
+var CRISIS_TEMPLATES=[
+  {id:'breach',name:'Veil Breach',icon:'🌀',narrative:'A tear in the Veil rips open. Creatures pour through the gap.',
+    solutions:[
+      {id:'brew_repel',label:'Brew Repellents',icon:'⚗️',skill:'attunement',stat:'inu',costType:'potion',desc:'Brew potions to drive them back through the breach.'},
+      {id:'seal_breach',label:'Seal the Breach',icon:'✨',skill:'inscription',stat:'acu',costType:'enchant',desc:'Inscribe warding runes to close the tear.'},
+      {id:'hold_line',label:'Hold the Line',icon:'🛡️',skill:'discipline',stat:'dis',costType:'combat',desc:'Lead the defense. Endure the onslaught until the breach closes.'},
+      {id:'hire_mercs',label:'Hire Mercenaries',icon:'💰',skill:null,stat:null,costType:'gold',desc:'Gold solves everything. Pay sellswords to plug the gap.'},
+    ]},
+  {id:'plague',name:'Corruption Plague',icon:'🦠',narrative:'A wave of magical corruption sickens the town. People are collapsing.',
+    solutions:[
+      {id:'brew_cure',label:'Brew Cures',icon:'⚗️',skill:'attunement',stat:'inu',costType:'potion',desc:'Mass-produce curative potions for the afflicted.'},
+      {id:'purify_ward',label:'Purification Wards',icon:'✨',skill:'inscription',stat:'acu',costType:'enchant',desc:'Enchant purification wards to cleanse the corruption at its source.'},
+      {id:'forage_remedy',label:'Gather Rare Remedy',icon:'🌿',skill:'refinement',stat:'tec',costType:'ingredients',desc:'Expedition into the wilds for powerful curative ingredients.'},
+      {id:'fund_healers',label:'Fund Healers',icon:'💰',skill:null,stat:null,costType:'gold',desc:'Pay traveling healers to treat the sick.'},
+    ]},
+  {id:'siege',name:'Siege Assault',icon:'🏰',narrative:'The horde masses at the gates. The walls won\'t hold without support.',
+    solutions:[
+      {id:'fortify_walls',label:'Fortify Defenses',icon:'🔧',skill:'precision',stat:'tec',costType:'ingredients',desc:'Reinforce the walls with alchemical compounds.'},
+      {id:'enchant_armor',label:'Enchant Guard Armor',icon:'✨',skill:'inscription',stat:'acu',costType:'enchant',desc:'Ward the defenders\' equipment against the assault.'},
+      {id:'lead_sortie',label:'Lead a Sortie',icon:'⚔️',skill:'danger_sense',stat:'dis',costType:'combat',desc:'Break the siege with a daring counter-attack.'},
+      {id:'buy_weapons',label:'Buy War Supplies',icon:'💰',skill:null,stat:null,costType:'gold',desc:'Purchase weapons and supplies for the defenders.'},
+    ]},
+  {id:'supply',name:'Supply Crisis',icon:'📦',narrative:'Supply lines are cut. The village will starve without intervention.',
+    solutions:[
+      {id:'brew_rations',label:'Brew Sustenance',icon:'⚗️',skill:'improvisation',stat:'cre',costType:'potion',desc:'Alchemical nutrition — not tasty, but it keeps people alive.'},
+      {id:'forage_supply',label:'Emergency Foraging',icon:'🌿',skill:'refinement',stat:'tec',costType:'ingredients',desc:'Lead an expedition to gather enough to feed the village.'},
+      {id:'deploy_staff',label:'Deploy Staff',icon:'👥',skill:null,stat:null,costType:'staff',desc:'Send your workforce to secure and distribute remaining supplies.'},
+      {id:'buy_food',label:'Buy Provisions',icon:'💰',skill:null,stat:null,costType:'gold',desc:'Purchase food from the last merchants willing to travel here.'},
+    ]},
+  {id:'morale',name:'Morale Collapse',icon:'😰',narrative:'Fear spreads. Citizens pack to flee. Without hope, the defense crumbles.',
+    solutions:[
+      {id:'brew_courage',label:'Brew Courage Draughts',icon:'⚗️',skill:'attunement',stat:'inu',costType:'potion',desc:'Liquid courage. Not a metaphor — literal alchemical bravery.'},
+      {id:'rally_speech',label:'Rally the People',icon:'📣',skill:'persuasion',stat:'com',costType:'combat',desc:'Give the speech of your life. Inspire them to stand and fight.'},
+      {id:'deploy_patrol',label:'Visible Patrols',icon:'👥',skill:null,stat:null,costType:'staff',desc:'Deploy your staff as visible patrol presence to calm civilians.'},
+      {id:'pay_bounty',label:'Post Bounties',icon:'💰',skill:null,stat:null,costType:'gold',desc:'Offer gold bounties to anyone who fights. Money talks.'},
+    ]},
+  {id:'sabotage',name:'Sabotage!',icon:'💣',narrative:'Infiltrators have damaged the workshop and poisoned supply caches.',
+    solutions:[
+      {id:'repair_brew',label:'Purify & Rebrew',icon:'⚗️',skill:'analysis',stat:'acu',costType:'potion',desc:'Identify the contamination and rebrew critical supplies.'},
+      {id:'track_spies',label:'Track the Saboteurs',icon:'🔍',skill:'danger_sense',stat:'dis',costType:'combat',desc:'Hunt down the infiltrators before they do more damage.'},
+      {id:'ward_shop',label:'Ward the Workshop',icon:'✨',skill:'inscription',stat:'acu',costType:'enchant',desc:'Enchant protective wards on all critical infrastructure.'},
+      {id:'hire_guards',label:'Hire Guards',icon:'💰',skill:null,stat:null,costType:'gold',desc:'Post guards at every critical location.'},
+    ]},
+  {id:'ritual',name:'Dark Ritual',icon:'🕯️',narrative:'The enemy is conducting a ritual to permanently tear the Veil. It must be disrupted.',
+    solutions:[
+      {id:'counter_brew',label:'Counter-Agent',icon:'⚗️',skill:'research',stat:'acu',costType:'potion',desc:'Brew a reagent that disrupts the ritual\'s magical resonance.'},
+      {id:'counter_rune',label:'Counter-Inscription',icon:'✨',skill:'inscription',stat:'acu',costType:'enchant',desc:'Inscribe counter-runes to destabilize their circle.'},
+      {id:'raid_ritual',label:'Raid the Site',icon:'⚔️',skill:'danger_sense',stat:'dis',costType:'combat',desc:'Lead a strike team to physically disrupt the ritual.'},
+      {id:'bribe_info',label:'Buy Intelligence',icon:'💰',skill:null,stat:null,costType:'gold',desc:'Bribe informants for the ritual\'s weakness, then exploit it.'},
+    ]},
+  {id:'refugees',name:'Refugee Wave',icon:'🏃',narrative:'Hundreds of refugees flood in from outlying settlements. They need everything.',
+    solutions:[
+      {id:'mass_brew',label:'Mass Brew Supplies',icon:'⚗️',skill:'improvisation',stat:'cre',costType:'potion',desc:'Round-the-clock brewing to produce medicine and supplies.'},
+      {id:'gather_bulk',label:'Bulk Foraging',icon:'🌿',skill:'refinement',stat:'tec',costType:'ingredients',desc:'Strip the surrounding regions for every usable resource.'},
+      {id:'organize_camp',label:'Organize Camp',icon:'👥',skill:null,stat:null,costType:'staff',desc:'Deploy your entire staff to manage the refugee camp.'},
+      {id:'fund_relief',label:'Fund Relief',icon:'💰',skill:null,stat:null,costType:'gold',desc:'Open your coffers. Every coin goes to food, shelter, medicine.'},
+    ]},
+  {id:'elite',name:'Elite Vanguard',icon:'👹',narrative:'The horde\'s most dangerous creatures lead the next assault. Normal defenses are useless.',
+    solutions:[
+      {id:'brew_bane',label:'Brew Monster Bane',icon:'⚗️',skill:'attunement',stat:'inu',costType:'potion',desc:'Only the most potent poisons can bring these creatures down.'},
+      {id:'enchant_weapons',label:'Enchant Weapons',icon:'✨',skill:'inscription',stat:'acu',costType:'enchant',desc:'The guards\' blades need magical edges to pierce these hides.'},
+      {id:'lure_trap',label:'Lure & Trap',icon:'🪤',skill:'danger_sense',stat:'dis',costType:'combat',desc:'Set up an ambush using the terrain. Dangerous but effective.'},
+      {id:'bounty_hunters',label:'Bounty Hunters',icon:'💰',skill:null,stat:null,costType:'gold',desc:'These creatures have a price on their heads. Pay specialists.'},
+    ]},
+  {id:'collapse',name:'Infrastructure Collapse',icon:'🏚️',narrative:'Critical buildings are failing. The workshop, the walls, the wells — all at once.',
+    solutions:[
+      {id:'alch_repair',label:'Alchemical Repair',icon:'⚗️',skill:'precision',stat:'tec',costType:'potion',desc:'Brew structural compounds to reinforce failing materials.'},
+      {id:'enchant_struct',label:'Enchant Foundations',icon:'✨',skill:'inscription',stat:'acu',costType:'enchant',desc:'Magical reinforcement of the most critical structures.'},
+      {id:'raw_mats',label:'Supply Raw Materials',icon:'🌿',skill:'refinement',stat:'tec',costType:'ingredients',desc:'Provide the raw materials the builders desperately need.'},
+      {id:'hire_builders',label:'Hire Builders',icon:'💰',skill:null,stat:null,costType:'gold',desc:'Pay double rates for emergency construction crews.'},
+    ]},
+];
 // March-exclusive recipes (added to RECIPES pool when unlocked)
 var MARCH_RECIPES=[
   {id:'march_fortify',name:'Fortification Draught',icon:'🏰',ingr:['ironroot_bark','hearthstone','volcanic_essence'],xp:120,unlock:10,dc:16,stat:'tec',
