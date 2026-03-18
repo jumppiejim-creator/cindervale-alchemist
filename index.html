@@ -231,6 +231,8 @@ function CindervaleAlchemistInner(){
   const [lineage,setLineage]=useState(null); // Lineage data persisted across runs
   const [showTorch,setShowTorch]=useState(false);
   const [showLocationSelect,setShowLocationSelect]=useState(false);
+  const [newGameLegacy,setNewGameLegacy]=useState(null);
+  const [newGameStep,setNewGameStep]=useState(0);
   const [torchApprentice,setTorchApprentice]=useState(null);
   const [torchStep,setTorchStep]=useState(0); // 0=closed, 1=apprentice, 2=heirloom, 3=legacy, 4=location
   const [torchHeirloom,setTorchHeirloom]=useState(null);
@@ -4802,34 +4804,135 @@ function CindervaleAlchemistInner(){
           {/* Location Selection Modal (new game only, not torch) */}
           {showLocationSelect&&(()=>{
             const lastGen=lineage?.generations?.[lineage.generations.length-1];
-            const lastLegacy=lastGen?.legacyFeature||null;
+            // Regenerate legacy options from last generation's build data
+            const legacyOptions=[];
+            if(lastGen){
+              // Spec features from last gen
+              Object.entries(lastGen.classLevels||{}).forEach(([cid,clsLv])=>{
+                const cls=CLASSES[cid];if(!cls)return;
+                // Find which spec this gen had for this class
+                // gen.spec only stores one, but classLevels has all — check each class's specs
+                Object.entries(cls.specs||{}).forEach(([specId,spec])=>{
+                  // We only know the gen's spec from gen.spec (first one), so approximate
+                  const eligible=spec.features.filter(f=>f.classLv<=clsLv&&f.effects);
+                  if(eligible.length===0)return;
+                  const best=eligible.reduce((a,b)=>b.classLv>a.classLv?b:a);
+                  const mergedEffects={};
+                  const featureChain=eligible.sort((a,b)=>a.classLv-b.classLv);
+                  featureChain.forEach(f=>{Object.entries(f.effects).forEach(([k,v])=>{
+                    if(typeof v==='boolean')mergedEffects[k]=true;
+                    else mergedEffects[k]=(mergedEffects[k]||0)+v;
+                  });});
+                  legacyOptions.push({
+                    type:'spec',name:spec.name+' Legacy',desc:best.name+' (Lv'+best.classLv+') and all prerequisite features.',
+                    icon:spec.icon,color:spec.color||cls.color,
+                    source:cls.icon+' '+cls.name+' — '+spec.icon+' '+spec.name+' Lv'+best.classLv,
+                    effects:mergedEffects,
+                    featureChain:featureChain.map(f=>({name:f.name,lv:f.classLv})),
+                  });
+                });
+              });
+              // Prestige features from last gen
+              Object.entries(lastGen.prestigeLevels||{}).forEach(([pcId,pcLv])=>{
+                if(pcLv<1)return;
+                const pc=PRESTIGE_CLASSES?.[pcId];if(!pc)return;
+                const eligible=pc.features.filter(f=>f.lv<=pcLv);
+                if(eligible.length===0)return;
+                const best=eligible.reduce((a,b)=>b.lv>a.lv?b:a);
+                const mergedEffects={};
+                const featureChain=eligible.sort((a,b)=>a.lv-b.lv);
+                featureChain.forEach(f=>{
+                  const efx=f.effects||f.legacyEffects;if(!efx)return;
+                  Object.entries(efx).forEach(([k,v])=>{
+                    if(typeof v==='boolean')mergedEffects[k]=true;
+                    else mergedEffects[k]=(mergedEffects[k]||0)+v;
+                  });
+                });
+                if(Object.keys(mergedEffects).length===0)return;
+                legacyOptions.push({
+                  type:'prestige',name:pc.name+' Legacy',desc:best.name+' (Lv'+best.lv+') and all prerequisite features.',
+                  icon:pc.icon,color:pc.color,
+                  source:pc.icon+' '+pc.name+' Lv'+best.lv,
+                  effects:mergedEffects,
+                  featureChain:featureChain.map(f=>({name:f.name,lv:f.lv})),
+                });
+              });
+            }
+            const fmtEffect=(k,v)=>{
+              if(typeof v==='boolean')return k.replace(/([A-Z])/g,' $1').toLowerCase();
+              if(typeof v==='number'&&v<1&&v>0)return '+'+Math.round(v*100)+'% '+k.replace(/([A-Z])/g,' $1').toLowerCase();
+              return '+'+v+' '+k.replace(/([A-Z])/g,' $1').toLowerCase();
+            };
             return <div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'#000000dd',display:'flex',alignItems:'center',justifyContent:'center',zIndex:9999,padding:16}}
-            onClick={()=>setShowLocationSelect(false)}>
-            <div style={{background:TH.bg,border:'2px solid '+TH.gold,borderRadius:12,padding:20,maxWidth:520,width:'100%',maxHeight:'90vh',overflowY:'auto'}} onClick={e=>e.stopPropagation()}>
-              <div style={{fontSize:22,color:TH.gold,textAlign:'center',marginBottom:8}}>
-                {lineage?'Continue Your Legacy':'Choose Your Location'}
-              </div>
-              {lineage&&<>
-                <div style={{fontSize:13,color:'#c050e0',textAlign:'center',marginBottom:8}}>🏰 {lineage.name} · Generation {lineage.totalGenerations+1}</div>
-                <div style={{padding:'8px 12px',background:TH.panel,borderRadius:6,marginBottom:12,border:'1px solid #c050e033'}}>
-                  <div style={{fontSize:13,color:TH.textDim,marginBottom:4}}><b style={{color:TH.textBright}}>Lineage Bonuses:</b></div>
-                  <div style={{fontSize:12,color:TH.textDim}}>{Object.entries(getMentorBonuses()).map(([k,v])=>k+' +'+v).join(', ')||'None yet'}</div>
-                  {lastLegacy&&<div style={{fontSize:12,color:'#c050e0',marginTop:4}}>{lastLegacy.icon} Legacy: {lastLegacy.name} — {lastLegacy.desc}</div>}
+            onClick={()=>{setShowLocationSelect(false);setNewGameLegacy(null);setNewGameStep(0);}}>
+            <div style={{background:TH.bg,border:'2px solid '+(lineage?'#c050e0':TH.gold),borderRadius:12,padding:20,maxWidth:580,width:'100%',maxHeight:'90vh',overflowY:'auto'}} onClick={e=>e.stopPropagation()}>
+
+              {/* Step 0: Legacy Feature selection (only if lineage with options) */}
+              {lineage&&legacyOptions.length>0&&newGameStep===0&&<>
+                <div style={{fontSize:20,color:'#c050e0',textAlign:'center',marginBottom:4}}>🏰 {lineage.name} · Generation {lineage.totalGenerations+1}</div>
+                <div style={{fontSize:13,color:TH.textDim,textAlign:'center',marginBottom:4}}>
+                  Choose a legacy feature from {lastGen?.name||'your mentor'}'s mastered techniques.
                 </div>
-                <div style={{fontSize:12,color:TH.textDim,textAlign:'center',marginBottom:8}}>
-                  <button style={{fontSize:12,color:'#c050e0',background:'none',border:'none',cursor:'pointer',textDecoration:'underline',fontFamily:'inherit'}} onClick={()=>{if(confirm('Start completely fresh with no legacy bonuses? This cannot be undone.'))setLineage(null);}}>Start Fresh Instead (erase lineage)</button>
+                <div style={{padding:'6px 10px',background:TH.panel,borderRadius:6,marginBottom:10,border:'1px solid #c050e033'}}>
+                  <div style={{fontSize:12,color:TH.textDim}}>Mentor bonuses (cumulative): {Object.entries(getMentorBonuses()).map(([k,v])=>k+' +'+v).join(', ')||'None yet'}</div>
+                </div>
+                <div style={{display:'flex',flexDirection:'column',gap:6,marginBottom:12}}>
+                  {legacyOptions.map((opt,i)=>{const sel=newGameLegacy===opt;return(
+                    <div key={i} style={{padding:'10px 12px',background:sel?(opt.color||'#c050e0')+'15':TH.panel,borderRadius:8,border:'2px solid '+(sel?(opt.color||'#c050e0'):TH.border),cursor:'pointer',transition:'all .15s'}}
+                      onClick={()=>setNewGameLegacy(sel?null:opt)}>
+                      <div style={{display:'flex',alignItems:'center',gap:6,marginBottom:3}}>
+                        <span style={{fontSize:22}}>{opt.icon}</span>
+                        <div style={{flex:1}}>
+                          <div style={{fontSize:15,color:sel?(opt.color||'#c050e0'):TH.textBright,fontWeight:'bold'}}>{opt.name}{sel&&<span style={{fontSize:12,marginLeft:6}}>✓</span>}</div>
+                          <div style={{fontSize:12,color:TH.textDim}}>{opt.source}</div>
+                        </div>
+                        <div style={{fontSize:11,color:opt.type==='prestige'?'#c050e0':(opt.color||TH.textDim),background:(opt.type==='prestige'?'#c050e0':(opt.color||TH.border))+'15',padding:'2px 6px',borderRadius:4}}>{opt.type==='prestige'?'★ Prestige':'Specialization'}</div>
+                      </div>
+                      {opt.featureChain&&<div style={{fontSize:11,color:TH.textDim,paddingLeft:28}}>Includes: {opt.featureChain.map(f=>'Lv'+f.lv+' '+f.name).join(' → ')}</div>}
+                      <div style={{display:'flex',flexWrap:'wrap',gap:3,paddingLeft:28,marginTop:3}}>
+                        {Object.entries(opt.effects||{}).map(([k,v])=>
+                          <span key={k} style={{fontSize:11,padding:'1px 5px',background:(opt.color||'#c050e0')+'15',border:'1px solid '+(opt.color||'#c050e0')+'33',borderRadius:3,color:opt.color||'#c050e0'}}>{fmtEffect(k,v)}</span>
+                        )}
+                      </div>
+                    </div>);})}
+                </div>
+                <div style={{display:'flex',gap:8}}>
+                  <button style={{...S.btn('gold'),flex:1,fontSize:15,padding:'8px 0'}} onClick={()=>setNewGameStep(1)}>
+                    {newGameLegacy?'Next: Choose Location →':'Skip Legacy → Choose Location'}
+                  </button>
+                  <button style={{...S.btn('dim'),padding:'8px 16px'}} onClick={()=>{setShowLocationSelect(false);setNewGameLegacy(null);setNewGameStep(0);}}>Cancel</button>
                 </div>
               </>}
-              {Object.values(LOCATIONS).map(loc=><div key={loc.id} style={{padding:'12px 14px',background:TH.panel,borderRadius:8,marginBottom:8,border:'2px solid '+TH.border,cursor:'pointer'}}
-                onClick={()=>{setShowLocationSelect(false);
-                  if(lineage&&lastLegacy){
-                    newGame(loc.id,{legacyFeature:lastLegacy});
-                  } else {newGame(loc.id);}
-                }}>
-                <div style={{fontSize:18,color:TH.gold,fontWeight:'bold'}}>{loc.icon} {loc.name}</div>
-                <div style={{fontSize:14,color:TH.textDim,marginTop:3,lineHeight:1.4}}>{loc.desc}</div>
-              </div>)}
-              <button style={{...S.btn('dim'),width:'100%',marginTop:4}} onClick={()=>setShowLocationSelect(false)}>Cancel</button>
+
+              {/* Step 1 (or only step if no lineage): Location selection */}
+              {(!lineage||legacyOptions.length===0||newGameStep===1)&&<>
+                <div style={{fontSize:22,color:TH.gold,textAlign:'center',marginBottom:8}}>
+                  {lineage?'Choose Starting Location':'Choose Your Location'}
+                </div>
+                {lineage&&<>
+                  <div style={{fontSize:13,color:'#c050e0',textAlign:'center',marginBottom:4}}>🏰 {lineage.name} · Generation {lineage.totalGenerations+1}</div>
+                  {newGameLegacy&&<div style={{padding:'6px 10px',background:TH.panel,borderRadius:6,marginBottom:8,border:'1px solid #c050e033'}}>
+                    <div style={{fontSize:12,color:'#c050e0'}}>{newGameLegacy.icon} Legacy: {newGameLegacy.name} — {Object.entries(newGameLegacy.effects||{}).map(([k,v])=>fmtEffect(k,v)).join(', ')}</div>
+                  </div>}
+                  <div style={{fontSize:12,color:TH.textDim,textAlign:'center',marginBottom:8}}>
+                    <button style={{fontSize:12,color:'#c050e0',background:'none',border:'none',cursor:'pointer',textDecoration:'underline',fontFamily:'inherit'}} onClick={()=>{if(confirm('Start completely fresh with no legacy bonuses? This cannot be undone.')){setLineage(null);setNewGameLegacy(null);setNewGameStep(0);}}}>Start Fresh Instead (erase lineage)</button>
+                  </div>
+                </>}
+                {Object.values(LOCATIONS).map(loc=><div key={loc.id} style={{padding:'12px 14px',background:TH.panel,borderRadius:8,marginBottom:8,border:'2px solid '+TH.border,cursor:'pointer'}}
+                  onClick={()=>{setShowLocationSelect(false);
+                    const inheritLegacy=newGameLegacy||null;
+                    setNewGameLegacy(null);setNewGameStep(0);
+                    if(lineage){newGame(loc.id,{legacyFeature:inheritLegacy});}
+                    else{newGame(loc.id);}
+                  }}>
+                  <div style={{fontSize:18,color:TH.gold,fontWeight:'bold'}}>{loc.icon} {loc.name}</div>
+                  <div style={{fontSize:14,color:TH.textDim,marginTop:3,lineHeight:1.4}}>{loc.desc}</div>
+                </div>)}
+                <div style={{display:'flex',gap:8,marginTop:4}}>
+                  {lineage&&legacyOptions.length>0&&<button style={{...S.btn('dim'),flex:1}} onClick={()=>setNewGameStep(0)}>← Back to Legacy</button>}
+                  <button style={{...S.btn('dim'),flex:1}} onClick={()=>{setShowLocationSelect(false);setNewGameLegacy(null);setNewGameStep(0);}}>Cancel</button>
+                </div>
+              </>}
             </div>
           </div>;
           })()}
