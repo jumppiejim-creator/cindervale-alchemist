@@ -332,7 +332,7 @@ function CindervaleAlchemistInner(){
   const [brands,setBrands]=useState([]);
   const [relics,setRelics]=useState([]); // [{id,category,rarity,name,value,appraised,displayed,region}]
   const [museum,setMuseum]=useState({pottery:0,tablets:0,jewelry:0,mechanisms:0,weapons:0});
-  const [threats,setThreats]=useState({reavers:0,blight:0,veilbreakers:0});
+  const [threats,setThreats]=useState({});
   const [outposts,setOutposts]=useState([]); // [{id,regionId,built,daysLeft,recipe,storedIngr,fortress}]
   const [defenseQuests,setDefenseQuests]=useState([]); // [{id,threatId,type,target,qty,reward,desc}] // [{id,name,icon,recipes:[recipeId,...],sold:0}]
   const [hollowMarch,setHollowMarch]=useState(DEF?.hollowMarch||{active:false,wave:0,nextWaveDay:0,demands:[],history:[],finalStandAvailable:false,finalStandComplete:false,marchRecipesUnlocked:[]});
@@ -344,6 +344,7 @@ function CindervaleAlchemistInner(){
   const [pubPapers,setPubPapers]=useState([]); // published research papers [{id,type,day}]
   // ═══ LOCATION FILTERING ═══
   const locRegions=REGIONS.filter(r=>!r.loc||r.loc===gameLocation);
+  const locThreatIds=THREAT_IDS_BY_LOC[gameLocation]||THREAT_IDS;
   const locFactions=Object.fromEntries(Object.entries(FACTIONS).filter(([,f])=>!f.loc||f.loc===gameLocation));
   const locQuests=QUESTS.filter(q=>{if(q.id.startsWith('aq'))return gameLocation==='ashfall';if(q.id.startsWith('q')||q.id.startsWith('fc_'))return gameLocation==='cindervale';return true;});
   const locApprentices=AP_POOL.filter(a=>!a.loc||a.loc===gameLocation);
@@ -528,7 +529,7 @@ function CindervaleAlchemistInner(){
     setDailyReport(s.dailyReport||[]);setEnchQ(s.enchQ||[]);setPotCustQ(s.potCustQ||[]);setClinicPatients(s.clinicPatients||[]);setVenomContracts(s.venomContracts||[]);setForgedWeapons(s.forgedWeapons||[]);setShieldCommissions(s.shieldCommissions||[]);setPlanarFocus(s.planarFocus||null);setGadgets(s.gadgets||[]);setBlueprints(s.blueprints||[]);setFieldJournal(s.fieldJournal||[]);setLoreFragments(s.loreFragments||[]);setCompanions(s.companions||[]);setCaravans(s.caravans||[]);setSupplyChains(s.supplyChains||[]);setCaravanRuns(s.caravanRuns||{});setTrainingSessions(s.trainingSessions||{});setFactionHarmony(s.factionHarmony||{});setPrestigeLevels(s.prestigeLevels||{});setAutomata(s.automata||[]);setCustomPatterns(s.customPatterns||[]);setMappedRegions(s.mappedRegions||[]);setActiveBuffs(s.activeBuffs||{});setDebt(s.debt||0);setDisabledUpgrades(s.disabledUpgrades||[]);setShopLocked(s.shopLocked||false);setInjuryPenalty(s.injuryPenalty||0);setStaffInjuries(s.staffInjuries||{});setShelves(s.shelves||{});setLastCheck(null);setNews([]);setMorningReport(null);
     setBoardQ(s.boardQ||[]);setActiveBQ(s.activeBQ||[]);setDoneBQCount(s.doneBQCount||0);setDayFlags(s.dayFlags||[]);setKnownEnch(s.knownEnch&&s.knownEnch.length>0?s.knownEnch:['e_sharp','e_glow','e_ironbark','e_feather','e_windwalk','e_rootbind']);
     setBrewCounts(s.brewCounts||{});setProcureItems(s.procureItems||[]);setPubPapers(s.pubPapers||[]);setConstructProgress(s.constructProgress||{});
-    setSelHex(null);setVBuild('workshop');setDlgNpc(null);setShowShop(false);setQuestDlg(null);setPendingLevelUp(null);setSelectedSite(s.selectedSite||null);if(s.lineage)setLineage(s.lineage);setBrands(s.brands||[]);setBrandOrders(s.brandOrders||[]);setRelics(s.relics||[]);setMuseum(s.museum||{pottery:0,tablets:0,jewelry:0,mechanisms:0,weapons:0});setThreats(s.threats||{reavers:0,blight:0,veilbreakers:0});setOutposts(s.outposts||[]);setDefenseQuests(s.defenseQuests||[]);setHollowMarch(s.hollowMarch||DEF?.hollowMarch||{active:false,wave:0,nextWaveDay:0,demands:[],history:[],finalStandAvailable:false,finalStandComplete:false,marchRecipesUnlocked:[]});setLegacyFeature(s.legacyFeature||null);
+    setSelHex(null);setVBuild('workshop');setDlgNpc(null);setShowShop(false);setQuestDlg(null);setPendingLevelUp(null);setSelectedSite(s.selectedSite||null);if(s.lineage)setLineage(s.lineage);setBrands(s.brands||[]);setBrandOrders(s.brandOrders||[]);setRelics(s.relics||[]);setMuseum(s.museum||{pottery:0,tablets:0,jewelry:0,mechanisms:0,weapons:0});setThreats(s.threats||Object.fromEntries(locThreatIds.map(t=>[t,0])));setOutposts(s.outposts||[]);setDefenseQuests(s.defenseQuests||[]);setHollowMarch(s.hollowMarch||DEF?.hollowMarch||{active:false,wave:0,nextWaveDay:0,demands:[],history:[],finalStandAvailable:false,finalStandComplete:false,marchRecipesUnlocked:[]});setLegacyFeature(s.legacyFeature||null);
   },[]);
 
   // ─── ALL EFFECTS (before any return!) ───
@@ -809,8 +810,8 @@ function CindervaleAlchemistInner(){
           layersCompleted:0,layersFailed:0,retryUsed:false,done:false});
       }
       // ── Threat Ward Commissions (bonus, appear when threats Rising+) ──
-      const curThreats=threats||{reavers:0,blight:0,veilbreakers:0};
-      THREAT_IDS.forEach(tid=>{
+      const curThreats=threats||Object.fromEntries(locThreatIds.map(t=>[t,0]));
+      locThreatIds.forEach(tid=>{
         const tVal=curThreats[tid]||0;
         if(tVal>=25){
           const threatComms=SHIELD_COMMISSIONS.filter(c=>c.threatReq===tid&&(!c.threatMin||tVal>=c.threatMin)&&c.layers.length<=maxLayers+2);
@@ -855,7 +856,7 @@ function CindervaleAlchemistInner(){
       })(),
       lineage:lineage||null,
       museum:inheritData?.museum||{pottery:0,tablets:0,jewelry:0,mechanisms:0,weapons:0},
-      threats:{reavers:0,blight:0,veilbreakers:0},outposts:[],defenseQuests:[],
+      threats:Object.fromEntries(locThreatIds.map(t=>[t,0])),outposts:[],defenseQuests:[],
     };
     restoreState(defState);setLog([]);setGameStarted(true);
     if(inheritData?.legacyFeature)setLegacyFeature(inheritData.legacyFeature);
@@ -1576,14 +1577,15 @@ function CindervaleAlchemistInner(){
     const p=tf?.penalties[tier];
     return p?.[key]||(key.includes('Mult')?1:0);
   };
-  const threatExpDangerMult=getThreatPenalty('reavers','expDangerMult');
-  const threatStaffYieldMult=getThreatPenalty('reavers','staffYieldMult');
-  const threatShelfTheft=getThreatPenalty('reavers','shelfTheftChance');
-  const threatSpoilMult=getThreatPenalty('blight','spoilMult');
-  const threatContaminate=getThreatPenalty('blight','contaminateChance');
-  const threatEnchDC=getThreatPenalty('veilbreakers','enchDCBonus');
-  const threatDiscoveryMult=getThreatPenalty('veilbreakers','discoveryMult');
-  const threatEnchPayMult=getThreatPenalty('veilbreakers','enchPayMult');
+  // Bandit-type (reavers / sand_raiders), corruption-type (blight / the_scorch), magic-type (veilbreakers / cult_of_buried)
+  const threatExpDangerMult=getThreatPenalty(locThreatIds[0],'expDangerMult');
+  const threatStaffYieldMult=getThreatPenalty(locThreatIds[0],'staffYieldMult');
+  const threatShelfTheft=getThreatPenalty(locThreatIds[0],'shelfTheftChance');
+  const threatSpoilMult=getThreatPenalty(locThreatIds[1],'spoilMult');
+  const threatContaminate=getThreatPenalty(locThreatIds[1],'contaminateChance');
+  const threatEnchDC=getThreatPenalty(locThreatIds[2],'enchDCBonus');
+  const threatDiscoveryMult=getThreatPenalty(locThreatIds[2],'discoveryMult');
+  const threatEnchPayMult=getThreatPenalty(locThreatIds[2],'enchPayMult');
 
   // ═══ OUTPOST HELPERS ═══
   const seLv=prestigeLevels.siegeengineer||0;
@@ -1668,7 +1670,7 @@ function CindervaleAlchemistInner(){
     } else if(cost.type==='staff'){
       const availStaff=hiredAppr.filter(ap=>!apprTasks[ap.id]||apprTasks[ap.id].type==='idle');
       if(availStaff.length<cost.qty){addLog('Need '+cost.qty+' idle staff (have '+availStaff.length+'). Set staff to 💤 Idle first.','error');return;}
-      const worstThreat=THREAT_IDS.reduce((a,b)=>(threats[a]||0)>=(threats[b]||0)?a:b);
+      const worstThreat=locThreatIds.reduce((a,b)=>(threats[a]||0)>=(threats[b]||0)?a:b);
       const toAssign=availStaff.slice(0,cost.qty);
       const newTasks={...apprTasks};toAssign.forEach(ap=>{newTasks[ap.id]={type:'patrol',target:worstThreat};});setApprTasks(newTasks);
     } else if(cost.type==='enchant'||cost.type==='combat'){
@@ -1696,7 +1698,7 @@ function CindervaleAlchemistInner(){
       if(mastery){
         const mRwd=HOLLOW_MARCH.masteryReward(hm.wave);
         if(mRwd.xp)gainXP(mRwd.xp);if(mRwd.gold)setGold(g=>g+mRwd.gold);
-        if(mRwd.threatReduc)THREAT_IDS.forEach(tid=>{setThreats(p=>({...p,[tid]:Math.max(0,(p[tid]||0)-Math.floor(mRwd.threatReduc/3))}));});
+        if(mRwd.threatReduc)locThreatIds.forEach(tid=>{setThreats(p=>({...p,[tid]:Math.max(0,(p[tid]||0)-Math.floor(mRwd.threatReduc/3))}));});
       }
       const rText=[rwd.xp?'+'+rwd.xp+' XP':'',rwd.gold?'+'+rwd.gold+'g':''].filter(Boolean).join(', ');
       const mText=mastery?' ★ MASTERY! '+[HOLLOW_MARCH.masteryReward(hm.wave).xp?'+'+HOLLOW_MARCH.masteryReward(hm.wave).xp+' XP':'',HOLLOW_MARCH.masteryReward(hm.wave).gold?'+'+HOLLOW_MARCH.masteryReward(hm.wave).gold+'g':''].filter(Boolean).join(', '):'';
@@ -1723,13 +1725,13 @@ function CindervaleAlchemistInner(){
     const dc=10+Math.floor((hollowMarch.wave||1)*0.8);
     if(roll>=dc){
       const reduc=5+Math.floor(Math.random()*6); // 5-10 reduction
-      setThreats(p=>{const n={...p};THREAT_IDS.forEach(tid=>{n[tid]=Math.max(0,(n[tid]||0)-reduc);});return n;});
+      setThreats(p=>{const n={...p};locThreatIds.forEach(tid=>{n[tid]=Math.max(0,(n[tid]||0)-reduc);});return n;});
       gainXP(25+hollowMarch.wave*5);
       addLog(`🛡️ Wards reinforced! (Roll ${roll} vs DC ${dc}) All threats reduced by ${reduc}. (+${25+hollowMarch.wave*5} XP)`,'quest');
     } else {
       // Partial success — still some benefit
       const reduc=2;
-      setThreats(p=>{const n={...p};THREAT_IDS.forEach(tid=>{n[tid]=Math.max(0,(n[tid]||0)-reduc);});return n;});
+      setThreats(p=>{const n={...p};locThreatIds.forEach(tid=>{n[tid]=Math.max(0,(n[tid]||0)-reduc);});return n;});
       gainXP(10);
       addLog(`🛡️ Ward reinforcement partially held. (Roll ${roll} vs DC ${dc}) All threats reduced by ${reduc}. (+10 XP)`,'info');
     }
@@ -1764,7 +1766,7 @@ function CindervaleAlchemistInner(){
       results.push({crisis:tmpl.name,icon:tmpl.icon,solution:sol.label,solIcon:sol.icon,skill:SKILLS[sk]?.name||sk,skillId:sk,natural,mod,roll,dc,pass,mastery});
       // Failure consequence: immediate threat spike + staff injury
       if(!pass){
-        THREAT_IDS.forEach(tid=>{setThreats(p=>({...p,[tid]:Math.min(100,(p[tid]||0)+8)}));});
+        locThreatIds.forEach(tid=>{setThreats(p=>({...p,[tid]:Math.min(100,(p[tid]||0)+8)}));});
         if(hiredAppr.length>0){
           const victim=hiredAppr[Math.floor(Math.random()*hiredAppr.length)];
           const newInj={...(staffInjuries||{})};newInj[victim.id]=2;setStaffInjuries(newInj);
@@ -1776,7 +1778,7 @@ function CindervaleAlchemistInner(){
     if(victory){
       const fs=HOLLOW_MARCH.finalStandRewards;
       setXp(x=>x+fs.xp);setGold(g=>g+fs.gold);
-      setThreats(p=>{const n={...p};THREAT_IDS.forEach(tid=>{n[tid]=Math.min(fs.threatCap,n[tid]||0);});return n;});
+      setThreats(p=>{const n={...p};locThreatIds.forEach(tid=>{n[tid]=Math.min(fs.threatCap,n[tid]||0);});return n;});
       setHollowMarch(prev=>({...prev,finalStandComplete:true,demands:[]}));
       const masteryCount=results.filter(r=>r.mastery).length;
       addLog(`👑 THE FINAL STAND IS WON! ${charName} has broken the Hollow March! +${fs.xp} XP, +${fs.gold}g. Threats capped at ${fs.threatCap}.${masteryCount>0?' ★ '+masteryCount+' masterful victories!':''}`,'quest');
@@ -2038,7 +2040,7 @@ function CindervaleAlchemistInner(){
     if(r.marchEffect&&hollowMarch?.active&&!hollowMarch?.finalStandComplete){
       const me=r.marchEffect;
       if(me.threat){setThreats(p=>({...p,[me.threat]:Math.max(0,(p[me.threat]||0)-(me.threatReduc||0))}));addLog(`💀 ${r.icon} March effect: ${THREAT_FACTIONS[me.threat]?.name||me.threat} threat reduced by ${me.threatReduc}!`,'quest');}
-      else if(me.threatReduc){setThreats(p=>{const n={...p};THREAT_IDS.forEach(tid=>{n[tid]=Math.max(0,(n[tid]||0)-me.threatReduc);});return n;});addLog(`💀 ${r.icon} March effect: All threats reduced by ${me.threatReduc}!`,'quest');}
+      else if(me.threatReduc){setThreats(p=>{const n={...p};locThreatIds.forEach(tid=>{n[tid]=Math.max(0,(n[tid]||0)-me.threatReduc);});return n;});addLog(`💀 ${r.icon} March effect: All threats reduced by ${me.threatReduc}!`,'quest');}
       if(me.bonusEnergy){setHours(h=>h+me.bonusEnergy);addLog(`⚡ ${r.icon} March effect: +${me.bonusEnergy} Energy!`,'quest');}
       if(me.staffShield){setStaffInjuries({});addLog(`🛡️ ${r.icon} March effect: Staff protected from injury for ${me.staffShield} days!`,'quest');}
     }
@@ -3503,7 +3505,7 @@ function CindervaleAlchemistInner(){
     const dualTask=getFeatureVal('dualStaffTasks');
     // Process staff tasks synchronously (report entries must exist before morning report)
     const staffDiscR=[];const staffDiscE=[]; // track discoveries within this loop to prevent duplicates
-    const patrolReduc={reavers:0,blight:0,veilbreakers:0}; // accumulate patrol threat reductions
+    const patrolReduc=Object.fromEntries(locThreatIds.map(t=>[t,0])); // accumulate patrol threat reductions
     const updatedAppr=hiredAppr.map(ap=>{
       const apSalary=Math.max(1,Math.floor(ap.salary*(1-payrollDisc)*halfPay));
       totalSal+=apSalary;const task=apprTasks[ap.id];
@@ -3724,7 +3726,7 @@ function CindervaleAlchemistInner(){
     }
     // freeHealBrew: one free healing salve per day
     if(getFeatureVal('freeHealBrew')){modPot('healing_salve',1);report.push({n:'Daily Brew',i:'💊',r:'+1 Healing Salve',t:'ok'});}
-    Object.entries(fRep).forEach(([fid,rep])=>{if(getRepLvl(rep)>=3&&Math.random()<.3)modInv(FACTIONS[fid].res,1);});
+    Object.entries(fRep).forEach(([fid,rep])=>{if(locFactions[fid]&&getRepLvl(rep)>=3&&Math.random()<.3)modInv(FACTIONS[fid].res,1);});
     // Shelf sales — townsfolk buy stocked potions overnight
     let shelfGold=0;const shelfSold={};
     const shelfSaleB=getFeatureVal('shelfSaleBonus');
@@ -3764,7 +3766,7 @@ function CindervaleAlchemistInner(){
       report.push({n:'Museum Visitors',i:'🏛️',r:'+'+museumGold+'g (Grand Collection)',t:'ok'});
     }
     // ═══ EXTERNAL THREATS PROCESSING ═══
-    const newThreats={...(threats||{reavers:0,blight:0,veilbreakers:0})};
+    const newThreats={...(threats||Object.fromEntries(locThreatIds.map(t=>[t,0])))};
     // Threat growth
     if(curDay>3)newThreats.reavers=Math.min(100,(newThreats.reavers||0)+3+(gold>200?1:0));
     if(curDay>5)newThreats.blight=Math.min(100,(newThreats.blight||0)+2);
@@ -3775,7 +3777,7 @@ function CindervaleAlchemistInner(){
     const expDiff=dayFlags.filter(f=>f.startsWith('exp_diff_')).map(f=>+f.split('_')[2]);
     expDiff.forEach(d=>{if(d>=3)newThreats.blight=Math.min(100,(newThreats.blight||0)+(d>=5?3:2));});
     // Natural decay (only kicks in above 10 — threats build up before they erode)
-    THREAT_IDS.forEach(tid=>{if((newThreats[tid]||0)>10)newThreats[tid]=Math.max(0,newThreats[tid]-1);});
+    locThreatIds.forEach(tid=>{if((newThreats[tid]||0)>10)newThreats[tid]=Math.max(0,newThreats[tid]-1);});
     // Faction rep decay: -1 per threat if Trusted (Lv3+) with relevant faction. Slows but can't stop threats.
     if(getRepLvl(fRep.ashwardens||0)>=3||getRepLvl(fRep.dustwalkers||0)>=3)newThreats.reavers=Math.max(0,newThreats.reavers-1);
     if(getRepLvl(fRep.cinderfolk||0)>=3||getRepLvl(fRep.flamekeepers||0)>=3)newThreats.blight=Math.max(0,newThreats.blight-1);
@@ -3786,7 +3788,7 @@ function CindervaleAlchemistInner(){
     // Brand Master: famous brands reduce veilbreakers
     (brands||[]).forEach(b=>{if(b.sold>=80)newThreats.veilbreakers=Math.max(0,newThreats.veilbreakers-5);});
     // Staff patrol reductions (accumulated during staff loop)
-    THREAT_IDS.forEach(tid=>{if(patrolReduc[tid]>0)newThreats[tid]=Math.max(0,(newThreats[tid]||0)-patrolReduc[tid]);});
+    locThreatIds.forEach(tid=>{if(patrolReduc[tid]>0)newThreats[tid]=Math.max(0,(newThreats[tid]||0)-patrolReduc[tid]);});
     // Antiquarian Arsenal completion reduces reavers
     if((museum.weapons||0)>=(RELIC_SETS.weapons?.needed||4))newThreats.reavers=Math.max(0,newThreats.reavers-10);
 
@@ -3820,7 +3822,7 @@ function CindervaleAlchemistInner(){
         report.push({n:reg.name+' Outpost',i:'📦',r:'Gathered: '+summary,t:'ok'});
       }
       // Threat suppression
-      if(reg.diff>=5){THREAT_IDS.forEach(tid=>{newThreats[tid]=Math.max(0,newThreats[tid]-Math.floor(opSuppressAmt*0.4));});}
+      if(reg.diff>=5){locThreatIds.forEach(tid=>{newThreats[tid]=Math.max(0,newThreats[tid]-Math.floor(opSuppressAmt*0.4));});}
       else if(reg.diff>=3)newThreats.blight=Math.max(0,newThreats.blight-opSuppressAmt);
       else newThreats.reavers=Math.max(0,newThreats.reavers-opSuppressAmt);
       // Auto-brew (Lv3+)
@@ -3875,7 +3877,7 @@ function CindervaleAlchemistInner(){
 
     // Generate defense quests (1-2 per morning if any threat is Rising+)
     const newDefQ=[];
-    THREAT_IDS.forEach(tid=>{
+    locThreatIds.forEach(tid=>{
       if(newThreats[tid]>=25&&Math.random()<0.5){
         const tf=THREAT_FACTIONS[tid];
         const potRecipes=RECIPES.filter(r=>known.includes(r.id)&&!r.fieldOnly&&canCraftAtLocation(r.ingr));
@@ -3919,7 +3921,7 @@ function CindervaleAlchemistInner(){
       if(failedCrises.length>0&&updMarch.wave>0){
         const fp=HOLLOW_MARCH.failurePenalty(updMarch.wave);
         failedCrises.forEach(d=>{
-          THREAT_IDS.forEach(tid=>{newThreats[tid]=Math.min(100,(newThreats[tid]||0)+fp.threatSpike);});
+          locThreatIds.forEach(tid=>{newThreats[tid]=Math.min(100,(newThreats[tid]||0)+fp.threatSpike);});
           addLog(`💀 CRISIS FAILED: ${d.icon} ${d.name} — all threats +${fp.threatSpike}!`,'error');
           // Guaranteed staff injury per failed crisis
           if(fp.staffInjury&&hiredAppr.length>0){
@@ -4008,7 +4010,7 @@ function CindervaleAlchemistInner(){
       if(updMarch.wave>1&&resolvedCount===prevDemands.length&&prevDemands.length>0){
         const wr=HOLLOW_MARCH.waveRewards(wave-1);
         setXp(x=>x+wr.xp);setGold(g=>g+wr.gold);
-        THREAT_IDS.forEach(tid=>{newThreats[tid]=Math.max(0,(newThreats[tid]||0)-wr.threatReduc);});
+        locThreatIds.forEach(tid=>{newThreats[tid]=Math.max(0,(newThreats[tid]||0)-wr.threatReduc);});
         if(wr.recipeUnlock){
           const nextRecipe=MARCH_RECIPES.find(r=>!updMarch.marchRecipesUnlocked.includes(r.id));
           if(nextRecipe){
@@ -4044,15 +4046,15 @@ function CindervaleAlchemistInner(){
     setHollowMarch(updMarch);
 
     // Threat report in morning report
-    const threatReport=THREAT_IDS.filter(tid=>newThreats[tid]>=25).map(tid=>{
+    const threatReport=locThreatIds.filter(tid=>newThreats[tid]>=25).map(tid=>{
       const tf=THREAT_FACTIONS[tid];const tier=getThreatTier(newThreats[tid]);
       return tf.icon+' '+tf.name+': '+getThreatLabel(newThreats[tid])+' ('+newThreats[tid]+'/100)';
     });
-    if(threatReport.length>0)report.push({n:'⚔️ Threats',i:'⚔️',r:threatReport.join(' | '),t:THREAT_IDS.some(tid=>newThreats[tid]>=50)?'bad':'warn'});
+    if(threatReport.length>0)report.push({n:'⚔️ Threats',i:'⚔️',r:threatReport.join(' | '),t:locThreatIds.some(tid=>newThreats[tid]>=50)?'bad':'warn'});
     // ── Detect threat tier changes for dramatic popups ──
     const TIER_ORDER=['calm','rising','dangerous','critical'];
     const threatAlerts=[];
-    THREAT_IDS.forEach(tid=>{
+    locThreatIds.forEach(tid=>{
       const oldTier=getThreatTier(threats[tid]||0);
       const newTier=getThreatTier(newThreats[tid]);
       if(oldTier===newTier)return;
@@ -4239,13 +4241,13 @@ function CindervaleAlchemistInner(){
       setEventPopup({events:allPopupEvents,idx:0});
     }
     // ── Board Quests ──
-    const newBQ=genBoardQuests(curLv,day+1,getFeatureVal('doubleQuestRefresh')?2:0);
+    const newBQ=genBoardQuests(curLv,day+1,getFeatureVal('doubleQuestRefresh')?2:0,gameLocation);
     setBoardQ(newBQ);
     // Expire un-accepted board quests from yesterday (already replaced)
     if(newBQ.length>0)nw.push({icon:'📌',text:`${newBQ.length} new request${newBQ.length>1?'s':''} on the notice board.`,to:'quests',label:'📜 Quests',color:TH.cyan});
     // Milestone checks
     if(gold>=500)earnMilestone('wealthy');
-    if(Object.entries(fRep).every(([,r])=>getRepLvl(r)>=3))earnMilestone('all_factions');
+    if(Object.keys(locFactions).every(fid=>getRepLvl(fRep[fid]||0)>=3))earnMilestone('all_factions');
     if(RECIPES.every(r=>known.includes(r.id)))earnMilestone('all_recipes');
     if(Object.keys(UPGRADES).every(uid=>upgrades.includes(uid)))earnMilestone('full_workshop');
     if(hiredAppr.length>=4)earnMilestone('mentor');
@@ -4424,7 +4426,7 @@ function CindervaleAlchemistInner(){
     // ═══ INGREDIENT SPOILAGE ═══
     const spoilLines=[];
     const spoilThresholdBase=8;
-    const blightSpoilMult=getThreatPenalty('blight','spoilMult');
+    const blightSpoilMult=getThreatPenalty(locThreatIds[1],'spoilMult');
     const spoilThresholdBonus=getFeatureVal('spoilThreshold')+upEff('spoilThreshold')+(curSeason.spoilMod||0);
     const totalSpoilThreshold=Math.max(4,spoilThresholdBase+spoilThresholdBonus);
     const effSpoilThreshold=blightSpoilMult>1?Math.max(4,Math.floor(totalSpoilThreshold/blightSpoilMult)):totalSpoilThreshold;
@@ -5104,7 +5106,7 @@ function CindervaleAlchemistInner(){
               };
               addLog(CLASS_INTROS[startingClass]||`${charName} the ${c.name} arrives at ${locN} for the first time.`,'story');
               addLog('💡 You have 4 skill points to spend! Visit Your Quarters on the map.','level');setPhase('play');
-              const initBQ=genBoardQuests(0,1);setBoardQ(initBQ);
+              const initBQ=genBoardQuests(0,1,0,gameLocation);setBoardQ(initBQ);
               const initCust=genCust();
               const firstNPC=isAsh?{icon:'🛒',text:'Sola at the Bazaar has work for you.',to:'market',label:'🛒 Meet Sola',color:TH.gold,npc:'sola'}
                 :{icon:'🛒',text:'Brenna at the Market has work for you.',to:'market',label:'🛒 Meet Brenna',color:TH.gold,npc:'brenna'};
@@ -6765,10 +6767,10 @@ function CindervaleAlchemistInner(){
       {screen==='worldmap'&&<>
         <BackBar title="The Wilds" icon="🗺️"/>
         {/* ── Threat Bar ── */}
-        {day>3&&THREAT_IDS.some(tid=>(threats[tid]||0)>0)&&<div style={{...S.card,padding:'6px 10px',borderColor:'#cc444444'}}>
+        {day>3&&locThreatIds.some(tid=>(threats[tid]||0)>0)&&<div style={{...S.card,padding:'6px 10px',borderColor:'#cc444444'}}>
           <div style={{fontSize:14,fontWeight:'bold',color:TH.textBright,marginBottom:4}}>⚔️ External Threats</div>
           <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
-            {THREAT_IDS.map(tid=>{const val=threats[tid]||0;const tf=THREAT_FACTIONS[tid];const tier=getThreatTier(val);
+            {locThreatIds.map(tid=>{const val=threats[tid]||0;const tf=THREAT_FACTIONS[tid];const tier=getThreatTier(val);
               return <div key={tid} style={{flex:'1 1 120px',minWidth:100}}>
                 <div style={{fontSize:13,color:tf.color,marginBottom:2}}>{tf.icon} {tf.name}</div>
                 <div style={{height:8,background:TH.bg,borderRadius:4,border:'1px solid '+TH.border,overflow:'hidden'}}>
@@ -6811,7 +6813,7 @@ function CindervaleAlchemistInner(){
                   {RECIPES.filter(r=>known.includes(r.id)&&!r.fieldOnly).map(r=><option key={r.id} value={r.id}>{r.icon} {r.name}</option>)}
                 </select>
                 {seLv>=5&&!op.fortress&&!outposts.some(o=>o.fortress)&&<span style={{marginLeft:6}}>
-                  {Object.entries(FORTRESS_TYPES).map(([ftId,ft])=>
+                  {Object.entries(FORTRESS_TYPES).filter(([,ft])=>!ft.loc||ft.loc===gameLocation).map(([ftId,ft])=>
                     <button key={ftId} style={{...S.btn(gold>=ft.cost?'gold':'dim'),fontSize:11,padding:'1px 5px',marginLeft:3}} disabled={gold<ft.cost}
                       onClick={()=>upgradeFortress(op.id,ftId)}>{ft.icon} {ft.name} ({ft.cost}g)</button>
                   )}
@@ -6898,8 +6900,8 @@ function CindervaleAlchemistInner(){
       {screen==='workshop'&&<>
         <BackBar title="Workshop" icon="⚗️"/>
         {/* Compact Threat Bar */}
-        {day>3&&THREAT_IDS.some(tid=>(threats[tid]||0)>0)&&<div style={{display:'flex',gap:6,padding:'3px 8px',marginBottom:4,fontSize:12,flexWrap:'wrap'}}>
-          {THREAT_IDS.filter(tid=>(threats[tid]||0)>=25).map(tid=>{const val=threats[tid]||0;const tf=THREAT_FACTIONS[tid];
+        {day>3&&locThreatIds.some(tid=>(threats[tid]||0)>0)&&<div style={{display:'flex',gap:6,padding:'3px 8px',marginBottom:4,fontSize:12,flexWrap:'wrap'}}>
+          {locThreatIds.filter(tid=>(threats[tid]||0)>=25).map(tid=>{const val=threats[tid]||0;const tf=THREAT_FACTIONS[tid];
             return <span key={tid} style={{color:getThreatColor(val)}}>{tf.icon} {getThreatLabel(val)} ({val})</span>;})}
           <span style={{color:TH.textDim,cursor:'pointer',textDecoration:'underline'}} onClick={()=>setScreen('worldmap')}>View →</span>
         </div>}
@@ -8926,7 +8928,7 @@ function CindervaleAlchemistInner(){
                 <select onChange={e=>{if(e.target.value)assignTask(ap.id,'construct',e.target.value);}} value={task?.type==='construct'?task.target:''} title={TASK_TYPES.construct.desc} style={{padding:'2px 4px',background:TH.panelLight,color:TH.text,border:'1px solid '+TH.border,borderRadius:3,fontFamily:'inherit',fontSize:14}}>
                   <option value="">🔨...</option>{Object.values(UPGRADES).filter(u=>!upgrades.includes(u.id)&&(!u.req||upgrades.includes(u.req))).map(u=><option key={u.id} value={u.id}>{u.icon}{u.name}{(constructProgress[u.id]||0)>0?` (${constructProgress[u.id]}%)`:''}</option>)}</select>
                 <select onChange={e=>{if(e.target.value)assignTask(ap.id,'patrol',e.target.value);}} value={task?.type==='patrol'?task.target:''} title={TASK_TYPES.patrol?.desc||'Patrol against threats'} style={{padding:'2px 4px',background:TH.panelLight,color:TH.text,border:'1px solid '+TH.border,borderRadius:3,fontFamily:'inherit',fontSize:14}}>
-                  <option value="">🛡️...</option>{THREAT_IDS.map(tid=><option key={tid} value={tid}>{THREAT_FACTIONS[tid]?.icon} {THREAT_FACTIONS[tid]?.name} ({threats[tid]||0}/100)</option>)}</select>
+                  <option value="">🛡️...</option>{locThreatIds.map(tid=><option key={tid} value={tid}>{THREAT_FACTIONS[tid]?.icon} {THREAT_FACTIONS[tid]?.name} ({threats[tid]||0}/100)</option>)}</select>
                 <button style={{...S.btn(!task||task.type==='idle'?'gold':'def'),fontSize:14,padding:'2px 6px'}} onClick={()=>setApprTasks(p=>{const n={...p};delete n[ap.id];return n;})} title="Unassign — staff rests and is available for March deployment">💤 Idle</button>
                 <button style={{...S.btn('red'),fontSize:14,padding:'2px 6px'}} onClick={()=>setConfirmFire(confirmFire===ap.id?null:ap.id)} title="Dismiss this employee">{confirmFire===ap.id?'Cancel':'🔥 Dismiss'}</button>
               </div>
@@ -9235,7 +9237,7 @@ function CindervaleAlchemistInner(){
               Swear allegiance to a faction for <b style={{color:TH.gold}}>a powerful exclusive bonus</b> on top of all existing rewards. 
               No reputation is lost — this is a pure upgrade. Choose wisely though — alignment is permanent!
             </div>
-            {Object.entries(FACTIONS).map(([fid,f])=>{
+            {Object.entries(locFactions).map(([fid,f])=>{
               const rep=fRep[fid]||0;const rl=getRepLvl(rep);
               const chainMap={ashwardens:'fc_ash3',hearthkeepers:'fc_hk3',veilwalkers:'fc_vw3',cinderfolk:'fc_cf3',sand_merchants:'fc_sm3',flamekeepers:'fc_fk3',dustwalkers:'fc_dw3'};
               const chainDone=chainMap[fid]&&doneQ.includes(chainMap[fid]);
@@ -9294,7 +9296,7 @@ function CindervaleAlchemistInner(){
           </div>
         </div>
         {/* Per-threat cards */}
-        {THREAT_IDS.map(tid=>{
+        {locThreatIds.map(tid=>{
           const val=threats[tid]||0;const tf=THREAT_FACTIONS[tid];const tier=getThreatTier(val);
           const tierColor=getThreatColor(val);const tierLabel=getThreatLabel(val);
           const penalties=tf.penalties||{};
@@ -9304,19 +9306,20 @@ function CindervaleAlchemistInner(){
           // Find outposts suppressing this threat
           const suppressingOPs=outposts.filter(op=>{
             if(!op.built)return false;const reg=REGIONS.find(r=>r.id===op.regionId);if(!reg)return false;
-            return reg.diff>=5||(tid==='blight'&&reg.diff>=3)||(tid==='reavers'&&reg.diff<3);
+            return reg.diff>=5||(locThreatIds.indexOf(tid)===1&&reg.diff>=3)||(locThreatIds.indexOf(tid)===0&&reg.diff<3);
           });
           // Faction mitigation
-          const factionMitigators={reavers:['ashwardens','dustwalkers'],blight:['cinderfolk','flamekeepers'],veilbreakers:['veilwalkers']};
+          const factionMitigators={reavers:['ashwardens'],blight:['cinderfolk'],veilbreakers:['veilwalkers'],sand_raiders:['dustwalkers'],the_scorch:['flamekeepers'],cult_of_buried:['sand_merchants']};
           const helpingFactions=(factionMitigators[tid]||[]).filter(fid=>getRepLvl(fRep[fid]||0)>=3);
           // Class mitigation
-          const classMit={blight:(classLevels.warden||0)>=4,veilbreakers:(classLevels.merchant||0)>=4};
+          const classMit={};classMit[locThreatIds[1]]=(classLevels.warden||0)>=4;classMit[locThreatIds[2]]=(classLevels.merchant||0)>=4;
           // Defense quests for this threat
           const myDQ=defenseQuests.filter(dq=>dq.threatId===tid);
           // Daily growth info
-          const growthInfo={reavers:day>3?'Grows +3/day'+(gold>200?' (+1 wealth tax)':''):'Starts after Day 3',
-            blight:day>5?'Grows +2/day + extra from foraging dangerous regions':'Starts after Day 5',
-            veilbreakers:day>10?'Grows +3/day':'Starts after Day 10'};
+          const tidIdx=locThreatIds.indexOf(tid);
+          const growthInfo=tidIdx===0?(day>3?'Grows +3/day'+(gold>200?' (+1 wealth tax)':''):'Starts after Day 3')
+            :tidIdx===1?(day>5?'Grows +2/day + extra from dangerous foraging':'Starts after Day 5')
+            :(day>10?'Grows +3/day':'Starts after Day 10');
           return <div key={tid} style={{...S.card,borderColor:tierColor+'66',borderWidth:tier==='critical'?2:1,boxShadow:tier!=='calm'?'0 0 15px '+tierColor+'20':'none'}}>
             {/* Header */}
             <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:8}}>
@@ -9343,7 +9346,7 @@ function CindervaleAlchemistInner(){
             </div>
             {/* Growth rate */}
             <div style={{fontSize:13,color:TH.textDim,marginBottom:8,padding:'4px 8px',background:TH.bg,borderRadius:4}}>
-              📈 <b>Growth:</b> {growthInfo[tid]} · <b>Natural decay:</b> -1/day (above 10)
+              📈 <b>Growth:</b> {growthInfo} · <b>Natural decay:</b> -1/day (above 10)
             </div>
             {/* Current penalties */}
             <div style={{marginBottom:8,padding:'8px 10px',background:tier==='calm'?TH.green+'08':tierColor+'10',borderRadius:6,border:'1px solid '+(tier==='calm'?TH.green+'33':tierColor+'33')}}>
@@ -9351,17 +9354,17 @@ function CindervaleAlchemistInner(){
                 {tier==='calm'?'✅ No Active Penalties':'⚠️ Active Penalties — '+tierLabel}
               </div>
               {tier==='calm'&&<div style={{fontSize:13,color:TH.green}}>This threat is under control. Keep it below 25 to avoid penalties.</div>}
-              {tid==='reavers'&&tier!=='calm'&&<div style={{fontSize:13,color:TH.text,lineHeight:1.6}}>
+              {tidIdx===0&&tier!=='calm'&&<div style={{fontSize:13,color:TH.text,lineHeight:1.6}}>
                 {curPenalties?.expDangerMult>1&&<div>⚔️ Expedition danger increased by <b style={{color:tierColor}}>+{Math.round((curPenalties.expDangerMult-1)*100)}%</b></div>}
                 {curPenalties?.staffYieldMult<1&&<div>📦 Staff foraging yield reduced by <b style={{color:tierColor}}>{Math.round((1-curPenalties.staffYieldMult)*100)}%</b></div>}
                 {curPenalties?.shelfTheftChance>0&&<div>🏴 <b style={{color:tierColor}}>{Math.round(curPenalties.shelfTheftChance*100)}%</b> chance of overnight shelf theft</div>}
               </div>}
-              {tid==='blight'&&tier!=='calm'&&<div style={{fontSize:13,color:TH.text,lineHeight:1.6}}>
+              {tidIdx===1&&tier!=='calm'&&<div style={{fontSize:13,color:TH.text,lineHeight:1.6}}>
                 {curPenalties?.spoilMult>1&&<div>🧪 Ingredient spoilage rate increased by <b style={{color:tierColor}}>×{curPenalties.spoilMult}</b></div>}
                 {curPenalties?.contaminateChance>0&&<div>🦠 <b style={{color:tierColor}}>{Math.round(curPenalties.contaminateChance*100)}%</b> chance that quality brews get contaminated to Standard</div>}
                 {curPenalties?.ingrLossChance>0&&<div>💀 <b style={{color:tierColor}}>{Math.round(curPenalties.ingrLossChance*100)}%</b> chance of overnight ingredient corruption</div>}
               </div>}
-              {tid==='veilbreakers'&&tier!=='calm'&&<div style={{fontSize:13,color:TH.text,lineHeight:1.6}}>
+              {tidIdx===2&&tier!=='calm'&&<div style={{fontSize:13,color:TH.text,lineHeight:1.6}}>
                 {curPenalties?.enchDCBonus>0&&<div>✨ Enchanting DC increased by <b style={{color:tierColor}}>+{curPenalties.enchDCBonus}</b></div>}
                 {curPenalties?.discoveryMult<1&&<div>📚 Research discovery chance reduced by <b style={{color:tierColor}}>{Math.round((1-curPenalties.discoveryMult)*100)}%</b></div>}
                 {curPenalties?.enchPayMult<1&&<div>💰 Enchantment customer pay reduced by <b style={{color:tierColor}}>{Math.round((1-curPenalties.enchPayMult)*100)}%</b></div>}
@@ -9376,7 +9379,7 @@ function CindervaleAlchemistInner(){
                   :<div style={{color:TH.textDim}}>👥 No staff assigned to patrol this threat. <span style={{color:TH.gold,cursor:'pointer',textDecoration:'underline'}} onClick={()=>setScreen('staff')}>Go to Staff Hall →</span></div>}
                 {suppressingOPs.length>0&&<div>🏗️ <b>Outposts:</b> {suppressingOPs.length} outpost{suppressingOPs.length>1?'s':''} suppressing <span style={{color:TH.green}}>(-{suppressingOPs.length*outpostSuppressAmt}/day)</span></div>}
                 {helpingFactions.length>0&&<div>🏛️ <b>Faction Aid:</b> {helpingFactions.map(fid=>FACTIONS[fid]?.icon+' '+FACTIONS[fid]?.name+' (Trusted)').join(', ')} <span style={{color:TH.green}}>(-1/day each)</span></div>}
-                {classMit[tid]&&<div>📋 <b>Class Ability:</b> {tid==='blight'?'Warden Lv4':'Merchant Lv4'} <span style={{color:TH.green}}>(-1/day)</span></div>}
+                {classMit[tid]&&<div>📋 <b>Class Ability:</b> {tidIdx===1?'Warden Lv4':'Merchant Lv4'} <span style={{color:TH.green}}>(-1/day)</span></div>}
                 {patrollers.length===0&&suppressingOPs.length===0&&helpingFactions.length===0&&!classMit[tid]&&<div style={{color:'#c06040',fontStyle:'italic'}}>No active defenses — this threat will grow unchecked!</div>}
               </div>
             </div>

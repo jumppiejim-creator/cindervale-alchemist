@@ -632,48 +632,78 @@ var REGIONS=[
         weights:{sunpetal:28,dustite:23,scorchroot:18,ashbloom:9,ash_salt:7,wind_dust:7,sand_merchant_seal:8}},
       {id:'af_dust_bowl',name:'Dust Bowl',icon:'🌪️',desc:'Windswept depression where dustite concentrates.',
         weights:{dustite:33,scorchroot:19,sunpetal:14,wind_dust:14,ash_salt:9,ashbloom:5,sand_merchant_seal:6}},
+      {id:'af_cracked_riverbed',name:'Cracked Riverbed',icon:'🏜️',desc:'An ancient river delta, now bone-dry. Salt deposits line the banks.',
+        weights:{ash_salt:28,ashbloom:20,sunpetal:15,scorchroot:14,wind_dust:10,dustite:7,sand_merchant_seal:6}},
     ],diff:1,unlock:0,time:1,yield:[2,4],dc:8,
     flavor:['The relentless sun beats down on cracked earth.','Heat shimmers rise from the flats like liquid glass.']},
   {id:'salt_caverns',loc:'ashfall',name:'Salt Caverns',icon:'🧂',color:'#6a7a8a',
     ingr:['crystal_salt','brine_moss','echo_fungus','gloomcap','ashite','mineral_clay'],pick:3,sites:[
       {id:'af_brine_pools',name:'Brine Pools',icon:'💧',desc:'Underground pools crusted with crystallized salt.',
         weights:{crystal_salt:30,brine_moss:28,echo_fungus:15,gloomcap:12,ashite:8,mineral_clay:7}},
+      {id:'af_crystal_gallery',name:'Crystal Gallery',icon:'💎',desc:'A cavern of towering salt columns that ring when touched.',
+        weights:{crystal_salt:22,mineral_clay:24,ashite:20,echo_fungus:14,brine_moss:12,gloomcap:8}},
+      {id:'af_drip_tunnels',name:'Drip Tunnels',icon:'🕳️',desc:'Narrow passages where mineral-rich water seeps through the ceiling.',
+        weights:{brine_moss:30,gloomcap:22,echo_fungus:18,crystal_salt:14,mineral_clay:10,ashite:6}},
     ],diff:2,unlock:1,time:1,yield:[2,4],dc:10,
     flavor:['Salt crystals catch your torchlight, scattering rainbows across damp walls.']},
   {id:'obsidian_wastes',loc:'ashfall',name:'Obsidian Wastes',icon:'🖤',color:'#2a2a3a',
     ingr:['obsidian_shard','ashite','embervein','scorchroot','dustite','volcanic_essence','dustwalker_compass'],pick:3,sites:[
       {id:'af_glass_fields',name:'Glass Fields',icon:'🔮',desc:'Vast plains of razor-sharp volcanic glass.',
         weights:{obsidian_shard:28,ashite:20,embervein:16,scorchroot:11,dustite:9,volcanic_essence:8,dustwalker_compass:8}},
+      {id:'af_lava_tubes',name:'Lava Tubes',icon:'🌑',desc:'Cooled magma tunnels hiding mineral deposits in their walls.',
+        weights:{embervein:28,volcanic_essence:22,obsidian_shard:18,ashite:14,dustite:8,scorchroot:5,dustwalker_compass:5}},
+      {id:'af_shatter_ridge',name:'Shatter Ridge',icon:'⛰️',desc:'A jagged ridgeline where obsidian fractures into useful shards.',
+        weights:{obsidian_shard:30,dustite:18,scorchroot:16,ashite:13,embervein:9,dustwalker_compass:9,volcanic_essence:5}},
     ],diff:2,unlock:2,time:2,yield:[2,4],dc:11,
     flavor:['Black glass crunches underfoot. One wrong step and you bleed.']},
   {id:'sandworm_tunnels',loc:'ashfall',name:'Sandworm Tunnels',icon:'🪱',color:'#7a6a3a',
     ingr:['sandsilk','venomgland','thornvine','scorchroot','brine_moss','obsidian_shard'],pick:3,sites:[
       {id:'af_silk_nests',name:'Silk Nests',icon:'🕸️',desc:'Abandoned sandworm cocoons lined with precious silk.',
         weights:{sandsilk:32,venomgland:22,thornvine:16,scorchroot:12,brine_moss:10,obsidian_shard:8}},
+      {id:'af_venom_pools',name:'Venom Pools',icon:'☠️',desc:'Stagnant pools of sandworm digestive fluid. Toxic but valuable.',
+        weights:{venomgland:30,thornvine:24,sandsilk:16,brine_moss:12,scorchroot:10,obsidian_shard:8}},
+      {id:'af_burrow_depths',name:'Burrow Depths',icon:'🪨',desc:'Deep tunnels carved by ancient sandworms, rich with shed materials.',
+        weights:{sandsilk:24,obsidian_shard:20,scorchroot:18,venomgland:15,brine_moss:13,thornvine:10}},
     ],diff:3,unlock:3,time:2,yield:[2,4],dc:13,
     flavor:['The tunnels vibrate with distant movement. Something very large lives down here.']},
   {id:'oasis_grove',loc:'ashfall',name:'Oasis Grove',icon:'🌴',color:'#3a6a4a',
     ingr:['dewdrop_lily','moonpetal','flamekeeper_ember','sunpetal','starwort','dream_pollen'],pick:3,sites:[
       {id:'af_spring',name:'Hidden Spring',icon:'💧',desc:'Crystal-clear water surrounded by rare blooms.',
         weights:{dewdrop_lily:30,moonpetal:25,flamekeeper_ember:15,sunpetal:12,starwort:10,dream_pollen:8}},
+      {id:'af_palm_garden',name:'Palm Garden',icon:'🌿',desc:'Dense cluster of palms with medicinal bark and aromatic resins.',
+        weights:{sunpetal:28,starwort:24,dewdrop_lily:18,dream_pollen:14,moonpetal:10,flamekeeper_ember:6}},
+      {id:'af_lotus_pools',name:'Lotus Pools',icon:'🪷',desc:'Shallow warm pools where rare lotus flowers bloom at dawn.',
+        weights:{moonpetal:28,dream_pollen:24,dewdrop_lily:18,flamekeeper_ember:14,starwort:10,sunpetal:6}},
     ],diff:3,unlock:4,time:2,yield:[2,4],dc:14,faction:'flamekeepers',fReq:2,
     flavor:['Water. Actual flowing water, in the middle of the desert. Impossibly lush.']},
   {id:'molten_vents',loc:'ashfall',name:'Molten Vents',icon:'🌋',color:'#6a2a2a',
     ingr:['magma_diamond','living_ember','forge_heart_shard','volcanic_essence','embervein','obsidian_shard','flamekeeper_ember'],pick:3,sites:[
       {id:'af_caldera',name:'The Caldera',icon:'🔥',desc:'Active volcanic crater. Incredibly dangerous.',
         weights:{magma_diamond:23,living_ember:23,forge_heart_shard:14,volcanic_essence:13,embervein:11,obsidian_shard:7,flamekeeper_ember:9}},
+      {id:'af_fumaroles',name:'Fumarole Fields',icon:'♨️',desc:'Sulfurous vents spewing mineral-rich steam from deep below.',
+        weights:{volcanic_essence:28,embervein:24,living_ember:16,flamekeeper_ember:14,obsidian_shard:10,magma_diamond:5,forge_heart_shard:3}},
+      {id:'af_lava_shore',name:'Lava Shore',icon:'🌊',desc:'Where molten rock meets ancient stone. Crystals form in the cooling crust.',
+        weights:{forge_heart_shard:24,magma_diamond:22,living_ember:18,volcanic_essence:14,embervein:10,flamekeeper_ember:7,obsidian_shard:5}},
     ],diff:4,unlock:5,time:3,yield:[2,4],dc:15,
     flavor:['The heat is beyond anything you have experienced. Lava glows through cracks.']},
   {id:'mirage_bazaar',loc:'ashfall',name:'Mirage Bazaar',icon:'🏜️',color:'#5a3a6a',
     ingr:['mirage_dust','dustwalker_compass','prismatic_ash','crystal_salt','sandsilk','sand_merchant_seal'],pick:3,sites:[
       {id:'af_phantom_stalls',name:'Phantom Stalls',icon:'👻',desc:'Ghostly market stalls that fade in and out of existence.',
         weights:{mirage_dust:30,dustwalker_compass:20,prismatic_ash:18,crystal_salt:12,sandsilk:10,sand_merchant_seal:10}},
+      {id:'af_shimmer_alley',name:'Shimmer Alley',icon:'✨',desc:'A narrow path between tents where reality ripples like water.',
+        weights:{prismatic_ash:28,mirage_dust:24,sand_merchant_seal:18,sandsilk:12,dustwalker_compass:10,crystal_salt:8}},
+      {id:'af_lost_caravans',name:'Lost Caravans',icon:'📦',desc:'Abandoned trade wagons half-buried in sand, still full of goods.',
+        weights:{sand_merchant_seal:28,sandsilk:24,crystal_salt:18,dustwalker_compass:14,mirage_dust:10,prismatic_ash:6}},
     ],diff:4,unlock:6,time:3,yield:[2,4],dc:16,faction:'dustwalkers',fReq:2,
     flavor:['The bazaar shimmers into existence around you.']},
   {id:'buried_temple',loc:'ashfall',name:'Buried Temple',icon:'🏛️',color:'#4a3a2a',
     ingr:['ancient_resin','temple_gold','sand_merchant_seal','mirage_dust','flamekeeper_ember','dustwalker_compass'],pick:3,sites:[
       {id:'af_sanctum',name:'Inner Sanctum',icon:'⚱️',desc:'The heart of the temple. Untouched for millennia.',
         weights:{temple_gold:25,ancient_resin:25,sand_merchant_seal:15,mirage_dust:12,flamekeeper_ember:12,dustwalker_compass:11}},
+      {id:'af_prayer_halls',name:'Prayer Halls',icon:'🕯️',desc:'Long corridors lined with offering niches. Many still hold treasures.',
+        weights:{ancient_resin:30,flamekeeper_ember:24,temple_gold:18,dustwalker_compass:12,sand_merchant_seal:10,mirage_dust:6}},
+      {id:'af_crypt_vaults',name:'Crypt Vaults',icon:'💀',desc:'Deep burial chambers where the temple priests interred their greatest works.',
+        weights:{temple_gold:30,sand_merchant_seal:22,mirage_dust:18,ancient_resin:14,dustwalker_compass:10,flamekeeper_ember:6}},
     ],diff:5,unlock:8,time:4,yield:[2,4],dc:18,
     flavor:['Stone doors grind open on hinges that have not moved in a thousand years.']},
 ];
@@ -956,22 +986,44 @@ var generateRelic=(regionDiff,regionName)=>{
 
 // ═══ EXTERNAL THREATS ═══
 var THREAT_FACTIONS={
-  reavers:{id:'reavers',name:'Ashland Reavers',icon:'🏴',color:'#cc4444',
+  reavers:{id:'reavers',name:'Ashland Reavers',icon:'🏴',color:'#cc4444',loc:'cindervale',
     desc:'Bandits preying on trade routes and foraging expeditions.',
     penalties:{
       rising:{expDangerMult:1.10,staffYieldMult:0.90},
       dangerous:{expDangerMult:1.25,staffYieldMult:0.75,shelfTheftChance:0.10},
       critical:{expDangerMult:1.40,staffYieldMult:0.60,shelfTheftChance:0.20},
     }},
-  blight:{id:'blight',name:'The Blight',icon:'🦠',color:'#60a040',
+  blight:{id:'blight',name:'The Blight',icon:'🦠',color:'#60a040',loc:'cindervale',
     desc:'Creeping fungal corruption from the deep caves.',
     penalties:{
       rising:{spoilMult:1.25},
       dangerous:{spoilMult:1.50,contaminateChance:0.10},
       critical:{spoilMult:2.0,contaminateChance:0.20,ingrLossChance:0.10},
     }},
-  veilbreakers:{id:'veilbreakers',name:'Veilbreakers',icon:'💜',color:'#9060c0',
+  veilbreakers:{id:'veilbreakers',name:'Veilbreakers',icon:'💜',color:'#9060c0',loc:'cindervale',
     desc:'Rogue mages destabilizing the magical fabric around Cindervale.',
+    penalties:{
+      rising:{enchDCBonus:1,discoveryMult:0.95},
+      dangerous:{enchDCBonus:2,discoveryMult:0.85,enchPayMult:0.85},
+      critical:{enchDCBonus:3,discoveryMult:0.75,enchPayMult:0.75,custDropChance:0.10},
+    }},
+  // ═══ ASHFALL RIVAL FACTIONS ═══
+  sand_raiders:{id:'sand_raiders',name:'Sand Raiders',icon:'⚔️',color:'#cc6633',loc:'ashfall',
+    desc:'Ruthless desert bandits who prey on caravans and isolated workshops.',
+    penalties:{
+      rising:{expDangerMult:1.10,staffYieldMult:0.90},
+      dangerous:{expDangerMult:1.25,staffYieldMult:0.75,shelfTheftChance:0.10},
+      critical:{expDangerMult:1.40,staffYieldMult:0.60,shelfTheftChance:0.20},
+    }},
+  the_scorch:{id:'the_scorch',name:'The Scorch',icon:'🌡️',color:'#d08020',loc:'ashfall',
+    desc:'A creeping heat corruption that withers ingredients and warps alchemy.',
+    penalties:{
+      rising:{spoilMult:1.25},
+      dangerous:{spoilMult:1.50,contaminateChance:0.10},
+      critical:{spoilMult:2.0,contaminateChance:0.20,ingrLossChance:0.10},
+    }},
+  cult_of_buried:{id:'cult_of_buried',name:'Cult of the Buried',icon:'💀',color:'#8a6040',loc:'ashfall',
+    desc:'Fanatical priests channeling forbidden temple magic to reclaim the Crossing.',
     penalties:{
       rising:{enchDCBonus:1,discoveryMult:0.95},
       dangerous:{enchDCBonus:2,discoveryMult:0.85,enchPayMult:0.85},
@@ -981,11 +1033,15 @@ var THREAT_FACTIONS={
 var getThreatTier=(val)=>val>=75?'critical':val>=50?'dangerous':val>=25?'rising':'calm';
 var getThreatColor=(val)=>val>=75?'#cc2020':val>=50?'#d08020':val>=25?'#c0c020':'#40a040';
 var getThreatLabel=(val)=>val>=75?'Critical':val>=50?'Dangerous':val>=25?'Rising':'Calm';
-var THREAT_IDS=['reavers','blight','veilbreakers'];
+var THREAT_IDS_BY_LOC={cindervale:['reavers','blight','veilbreakers'],ashfall:['sand_raiders','the_scorch','cult_of_buried']};
+var THREAT_IDS=['reavers','blight','veilbreakers']; // default, overridden at runtime
 var FORTRESS_TYPES={
-  reaver_watchtower:{id:'reaver_watchtower',name:'Reaver Watchtower',icon:'🏰',threat:'reavers',cap:50,cost:200,desc:'Permanently caps Reaver threat at 50.'},
-  blight_purifier:{id:'blight_purifier',name:'Blight Purifier',icon:'🧪',threat:'blight',cap:50,cost:200,desc:'Permanently caps Blight threat at 50.'},
-  veil_anchor:{id:'veil_anchor',name:'Veil Anchor',icon:'⚓',threat:'veilbreakers',cap:50,cost:200,desc:'Permanently caps Veilbreaker threat at 50.'},
+  reaver_watchtower:{id:'reaver_watchtower',name:'Reaver Watchtower',icon:'🏰',threat:'reavers',cap:50,cost:200,loc:'cindervale',desc:'Permanently caps Reaver threat at 50.'},
+  blight_purifier:{id:'blight_purifier',name:'Blight Purifier',icon:'🧪',threat:'blight',cap:50,cost:200,loc:'cindervale',desc:'Permanently caps Blight threat at 50.'},
+  veil_anchor:{id:'veil_anchor',name:'Veil Anchor',icon:'⚓',threat:'veilbreakers',cap:50,cost:200,loc:'cindervale',desc:'Permanently caps Veilbreaker threat at 50.'},
+  raider_outpost:{id:'raider_outpost',name:'Desert Watchtower',icon:'🗼',threat:'sand_raiders',cap:50,cost:200,loc:'ashfall',desc:'Permanently caps Sand Raider threat at 50.'},
+  scorch_ward:{id:'scorch_ward',name:'Scorch Ward',icon:'🛡️',threat:'the_scorch',cap:50,cost:200,loc:'ashfall',desc:'Permanently caps Scorch threat at 50.'},
+  cult_seal:{id:'cult_seal',name:'Temple Seal',icon:'🔒',threat:'cult_of_buried',cap:50,cost:200,loc:'ashfall',desc:'Permanently caps Cult threat at 50.'},
 };
 
 // ═══ SEASONS ═══
@@ -1023,17 +1079,17 @@ var SEASONS={
     {id:'bloom',name:'Bloom Season',img:'https://jumppiejim-creator.github.io/cindervale-alchemist/season-bloom.png',icon:'🌺',color:'#60c060',
       desc:'Rare desert rains. Oasis and Sunscorch yields surge. Sandworms surface.',
       yieldMod:0,floraYieldBonus:2,travelMod:0,customerMod:0,spoilMod:0,dangerMod:5,
-      threatMod:{},moraleMod:0,
+      threatMod:{the_scorch:-1},moraleMod:0,
       flavor:['Rain! Actual rain! The desert transforms overnight into a carpet of flowers.','Puddles form in the dunes. Desert creatures emerge to drink.','The oasis overflows its banks. Herbs grow wild along the waterline.']},
     {id:'scorching',name:'Scorching Season',img:'https://jumppiejim-creator.github.io/cindervale-alchemist/season-scorching.png',icon:'🔥',color:'#d06030',
       desc:'Extreme heat. Surface regions cost more. Underground regions thrive. Reavers raid.',
       yieldMod:0,floraYieldBonus:0,travelMod:1,travelMinDiff:3,customerMod:0,spoilMod:-1,dangerMod:5,
-      threatMod:{reavers:1},moraleMod:-3,
+      threatMod:{sand_raiders:1},moraleMod:-3,
       flavor:['The sand burns through boot leather. Only fools travel at midday.','Heat mirages dance on the horizon. The Molten Vents feel almost cool by comparison.','The Flamekeepers stoke the sacred fire higher. It barely competes with the sun.']},
     {id:'dust',name:'Dust Season',img:'https://jumppiejim-creator.github.io/cindervale-alchemist/season-dust.png',icon:'💨',color:'#a08040',
       desc:'Constant sandstorms. All expeditions more dangerous. Spoilage worsens. Mirage Bazaar thrives.',
       yieldMod:0,floraYieldBonus:0,travelMod:0,customerMod:0,spoilMod:-2,dangerMod:15,
-      threatMod:{veilbreakers:1},moraleMod:0,
+      threatMod:{cult_of_buried:1},moraleMod:0,
       flavor:['The wind never stops. Sand finds its way into everything.','Dust clouds blot out the sun for hours at a time.','The Dustwalkers tie ropes between buildings. Visibility is measured in arm lengths.']},
   ],
 };
@@ -2719,16 +2775,27 @@ var BQ_TEMPLATES=[
     descs:['"Something stirs in the caves. We need {qty} Gloom Draught{s} to see in the dark."','"Veilwalker business. {qty} Gloom Draught{s}. Don\'t ask questions."']},
   {type:'deliver',tier:3,pool:['embersteel_oil','holy_flame','celestial_balm','echo_elixir','obsidian_bomb'],qtyR:[1,2],gPer:28,xPer:40,minLv:6,
     descs:['"High-grade alchemy only. {qty} {itemName}{s} for the guild order."','"The captain specifically requested {qty} {itemName}{s}. Top quality."']},
-  {type:'gather',tier:1,pool:['ashbloom','ironroot_bark','char_root','wind_dust'],qtyR:[5,10],gPer:3,xPer:5,minLv:0,
+  {type:'gather',tier:1,loc:'cindervale',pool:['ashbloom','ironroot_bark','char_root','wind_dust'],qtyR:[5,10],gPer:3,xPer:5,minLv:0,
     descs:['"I need {qty} {itemName}. Simple work, fair pay."','"Stock the village stores: {qty} {itemName} from the wilds."']},
-  {type:'gather',tier:1,pool:['embercap','gloomcap','bark_resin','moss_amber'],qtyR:[4,8],gPer:4,xPer:7,minLv:1,
+  {type:'gather',tier:1,loc:'cindervale',pool:['embercap','gloomcap','bark_resin','moss_amber'],qtyR:[4,8],gPer:4,xPer:7,minLv:1,
     descs:['"Materials for the healers. {qty} {itemName}, fresh as you can manage."','"The apothecary needs {qty} {itemName}. Careful handling, please."']},
-  {type:'gather',tier:2,pool:['hearthstone','ashite','moonpetal','biolumen_gel','geode_dust'],qtyR:[3,6],gPer:5,xPer:8,minLv:2,
+  {type:'gather',tier:2,loc:'cindervale',pool:['hearthstone','ashite','moonpetal','biolumen_gel','geode_dust'],qtyR:[3,6],gPer:5,xPer:8,minLv:2,
     descs:['"Crafting supply run: {qty} {itemName} from the deep trails."','"The builders need {qty} {itemName}. Higher quality than market stock."']},
-  {type:'gather',tier:2,pool:['starwort','volcanic_essence','dew_crystal','resonance_ore'],qtyR:[2,5],gPer:7,xPer:10,minLv:4,
+  {type:'gather',tier:2,loc:'cindervale',pool:['starwort','volcanic_essence','dew_crystal','resonance_ore'],qtyR:[2,5],gPer:7,xPer:10,minLv:4,
     descs:['"Dangerous gathering, but the pay matches. {qty} {itemName}."','"Research materials: {qty} {itemName} from the remote regions."']},
-  {type:'gather',tier:3,pool:['embervein','volcanic_essence','obsidian_flake','echo_stone'],qtyR:[2,4],gPer:9,xPer:14,minLv:5,
+  {type:'gather',tier:3,loc:'cindervale',pool:['embervein','volcanic_essence','obsidian_flake','echo_stone'],qtyR:[2,4],gPer:9,xPer:14,minLv:5,
     descs:['"Rare minerals for the forge. {qty} {itemName} — vent-fresh."','"Guild-grade {itemName}, {qty} pieces. Only skilled gatherers need apply."']},
+  // Ashfall gather templates
+  {type:'gather',tier:1,loc:'ashfall',pool:['sunpetal','dustite','scorchroot','ash_salt'],qtyR:[5,10],gPer:3,xPer:5,minLv:0,
+    descs:['"I need {qty} {itemName}. The desert provides, if you know where to look."','"Stock the bazaar: {qty} {itemName} from the flats."']},
+  {type:'gather',tier:1,loc:'ashfall',pool:['crystal_salt','brine_moss','mineral_clay','wind_dust'],qtyR:[4,8],gPer:4,xPer:7,minLv:1,
+    descs:['"The healers need {qty} {itemName}. Fresh from the caverns."','"Salt cave supplies running low. {qty} {itemName}, please."']},
+  {type:'gather',tier:2,loc:'ashfall',pool:['obsidian_shard','ashite','echo_fungus','embervein'],qtyR:[3,6],gPer:5,xPer:8,minLv:2,
+    descs:['"Crafting supply run: {qty} {itemName} from the deep desert."','"The smiths need {qty} {itemName}. Quality stuff only."']},
+  {type:'gather',tier:2,loc:'ashfall',pool:['sandsilk','venomgland','thornvine','dewdrop_lily'],qtyR:[2,5],gPer:7,xPer:10,minLv:4,
+    descs:['"Dangerous gathering in the tunnels. {qty} {itemName}."','"Specialty materials: {qty} {itemName} from the deep regions."']},
+  {type:'gather',tier:3,loc:'ashfall',pool:['volcanic_essence','mirage_dust','ancient_resin','temple_gold'],qtyR:[2,4],gPer:9,xPer:14,minLv:5,
+    descs:['"Premium desert materials. {qty} {itemName} — temple-grade."','"Guild-grade {itemName}, {qty} pieces. Only experienced gatherers."']},
   {type:'deliver',tier:1,pool:['healing_salve','firebrew'],qtyR:[2,4],gPer:14,xPer:20,minLv:2,
     descs:['"A caravan is departing. They need {qty} {itemName}{s} for the road."','"Field medics requisition: {qty} {itemName}{s}, combat-ready."']},
   // Wave 2 templates
@@ -2738,18 +2805,26 @@ var BQ_TEMPLATES=[
     descs:['"Specialist work — {qty} {itemName}{s} for a private buyer."','"The guild has standing orders. {qty} {itemName}{s}, please."']},
   {type:'deliver',tier:3,pool:['dream_dust','pyrestone_flask','void_essence'],qtyR:[1,2],gPer:26,xPer:38,minLv:5,
     descs:['"High-value alchemy. {qty} {itemName}{s}, handled with care."','"This order comes from the capital itself. {qty} {itemName}{s}."']},
-  {type:'gather',tier:1,pool:['ember_petal','soot_crystal','beetle_shell','amber_sap'],qtyR:[4,8],gPer:3,xPer:5,minLv:0,
+  {type:'gather',tier:1,loc:'cindervale',pool:['ember_petal','soot_crystal','beetle_shell','amber_sap'],qtyR:[4,8],gPer:3,xPer:5,minLv:0,
     descs:['"Simple gathering work. {qty} {itemName}, fair pay."','"Fetch {qty} {itemName} from the wilds. I need them by sundown."']},
-  {type:'gather',tier:2,pool:['echo_fungus','ghost_silk','singing_quartz','copper_vein','moth_scale'],qtyR:[3,6],gPer:5,xPer:8,minLv:2,
+  {type:'gather',tier:2,loc:'cindervale',pool:['echo_fungus','ghost_silk','singing_quartz','copper_vein','moth_scale'],qtyR:[3,6],gPer:5,xPer:8,minLv:2,
     descs:['"Specialty materials: {qty} {itemName}. Handle with care."','"These aren\'t easy to find. {qty} {itemName}, and I\'ll make it worth your while."']},
-  {type:'gather',tier:3,pool:['lava_pearl','pyrestone','mithril_dust','void_salt'],qtyR:[2,4],gPer:9,xPer:14,minLv:5,
+  {type:'gather',tier:3,loc:'cindervale',pool:['lava_pearl','pyrestone','mithril_dust','void_salt'],qtyR:[2,4],gPer:9,xPer:14,minLv:5,
     descs:['"Dangerous territory, premium materials. {qty} {itemName}."','"Only experienced gatherers. {qty} {itemName}, deep region quality."']},
+  // Ashfall wave 2 gather templates
+  {type:'gather',tier:1,loc:'ashfall',pool:['scorchroot','ashbloom','dustite','sunpetal'],qtyR:[4,8],gPer:3,xPer:5,minLv:0,
+    descs:['"Simple desert gathering. {qty} {itemName}, fair pay."','"The bazaar needs restocking. {qty} {itemName} by sundown."']},
+  {type:'gather',tier:2,loc:'ashfall',pool:['brine_moss','gloomcap','obsidian_shard','crystal_salt'],qtyR:[3,6],gPer:5,xPer:8,minLv:2,
+    descs:['"Specialty desert materials: {qty} {itemName}. Handle with care."','"The guild needs {qty} {itemName}. Worth your while."']},
+  {type:'gather',tier:3,loc:'ashfall',pool:['sandsilk','venomgland','living_ember','magma_diamond'],qtyR:[2,4],gPer:9,xPer:14,minLv:5,
+    descs:['"Deep desert materials, premium pay. {qty} {itemName}."','"Only experienced desert foragers. {qty} {itemName}."']},
 ];
 
-var genBoardQuests=(level,day,bonusQuests=0)=>{
+var genBoardQuests=(level,day,bonusQuests=0,loc='cindervale')=>{
   const n=2+Math.floor(Math.random()*2)+bonusQuests; // 2-3 quests + bonus
-  const avail=BQ_TEMPLATES.filter(t=>level>=t.minLv);
+  const avail=BQ_TEMPLATES.filter(t=>level>=t.minLv&&(!t.loc||t.loc===loc));
   if(avail.length===0)return[];
+  const locFactions=loc==='ashfall'?['sand_merchants','flamekeepers','dustwalkers']:['hearthkeepers','ashwardens','veilwalkers','cinderfolk'];
   const quests=[];var usedGivers=[];
   for(let i=0;i<n;i++){
     const tmpl=avail[Math.floor(Math.random()*avail.length)];
@@ -2764,7 +2839,7 @@ var genBoardQuests=(level,day,bonusQuests=0)=>{
     const itemIcon=r?r.icon:ing?.icon||'';
     const gold=qty*tmpl.gPer+Math.floor(level*1.5);
     const xpR=qty*tmpl.xPer+level*3;
-    const faction=['hearthkeepers','ashwardens','veilwalkers','cinderfolk'][Math.floor(Math.random()*4)];
+    const faction=locFactions[Math.floor(Math.random()*locFactions.length)];
     const fRep=5+tmpl.tier*3;
     const desc=tmpl.descs[Math.floor(Math.random()*tmpl.descs.length)]
       .replace(/\{qty\}/g,qty).replace(/\{itemName\}/g,itemName).replace(/\{s\}/g,qty>1?'s':'');
