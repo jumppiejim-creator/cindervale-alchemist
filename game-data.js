@@ -3011,19 +3011,47 @@ var BQ_TEMPLATES=[
     descs:['"Specialty desert materials: {qty} {itemName}. Handle with care."','"The guild needs {qty} {itemName}. Worth your while."']},
   {type:'gather',tier:3,loc:'ashfall',pool:['sandsilk','venomgland','living_ember','magma_diamond'],qtyR:[2,4],gPer:9,xPer:14,minLv:5,
     descs:['"Deep desert materials, premium pay. {qty} {itemName}."','"Only experienced desert foragers. {qty} {itemName}."']},
+  // Ashfall deliver templates
+  {type:'deliver',tier:1,loc:'ashfall',pool:['sunstroke_tonic','dust_shield','cactus_poultice','salt_tonic'],qtyR:[1,2],gPer:12,xPer:18,minLv:0,
+    descs:['"The heat is brutal today. {qty} {itemName}{s} for the workers, please."','"Caravan guards need {qty} {itemName}{s} before departure."']},
+  {type:'deliver',tier:1,loc:'ashfall',pool:['scorchroot_tea','sandglass_lens','chitin_paste','sandveil_draught'],qtyR:[2,4],gPer:10,xPer:15,minLv:0,
+    descs:['"Basic supplies for the Crossing. {qty} {itemName}{s}, if you please."','"The bazaar vendors need {qty} {itemName}{s} for their stalls."']},
+  {type:'deliver',tier:2,loc:'ashfall',pool:['obsidian_edge_oil','ember_ink','desert_balm','cave_salt_elixir','sulfur_flash'],qtyR:[1,3],gPer:16,xPer:24,minLv:2,
+    descs:['"Specialist desert alchemy. {qty} {itemName}{s} for a private buyer."','"The guild has standing orders. {qty} {itemName}{s}, please."']},
+  {type:'deliver',tier:2,loc:'ashfall',pool:['sandsilk_salve','venom_antidote','obsidian_varnish','ghost_pepper_oil','venom_silk_wrap'],qtyR:[1,2],gPer:18,xPer:28,minLv:3,
+    descs:['"These are hard to come by. {qty} {itemName}{s} and I\'ll make it worth your while."','"Expedition supplies — {qty} {itemName}{s} for the deep desert team."']},
+  {type:'deliver',tier:2,loc:'ashfall',pool:['desert_iron_flask','desert_iron_tonic','scarab_tonic'],qtyR:[1,2],gPer:18,xPer:28,minLv:4,
+    descs:['"The caravan masters want {qty} {itemName}{s}. Good pay."','"Border defense order: {qty} {itemName}{s} for the scouts."']},
+  {type:'deliver',tier:3,loc:'ashfall',pool:['spirit_sand_elixir','storm_glass_flask','crystal_resonance','volcanic_salve','mirage_elixir'],qtyR:[1,2],gPer:26,xPer:38,minLv:5,
+    descs:['"High-grade desert alchemy. {qty} {itemName}{s}, handled with care."','"This order comes from the Guild Master himself. {qty} {itemName}{s}."']},
+  {type:'deliver',tier:3,loc:'ashfall',pool:['sun_diamond_draught','molten_pearl_elixir','dream_draught','temple_incense'],qtyR:[1,2],gPer:28,xPer:40,minLv:6,
+    descs:['"Only the finest alchemist in the Crossing can fill this order. {qty} {itemName}{s}."','"The Flamekeepers request {qty} {itemName}{s}. Sacred work."']},
 ];
 
 var genBoardQuests=(level,day,bonusQuests=0,loc='cindervale')=>{
   const n=2+Math.floor(Math.random()*2)+bonusQuests; // 2-3 quests + bonus
   const avail=BQ_TEMPLATES.filter(t=>level>=t.minLv&&(!t.loc||t.loc===loc));
   if(avail.length===0)return[];
+  // Build set of locally available ingredients for recipe craftability check
+  const locIngrSet=new Set();
+  REGIONS.filter(r=>r.loc===loc).forEach(r=>r.ingr.forEach(i=>locIngrSet.add(i)));
+  const canCraftHere=(recipeId)=>{const r=RECIPES.find(x=>x.id===recipeId);return r&&r.ingr.every(id=>locIngrSet.has(id));};
   const locFactions=loc==='ashfall'?['sand_merchants','flamekeepers','dustwalkers']:['hearthkeepers','ashwardens','veilwalkers','cinderfolk'];
   const quests=[];var usedGivers=[];
   for(let i=0;i<n;i++){
-    const tmpl=avail[Math.floor(Math.random()*avail.length)];
+    // For deliver templates, filter pool to locally craftable recipes
+    let tmpl,localPool;
+    let attempts=0;
+    do{
+      tmpl=avail[Math.floor(Math.random()*avail.length)];
+      if(tmpl.type==='deliver'){localPool=tmpl.pool.filter(canCraftHere);}
+      else{localPool=tmpl.pool;}
+      attempts++;
+    }while(localPool.length===0&&attempts<20);
+    if(localPool.length===0)continue;
     let giver;do{giver=BQ_GIVERS[Math.floor(Math.random()*BQ_GIVERS.length)];}while(usedGivers.includes(giver));
     usedGivers.push(giver);
-    const itemId=tmpl.pool[Math.floor(Math.random()*tmpl.pool.length)];
+    const itemId=localPool[Math.floor(Math.random()*localPool.length)];
     const qty=tmpl.qtyR[0]+Math.floor(Math.random()*(tmpl.qtyR[1]-tmpl.qtyR[0]+1))+Math.floor(level/5);
     const isPotion=tmpl.type==='deliver';
     const r=isPotion?RECIPES.find(x=>x.id===itemId):null;
