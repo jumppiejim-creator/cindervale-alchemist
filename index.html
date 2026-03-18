@@ -232,6 +232,7 @@ function CindervaleAlchemistInner(){
   const [showTorch,setShowTorch]=useState(false);
   const [showLocationSelect,setShowLocationSelect]=useState(false);
   const [newGameLegacy,setNewGameLegacy]=useState(null);
+  const [newGameHeirloom,setNewGameHeirloom]=useState(null);
   const [newGameStep,setNewGameStep]=useState(0);
   const [torchApprentice,setTorchApprentice]=useState(null);
   const [torchStep,setTorchStep]=useState(0); // 0=closed, 1=apprentice, 2=heirloom, 3=legacy, 4=location
@@ -4864,7 +4865,7 @@ function CindervaleAlchemistInner(){
               return '+'+v+' '+k.replace(/([A-Z])/g,' $1').toLowerCase();
             };
             return <div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'#000000dd',display:'flex',alignItems:'center',justifyContent:'center',zIndex:9999,padding:16}}
-            onClick={()=>{setShowLocationSelect(false);setNewGameLegacy(null);setNewGameStep(0);}}>
+            onClick={()=>{setShowLocationSelect(false);setNewGameLegacy(null);setNewGameHeirloom(null);setNewGameStep(0);}}>
             <div style={{background:TH.bg,border:'2px solid '+(lineage?'#c050e0':TH.gold),borderRadius:12,padding:20,maxWidth:580,width:'100%',maxHeight:'90vh',overflowY:'auto'}} onClick={e=>e.stopPropagation()}>
 
               {/* Step 0: Legacy Feature selection (only if lineage with options) */}
@@ -4898,39 +4899,69 @@ function CindervaleAlchemistInner(){
                 </div>
                 <div style={{display:'flex',gap:8}}>
                   <button style={{...S.btn('gold'),flex:1,fontSize:15,padding:'8px 0'}} onClick={()=>setNewGameStep(1)}>
-                    {newGameLegacy?'Next: Choose Location →':'Skip Legacy → Choose Location'}
+                    {newGameLegacy?'Next: Choose Heirloom →':'Skip Legacy → Choose Heirloom'}
                   </button>
-                  <button style={{...S.btn('dim'),padding:'8px 16px'}} onClick={()=>{setShowLocationSelect(false);setNewGameLegacy(null);setNewGameStep(0);}}>Cancel</button>
+                  <button style={{...S.btn('dim'),padding:'8px 16px'}} onClick={()=>{setShowLocationSelect(false);setNewGameLegacy(null);setNewGameHeirloom(null);setNewGameStep(0);}}>Cancel</button>
                 </div>
               </>}
 
+              {/* Step 1: Heirloom selection */}
+              {lineage&&newGameStep===1&&<>
+                <div style={{fontSize:20,color:TH.gold,textAlign:'center',marginBottom:4}}>Choose an Heirloom Upgrade</div>
+                <div style={{fontSize:13,color:TH.textDim,textAlign:'center',marginBottom:10}}>Your dynasty's resources grant one free workshop upgrade from Day 1.</div>
+                <div style={{display:'flex',flexDirection:'column',gap:5,marginBottom:12,maxHeight:400,overflowY:'auto'}}>
+                  {Object.entries(UPGRADES).filter(([,u])=>(u.tier||1)<=2).map(([uid,u])=>{const sel=newGameHeirloom===uid;return(
+                    <div key={uid} style={{padding:'8px 12px',background:sel?TH.gold+'15':TH.panel,borderRadius:6,border:'2px solid '+(sel?TH.gold:TH.border),cursor:'pointer',transition:'all .15s'}}
+                      onClick={()=>setNewGameHeirloom(sel?null:uid)}>
+                      <div style={{display:'flex',alignItems:'center',gap:6}}>
+                        <span style={{fontSize:20}}>{u.icon}</span>
+                        <div style={{flex:1}}>
+                          <div style={{fontSize:14,color:sel?TH.gold:TH.textBright,fontWeight:sel?'bold':'normal'}}>{u.name}{sel&&<span style={{fontSize:12,marginLeft:6}}>✓</span>}</div>
+                          <div style={{fontSize:11,color:TH.textDim}}>{u.desc}</div>
+                        </div>
+                      </div>
+                    </div>);})}
+                </div>
+                <div style={{display:'flex',gap:8}}>
+                  <button style={{...S.btn('dim'),padding:'8px 16px'}} onClick={()=>setNewGameStep(0)}>← Back</button>
+                  <button style={{...S.btn('gold'),flex:1,fontSize:15,padding:'8px 0'}} onClick={()=>setNewGameStep(2)}>
+                    {newGameHeirloom?'Next: Choose Location →':'Skip Heirloom → Choose Location'}
+                  </button>
+                </div>
+                <div style={{fontSize:12,color:TH.textDim,textAlign:'center',marginTop:4}}>{newGameHeirloom?UPGRADES[newGameHeirloom]?.icon+' '+UPGRADES[newGameHeirloom]?.name+' selected':'No heirloom selected (that\'s ok)'}</div>
+              </>}
+
               {/* Step 1 (or only step if no lineage): Location selection */}
-              {(!lineage||legacyOptions.length===0||newGameStep===1)&&<>
+              {(!lineage||legacyOptions.length===0||newGameStep===2)&&<>
                 <div style={{fontSize:22,color:TH.gold,textAlign:'center',marginBottom:8}}>
                   {lineage?'Choose Starting Location':'Choose Your Location'}
                 </div>
                 {lineage&&<>
                   <div style={{fontSize:13,color:'#c050e0',textAlign:'center',marginBottom:4}}>🏰 {lineage.name} · Generation {lineage.totalGenerations+1}</div>
-                  {newGameLegacy&&<div style={{padding:'6px 10px',background:TH.panel,borderRadius:6,marginBottom:8,border:'1px solid #c050e033'}}>
+                  {newGameLegacy&&<div style={{padding:'6px 10px',background:TH.panel,borderRadius:6,marginBottom:4,border:'1px solid #c050e033'}}>
                     <div style={{fontSize:12,color:'#c050e0'}}>{newGameLegacy.icon} Legacy: {newGameLegacy.name} — {Object.entries(newGameLegacy.effects||{}).map(([k,v])=>fmtEffect(k,v)).join(', ')}</div>
                   </div>}
+                  {newGameHeirloom&&<div style={{padding:'6px 10px',background:TH.panel,borderRadius:6,marginBottom:4,border:'1px solid '+TH.gold+'33'}}>
+                    <div style={{fontSize:12,color:TH.gold}}>{UPGRADES[newGameHeirloom]?.icon} Heirloom: {UPGRADES[newGameHeirloom]?.name}</div>
+                  </div>}
                   <div style={{fontSize:12,color:TH.textDim,textAlign:'center',marginBottom:8}}>
-                    <button style={{fontSize:12,color:'#c050e0',background:'none',border:'none',cursor:'pointer',textDecoration:'underline',fontFamily:'inherit'}} onClick={()=>{if(confirm('Start completely fresh with no legacy bonuses? This cannot be undone.')){setLineage(null);setNewGameLegacy(null);setNewGameStep(0);}}}>Start Fresh Instead (erase lineage)</button>
+                    <button style={{fontSize:12,color:'#c050e0',background:'none',border:'none',cursor:'pointer',textDecoration:'underline',fontFamily:'inherit'}} onClick={()=>{if(confirm('Start completely fresh with no legacy bonuses? This cannot be undone.')){setLineage(null);setNewGameLegacy(null);setNewGameHeirloom(null);setNewGameStep(0);}}}>Start Fresh Instead (erase lineage)</button>
                   </div>
                 </>}
                 {Object.values(LOCATIONS).map(loc=><div key={loc.id} style={{padding:'12px 14px',background:TH.panel,borderRadius:8,marginBottom:8,border:'2px solid '+TH.border,cursor:'pointer'}}
                   onClick={()=>{setShowLocationSelect(false);
                     const inheritLegacy=newGameLegacy||null;
-                    setNewGameLegacy(null);setNewGameStep(0);
-                    if(lineage){newGame(loc.id,{legacyFeature:inheritLegacy});}
+                    const inheritHeirloom=newGameHeirloom||null;
+                    setNewGameLegacy(null);setNewGameHeirloom(null);setNewGameStep(0);
+                    if(lineage){newGame(loc.id,{legacyFeature:inheritLegacy,heirloom:inheritHeirloom});}
                     else{newGame(loc.id);}
                   }}>
                   <div style={{fontSize:18,color:TH.gold,fontWeight:'bold'}}>{loc.icon} {loc.name}</div>
                   <div style={{fontSize:14,color:TH.textDim,marginTop:3,lineHeight:1.4}}>{loc.desc}</div>
                 </div>)}
                 <div style={{display:'flex',gap:8,marginTop:4}}>
-                  {lineage&&legacyOptions.length>0&&<button style={{...S.btn('dim'),flex:1}} onClick={()=>setNewGameStep(0)}>← Back to Legacy</button>}
-                  <button style={{...S.btn('dim'),flex:1}} onClick={()=>{setShowLocationSelect(false);setNewGameLegacy(null);setNewGameStep(0);}}>Cancel</button>
+                  {lineage&&<button style={{...S.btn('dim'),flex:1}} onClick={()=>setNewGameStep(1)}>← Back to Heirloom</button>}
+                  <button style={{...S.btn('dim'),flex:1}} onClick={()=>{setShowLocationSelect(false);setNewGameLegacy(null);setNewGameHeirloom(null);setNewGameStep(0);}}>Cancel</button>
                 </div>
               </>}
             </div>
