@@ -4749,7 +4749,8 @@ function CindervaleAlchemistInner(){
           <div style={{fontSize:32,color:TH.gold,letterSpacing:4,marginBottom:4,textShadow:`0 0 20px ${TH.goldDim}`}}>⚗️</div>
           <div style={{fontSize:32,color:TH.gold,letterSpacing:3,marginBottom:2}}>Cindervale Alchemist</div>
           <div style={{fontSize:14,color:'#d4a420',marginTop:4}}>Build {BUILD_VERSION}</div>
-          <div style={{color:TH.textDim,fontSize:16,marginBottom:30}}>Crafting · Enchanting · Community</div>
+          <div style={{color:TH.textDim,fontSize:16,marginBottom:16}}>Crafting · Enchanting · Community</div>
+          <a href="cindervale_handbook.pdf" target="_blank" rel="noopener noreferrer" style={{display:'inline-block',padding:'6px 16px',background:TH.panel,color:TH.gold,border:'1px solid '+TH.borderGold,borderRadius:6,fontSize:14,textDecoration:'none',marginBottom:20,cursor:'pointer'}}>📖 Player's Handbook</a>
           {loadingSlots?<div style={{color:TH.textDim}}>Loading...</div>:<>
           {autoSaveData&&<div style={{...S.card,borderColor:TH.green,textAlign:'left',cursor:'pointer'}} onClick={()=>loadSave(autoSaveData)}>
             <div style={{fontSize:18,color:TH.green}}>▶ Continue — {autoSaveData.charName||'?'}</div>
@@ -5606,6 +5607,7 @@ function CindervaleAlchemistInner(){
             <button style={{...S.btn('gold'),fontSize:14,padding:'3px 10px'}} onClick={()=>setConfirmRest(true)}>🌙 Rest (⚡{hours})</button>
             {undoStack.length>0&&<button style={{...S.btn('def'),fontSize:14,padding:'3px 8px'}} onClick={undo}>↩️ Undo</button>}
             <button style={{...S.btn('dim'),fontSize:14,padding:'3px 8px'}} onClick={()=>setShowSaveMenu(true)}>💾</button>
+            <a href="cindervale_handbook.pdf" target="_blank" rel="noopener noreferrer" style={{...S.btn('dim'),fontSize:14,padding:'3px 8px',textDecoration:'none',display:'inline-flex',alignItems:'center'}}>📖</a>
             <button style={{...S.btn((musicOn||sfxOn)?'gold':'dim'),fontSize:14,padding:'3px 8px'}} onClick={()=>setShowAudioPanel(p=>!p)} title="Audio Settings">🎵</button>
           </div>
         </div>
