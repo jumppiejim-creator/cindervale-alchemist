@@ -551,7 +551,11 @@ function CindervaleAlchemistInner(){
       const slots=[];
       for(let i=1;i<=2;i++){try{slots.push(await sGet(sK(i)));}catch(e){slots.push(null);}}
       let auto=null;try{auto=await sGet(AK);}catch(e){}
-      setSaveSlots(slots);setAutoSaveData(auto);setLoadingSlots(false);if(auto?.lineage)setLineage(auto.lineage);else if(slots.find(s=>s?.lineage))setLineage(slots.find(s=>s?.lineage).lineage);
+      setSaveSlots(slots);setAutoSaveData(auto);setLoadingSlots(false);
+      // Load lineage: try save data first, then localStorage fallback
+      if(auto?.lineage)setLineage(auto.lineage);
+      else if(slots.find(s=>s?.lineage))setLineage(slots.find(s=>s?.lineage).lineage);
+      else{const lsLineage=loadLineage();if(lsLineage)setLineage(lsLineage);}
     })();
   },[]);
 
@@ -988,6 +992,49 @@ function CindervaleAlchemistInner(){
       setGameStarted(true);setShowImport(false);setImportInput('');setImportText('');
       setSaveMsg('Loaded: '+data.charName+' — Day '+data.day);setTimeout(()=>setSaveMsg(null),4000);
     }catch(e){setSaveMsg('Import failed: '+e.message);setTimeout(()=>setSaveMsg(null),5000);}
+  };
+
+  // ═══ LINEAGE EXPORT / IMPORT ═══
+  const [lineageMsg,setLineageMsg]=useState(null);
+  const [showLineageTransfer,setShowLineageTransfer]=useState(false);
+  const [lineageImportInput,setLineageImportInput]=useState('');
+  const exportLineage=()=>{
+    if(!lineage||!lineage.generations?.length){setLineageMsg('No lineage to export.');setTimeout(()=>setLineageMsg(null),3000);return;}
+    try{
+      const json=JSON.stringify(lineage);
+      const b64=btoa(unescape(encodeURIComponent(json)));
+      const code='LIN1~'+b64;
+      if(navigator.clipboard?.writeText){
+        navigator.clipboard.writeText(code).then(()=>setLineageMsg('Lineage code copied! ('+lineage.generations.length+' generation'+(lineage.generations.length!==1?'s':'')+')')).catch(()=>setLineageMsg('Export ready — copy from box.'));
+      }else{setLineageMsg('Export ready — copy from box.');}
+      setLineageImportInput(code);setShowLineageTransfer(true);
+    }catch(e){setLineageMsg('Export failed: '+e.message);}
+    setTimeout(()=>setLineageMsg(null),5000);
+  };
+  const importLineage=(str)=>{
+    if(!str||!str.trim()){setLineageMsg('Paste a lineage code first.');setTimeout(()=>setLineageMsg(null),3000);return;}
+    try{
+      let clean=str.replace(/[\s\u200B\uFEFF]/g,'');
+      if(clean.startsWith('LIN1~'))clean=clean.slice(5);
+      let json;
+      try{json=decodeURIComponent(escape(atob(clean)));}catch(e){
+        try{json=str.trim();JSON.parse(json);}catch(e2){
+          setLineageMsg('Import failed: code appears corrupted.');setTimeout(()=>setLineageMsg(null),5000);return;
+        }
+      }
+      const data=JSON.parse(json);
+      if(!data.generations||!data.totalGenerations){setLineageMsg('Invalid lineage data.');setTimeout(()=>setLineageMsg(null),3000);return;}
+      setLineage(data);saveLineage(data);
+      setLineageMsg('Imported: '+data.name+' — '+data.totalGenerations+' generation'+(data.totalGenerations!==1?'s':''));
+      setLineageImportInput('');setShowLineageTransfer(false);
+      setTimeout(()=>setLineageMsg(null),4000);
+    }catch(e){setLineageMsg('Import failed: '+e.message);setTimeout(()=>setLineageMsg(null),5000);}
+  };
+  const deleteLineage=()=>{
+    if(!confirm('Permanently delete your lineage? All generation history, mentor bonuses, and legacy features will be lost. This cannot be undone.'))return;
+    setLineage(null);
+    try{localStorage.removeItem(LINEAGE_KEY);}catch(e){}
+    setLineageMsg('Lineage deleted.');setTimeout(()=>setLineageMsg(null),3000);
   };
 
   // ─── HARVEST (Hour-by-Hour Expedition) ───
@@ -4678,6 +4725,7 @@ function CindervaleAlchemistInner(){
     return(
       <div style={S.app}><link href="https://fonts.googleapis.com/css2?family=Almendra:wght@400;700&display=swap" rel="stylesheet"/>
         {saveMsg&&<div style={{position:'fixed',top:8,left:'50%',transform:'translateX(-50%)',background:TH.greenDim,color:TH.green,padding:'6px 16px',borderRadius:6,fontSize:15,zIndex:1000,border:`1px solid ${TH.green}44`,maxWidth:'90%',textAlign:'center'}}>{saveMsg}</div>}
+        {lineageMsg&&<div style={{position:'fixed',top:saveMsg?44:8,left:'50%',transform:'translateX(-50%)',background:'#c050e020',color:'#c050e0',padding:'6px 16px',borderRadius:6,fontSize:15,zIndex:1000,border:'1px solid #c050e044',maxWidth:'90%',textAlign:'center'}}>{lineageMsg}</div>}
         <div style={{maxWidth:500,padding:'60px 20px',width:'100%',textAlign:'center'}}>
           <div style={{fontSize:32,color:TH.gold,letterSpacing:4,marginBottom:4,textShadow:`0 0 20px ${TH.goldDim}`}}>⚗️</div>
           <div style={{fontSize:32,color:TH.gold,letterSpacing:3,marginBottom:2}}>Cindervale Alchemist</div>
@@ -4723,23 +4771,68 @@ function CindervaleAlchemistInner(){
                 })}
               </div>
             </div>}
+            <div style={{display:'flex',gap:6,marginTop:8}}>
+              <button style={{...S.btn('def'),fontSize:13,flex:1}} onClick={exportLineage}>📤 Export Lineage</button>
+              <button style={{...S.btn('red'),fontSize:13}} onClick={deleteLineage}>🗑️ Delete</button>
+            </div>
           </div>}
 
+          {/* Lineage Transfer (import when no lineage, or always accessible) */}
+          <div style={{...S.card,marginTop:8,textAlign:'left',borderColor:'#c050e033'}}>
+            <div style={{...S.cT,cursor:'pointer',display:'flex',justifyContent:'space-between',alignItems:'center',color:'#c050e0'}} onClick={()=>setShowLineageTransfer(p=>!p)}>
+              <span>🏰 Lineage Transfer</span><span style={{fontSize:13,color:TH.textDim}}>{showLineageTransfer?'▲':'▼'}</span>
+            </div>
+            {showLineageTransfer&&<>
+              <div style={{fontSize:13,color:TH.textDim,marginBottom:8}}>
+                {lineage?'Export your lineage to another device, or import a different one.':'Import a lineage from another device to continue your dynasty here.'}
+              </div>
+              {lineage&&<button style={{...S.btn('def'),fontSize:14,width:'100%',marginBottom:8}} onClick={exportLineage}>📤 Export Lineage ({lineage.totalGenerations} gen{lineage.totalGenerations!==1?'s':''})</button>}
+              {lineageImportInput&&<div style={{marginBottom:8}}>
+                <textarea style={{width:'100%',height:60,fontSize:12,background:TH.panel,color:TH.text,border:'1px solid '+TH.border,borderRadius:4,padding:6,fontFamily:'monospace',resize:'vertical'}} value={lineageImportInput} readOnly onClick={e=>e.target.select()}/>
+              </div>}
+              <div style={{display:'flex',gap:4,marginBottom:4}}>
+                <input style={{flex:1,padding:'6px 8px',fontSize:13,background:TH.panel,color:TH.text,border:'1px solid '+TH.border,borderRadius:4,fontFamily:'monospace'}}
+                  placeholder="Paste lineage code here..." value={lineageImportInput} onChange={e=>setLineageImportInput(e.target.value)}/>
+                <button style={{...S.btn('gold'),fontSize:14}} onClick={()=>importLineage(lineageImportInput)}>📥 Import</button>
+              </div>
+              {lineageMsg&&<div style={{fontSize:13,color:'#c050e0',marginTop:4,textAlign:'center'}}>{lineageMsg}</div>}
+            </>}
+          </div>
+
           {/* Location Selection Modal (new game only, not torch) */}
-          {showLocationSelect&&<div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'#000000dd',display:'flex',alignItems:'center',justifyContent:'center',zIndex:9999,padding:16}}
+          {showLocationSelect&&(()=>{
+            const lastGen=lineage?.generations?.[lineage.generations.length-1];
+            const lastLegacy=lastGen?.legacyFeature||null;
+            return <div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'#000000dd',display:'flex',alignItems:'center',justifyContent:'center',zIndex:9999,padding:16}}
             onClick={()=>setShowLocationSelect(false)}>
-            <div style={{background:TH.bg,border:'2px solid '+TH.gold,borderRadius:12,padding:20,maxWidth:500,width:'100%'}} onClick={e=>e.stopPropagation()}>
-              <div style={{fontSize:22,color:TH.gold,textAlign:'center',marginBottom:12}}>Choose Your Location
-              {lineage&&<div style={{fontSize:13,color:TH.textDim,textAlign:'center',marginBottom:4}}>Starting with {lineage.name} legacy bonuses. <button style={{fontSize:12,color:'#c050e0',background:'none',border:'none',cursor:'pointer',textDecoration:'underline',fontFamily:'inherit'}} onClick={()=>{if(confirm('Start a completely fresh game with no legacy bonuses?'))setLineage(null);}}>Start Fresh Instead</button></div>}</div>
-              {lineage&&<div style={{fontSize:13,color:'#c050e0',textAlign:'center',marginBottom:8}}>🏰 {lineage.name} · Generation {lineage.totalGenerations+1}</div>}
+            <div style={{background:TH.bg,border:'2px solid '+TH.gold,borderRadius:12,padding:20,maxWidth:520,width:'100%',maxHeight:'90vh',overflowY:'auto'}} onClick={e=>e.stopPropagation()}>
+              <div style={{fontSize:22,color:TH.gold,textAlign:'center',marginBottom:8}}>
+                {lineage?'Continue Your Legacy':'Choose Your Location'}
+              </div>
+              {lineage&&<>
+                <div style={{fontSize:13,color:'#c050e0',textAlign:'center',marginBottom:8}}>🏰 {lineage.name} · Generation {lineage.totalGenerations+1}</div>
+                <div style={{padding:'8px 12px',background:TH.panel,borderRadius:6,marginBottom:12,border:'1px solid #c050e033'}}>
+                  <div style={{fontSize:13,color:TH.textDim,marginBottom:4}}><b style={{color:TH.textBright}}>Lineage Bonuses:</b></div>
+                  <div style={{fontSize:12,color:TH.textDim}}>{Object.entries(getMentorBonuses()).map(([k,v])=>k+' +'+v).join(', ')||'None yet'}</div>
+                  {lastLegacy&&<div style={{fontSize:12,color:'#c050e0',marginTop:4}}>{lastLegacy.icon} Legacy: {lastLegacy.name} — {lastLegacy.desc}</div>}
+                </div>
+                <div style={{fontSize:12,color:TH.textDim,textAlign:'center',marginBottom:8}}>
+                  <button style={{fontSize:12,color:'#c050e0',background:'none',border:'none',cursor:'pointer',textDecoration:'underline',fontFamily:'inherit'}} onClick={()=>{if(confirm('Start completely fresh with no legacy bonuses? This cannot be undone.'))setLineage(null);}}>Start Fresh Instead (erase lineage)</button>
+                </div>
+              </>}
               {Object.values(LOCATIONS).map(loc=><div key={loc.id} style={{padding:'12px 14px',background:TH.panel,borderRadius:8,marginBottom:8,border:'2px solid '+TH.border,cursor:'pointer'}}
-                onClick={()=>{setShowLocationSelect(false);newGame(loc.id);}}>
+                onClick={()=>{setShowLocationSelect(false);
+                  if(lineage&&lastLegacy){
+                    newGame(loc.id,{legacyFeature:lastLegacy});
+                  } else {newGame(loc.id);}
+                }}>
                 <div style={{fontSize:18,color:TH.gold,fontWeight:'bold'}}>{loc.icon} {loc.name}</div>
                 <div style={{fontSize:14,color:TH.textDim,marginTop:3,lineHeight:1.4}}>{loc.desc}</div>
               </div>)}
               <button style={{...S.btn('dim'),width:'100%',marginTop:4}} onClick={()=>setShowLocationSelect(false)}>Cancel</button>
             </div>
-          </div>}
+          </div>;
+          })()}
 
           {/* Cross-device save transfer */}
           <div style={{...S.card,marginTop:12,textAlign:'left'}}>
