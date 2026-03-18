@@ -841,7 +841,11 @@ function CindervaleAlchemistInner(){
       inv:inheritData?.inv||{...locData.startInv},
       known:inheritData?.recipes||[...locData.startRecipes],
       upgrades:inheritData?.heirloom?[inheritData.heirloom]:[],
-      fRep:inheritData?.fRep||(loc==='ashfall'?{sand_merchants:0,flamekeepers:0,dustwalkers:0}:{ashwardens:0,hearthkeepers:0,veilwalkers:0,cinderfolk:0}),
+      fRep:(()=>{
+        const locFacs=loc==='ashfall'?{sand_merchants:0,flamekeepers:0,dustwalkers:0}:{ashwardens:0,hearthkeepers:0,veilwalkers:0,cinderfolk:0};
+        if(inheritData?.fRep){Object.keys(locFacs).forEach(fid=>{if(inheritData.fRep[fid])locFacs[fid]=inheritData.fRep[fid];});}
+        return locFacs;
+      })(),
       lineage:lineage||null,
       museum:inheritData?.museum||{pottery:0,tablets:0,jewelry:0,mechanisms:0,weapons:0},
       threats:{reavers:0,blight:0,veilbreakers:0},outposts:[],defenseQuests:[],
