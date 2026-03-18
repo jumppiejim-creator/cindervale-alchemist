@@ -345,6 +345,7 @@ function CindervaleAlchemistInner(){
   // ═══ LOCATION FILTERING ═══
   const locRegions=REGIONS.filter(r=>!r.loc||r.loc===gameLocation);
   const locThreatIds=THREAT_IDS_BY_LOC[gameLocation]||THREAT_IDS;
+  const locName=LOCATIONS[gameLocation]?.name||'Cindervale';
   const locFactions=Object.fromEntries(Object.entries(FACTIONS).filter(([,f])=>!f.loc||f.loc===gameLocation));
   const locQuests=QUESTS.filter(q=>{if(q.id.startsWith('aq'))return gameLocation==='ashfall';if(q.id.startsWith('q')||q.id.startsWith('fc_'))return gameLocation==='cindervale';return true;});
   const locApprentices=AP_POOL.filter(a=>!a.loc||a.loc===gameLocation);
@@ -1783,7 +1784,7 @@ function CindervaleAlchemistInner(){
       const masteryCount=results.filter(r=>r.mastery).length;
       addLog(`👑 THE FINAL STAND IS WON! ${charName} has broken the Hollow March! +${fs.xp} XP, +${fs.gold}g. Threats capped at ${fs.threatCap}.${masteryCount>0?' ★ '+masteryCount+' masterful victories!':''}`,'quest');
       setEventPopup({events:[{
-        text:`👑 The Hollow March is Broken!\n\n${charName} stands atop the ward-stones as the last invaders dissolve into mist. The Veil seals with a sound like a cathedral bell.\n\n${results.map(r=>`${r.pass?'✅':'❌'} ${r.icon} ${r.crisis} — ${r.solIcon} ${r.solution}\n   ${r.skill}: ${r.natural}+${r.mod}=${r.roll} vs DC${r.dc}${r.mastery?' ★ MASTERY':''}`).join('\n')}\n\n${successes}/${results.length} crises overcome (needed ${needed}). Victory!\n\n+${fs.xp} XP, +${fs.gold}g\nAll threats capped at ${fs.threatCap}\nTitle: "${fs.title}"`,
+        text:`👑 The Hollow March is Broken!\n\n${charName} stands atop the ward-stones as the last invaders dissolve into mist.\n\n${results.map(r=>`${r.pass?'✅':'❌'} ${r.icon} ${r.crisis} — ${r.solIcon} ${r.solution}\n   ${r.skill}: ${r.natural}+${r.mod}=${r.roll} vs DC${r.dc}${r.mastery?' ★ MASTERY':''}`).join('\n')}\n\n${successes}/${results.length} crises overcome (needed ${needed}). Victory!\n\n+${fs.xp} XP, +${fs.gold}g\nAll threats capped at ${fs.threatCap}\nTitle: "Defender of ${locName}"`,
         vibe:'hollow_final',result:{msg:'The March is over. You may still Pass the Torch when ready.'},flavor:null
       }],idx:0});
     } else {
@@ -2035,7 +2036,7 @@ function CindervaleAlchemistInner(){
     const infLabel=selInf?' ['+selInf.icon+' '+selInf.name+']':'';
     showResult(r.icon+' '+r.name+qualLabel+infLabel+' — Brewed!','craft',fl+(autoSucc?'\n🧮 Analysis: Perfect execution!':'')+(refBonus?'\n💎 Refinement: Bonus potion!':'')+(qty2>1&&!refBonus?'\nBonus double batch!':'')+(fbf?'\n⚡ First brew free!':'')+(fc?'\n✨ Free craft!':'')+(mwGold>0?'\n🏆 Masterwork! +'+mwGold+'g':'')+(masteryDisc>0?'\n📖 Mastery: -'+masteryDisc+' DC':'')+'\n+'+xpEarned+' XP'+(qT.xpMult>1?' ('+qT.name+' '+qT.xpMult+'×)':''),ch);
     if(!hasMilestone('first_brew'))earnMilestone('first_brew');
-    if(r.id==='forge_catalyst'){earnMilestone('heartforge');addLog('⚡ The Forge Catalyst pulses with ancient heat. The ground trembles. Something deep beneath Cindervale stirs to life... but this is not an ending. It is a beginning.','story');}
+    if(r.id==='forge_catalyst'){earnMilestone('heartforge');addLog('⚡ The Forge Catalyst pulses with ancient heat. The ground trembles. Something deep beneath '+locName+' stirs to life... but this is not an ending. It is a beginning.','story');}
     // March recipe special effects
     if(r.marchEffect&&hollowMarch?.active&&!hollowMarch?.finalStandComplete){
       const me=r.marchEffect;
@@ -2197,7 +2198,7 @@ function CindervaleAlchemistInner(){
     const baseXp=type==='recipe'?25:35;
     gainXP(baseXp);
     const item=type==='recipe'?RECIPES.find(r=>r.id===id):ENCHANTMENTS.find(e=>e.id===id);
-    const FLAVOR=['Your careful notes form a compelling paper. The academic community will take notice.','The quill flies across parchment as you document your findings with scholarly precision.','You seal the manuscript with wax. Another contribution to Cindervale\'s growing body of knowledge.'];
+    const FLAVOR=['Your careful notes form a compelling paper. The academic community will take notice.','The quill flies across parchment as you document your findings with scholarly precision.','You seal the manuscript with wax. Another contribution to '+locName+'\'s growing body of knowledge.'];
     showResult('📝 Paper Published!','craft',`${FLAVOR[Math.floor(Math.random()*FLAVOR.length)]}\n"On the Properties of ${item?.icon||''}${item?.name||id}"\n+${baseXp} XP · Earns passive gold daily`);
     addLog(`📝 Published research paper: "${item?.icon||''}${item?.name||id}". It will earn gold each morning.`,'quest');
   };
@@ -2802,8 +2803,8 @@ function CindervaleAlchemistInner(){
         const allMax=FACTION_PAIRS.filter(fp=>(!fp.loc||fp.loc===gameLocation)).every(fp=>(fp.id===pairId?newHarmony:(factionHarmony[fp.id]||0))>=3);
         if(allMax){
           showResult('🏛️ Grand Alliance Achieved!','craft',
-            '✨ All factions united under your diplomacy!\n+50% all reputation gains\nAll vendors stock everything\nCindervale has never been stronger.');
-          addLog('🏛️ GRAND ALLIANCE! All faction pairs at Harmony 3. Cindervale is united!','level');
+            '✨ All factions united under your diplomacy!\n+50% all reputation gains\nAll vendors stock everything\n'+locName+' has never been stronger.');
+          addLog('🏛️ GRAND ALLIANCE! All faction pairs at Harmony 3. '+locName+' is united!','level');
         }
       }
     } else {
@@ -4182,7 +4183,9 @@ function CindervaleAlchemistInner(){
     }
     setProcureItems(procList);
     setDailyReport(report);const custResult=genCust();
-    const DAY_FLAVOR=['Dawn breaks over Cindervale. Smoke curls from the workshop chimney.','The morning bell rings across the village square.','Another day begins — the scent of ash and hearthfire fills the air.','Birdsong mixes with the distant clang of the smithy as you open shop.','Mist clings to the cobblestones as Cindervale stirs to life.'];
+    const DAY_FLAVOR=gameLocation==='ashfall'
+      ?['Dawn breaks over the Crossing. Heat already shimmers on the sand.','The morning call to prayer echoes from the Flamekeeper shrine.','Another day begins — the scent of spice and sand fills the air.','The bazaar stirs as merchants unroll their awnings.','Warm wind sweeps through Ashfall Crossing as the sun climbs.']
+      :['Dawn breaks over Cindervale. Smoke curls from the workshop chimney.','The morning bell rings across the village square.','Another day begins — the scent of ash and hearthfire fills the air.','Birdsong mixes with the distant clang of the smithy as you open shop.','Mist clings to the cobblestones as Cindervale stirs to life.'];
     addLog('🌅 '+DAY_FLAVOR[Math.floor(Math.random()*DAY_FLAVOR.length)]+' Day '+(day+1)+'. '+baseH+' hours ahead.'+(hiredAppr.length>0?' '+hiredAppr.length+' staff report for duty.':''),'story');
     // Generate news toasts
     const nw=[];
@@ -4658,14 +4661,16 @@ function CindervaleAlchemistInner(){
       if(compLines.length>0)mrSections.push({title:'🦊 Companions',lines:compLines});
     }
     // Always show morning report
-    const MR_FLAVOR=['Dawn breaks over Cindervale. Smoke curls from the workshop chimney.','The morning bell rings across the village square.','Another day begins — the scent of ash and hearthfire fills the air.','Birdsong mixes with the distant clang of the smithy as you open shop.','Mist clings to the cobblestones as Cindervale stirs to life.','The sun crests the eastern ridge, painting the rooftops in amber.','A cool breeze carries the scent of ashbloom through the village.','You wake to the rhythmic tapping of the notice board being updated.'];
+    const MR_FLAVOR=gameLocation==='ashfall'
+      ?['Dawn breaks over the Crossing. Heat already shimmers on the sand.','The morning call to prayer echoes from the Flamekeeper shrine.','Another day begins — the scent of spice and sand fills the air.','The bazaar stirs as merchants unroll their awnings.','Warm wind sweeps through Ashfall Crossing as the sun climbs.','The sun crests the dunes, painting the sand in copper and gold.','A dry breeze carries the scent of scorchroot through the streets.','You wake to the sound of camel bells as the first caravan departs.']
+      :['Dawn breaks over Cindervale. Smoke curls from the workshop chimney.','The morning bell rings across the village square.','Another day begins — the scent of ash and hearthfire fills the air.','Birdsong mixes with the distant clang of the smithy as you open shop.','Mist clings to the cobblestones as Cindervale stirs to life.','The sun crests the eastern ridge, painting the rooftops in amber.','A cool breeze carries the scent of ashbloom through the village.','You wake to the rhythmic tapping of the notice board being updated.'];
     const seasonFlavor=curSeason.flavor?curSeason.flavor[Math.floor(Math.random()*curSeason.flavor.length)]:null;
     // ═══ GAME OVER CHECK ═══
     if(newDebt>=300){
       setMorningReport({dayNum:day+1,sections:[{title:'🛑 WORKSHOP SEIZED',lines:[
-        {icon:'⚠️',label:'The Cindervale Town Council has seized your workshop.',val:'',color:'#c04040'},
+        {icon:'⚠️',label:'The '+locName+' Town Council has seized your workshop.',val:'',color:'#c04040'},
         {icon:'💰',label:'Outstanding debt: '+newDebt+'g',val:'',color:'#c04040'},
-        {icon:'🏠',label:'Your dream of Cindervale is over... for now.',val:'',color:TH.textDim},
+        {icon:'🏠',label:'Your dream of '+locName+' is over... for now.',val:'',color:TH.textDim},
       ]}],baseH:0,flavor:'The workshop doors are locked. The dream is over.',isGameOver:true});
       return;
     }
@@ -4714,7 +4719,7 @@ function CindervaleAlchemistInner(){
   const commissionsWaiting=shieldCommissions.filter(c=>!c.done).length;
   if(commissionsWaiting>0)alerts.push({text:commissionsWaiting+' shield commission'+(commissionsWaiting!==1?'s':'')+' waiting.',to:'workshop',label:'🛡️ Commissions'});
   if(day===1&&aQ.length===0&&screen!=='quests')alerts.push(gameLocation==='ashfall'?{text:'Sola at the Bazaar needs an alchemist. Introduce yourself.',to:'market',label:'🛒 Visit Sola',npc:'sola'}:{text:'Brenna at the Market has work for a new alchemist. Introduce yourself.',to:'market',label:'🛒 Visit Brenna',npc:'brenna'});
-  if(hours<=0&&screen!=='map')alerts.push({text:'The day\'s hours are spent. Time to rest and let tomorrow bring new work.',to:'map',label:'🏘️ Cindervale'});
+  if(hours<=0&&screen!=='map')alerts.push({text:'The day\'s hours are spent. Time to rest and let tomorrow bring new work.',to:'map',label:'🏘️ '+locName});
   const readyBQ=activeBQ.filter(bq=>{const p=bqProgress(bq);return p.c>=p.n;});
   if(readyBQ.length>0)alerts.push({text:readyBQ.length+' board request'+(readyBQ.length>1?'s':'')+' ready to turn in!',to:'quests',label:'📌 Notice Board'});
   if(dayFlags.includes('bargain_day'))alerts.push({text:'🏷️ Brenna\'s running a sale — shop prices halved today!',to:'market',label:'🛒 Market'});
@@ -5586,7 +5591,7 @@ function CindervaleAlchemistInner(){
       {/* HEADER */}
       <div style={{width:'100%',maxWidth:1200,padding:'6px 16px',borderBottom:`1px solid ${TH.border}`,position:'relative'}}>
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-          <div style={{fontSize:20,color:TH.gold,letterSpacing:2,cursor:'pointer'}} onClick={()=>{setScreen('map');handleDevTap();}}>⚗️ Cindervale</div>
+          <div style={{fontSize:20,color:TH.gold,letterSpacing:2,cursor:'pointer'}} onClick={()=>{setScreen('map');handleDevTap();}}>⚗️ {locName}</div>
           <div style={{fontSize:11,color:TH.gold,position:'absolute',right:8,top:2}}>{BUILD_VERSION}</div>
           <div style={{display:'flex',gap:4}}>
             <button style={{...S.btn('gold'),fontSize:14,padding:'3px 10px'}} onClick={()=>setConfirmRest(true)}>🌙 Rest (⚡{hours})</button>
@@ -5731,7 +5736,7 @@ function CindervaleAlchemistInner(){
         <div style={{fontSize:15,color:TH.text,marginBottom:4,lineHeight:1.5}}>
           {hours>5?'The sun still hangs high — are you sure you want to close up shop early?':
            hours>2?'The afternoon wanes. A decent day\'s work, but there\'s still time if you need it.':
-           hours>0?'The last light fades over Cindervale. A good time to rest.':
+           hours>0?('The last light fades over '+locName+'. A good time to rest.'):
            'Night has fallen. Nothing left to do but rest and prepare for tomorrow.'}
         </div>
         <div style={{fontSize:15,color:TH.textDim,marginBottom:8}}>
@@ -6584,7 +6589,7 @@ function CindervaleAlchemistInner(){
           </div>
         </div>}
         {hollowMarch?.finalStandComplete&&<div style={{...S.card,padding:'6px 12px',borderColor:TH.gold+'44',background:TH.green+'08'}}>
-          <div style={{fontSize:14,color:TH.gold}}>👑 Defender of the Vale — The Hollow March is broken</div>
+          <div style={{fontSize:14,color:TH.gold}}>👑 Defender of {locName} — The Hollow March is broken</div>
         </div>}
 
         {/* ── THE MAP ── */}
@@ -9012,7 +9017,7 @@ function CindervaleAlchemistInner(){
             </div>);})}
         </div>}
         {aQ.length===0&&activeBQ.length===0&&boardQ.length===0&&<div style={S.card}><div style={{color:TH.textDim,textAlign:'center',padding:8}}>
-          <div style={{fontSize:16,marginBottom:4}}>The quest board is bare. The people of Cindervale have needs — seek them out.</div>
+          <div style={{fontSize:16,marginBottom:4}}>The quest board is bare. The people of {locName} have needs — seek them out.</div>
           <div style={{marginTop:6,display:'flex',gap:6,justifyContent:'center'}}>
             <GoBtn to="market" label="🛒 Visit Market" npc="brenna"/>
             <GoBtn to="tavern" label="🍺 Visit Tavern"/>
@@ -9045,7 +9050,7 @@ function CindervaleAlchemistInner(){
         {/* ── Defense Quests (External Threats) ── */}
         {defenseQuests.length>0&&<div style={{...S.card,borderColor:'#cc444433'}}>
           <div style={S.cT}>🛡️ Defense Requests</div>
-          <div style={{fontSize:13,color:TH.textDim,marginBottom:4}}>Supply materials to defend Cindervale against external threats. Reduces threat levels.</div>
+          <div style={{fontSize:13,color:TH.textDim,marginBottom:4}}>Supply materials to defend {locName} against external threats. Reduces threat levels.</div>
           {defenseQuests.map(dq=>{
             const tf=THREAT_FACTIONS[dq.threatId];
             const have=dq.type==='deliver'?Object.entries(pots).filter(([pid])=>getBaseRecipeId(pid)===dq.target).reduce((s,[,c])=>s+c,0):(inv[dq.target]||0);
@@ -9292,7 +9297,7 @@ function CindervaleAlchemistInner(){
         {/* Overview */}
         <div style={{...S.card,padding:'10px 14px'}}>
           <div style={{fontSize:14,color:TH.textDim,lineHeight:1.5}}>
-            Three rival forces threaten {gameLocation==='ashfall'?'Ashfall Crossing':'Cindervale'}. As threats grow, they impose escalating penalties on your operations. Assign staff to <b style={{color:TH.gold}}>🛡️ Patrol</b>, fulfill <b style={{color:TH.gold}}>defense requests</b>, build <b style={{color:TH.gold}}>outposts</b>, and raise <b style={{color:TH.gold}}>faction reputation</b> to push them back.
+            Three rival forces threaten {locName}. As threats grow, they impose escalating penalties on your operations. Assign staff to <b style={{color:TH.gold}}>🛡️ Patrol</b>, fulfill <b style={{color:TH.gold}}>defense requests</b>, build <b style={{color:TH.gold}}>outposts</b>, and raise <b style={{color:TH.gold}}>faction reputation</b> to push them back.
           </div>
         </div>
         {/* Per-threat cards */}
@@ -9407,7 +9412,7 @@ function CindervaleAlchemistInner(){
             <div>
               <div style={{fontSize:22,fontWeight:'bold',color:'#c060e0'}}>💀 The Hollow March</div>
               <div style={{fontSize:13,color:TH.textDim}}>
-                {hollowMarch.finalStandComplete?'The March is broken. Cindervale is safe.'
+                {hollowMarch.finalStandComplete?'The March is broken. '+locName+' is safe.'
                   :`Wave ${hollowMarch.wave} · ${marchWavesCleared}/${HOLLOW_MARCH.wavesForTorch} waves cleared for torch`}
               </div>
             </div>
@@ -9531,7 +9536,7 @@ function CindervaleAlchemistInner(){
 
           {/* Final Stand complete */}
           {hollowMarch.finalStandComplete&&<div style={{marginTop:8,padding:'12px 14px',background:TH.green+'10',borderRadius:8,border:'2px solid '+TH.green+'44'}}>
-            <div style={{fontSize:18,fontWeight:'bold',color:TH.gold,marginBottom:4}}>👑 Defender of the Vale</div>
+            <div style={{fontSize:18,fontWeight:'bold',color:TH.gold,marginBottom:4}}>👑 Defender of {locName}</div>
             <div style={{fontSize:14,color:TH.text,lineHeight:1.5}}>
               The Hollow March is broken. All threats are permanently capped at {HOLLOW_MARCH.finalStandRewards.threatCap}. {charName}'s legend will echo through the ages.
             </div>
@@ -9554,7 +9559,7 @@ function CindervaleAlchemistInner(){
         {!hollowMarch?.active&&displayLevel>=8&&<div style={{...S.card,borderColor:'#a040c022'}}>
           <div style={{fontSize:14,color:'#a040c0'}}>💀 Whispers of the Hollow March</div>
           <div style={{fontSize:13,color:TH.textDim,lineHeight:1.5}}>
-            Travelers speak of a gathering force beyond the Veil — an organized threat unlike anything Cindervale has faced. Reach Level {HOLLOW_MARCH.triggerLevel+1} to trigger the endgame invasion.
+            Travelers speak of a gathering force beyond the Veil — an organized threat unlike anything {locName} has faced. Reach Level {HOLLOW_MARCH.triggerLevel+1} to trigger the endgame invasion.
           </div>
         </div>}
       </>}
@@ -10110,6 +10115,7 @@ if(!NPC_PORTRAITS.sola)NPC_PORTRAITS.sola='sola.jpg';
 if(!NPC_PORTRAITS.razak)NPC_PORTRAITS.razak='razak.jpg';
 if(!NPC_PORTRAITS.amara)NPC_PORTRAITS.amara='amara.jpg';
 if(!NPC_PORTRAITS.tarek)NPC_PORTRAITS.tarek='tarek.jpg';
+if(!NPC_PORTRAITS.nahla)NPC_PORTRAITS.nahla='nahla.jpg';
 function NpcPortrait({npc,size=80,customerData}){
   const p=npc?.portrait||customerData?.portrait||{bg:['#444','#2a2a2a'],ring:'#888'};
   const icon=npc?.icon||'🧑';
