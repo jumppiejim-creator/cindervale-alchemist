@@ -515,8 +515,8 @@ function CindervaleAlchemistInner(){
     setPtsLeft(s.ptsLeft??12);setSkRanks(s.skRanks||{});setSkPts(s.skPts||0);setSkProgress(s.skProgress||{});
     const _cl=s.classLevels||{};const cleanCL={};Object.entries(_cl).forEach(([k,v])=>{if(CLASSES[k])cleanCL[k]=v;});
     setClassLevels(cleanCL);setSpecs(s.specs||{});setPlayerFeats(s.playerFeats||[]);setAsiSpent(s.asiSpent||[]);setStartingClass(s.startingClass||null);
-    setScreen(s.screen||'map');setDay(s.day||1);setHours(s.hours||4);setGameLocation(s.gameLocation||'cindervale');
-    setXp(s.xp||0);setGold(s.gold||15);setInv(s.inv||{});setPots(s.pots||{});
+    setScreen(s.screen||'map');setDay(s.day||1);setHours(s.hours!=null?s.hours:4);setGameLocation(s.gameLocation||'cindervale');
+    setXp(s.xp!=null?s.xp:0);setGold(s.gold!=null?s.gold:15);setInv(s.inv||{});setPots(s.pots||{});
     setKnown(s.known||['healing_salve']);setAQ(s.aQ||[]);setDoneQ(s.doneQ||[]);
     setLog(s.log||[]);setMilestones(s.milestones||[]);setFRep(s.fRep||DEF.fRep);setFactionAlign(s.factionAlign||null);
     setUpgrades(s.upgrades||[]);setHiredAppr(s.hiredAppr||[]);
