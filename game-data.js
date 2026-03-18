@@ -548,6 +548,56 @@ var INGR={ashbloom:{name:'Ashbloom',icon:'🌿',val:5},embercap:{name:'Embercap'
   glass_bloom:{name:'Glass Bloom',icon:'🌸',val:22},
 };
 
+// ═══ LOCATION INGREDIENT SUBSTITUTION MAP ═══
+// When a system references a base ingredient, substitute with the local equivalent
+// Keys are base (Cindervale) ingredient IDs; values map location → replacement
+var INGR_SUBS={
+  ironroot_bark:{ashfall:'desert_iron'},
+  embercap:{ashfall:'scorchroot'},
+  bark_resin:{ashfall:'palm_resin'},
+  hearthstone:{ashfall:'heatstone'},
+  sacred_ember:{ashfall:'flamekeeper_ember'},
+  deep_crystal:{ashfall:'temple_gold'},
+  veil_shard:{ashfall:'pharaoh_dust'},
+};
+var FACTION_SUBS={
+  ashwardens:{ashfall:'dustwalkers'},
+  hearthkeepers:{ashfall:'flamekeepers'},
+  veilwalkers:{ashfall:'flamekeepers'},
+  cinderfolk:{ashfall:'sand_merchants'},
+};
+var THREAT_SUBS={
+  reavers:{ashfall:'sand_raiders'},
+  blight:{ashfall:'the_scorch'},
+  veilbreakers:{ashfall:'cult_of_buried'},
+};
+// Returns the local equivalent of an ingredient for the given location
+var locIngr=function(id,loc){
+  if(!loc||loc==='cindervale')return id;
+  var sub=INGR_SUBS[id];
+  return sub&&sub[loc]?sub[loc]:id;
+};
+var locFaction=function(id,loc){
+  if(!loc||loc==='cindervale')return id;
+  var sub=FACTION_SUBS[id];
+  return sub&&sub[loc]?sub[loc]:id;
+};
+var locThreat=function(id,loc){
+  if(!loc||loc==='cindervale')return id;
+  var sub=THREAT_SUBS[id];
+  return sub&&sub[loc]?sub[loc]:id;
+};
+// Substitutes all keys in a matCost/ingr object for a given location
+var locMatCost=function(cost,loc){
+  if(!loc||loc==='cindervale')return cost;
+  var out={};Object.entries(cost).forEach(function(e){out[locIngr(e[0],loc)]=e[1];});return out;
+};
+// Substitutes all items in an ingredient array for a given location
+var locIngrArr=function(arr,loc){
+  if(!loc||loc==='cindervale')return arr;
+  return arr.map(function(id){return locIngr(id,loc);});
+};
+
 
 var SCREEN_BG={
   map:'map',market:'market',tavern:'tavern',
@@ -1720,7 +1770,7 @@ var CARAVAN_ROUTES=[
     tradeIngr:['obsidian_shard','embervein','dustite'],tradeGold:30},
   {id:'cr_af_oasis',name:'Oasis Circuit',icon:'🌴',region:'oasis_grove',loc:'ashfall',tier:2,roundTrip:2,dc:13,
     desc:'A loop connecting the hidden oases where rare desert herbs grow.',
-    tradeIngr:['dewdrop_lily','sunpetal','sacred_ember'],tradeGold:28},
+    tradeIngr:['dewdrop_lily','sunpetal','flamekeeper_ember'],tradeGold:28},
   {id:'cr_af_worm',name:'Worm Tunnels Express',icon:'🪱',region:'sandworm_tunnels',loc:'ashfall',tier:2,roundTrip:2,dc:15,
     desc:'Fast but dangerous — through abandoned sandworm tunnels.',
     tradeIngr:['sandsilk','venomgland','scorchroot'],tradeGold:35},
