@@ -3459,8 +3459,8 @@ function CindervaleAlchemistInner(){
     const upgDisc=getFeatureVal('upgradeCostReduction')+(prepped?0.40:0);
     const gc=Math.max(1,Math.floor((u.cost.gold||0)*(1-Math.min(upgDisc,0.9))));
     if(gold<gc){addLog(`The materials for ${u.icon}${u.name} would cost ${gc}g — more than you can afford right now.`,'error');return;}
-    // Build adjusted material cost — if prepped, waive the cheapest material
-    const matEntries=Object.entries(u.cost).filter(([id])=>id!=='gold');
+    // Build adjusted material cost — substitute ingredients for location, then if prepped waive cheapest
+    const matEntries=Object.entries(u.cost).filter(([id])=>id!=='gold').map(([id,q])=>[li(id),q]);
     let waivedMat=null;
     if(prepped&&matEntries.length>0){const sorted=[...matEntries].sort((a,b)=>(INGR[a[0]]?.val||0)-(INGR[b[0]]?.val||0));waivedMat=sorted[0][0];}
     const adjMats=matEntries.filter(([id])=>id!==waivedMat);
@@ -3777,30 +3777,33 @@ function CindervaleAlchemistInner(){
     }
     // ═══ EXTERNAL THREATS PROCESSING ═══
     const newThreats={...(threats||Object.fromEntries(locThreatIds.map(t=>[t,0])))};
-    // Threat growth
-    if(curDay>3)newThreats.reavers=Math.min(100,(newThreats.reavers||0)+3+(gold>200?1:0));
-    if(curDay>5)newThreats.blight=Math.min(100,(newThreats.blight||0)+2);
-    if(curDay>10)newThreats.veilbreakers=Math.min(100,(newThreats.veilbreakers||0)+3);
+    // Threat growth — position-based: [0]=bandit, [1]=corruption, [2]=magic
+    if(curDay>3)newThreats[locThreatIds[0]]=Math.min(100,(newThreats[locThreatIds[0]]||0)+3+(gold>200?1:0));
+    if(curDay>5)newThreats[locThreatIds[1]]=Math.min(100,(newThreats[locThreatIds[1]]||0)+2);
+    if(curDay>10)newThreats[locThreatIds[2]]=Math.min(100,(newThreats[locThreatIds[2]]||0)+3);
     // Seasonal threat modifier
     if(curSeason.threatMod){Object.entries(curSeason.threatMod).forEach(([tid,mod])=>{newThreats[tid]=Math.min(100,Math.max(0,(newThreats[tid]||0)+mod));});}
-    // Blight grows from expedition activity (tracked via dayFlags)
+    // Corruption grows from expedition activity (tracked via dayFlags)
     const expDiff=dayFlags.filter(f=>f.startsWith('exp_diff_')).map(f=>+f.split('_')[2]);
-    expDiff.forEach(d=>{if(d>=3)newThreats.blight=Math.min(100,(newThreats.blight||0)+(d>=5?3:2));});
+    expDiff.forEach(d=>{if(d>=3)newThreats[locThreatIds[1]]=Math.min(100,(newThreats[locThreatIds[1]]||0)+(d>=5?3:2));});
     // Natural decay (only kicks in above 10 — threats build up before they erode)
     locThreatIds.forEach(tid=>{if((newThreats[tid]||0)>10)newThreats[tid]=Math.max(0,newThreats[tid]-1);});
-    // Faction rep decay: -1 per threat if Trusted (Lv3+) with relevant faction. Slows but can't stop threats.
-    if(getRepLvl(fRep.ashwardens||0)>=3||getRepLvl(fRep.dustwalkers||0)>=3)newThreats.reavers=Math.max(0,newThreats.reavers-1);
-    if(getRepLvl(fRep.cinderfolk||0)>=3||getRepLvl(fRep.flamekeepers||0)>=3)newThreats.blight=Math.max(0,newThreats.blight-1);
-    if(getRepLvl(fRep.veilwalkers||0)>=3)newThreats.veilbreakers=Math.max(0,newThreats.veilbreakers-1);
-    // Warden/Merchant class decay (-1 each, not -2)
-    if((classLevels.warden||0)>=4)newThreats.blight=Math.max(0,newThreats.blight-1);
-    if((classLevels.merchant||0)>=4)newThreats.veilbreakers=Math.max(0,newThreats.veilbreakers-1);
-    // Brand Master: famous brands reduce veilbreakers
-    (brands||[]).forEach(b=>{if(b.sold>=80)newThreats.veilbreakers=Math.max(0,newThreats.veilbreakers-5);});
+    // Faction rep decay: -1 per threat if Trusted (Lv3+) with relevant mitigating faction
+    const facMit0=gameLocation==='ashfall'?['dustwalkers']:['ashwardens'];
+    const facMit1=gameLocation==='ashfall'?['flamekeepers']:['cinderfolk'];
+    const facMit2=gameLocation==='ashfall'?['flamekeepers']:['veilwalkers'];
+    if(facMit0.some(f=>getRepLvl(fRep[f]||0)>=3))newThreats[locThreatIds[0]]=Math.max(0,(newThreats[locThreatIds[0]]||0)-1);
+    if(facMit1.some(f=>getRepLvl(fRep[f]||0)>=3))newThreats[locThreatIds[1]]=Math.max(0,(newThreats[locThreatIds[1]]||0)-1);
+    if(facMit2.some(f=>getRepLvl(fRep[f]||0)>=3))newThreats[locThreatIds[2]]=Math.max(0,(newThreats[locThreatIds[2]]||0)-1);
+    // Warden/Merchant class decay (-1 each)
+    if((classLevels.warden||0)>=4)newThreats[locThreatIds[1]]=Math.max(0,(newThreats[locThreatIds[1]]||0)-1);
+    if((classLevels.merchant||0)>=4)newThreats[locThreatIds[2]]=Math.max(0,(newThreats[locThreatIds[2]]||0)-1);
+    // Brand Master: famous brands reduce magic threat
+    (brands||[]).forEach(b=>{if(b.sold>=80)newThreats[locThreatIds[2]]=Math.max(0,(newThreats[locThreatIds[2]]||0)-5);});
     // Staff patrol reductions (accumulated during staff loop)
     locThreatIds.forEach(tid=>{if(patrolReduc[tid]>0)newThreats[tid]=Math.max(0,(newThreats[tid]||0)-patrolReduc[tid]);});
-    // Antiquarian Arsenal completion reduces reavers
-    if((museum.weapons||0)>=(RELIC_SETS.weapons?.needed||4))newThreats.reavers=Math.max(0,newThreats.reavers-10);
+    // Antiquarian Arsenal completion reduces bandit threat
+    if((museum.weapons||0)>=(RELIC_SETS.weapons?.needed||4))newThreats[locThreatIds[0]]=Math.max(0,(newThreats[locThreatIds[0]]||0)-10);
 
     // ═══ OUTPOST PROCESSING ═══
     const seLv2=prestigeLevels.siegeengineer||0;
@@ -3831,10 +3834,10 @@ function CindervaleAlchemistInner(){
         const summary=Object.entries(gathered.reduce((a,id)=>{a[id]=(a[id]||0)+1;return a;},{})).map(([id,q])=>(INGR[id]?.icon||'')+INGR[id]?.name+' ×'+q).join(', ');
         report.push({n:reg.name+' Outpost',i:'📦',r:'Gathered: '+summary,t:'ok'});
       }
-      // Threat suppression
+      // Threat suppression — position-based: diff<3 suppresses bandits, diff 3-4 suppresses corruption, diff 5+ suppresses all
       if(reg.diff>=5){locThreatIds.forEach(tid=>{newThreats[tid]=Math.max(0,newThreats[tid]-Math.floor(opSuppressAmt*0.4));});}
-      else if(reg.diff>=3)newThreats.blight=Math.max(0,newThreats.blight-opSuppressAmt);
-      else newThreats.reavers=Math.max(0,newThreats.reavers-opSuppressAmt);
+      else if(reg.diff>=3)newThreats[locThreatIds[1]]=Math.max(0,(newThreats[locThreatIds[1]]||0)-opSuppressAmt);
+      else newThreats[locThreatIds[0]]=Math.max(0,(newThreats[locThreatIds[0]]||0)-opSuppressAmt);
       // Auto-brew (Lv3+)
       if(seLv2>=3&&op.recipe){
         const recipe=RECIPES.find(r=>r.id===op.recipe);
@@ -3863,22 +3866,24 @@ function CindervaleAlchemistInner(){
     });
     setOutposts(updatedOutposts);
 
-    // Reaver shelf theft
-    const reaverTier=getThreatTier(newThreats.reavers);
-    const theftChance=reaverTier==='critical'?0.20:reaverTier==='dangerous'?0.10:0;
+    // Bandit shelf theft (position 0 threat)
+    const banditTier=getThreatTier(newThreats[locThreatIds[0]]||0);
+    const banditTF=THREAT_FACTIONS[locThreatIds[0]];
+    const theftChance=banditTier==='critical'?0.20:banditTier==='dangerous'?0.10:0;
     let stolenGold=0;
     if(theftChance>0&&shelfGold>0&&Math.random()<theftChance*2){
       stolenGold=Math.floor(shelfGold*theftChance);
-      report.push({n:'🏴 Reaver Raid',i:'🏴',r:'Bandits stole '+stolenGold+'g from overnight shelf sales!',t:'bad'});
+      report.push({n:banditTF?.icon+' '+banditTF?.name+' Raid',i:banditTF?.icon||'🏴',r:'Bandits stole '+stolenGold+'g from overnight shelf sales!',t:'bad'});
     }
 
-    // Blight ingredient loss (Critical only)
-    if(getThreatTier(newThreats.blight)==='critical'&&Math.random()<0.10){
+    // Corruption ingredient loss (position 1 threat, Critical only)
+    const corruptTF=THREAT_FACTIONS[locThreatIds[1]];
+    if(getThreatTier(newThreats[locThreatIds[1]]||0)==='critical'&&Math.random()<0.10){
       const ingrKeys=Object.entries(inv).filter(([,q])=>q>0).map(([id])=>id);
       if(ingrKeys.length>0){
         const lostId=ingrKeys[Math.floor(Math.random()*ingrKeys.length)];
         const lostQty=Math.min(inv[lostId]||0,Math.floor(Math.random()*2)+1);
-        if(lostQty>0){modInv(lostId,-lostQty);report.push({n:'🦠 Blight Decay',i:'🦠',r:lostQty+'× '+(INGR[lostId]?.icon||'')+INGR[lostId]?.name+' corrupted by the Blight.',t:'bad'});}
+        if(lostQty>0){modInv(lostId,-lostQty);report.push({n:corruptTF?.icon+' '+corruptTF?.name+' Decay',i:corruptTF?.icon||'🦠',r:lostQty+'× '+(INGR[lostId]?.icon||'')+INGR[lostId]?.name+' corrupted.',t:'bad'});}
       }
     }
 
@@ -8673,7 +8678,7 @@ function CindervaleAlchemistInner(){
               const prepped=(constructProgress[uid]||0)>=100;
               const pDisc=getFeatureVal('upgradeCostReduction')+(prepped?0.40:0);
               const gCost=Math.max(1,Math.floor((u.cost.gold||0)*(1-Math.min(pDisc,0.9))));
-              const mE=Object.entries(u.cost).filter(([id])=>id!=='gold');
+              const mE=Object.entries(u.cost).filter(([id])=>id!=='gold').map(([id,q])=>[li(id),q]);
               let wM=null;if(prepped&&mE.length>0){const s=[...mE].sort((a,b)=>(INGR[a[0]]?.val||0)-(INGR[b[0]]?.val||0));wM=s[0][0];}
               const aM=mE.filter(([id])=>id!==wM);
               const canBuy=reqMet&&!owned&&gold>=gCost&&aM.every(([id,q])=>(inv[id]||0)>=q);
@@ -8741,7 +8746,7 @@ function CindervaleAlchemistInner(){
               const prepped=(constructProgress[uid]||0)>=100;const cProg=constructProgress[uid]||0;
               const upgDisc=getFeatureVal('upgradeCostReduction')+(prepped?0.40:0);
               const gc=Math.max(1,Math.floor((u.cost.gold||0)*(1-Math.min(upgDisc,0.9))));
-              const matEntries=Object.entries(u.cost).filter(([id])=>id!=='gold');
+              const matEntries=Object.entries(u.cost).filter(([id])=>id!=='gold').map(([id,q])=>[li(id),q]);
               let waivedMat=null;
               if(prepped&&matEntries.length>0){const sorted=[...matEntries].sort((a,b)=>(INGR[a[0]]?.val||0)-(INGR[b[0]]?.val||0));waivedMat=sorted[0][0];}
               const adjMats=matEntries.filter(([id])=>id!==waivedMat);
@@ -8820,7 +8825,7 @@ function CindervaleAlchemistInner(){
                 const prepped=(constructProgress[uid]||0)>=100;const cProg=constructProgress[uid]||0;
                 const upgDisc=getFeatureVal('upgradeCostReduction')+(prepped?0.40:0);
                 const gc=Math.max(1,Math.floor((u.cost.gold||0)*(1-Math.min(upgDisc,0.9))));
-                const matEntries=Object.entries(u.cost).filter(([id])=>id!=='gold');
+                const matEntries=Object.entries(u.cost).filter(([id])=>id!=='gold').map(([id,q])=>[li(id),q]);
                 let waivedMat=null;
                 if(prepped&&matEntries.length>0){const sorted=[...matEntries].sort((a,b)=>(INGR[a[0]]?.val||0)-(INGR[b[0]]?.val||0));waivedMat=sorted[0][0];}
                 const adjMats=matEntries.filter(([id])=>id!==waivedMat);
@@ -8857,7 +8862,7 @@ function CindervaleAlchemistInner(){
                 const prepped=(constructProgress[u.id]||0)>=100;const cProg=constructProgress[u.id]||0;
                 const upgDisc=getFeatureVal('upgradeCostReduction')+(prepped?0.40:0);
                 const gc=Math.max(1,Math.floor((u.cost.gold||0)*(1-Math.min(upgDisc,0.9))));
-                const matEntries=Object.entries(u.cost).filter(([id])=>id!=='gold');
+                const matEntries=Object.entries(u.cost).filter(([id])=>id!=='gold').map(([id,q])=>[li(id),q]);
                 let waivedMat=null;
                 if(prepped&&matEntries.length>0){const sorted=[...matEntries].sort((a,b)=>(INGR[a[0]]?.val||0)-(INGR[b[0]]?.val||0));waivedMat=sorted[0][0];}
                 const adjMats=matEntries.filter(([id])=>id!==waivedMat);

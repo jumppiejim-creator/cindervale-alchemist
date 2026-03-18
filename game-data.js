@@ -559,6 +559,7 @@ var INGR_SUBS={
   sacred_ember:{ashfall:'flamekeeper_ember'},
   deep_crystal:{ashfall:'temple_gold'},
   veil_shard:{ashfall:'pharaoh_dust'},
+  warden_sigil:{ashfall:'dustwalker_compass'},
 };
 var FACTION_SUBS={
   ashwardens:{ashfall:'dustwalkers'},
