@@ -4849,19 +4849,37 @@ function CindervaleAlchemistInner(){
           <div style={{textAlign:'center',marginTop:10}}>
             <button style={S.btn(ptsLeft===0?'gold':'dim')} disabled={ptsLeft!==0} onClick={()=>{
               const c=CLASSES[startingClass];
+              const locN=LOCATIONS[gameLocation]?.name||'Cindervale';
+              const isAsh=gameLocation==='ashfall';
               const CLASS_INTROS={
-                alchemist:`${charName} the ${c.name} steps through Cindervale's gates, a leather satchel heavy with tinctures and a well-thumbed recipe journal. The village is smaller than expected, but the hearth smoke carries the scent of ashbloom — and where there's ashbloom, there's work to be done.`,
-                enchanter:`${charName} the ${c.name} arrives in Cindervale with ink-stained fingers and a case of inscription tools. The ley lines here are strong — you can feel them humming beneath the cobblestones. A perfect place to practice the art.`,
-                artificer:`${charName} the ${c.name} surveys Cindervale with a craftsman's eye. The workshop chimney is sound, the water supply reliable, the supply chains... improvable. You unpack your calibration tools. Time to build something efficient.`,
-                scholar:`${charName} the ${c.name} enters Cindervale's modest library — three shelves and a reading desk — and smiles. The village has untapped potential, and you brought a notebook full of theories to test. Knowledge is the greatest catalyst.`,
-                merchant:`${charName} the ${c.name} counts the coins in the village square fountain — seven copper, one tarnished silver. This economy needs help, and you're just the one to provide it. You find the best corner stall and hang your sign.`,
-                warden:`${charName} the ${c.name} crests the ridge above Cindervale and breathes deep. Ashfields to the east, whispering woods to the north, volcanic vents beyond. The land here is rich and wild. You shoulder your pack and head for the trails.`,
+                alchemist:isAsh
+                  ?`${charName} the ${c.name} steps through the Crossing's sun-bleached gates, a leather satchel heavy with tinctures. The heat is staggering, but the smell of desert spice and rare herbs fills the air — where there's sunpetal, there's work.`
+                  :`${charName} the ${c.name} steps through Cindervale's gates, a leather satchel heavy with tinctures and a well-thumbed recipe journal. The village is smaller than expected, but the hearth smoke carries the scent of ashbloom — and where there's ashbloom, there's work to be done.`,
+                enchanter:isAsh
+                  ?`${charName} the ${c.name} arrives at the Crossing with ink-stained fingers and a case of inscription tools. The desert ley lines are wild and untamed — you can feel them crackling beneath the sand. A perfect challenge.`
+                  :`${charName} the ${c.name} arrives in Cindervale with ink-stained fingers and a case of inscription tools. The ley lines here are strong — you can feel them humming beneath the cobblestones. A perfect place to practice the art.`,
+                artificer:isAsh
+                  ?`${charName} the ${c.name} surveys the Crossing with a craftsman's eye. Sand-blasted walls, improvised plumbing, jury-rigged cooling systems... this place needs an engineer. You unpack your tools. Time to build something that lasts.`
+                  :`${charName} the ${c.name} surveys Cindervale with a craftsman's eye. The workshop chimney is sound, the water supply reliable, the supply chains... improvable. You unpack your calibration tools. Time to build something efficient.`,
+                scholar:isAsh
+                  ?`${charName} the ${c.name} enters the Crossing's cramped archive — sand-damaged scrolls and a cracked reading stone. But the Buried Temple holds secrets no library in the known world can match. You open your notebook.`
+                  :`${charName} the ${c.name} enters Cindervale's modest library — three shelves and a reading desk — and smiles. The village has untapped potential, and you brought a notebook full of theories to test. Knowledge is the greatest catalyst.`,
+                merchant:isAsh
+                  ?`${charName} the ${c.name} watches the Bazaar's chaos with calculating eyes. Gold changes hands faster here than anywhere — but so do lies. You find the best corner stall, hang your sign, and prepare to outmaneuver them all.`
+                  :`${charName} the ${c.name} counts the coins in the village square fountain — seven copper, one tarnished silver. This economy needs help, and you're just the one to provide it. You find the best corner stall and hang your sign.`,
+                warden:isAsh
+                  ?`${charName} the ${c.name} crests a dune above the Crossing and squints against the glare. Scorched flats, obsidian wastes, sandworm tunnels beyond. The desert is merciless and wild. You shoulder your pack and head for the trails.`
+                  :`${charName} the ${c.name} crests the ridge above Cindervale and breathes deep. Ashfields to the east, whispering woods to the north, volcanic vents beyond. The land here is rich and wild. You shoulder your pack and head for the trails.`,
               };
-              addLog(CLASS_INTROS[startingClass]||`${charName} the ${c.name} steps through Cindervale's gates for the first time.`,'story');
+              addLog(CLASS_INTROS[startingClass]||`${charName} the ${c.name} arrives at ${locN} for the first time.`,'story');
               addLog('💡 You have 4 skill points to spend! Visit Your Quarters on the map.','level');setPhase('play');
               const initBQ=genBoardQuests(0,1);setBoardQ(initBQ);
               const initCust=genCust();
-              const initNews=[{icon:'📊',text:'Welcome! You have 4 skill points to spend.',to:'character',label:'📊 Your Quarters',color:TH.purple},{icon:'🛒',text:'Brenna at the Market has work for you.',to:'market',label:'🛒 Meet Brenna',color:TH.gold,npc:'brenna'},{icon:'🗺️',text:'The Ashfields are open for foraging.',to:'worldmap',label:'🗺️ Explore',color:TH.teal},{icon:'📌',text:initBQ.length+' requests on the village notice board.',to:'quests',label:'📜 Quests',color:TH.cyan}];
+              const firstNPC=isAsh?{icon:'🛒',text:'Sola at the Bazaar has work for you.',to:'market',label:'🛒 Meet Sola',color:TH.gold,npc:'sola'}
+                :{icon:'🛒',text:'Brenna at the Market has work for you.',to:'market',label:'🛒 Meet Brenna',color:TH.gold,npc:'brenna'};
+              const firstRegion=isAsh?{icon:'🗺️',text:'The Sunscorch Flats are open for foraging.',to:'worldmap',label:'🗺️ Explore',color:TH.teal}
+                :{icon:'🗺️',text:'The Ashfields are open for foraging.',to:'worldmap',label:'🗺️ Explore',color:TH.teal};
+              const initNews=[{icon:'📊',text:'Welcome! You have 4 skill points to spend.',to:'character',label:'📊 Your Quarters',color:TH.purple},firstNPC,firstRegion,{icon:'📌',text:initBQ.length+' requests on the village notice board.',to:'quests',label:'📜 Quests',color:TH.cyan}];
               if((initCust.ench||0)+(initCust.pot||0)>0){const cp=[];if(initCust.ench>0)cp.push(initCust.ench+' enchant');if(initCust.pot>0)cp.push(initCust.pot+' potion');initNews.push({icon:'🛒',text:cp.join(' & ')+' customer'+(((initCust.ench||0)+(initCust.pot||0))>1?'s':'')+' waiting!',to:'enchant',label:'🛒 Customers',color:TH.purple});}
               setNews(initNews);
             }}>Begin Adventure →</button>
@@ -5659,9 +5677,9 @@ function CindervaleAlchemistInner(){
         return(<div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'#000000dd',display:'flex',alignItems:'center',justifyContent:'center',zIndex:9998,padding:12}} onClick={()=>setZonePopup(null)}>
           <div style={{background:`linear-gradient(160deg,${TH.panelAlt},${TH.panel})`,border:`2px solid ${reg.color||TH.border}`,borderRadius:12,maxWidth:580,width:'100%',maxHeight:'90vh',overflowY:'auto',boxShadow:`0 0 60px ${reg.color||TH.gold}30`}} onClick={e=>e.stopPropagation()}>
             {/* Zone Illustration Header */}
-            {imgUrl&&<div style={{position:'relative',width:'100%',borderRadius:'10px 10px 0 0',overflow:'hidden',maxHeight:240}}>
-              <img src={imgUrl} alt={reg.name} style={{width:'100%',height:'100%',objectFit:'cover',display:'block'}}
-                onError={e=>{e.target.style.display='none';}}/>
+            {imgUrl&&<div style={{position:'relative',width:'100%',borderRadius:'10px 10px 0 0',overflow:'hidden',height:180}}>
+              <img src={imgUrl} alt={reg.name} style={{width:'100%',height:'100%',objectFit:'cover',objectPosition:'center 70%',display:'block'}}
+                onError={e=>{e.target.parentElement.style.display='none';}}/>
               <div style={{position:'absolute',bottom:0,left:0,right:0,background:'linear-gradient(transparent,#000000cc)',padding:'30px 16px 10px'}}>
                 <div style={{fontSize:24,color:TH.goldBright,fontWeight:'bold',textShadow:'0 2px 8px #000'}}>{reg.icon} {reg.name}</div>
                 <div style={{fontSize:14,color:'#ffffffcc',textShadow:'0 1px 4px #000'}}>Tier {reg.diff} · DC {reg.dc} · {reg.time}h travel · {reg.ingr.length} ingredient types</div>
@@ -6448,7 +6466,7 @@ function CindervaleAlchemistInner(){
                 {qty>1&&<button style={S.btn()} onClick={()=>{modInv(id,-qty);setGold(g=>g+sp*qty);addLog(`Sold ${qty}× ${ig.icon}${ig.name}. (+${sp*qty}g)`,'info');}}>All ({sp*qty}g)</button>}
               </div>);})}
           </div>}
-          {(dlgNpc==='brenna'||dlgNpc==='sola'||dlgNpc==='razak')&&!showShop&&NPCS[dlgNpc]&&<NpcDlg npc={NPCS[dlgNpc]} {...{dlgLine,setDlgLine,setDlgNpc,availQ,aQ,acceptQ,compQ,qP,qObj,S,questDlg,setQuestDlg,openNpc}}/>}
+          {(dlgNpc==='brenna'||dlgNpc==='sola'||dlgNpc==='razak')&&!showShop&&NPCS[dlgNpc]&&<NpcDlg npc={{...NPCS[dlgNpc],id:dlgNpc}} {...{dlgLine,setDlgLine,setDlgNpc,availQ,aQ,acceptQ,compQ,qP,qObj,S,questDlg,setQuestDlg,openNpc}}/>}
         </div>
         {/* ── Black Market (Merchant Fence) ── */}
         {getFeatureVal('blackMarket')&&<div style={{...S.card,borderColor:'#800040',background:TH.panel+'cc'}}>
@@ -6507,7 +6525,7 @@ function CindervaleAlchemistInner(){
               ?['amara','tarek'].map(n=>NPCS[n]?<button key={n} style={S.btn(dlgNpc===n?'gold':'def')} onClick={()=>openNpc(n)}>{NPCS[n]?.icon} {NPCS[n]?.name}</button>:null)
               :['tarn','holst','marta','gretta'].map(n=><button key={n} style={S.btn(dlgNpc===n?'gold':'def')} onClick={()=>openNpc(n)}>{NPCS[n]?.icon} {NPCS[n]?.name}</button>)}
           </div>
-          {dlgNpc&&(NPCS[dlgNpc]?.loc==='chapel'||NPCS[dlgNpc]?.loc==='tavern')&&<NpcDlg npc={NPCS[dlgNpc]} {...{dlgLine,setDlgLine,setDlgNpc,availQ,aQ,acceptQ,compQ,qP,qObj,S,questDlg,setQuestDlg,openNpc}}/>}
+          {dlgNpc&&(NPCS[dlgNpc]?.loc==='chapel'||NPCS[dlgNpc]?.loc==='tavern')&&<NpcDlg npc={{...NPCS[dlgNpc],id:dlgNpc}} {...{dlgLine,setDlgLine,setDlgNpc,availQ,aQ,acceptQ,compQ,qP,qObj,S,questDlg,setQuestDlg,openNpc}}/>}
           {!dlgNpc&&<div style={{color:TH.textDim,fontSize:15,textAlign:'center',padding:12,fontStyle:'italic'}}>The warm hearth crackles softly. Choose someone to speak with.</div>}
         </div>
       </>}
@@ -9852,7 +9870,12 @@ function CindervaleAlchemistInner(){
 function CindervaleAlchemist(){return <EB><CindervaleAlchemistInner/></EB>;}
 
 // ═══════ NPC PORTRAIT COMPONENT ═══════
-const NPC_PORTRAITS=typeof NPC_PORTRAIT_IMGS!=='undefined'?NPC_PORTRAIT_IMGS:{};
+const NPC_PORTRAITS=typeof NPC_PORTRAIT_IMGS!=='undefined'?{...NPC_PORTRAIT_IMGS}:{};
+// Ashfall NPC portraits (Leonardo AI .jpg files on GitHub)
+if(!NPC_PORTRAITS.sola)NPC_PORTRAITS.sola='sola.jpg';
+if(!NPC_PORTRAITS.razak)NPC_PORTRAITS.razak='razak.jpg';
+if(!NPC_PORTRAITS.amara)NPC_PORTRAITS.amara='amara.jpg';
+if(!NPC_PORTRAITS.tarek)NPC_PORTRAITS.tarek='tarek.jpg';
 function NpcPortrait({npc,size=80,customerData}){
   const p=npc?.portrait||customerData?.portrait||{bg:['#444','#2a2a2a'],ring:'#888'};
   const icon=npc?.icon||'🧑';
@@ -9860,7 +9883,7 @@ function NpcPortrait({npc,size=80,customerData}){
   const s=size;
   // Check for Canva portrait image — try npc key (lowercase) first, then full name
   const imgKey=npc?.id||name;
-  const imgSrc=NPC_PORTRAITS[imgKey]||NPC_PORTRAITS[name]||null;
+  const imgSrc=NPC_PORTRAITS[imgKey]||NPC_PORTRAITS[name]||NPC_PORTRAITS[name.toLowerCase()]||NPC_PORTRAITS[name.split(' ').pop()]||null;
   return(
     <div style={{width:s,height:s,borderRadius:'50%',position:'relative',flexShrink:0,
       background:imgSrc?'#1a1610':`linear-gradient(135deg, ${p.bg[0]}, ${p.bg[1]})`,
