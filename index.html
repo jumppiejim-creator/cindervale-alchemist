@@ -2084,7 +2084,7 @@ function CindervaleAlchemistInner(){
   const doResearch=(type)=>{
     const loreMod=getSkMod('lore');const scholarReduc=getFeatureVal('researchCostReduction');
     const resCost=Math.max(1,(loreMod>=4?1:2)-scholarReduc);
-    const freeResPerDay=getFeatureVal('freeResearchPerDay');
+    const freeResPerDay=getFeatureVal('freeResearchPerDay')+upEff('freeResearchPerDay');
     const freeUsed=dayFlags.filter(f=>f==='free_research_used').length;
     const isFree=freeResPerDay>freeUsed;
     if(!isFree&&hours<resCost){addLog(`Research takes ⚡${resCost} Energy.${freeResPerDay>0?' (free attempts used today)':''}`,'error');return;}
@@ -8028,7 +8028,7 @@ function CindervaleAlchemistInner(){
             {(()=>{const undiscP=RECIPES.filter(r=>!known.includes(r.id)&&level>=r.unlock&&canCraftAtLocation(r.ingr)&&(!r.faction||getRL(r.faction)>=(r.fReq||0)));
               const undiscE=ENCHANTMENTS.filter(e=>!knownEnch.includes(e.id)&&(!e.faction||getRL(e.faction)>=(e.fReq||0))&&canCraftAtLocation(e.ingr));
               const resCost=Math.max(1,(getSkMod('lore')>=4?1:2)-getFeatureVal('researchCostReduction'));
-              const freeRes=getFeatureVal('freeResearchPerDay');
+              const freeRes=getFeatureVal('freeResearchPerDay')+upEff('freeResearchPerDay');
               const freeUsed=dayFlags.filter(f=>f==='free_research_used').length;
               const hasFree=freeRes>freeUsed;
               const canAct=hasFree||hours>=resCost;
