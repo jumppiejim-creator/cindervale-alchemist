@@ -6611,7 +6611,7 @@ function CindervaleAlchemistInner(){
           <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(90px,1fr))',gap:8,position:'relative',zIndex:1}}>
             <MapB icon="⚗️" name="Workshop" screen="workshop" color={TH.green} sub={`${upgrades.length} upgrades`}/>
             <MapB icon="🛒" name={gameLocation==='ashfall'?'Bazaar':'Market'} screen="market" color={TH.gold} sub={gameLocation==='ashfall'?'Shop · Sola · Razak':'Shop · Brenna'}/>
-            <MapB icon="🍺" name={gameLocation==='ashfall'?'Oasis Cantina':'Ember & Anvil'} screen="tavern" color={TH.ember} sub={gameLocation==='ashfall'?'Scout Tarek · NPCs':'Tavern · NPCs'}/>
+            <MapB icon="🍺" name={gameLocation==='ashfall'?'Oasis Cantina':'Ember & Anvil'} screen="tavern" color={TH.ember} sub={gameLocation==='ashfall'?'Amara · Nahla · Tarek':'Tavern · NPCs'}/>
             <MapB icon="🗺️" name={gameLocation==='ashfall'?'Desert Gates':'Village Gates'} screen="worldmap" color={TH.teal} sub={`⚡${hours} to explore`}/>
 
             <MapB icon="📜" name="Quest Board" screen="quests" color={TH.cyan} note={questNote}/>
@@ -6760,7 +6760,7 @@ function CindervaleAlchemistInner(){
         <div style={S.card}>
           <div style={{...S.row,marginBottom:8}}>
             {gameLocation==='ashfall'
-              ?['amara','tarek'].map(n=>NPCS[n]?<button key={n} style={S.btn(dlgNpc===n?'gold':'def')} onClick={()=>openNpc(n)}>{NPCS[n]?.icon} {NPCS[n]?.name}</button>:null)
+              ?['amara','nahla','tarek'].map(n=>NPCS[n]?<button key={n} style={S.btn(dlgNpc===n?'gold':'def')} onClick={()=>openNpc(n)}>{NPCS[n]?.icon} {NPCS[n]?.name}</button>:null)
               :['tarn','holst','marta','gretta'].map(n=><button key={n} style={S.btn(dlgNpc===n?'gold':'def')} onClick={()=>openNpc(n)}>{NPCS[n]?.icon} {NPCS[n]?.name}</button>)}
           </div>
           {dlgNpc&&(NPCS[dlgNpc]?.loc==='chapel'||NPCS[dlgNpc]?.loc==='tavern')&&<NpcDlg npc={{...NPCS[dlgNpc],id:dlgNpc}} {...{dlgLine,setDlgLine,setDlgNpc,availQ,aQ,acceptQ,compQ,qP,qObj,S,questDlg,setQuestDlg,openNpc}}/>}
