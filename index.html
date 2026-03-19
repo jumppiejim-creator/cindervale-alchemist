@@ -786,7 +786,7 @@ function CindervaleAlchemistInner(){
       const apothLv=classLevels.alchemist||0;
       clinicN=apothLv>=10?3:apothLv>=6?2:1;
       const maxTier=apothLv>=10?3:apothLv>=6?2:1;
-      const available=CLINIC_AILMENTS.filter(a=>a.tier<=maxTier);
+      const available=CLINIC_AILMENTS.filter(a=>a.tier<=maxTier&&(!a.loc||a.loc===gameLocation));
       const patients=[];
       const patientNames=gameLocation==='tidecrest'
         ?['Seasick Sailor','Dock Worker','Pearl Diver Recruit','Tavern Regular','Ship\'s Cook','Fisherman','Harbor Guard','Net Mender','Lighthouse Keeper\'s Son','Crab Trapper']
