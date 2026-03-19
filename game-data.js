@@ -620,49 +620,49 @@ var weightedPick=(weights,n)=>{
 };
 
 var REGIONS=[
-  {id:'ashfields',loc:'cindervale',name:'Ashfields',icon:'🏜️',color:'#5a4a3a',ingr:['ashbloom','ironroot_bark','ash_salt','cinder_moss','char_root','wind_dust','ember_petal','soot_crystal','warden_sigil'],pick:3,sites:[
+  {id:'ashfields',loc:'cindervale',name:'Ashfields',icon:'🏜️',color:'#5a4a3a',ingr:['ashbloom','ironroot_bark','ash_salt','cinder_moss','char_root','wind_dust','ember_petal','soot_crystal','warden_sigil','spring_dewdrop','harvest_root'],pick:3,sites:[
       {id:'old_road',name:'The Old Road',icon:'🛤️',desc:'Cracked flagstones where ashbloom grows thick between broken cartwheel ruts.',
-        weights:{ashbloom:26,ironroot_bark:20,ash_salt:8,cinder_moss:8,char_root:9,wind_dust:9,ember_petal:8,soot_crystal:7,warden_sigil:5}},
+        weights:{ashbloom:26,ironroot_bark:20,ash_salt:8,cinder_moss:8,char_root:9,wind_dust:9,ember_petal:8,soot_crystal:7,warden_sigil:5,spring_dewdrop:8,harvest_root:10}},
       {id:'ember_drifts',name:'Ember Drifts',icon:'🌬️',desc:'Wind-sculpted ash dunes that catch ember seeds and crystallized dust.',
-        weights:{ashbloom:7,ironroot_bark:7,ash_salt:7,cinder_moss:7,char_root:7,wind_dust:23,ember_petal:27,soot_crystal:12,warden_sigil:3}},
+        weights:{ashbloom:7,ironroot_bark:7,ash_salt:7,cinder_moss:7,char_root:7,wind_dust:23,ember_petal:27,soot_crystal:12,warden_sigil:3,spring_dewdrop:10,harvest_root:6}},
       {id:'scorched_basin',name:'Scorched Basin',icon:'🕳️',desc:'A shallow crater where mineral salts and crystals form on the baked surface.',
-        weights:{ashbloom:7,ironroot_bark:7,ash_salt:24,cinder_moss:8,char_root:8,wind_dust:7,ember_petal:8,soot_crystal:27,warden_sigil:4}},
+        weights:{ashbloom:7,ironroot_bark:7,ash_salt:24,cinder_moss:8,char_root:8,wind_dust:7,ember_petal:8,soot_crystal:27,warden_sigil:4,spring_dewdrop:6,harvest_root:8}},
     ],diff:1,unlock:0,time:1,yield:[2,4],dc:8,
     flavor:['Grey ash crunches underfoot as pale blooms peek through the drifts.','Wind scatters ash like snow across the barren expanse.','A familiar trail — Ashbloom grows thick along the old road.']},
-  {id:'ironwood',loc:'cindervale',name:'Ironwood',icon:'🌲',color:'#2a3a2a',ingr:['ironroot_bark','ashbloom','embercap','ironwood_sap','thornvine','bark_resin','moss_amber','amber_sap','beetle_shell','warden_sigil'],pick:3,sites:[
+  {id:'ironwood',loc:'cindervale',name:'Ironwood',icon:'🌲',color:'#2a3a2a',ingr:['ironroot_bark','ashbloom','embercap','ironwood_sap','thornvine','bark_resin','moss_amber','amber_sap','beetle_shell','warden_sigil','amber_leaf','canopy_moss','sky_amber'],pick:3,sites:[
       {id:'root_halls',name:'The Root Halls',icon:'🌳',desc:'Massive exposed root systems form natural hallways beneath ancient trees.',
-        weights:{ironroot_bark:24,ashbloom:7,embercap:7,ironwood_sap:22,thornvine:7,bark_resin:10,moss_amber:7,amber_sap:7,beetle_shell:5,warden_sigil:4}},
+        weights:{ironroot_bark:24,ashbloom:7,embercap:7,ironwood_sap:22,thornvine:7,bark_resin:10,moss_amber:7,amber_sap:7,beetle_shell:5,warden_sigil:4,amber_leaf:6,canopy_moss:8,sky_amber:4}},
       {id:'amber_hollow',name:'Amber Hollow',icon:'🟡',desc:'A sheltered depression where golden sap pools and slowly hardens into amber.',
-        weights:{ironroot_bark:6,ashbloom:6,embercap:7,ironwood_sap:8,thornvine:6,bark_resin:8,moss_amber:22,amber_sap:26,beetle_shell:7,warden_sigil:4}},
+        weights:{ironroot_bark:6,ashbloom:6,embercap:7,ironwood_sap:8,thornvine:6,bark_resin:8,moss_amber:22,amber_sap:26,beetle_shell:7,warden_sigil:4,amber_leaf:10,canopy_moss:6,sky_amber:8}},
       {id:'thornveil_edge',name:'Thornveil Edge',icon:'🌿',desc:'Dense thorny undergrowth at the forest border — fungi thrive in the decay.',
-        weights:{ironroot_bark:7,ashbloom:7,embercap:23,ironwood_sap:6,thornvine:24,bark_resin:7,moss_amber:6,amber_sap:6,beetle_shell:9,warden_sigil:5}},
+        weights:{ironroot_bark:7,ashbloom:7,embercap:23,ironwood_sap:6,thornvine:24,bark_resin:7,moss_amber:6,amber_sap:6,beetle_shell:9,warden_sigil:5,amber_leaf:8,canopy_moss:12,sky_amber:6}},
     ],diff:2,unlock:1,time:1,yield:[2,4],dc:10,
     flavor:['Ancient trees with bark like hammered iron loom overhead.','The forest floor is soft with decay — perfect for Embercap.','Ironwood roots grip stone like fingers. Good harvesting here.']},
-  {id:'fungal_caves',loc:'cindervale',name:'Fungal Caves',icon:'🍄',color:'#3a2a3a',ingr:['embercap','gloomcap','spore_dust','cave_lichen','biolumen_gel','mycelium_thread','echo_fungus','ghost_silk'],pick:3,sites:[
+  {id:'fungal_caves',loc:'cindervale',name:'Fungal Caves',icon:'🍄',color:'#3a2a3a',ingr:['embercap','gloomcap','spore_dust','cave_lichen','biolumen_gel','mycelium_thread','echo_fungus','ghost_silk','harmonic_crystal','resonance_dust'],pick:3,sites:[
       {id:'spore_gallery',name:'Spore Gallery',icon:'💨',desc:'An open cavern thick with airborne spores and dense mushroom colonies.',
-        weights:{embercap:22,gloomcap:8,spore_dust:28,cave_lichen:8,biolumen_gel:9,mycelium_thread:9,echo_fungus:8,ghost_silk:8}},
+        weights:{embercap:22,gloomcap:8,spore_dust:28,cave_lichen:8,biolumen_gel:9,mycelium_thread:9,echo_fungus:8,ghost_silk:8,harmonic_crystal:8,resonance_dust:10}},
       {id:'gloom_deep',name:'The Gloom Deep',icon:'🖤',desc:'The deepest accessible chamber, where light has never touched the stone.',
-        weights:{embercap:8,gloomcap:28,spore_dust:8,cave_lichen:9,biolumen_gel:8,mycelium_thread:7,echo_fungus:25,ghost_silk:7}},
+        weights:{embercap:8,gloomcap:28,spore_dust:8,cave_lichen:9,biolumen_gel:8,mycelium_thread:7,echo_fungus:25,ghost_silk:7,harmonic_crystal:10,resonance_dust:6}},
       {id:'silk_cavern',name:'Silk Cavern',icon:'🕸️',desc:'Gossamer fungal threads hang ceiling to floor like luminous curtains.',
-        weights:{embercap:7,gloomcap:7,spore_dust:7,cave_lichen:8,biolumen_gel:12,mycelium_thread:24,echo_fungus:7,ghost_silk:28}},
+        weights:{embercap:7,gloomcap:7,spore_dust:7,cave_lichen:8,biolumen_gel:12,mycelium_thread:24,echo_fungus:7,ghost_silk:28,harmonic_crystal:6,resonance_dust:8}},
     ],diff:2,unlock:2,time:2,yield:[2,4],dc:11,
     flavor:['Bioluminescent fungi paint the cave walls in ghostly blue.','The air is thick with spores. You tie a cloth over your nose.','Dripping water echoes off stone — and strange mushrooms glow in the dark.']},
-  {id:'crystal_hollow',loc:'cindervale',name:'Crystal Hollows',icon:'💎',color:'#2a3a4a',ingr:['hearthstone','ashite','crystal_shard','mineral_clay','geode_dust','resonance_ore','singing_quartz','copper_vein'],pick:3,sites:[
+  {id:'crystal_hollow',loc:'cindervale',name:'Crystal Hollows',icon:'💎',color:'#2a3a4a',ingr:['hearthstone','ashite','crystal_shard','mineral_clay','geode_dust','resonance_ore','singing_quartz','copper_vein','crystal_mycelium','deep_pearl'],pick:3,sites:[
       {id:'geode_chamber',name:'Geode Chamber',icon:'🪨',desc:'A hollow dome encrusted with split geodes revealing sparkling crystal interiors.',
-        weights:{hearthstone:8,ashite:8,crystal_shard:24,mineral_clay:9,geode_dust:27,resonance_ore:8,singing_quartz:9,copper_vein:7}},
+        weights:{hearthstone:8,ashite:8,crystal_shard:24,mineral_clay:9,geode_dust:27,resonance_ore:8,singing_quartz:9,copper_vein:7,crystal_mycelium:10,deep_pearl:6}},
       {id:'resonance_vein',name:'Resonance Vein',icon:'🔔',desc:'A deep fissure where ore hums with harmonic energy that you can feel in your chest.',
-        weights:{hearthstone:7,ashite:8,crystal_shard:8,mineral_clay:7,geode_dust:8,resonance_ore:28,singing_quartz:24,copper_vein:10}},
+        weights:{hearthstone:7,ashite:8,crystal_shard:8,mineral_clay:7,geode_dust:8,resonance_ore:28,singing_quartz:24,copper_vein:10,crystal_mycelium:6,deep_pearl:4}},
       {id:'copper_grotto',name:'Copper Grotto',icon:'🟤',desc:'Warm-toned cavern rich with copper deposits and hearthstone seams.',
-        weights:{hearthstone:24,ashite:9,crystal_shard:7,mineral_clay:10,geode_dust:7,resonance_ore:7,singing_quartz:8,copper_vein:28}},
+        weights:{hearthstone:24,ashite:9,crystal_shard:7,mineral_clay:10,geode_dust:7,resonance_ore:7,singing_quartz:8,copper_vein:28,crystal_mycelium:8,deep_pearl:10}},
     ],diff:3,unlock:3,time:2,yield:[2,4],dc:13,
     flavor:['Crystals hum with deep resonance as you descend into the hollow.','Hearthstone veins glitter in your lantern light like trapped stars.','The Cinderfolk carved these paths long ago. Their pick-marks still show.']},
-  {id:'moonlit_glade',loc:'cindervale',name:'Moonlit Glade',icon:'🌙',color:'#2a2a4a',ingr:['moonpetal','starwort','nightdew','lunar_moss','dew_crystal','silver_lichen','moth_scale','dream_pollen','veil_shard'],pick:3,sites:[
+  {id:'moonlit_glade',loc:'cindervale',name:'Moonlit Glade',icon:'🌙',color:'#2a2a4a',ingr:['moonpetal','starwort','nightdew','lunar_moss','dew_crystal','silver_lichen','moth_scale','dream_pollen','veil_shard','silver_lotus','liquid_moonlight','frostbloom'],pick:3,sites:[
       {id:'moonpool',name:'The Moonpool',icon:'🪷',desc:'A still reflecting pool surrounded by luminous moonpetal blooms.',
-        weights:{moonpetal:26,starwort:7,nightdew:22,lunar_moss:8,dew_crystal:8,silver_lichen:7,moth_scale:7,dream_pollen:7,veil_shard:8}},
+        weights:{moonpetal:26,starwort:7,nightdew:22,lunar_moss:8,dew_crystal:8,silver_lichen:7,moth_scale:7,dream_pollen:7,veil_shard:8,silver_lotus:10,liquid_moonlight:8,frostbloom:4}},
       {id:'silver_grove',name:'Silver Grove',icon:'🌿',desc:'Ancient trees wrapped in silvery lichen under perpetual moonlight.',
-        weights:{moonpetal:7,starwort:11,nightdew:7,lunar_moss:22,dew_crystal:7,silver_lichen:25,moth_scale:7,dream_pollen:7,veil_shard:7}},
+        weights:{moonpetal:7,starwort:11,nightdew:7,lunar_moss:22,dew_crystal:7,silver_lichen:25,moth_scale:7,dream_pollen:7,veil_shard:7,silver_lotus:6,liquid_moonlight:4,frostbloom:8}},
       {id:'moth_sanctuary',name:'Moth Sanctuary',icon:'🦋',desc:'Where giant lunar moths gather by thousands, shedding iridescent scales.',
-        weights:{moonpetal:7,starwort:8,nightdew:7,lunar_moss:7,dew_crystal:7,silver_lichen:7,moth_scale:27,dream_pollen:23,veil_shard:7}},
+        weights:{moonpetal:7,starwort:8,nightdew:7,lunar_moss:7,dew_crystal:7,silver_lichen:7,moth_scale:27,dream_pollen:23,veil_shard:7,silver_lotus:4,liquid_moonlight:6,frostbloom:6}},
     ],diff:3,unlock:4,time:2,yield:[2,4],dc:14,
     flavor:['Silver light filters through canopy gaps where Moonpetals bloom.','The glade feels outside of time — quiet, luminous, sacred.','Starwort grows only where moonlight touches earth directly.']},
   {id:'volcanic_vents',loc:'cindervale',name:'Volcanic Vents',icon:'🌋',color:'#4a2a1a',ingr:['volcanic_essence','embervein','sulfur_bloom','magma_salt','obsidian_flake','thermal_clay','lava_pearl','pyrestone','sacred_ember'],pick:3,sites:[
@@ -674,83 +674,83 @@ var REGIONS=[
         weights:{volcanic_essence:7,embervein:8,sulfur_bloom:7,obsidian_flake:26,thermal_clay:7,magma_salt:7,lava_pearl:7,pyrestone:25,sacred_ember:6}},
     ],diff:4,unlock:5,time:3,yield:[2,4],dc:15,
     flavor:['Sulfurous heat blasts from cracks in the scorched earth.','Embervein ore glows cherry-red near the active vents.','The ground trembles. You work quickly, gathering what you can.']},
-  {id:'deep_mines',loc:'cindervale',name:'Deep Mines',icon:'⛏️',color:'#3a3a40',ingr:['ashite','hearthstone','embervein','deep_iron','shadow_quartz','echo_stone','dark_amber','mithril_dust','void_salt','deep_crystal'],pick:3,sites:[
+  {id:'deep_mines',loc:'cindervale',name:'Deep Mines',icon:'⛏️',color:'#3a3a40',ingr:['ashite','hearthstone','embervein','deep_iron','shadow_quartz','echo_stone','dark_amber','mithril_dust','void_salt','deep_crystal','ice_crystal','deep_mithril','shadow_ore'],pick:3,sites:[
       {id:'upper_shafts',name:'Upper Shafts',icon:'⛏️',desc:'Well-mapped tunnels near the surface with common but reliable mineral veins.',
-        weights:{ashite:24,hearthstone:22,embervein:9,deep_iron:9,shadow_quartz:7,echo_stone:8,dark_amber:8,mithril_dust:6,void_salt:5,deep_crystal:2}},
+        weights:{ashite:24,hearthstone:22,embervein:9,deep_iron:9,shadow_quartz:7,echo_stone:8,dark_amber:8,mithril_dust:6,void_salt:5,deep_crystal:2,ice_crystal:8,deep_mithril:4,shadow_ore:6}},
       {id:'shadow_gallery',name:'Shadow Gallery',icon:'👁️',desc:'A vast gallery where quartz formations cast eerie, shifting shadows.',
-        weights:{ashite:7,hearthstone:7,embervein:7,deep_iron:7,shadow_quartz:26,echo_stone:22,dark_amber:8,mithril_dust:5,void_salt:5,deep_crystal:6}},
+        weights:{ashite:7,hearthstone:7,embervein:7,deep_iron:7,shadow_quartz:26,echo_stone:22,dark_amber:8,mithril_dust:5,void_salt:5,deep_crystal:6,ice_crystal:6,deep_mithril:6,shadow_ore:10}},
       {id:'mithril_seam',name:'Mithril Seam',icon:'💎',desc:'A rare exposed seam of mithril-bearing ore in the deepest accessible shaft.',
-        weights:{ashite:6,hearthstone:5,embervein:7,deep_iron:20,shadow_quartz:6,echo_stone:5,dark_amber:7,mithril_dust:26,void_salt:7,deep_crystal:11}},
+        weights:{ashite:6,hearthstone:5,embervein:7,deep_iron:20,shadow_quartz:6,echo_stone:5,dark_amber:7,mithril_dust:26,void_salt:7,deep_crystal:11,ice_crystal:10,deep_mithril:10,shadow_ore:8}},
     ],diff:4,unlock:6,time:3,yield:[2,4],dc:16,faction:'cinderfolk',fReq:2,
     flavor:['Cinderfolk lanterns guide you through forgotten shafts.','The deep mines hold treasures — and dangers — in equal measure.','Pickaxe rings on stone. The miners nod as you pass.']},
-  {id:'heartforge_rim',loc:'cindervale',name:'Heartforge Rim',icon:'⚡',color:'#4a3a0a',ingr:['volcanic_essence','hearthstone','embervein','starwort','forge_scale','primordial_ash','phoenix_ash','runespark','heartstone_sliver','titan_bone'],pick:3,sites:[
+  {id:'heartforge_rim',loc:'cindervale',name:'Heartforge Rim',icon:'⚡',color:'#4a3a0a',ingr:['volcanic_essence','hearthstone','embervein','starwort','forge_scale','primordial_ash','phoenix_ash','runespark','heartstone_sliver','titan_bone','moonwell_water','primordial_spark'],pick:3,sites:[
       {id:'titans_boneyard',name:"Titan's Boneyard",icon:'🦴',desc:'Ancient titan remains jut from the caldera wall like petrified mountains.',
-        weights:{volcanic_essence:6,hearthstone:7,embervein:7,starwort:5,forge_scale:7,primordial_ash:22,phoenix_ash:7,runespark:5,heartstone_sliver:6,titan_bone:28}},
+        weights:{volcanic_essence:6,hearthstone:7,embervein:7,starwort:5,forge_scale:7,primordial_ash:22,phoenix_ash:7,runespark:5,heartstone_sliver:6,titan_bone:28,moonwell_water:4,primordial_spark:6}},
       {id:'phoenix_nesting',name:'Phoenix Nesting',icon:'🔥',desc:'Scorched alcoves where phoenixes once roosted — still crackling with residual energy.',
-        weights:{volcanic_essence:7,hearthstone:6,embervein:7,starwort:6,forge_scale:6,primordial_ash:7,phoenix_ash:28,runespark:24,heartstone_sliver:5,titan_bone:4}},
+        weights:{volcanic_essence:7,hearthstone:6,embervein:7,starwort:6,forge_scale:6,primordial_ash:7,phoenix_ash:28,runespark:24,heartstone_sliver:5,titan_bone:4,moonwell_water:6,primordial_spark:4}},
       {id:'forge_gate',name:'The Forge Gate',icon:'🚪',desc:'The massive entrance to the Heartforge itself, encrusted with impossibly rare deposits.',
-        weights:{volcanic_essence:6,hearthstone:9,embervein:6,starwort:6,forge_scale:24,primordial_ash:6,phoenix_ash:5,runespark:7,heartstone_sliver:26,titan_bone:5}},
+        weights:{volcanic_essence:6,hearthstone:9,embervein:6,starwort:6,forge_scale:24,primordial_ash:6,phoenix_ash:5,runespark:7,heartstone_sliver:26,titan_bone:5,moonwell_water:8,primordial_spark:8}},
     ],diff:5,unlock:8,time:4,yield:[2,4],dc:18,
     flavor:['The air crackles with dormant power this close to the Heartforge.','Even cold, the Heartforge radiates something ancient and immense.','The rim is treacherous — but the rarest materials gather here.']},
   // ═══ ASHFALL CROSSING REGIONS ═══
   {id:'sunscorch_flats',loc:'ashfall',name:'Sunscorch Flats',icon:'☀️',color:'#8a7a3a',
-    ingr:['sunpetal','dustite','scorchroot','ashbloom','ash_salt','wind_dust','sand_merchant_seal','dried_cactus','sand_glass','salt_flake','ghost_pepper'],pick:3,sites:[
+    ingr:['sunpetal','dustite','scorchroot','ashbloom','ash_salt','wind_dust','sand_merchant_seal','dried_cactus','sand_glass','salt_flake','ghost_pepper','thermal_bloom'],pick:3,sites:[
       {id:'af_nomad_trail',name:'Nomad Trail',icon:'🐪',desc:'Ancient caravan path with hardy desert plants.',
-        weights:{sunpetal:28,dustite:23,scorchroot:18,ashbloom:9,ash_salt:7,wind_dust:7,sand_merchant_seal:8,dried_cactus:6,sand_glass:5,salt_flake:4,ghost_pepper:3}},
+        weights:{sunpetal:28,dustite:23,scorchroot:18,ashbloom:9,ash_salt:7,wind_dust:7,sand_merchant_seal:8,dried_cactus:6,sand_glass:5,salt_flake:4,ghost_pepper:3,thermal_bloom:8}},
       {id:'af_dust_bowl',name:'Dust Bowl',icon:'🌪️',desc:'Windswept depression where dustite concentrates.',
-        weights:{dustite:33,scorchroot:19,sunpetal:14,wind_dust:14,ash_salt:9,ashbloom:5,sand_merchant_seal:6,dried_cactus:4,sand_glass:6,salt_flake:3,ghost_pepper:3}},
+        weights:{dustite:33,scorchroot:19,sunpetal:14,wind_dust:14,ash_salt:9,ashbloom:5,sand_merchant_seal:6,dried_cactus:4,sand_glass:6,salt_flake:3,ghost_pepper:3,thermal_bloom:10}},
       {id:'af_cracked_riverbed',name:'Cracked Riverbed',icon:'🏜️',desc:'An ancient river delta, now bone-dry. Salt deposits line the banks.',
-        weights:{ash_salt:28,ashbloom:20,sunpetal:15,scorchroot:14,wind_dust:10,dustite:7,sand_merchant_seal:6,dried_cactus:5,sand_glass:4,salt_flake:7,ghost_pepper:4}},
+        weights:{ash_salt:28,ashbloom:20,sunpetal:15,scorchroot:14,wind_dust:10,dustite:7,sand_merchant_seal:6,dried_cactus:5,sand_glass:4,salt_flake:7,ghost_pepper:4,thermal_bloom:6}},
     ],diff:1,unlock:0,time:1,yield:[2,4],dc:8,
     flavor:['The relentless sun beats down on cracked earth.','Heat shimmers rise from the flats like liquid glass.']},
   {id:'salt_caverns',loc:'ashfall',name:'Salt Caverns',icon:'🧂',color:'#6a7a8a',
-    ingr:['crystal_salt','brine_moss','echo_fungus','gloomcap','ashite','mineral_clay','red_clay','sandstone_dust','sulfur_crystal','desert_rose'],pick:3,sites:[
+    ingr:['crystal_salt','brine_moss','echo_fungus','gloomcap','ashite','mineral_clay','red_clay','sandstone_dust','sulfur_crystal','desert_rose','singing_salt'],pick:3,sites:[
       {id:'af_brine_pools',name:'Brine Pools',icon:'💧',desc:'Underground pools crusted with crystallized salt.',
-        weights:{crystal_salt:30,brine_moss:28,echo_fungus:15,gloomcap:12,ashite:8,mineral_clay:7,red_clay:5,sandstone_dust:4,sulfur_crystal:3,desert_rose:3}},
+        weights:{crystal_salt:30,brine_moss:28,echo_fungus:15,gloomcap:12,ashite:8,mineral_clay:7,red_clay:5,sandstone_dust:4,sulfur_crystal:3,desert_rose:3,singing_salt:10}},
       {id:'af_crystal_gallery',name:'Crystal Gallery',icon:'💎',desc:'A cavern of towering salt columns that ring when touched.',
-        weights:{crystal_salt:22,mineral_clay:24,ashite:20,echo_fungus:14,brine_moss:12,gloomcap:8,red_clay:4,sandstone_dust:6,sulfur_crystal:5,desert_rose:3}},
+        weights:{crystal_salt:22,mineral_clay:24,ashite:20,echo_fungus:14,brine_moss:12,gloomcap:8,red_clay:4,sandstone_dust:6,sulfur_crystal:5,desert_rose:3,singing_salt:8}},
       {id:'af_drip_tunnels',name:'Drip Tunnels',icon:'🕳️',desc:'Narrow passages where mineral-rich water seeps through the ceiling.',
-        weights:{brine_moss:30,gloomcap:22,echo_fungus:18,crystal_salt:14,mineral_clay:10,ashite:6,red_clay:6,sandstone_dust:3,sulfur_crystal:3,desert_rose:4}},
+        weights:{brine_moss:30,gloomcap:22,echo_fungus:18,crystal_salt:14,mineral_clay:10,ashite:6,red_clay:6,sandstone_dust:3,sulfur_crystal:3,desert_rose:4,singing_salt:6}},
     ],diff:2,unlock:1,time:1,yield:[2,4],dc:10,
     flavor:['Salt crystals catch your torchlight, scattering rainbows across damp walls.']},
   {id:'obsidian_wastes',loc:'ashfall',name:'Obsidian Wastes',icon:'🖤',color:'#2a2a3a',
-    ingr:['obsidian_shard','ashite','embervein','scorchroot','dustite','volcanic_essence','dustwalker_compass','desert_iron','fire_ant_chitin','heatstone','lava_glass'],pick:3,sites:[
+    ingr:['obsidian_shard','ashite','embervein','scorchroot','dustite','volcanic_essence','dustwalker_compass','desert_iron','fire_ant_chitin','heatstone','lava_glass','dust_amber'],pick:3,sites:[
       {id:'af_glass_fields',name:'Glass Fields',icon:'🔮',desc:'Vast plains of razor-sharp volcanic glass.',
-        weights:{obsidian_shard:28,ashite:20,embervein:16,scorchroot:11,dustite:9,volcanic_essence:8,dustwalker_compass:8,desert_iron:4,fire_ant_chitin:5,heatstone:3,lava_glass:3}},
+        weights:{obsidian_shard:28,ashite:20,embervein:16,scorchroot:11,dustite:9,volcanic_essence:8,dustwalker_compass:8,desert_iron:4,fire_ant_chitin:5,heatstone:3,lava_glass:3,dust_amber:8}},
       {id:'af_lava_tubes',name:'Lava Tubes',icon:'🌑',desc:'Cooled magma tunnels hiding mineral deposits in their walls.',
-        weights:{embervein:28,volcanic_essence:22,obsidian_shard:18,ashite:14,dustite:8,scorchroot:5,dustwalker_compass:5,desert_iron:3,fire_ant_chitin:3,heatstone:6,lava_glass:5}},
+        weights:{embervein:28,volcanic_essence:22,obsidian_shard:18,ashite:14,dustite:8,scorchroot:5,dustwalker_compass:5,desert_iron:3,fire_ant_chitin:3,heatstone:6,lava_glass:5,dust_amber:6}},
       {id:'af_shatter_ridge',name:'Shatter Ridge',icon:'⛰️',desc:'A jagged ridgeline where obsidian fractures into useful shards.',
-        weights:{obsidian_shard:30,dustite:18,scorchroot:16,ashite:13,embervein:9,dustwalker_compass:9,volcanic_essence:5,desert_iron:6,fire_ant_chitin:4,heatstone:3,lava_glass:3}},
+        weights:{obsidian_shard:30,dustite:18,scorchroot:16,ashite:13,embervein:9,dustwalker_compass:9,volcanic_essence:5,desert_iron:6,fire_ant_chitin:4,heatstone:3,lava_glass:3,dust_amber:10}},
     ],diff:2,unlock:2,time:2,yield:[2,4],dc:11,
     flavor:['Black glass crunches underfoot. One wrong step and you bleed.']},
   {id:'sandworm_tunnels',loc:'ashfall',name:'Sandworm Tunnels',icon:'🪱',color:'#7a6a3a',
-    ingr:['sandsilk','venomgland','thornvine','scorchroot','brine_moss','obsidian_shard','scarab_shell','venom_silk','worm_tooth','queen_silk'],pick:3,sites:[
+    ingr:['sandsilk','venomgland','thornvine','scorchroot','brine_moss','obsidian_shard','scarab_shell','venom_silk','worm_tooth','queen_silk','wet_sand_crystal'],pick:3,sites:[
       {id:'af_silk_nests',name:'Silk Nests',icon:'🕸️',desc:'Abandoned sandworm cocoons lined with precious silk.',
-        weights:{sandsilk:32,venomgland:22,thornvine:16,scorchroot:12,brine_moss:10,obsidian_shard:8,scarab_shell:4,venom_silk:3,worm_tooth:3,queen_silk:5}},
+        weights:{sandsilk:32,venomgland:22,thornvine:16,scorchroot:12,brine_moss:10,obsidian_shard:8,scarab_shell:4,venom_silk:3,worm_tooth:3,queen_silk:5,wet_sand_crystal:6}},
       {id:'af_venom_pools',name:'Venom Pools',icon:'☠️',desc:'Stagnant pools of sandworm digestive fluid. Toxic but valuable.',
-        weights:{venomgland:30,thornvine:24,sandsilk:16,brine_moss:12,scorchroot:10,obsidian_shard:8,scarab_shell:3,venom_silk:6,worm_tooth:5,queen_silk:2}},
+        weights:{venomgland:30,thornvine:24,sandsilk:16,brine_moss:12,scorchroot:10,obsidian_shard:8,scarab_shell:3,venom_silk:6,worm_tooth:5,queen_silk:2,wet_sand_crystal:8}},
       {id:'af_burrow_depths',name:'Burrow Depths',icon:'🪨',desc:'Deep tunnels carved by ancient sandworms, rich with shed materials.',
-        weights:{sandsilk:24,obsidian_shard:20,scorchroot:18,venomgland:15,brine_moss:13,thornvine:10,scarab_shell:5,venom_silk:3,worm_tooth:4,queen_silk:4}},
+        weights:{sandsilk:24,obsidian_shard:20,scorchroot:18,venomgland:15,brine_moss:13,thornvine:10,scarab_shell:5,venom_silk:3,worm_tooth:4,queen_silk:4,wet_sand_crystal:10}},
     ],diff:3,unlock:3,time:2,yield:[2,4],dc:13,
     flavor:['The tunnels vibrate with distant movement. Something very large lives down here.']},
   {id:'oasis_grove',loc:'ashfall',name:'Oasis Grove',icon:'🌴',color:'#3a6a4a',
-    ingr:['dewdrop_lily','moonpetal','flamekeeper_ember','sunpetal','starwort','dream_pollen','palm_resin','spirit_sand','oasis_pearl'],pick:3,sites:[
+    ingr:['dewdrop_lily','moonpetal','flamekeeper_ember','sunpetal','starwort','dream_pollen','palm_resin','spirit_sand','oasis_pearl','desert_bloom','desert_rain_lily'],pick:3,sites:[
       {id:'af_spring',name:'Hidden Spring',icon:'💧',desc:'Crystal-clear water surrounded by rare blooms.',
-        weights:{dewdrop_lily:30,moonpetal:25,flamekeeper_ember:15,sunpetal:12,starwort:10,dream_pollen:8,palm_resin:4,spirit_sand:3,oasis_pearl:3}},
+        weights:{dewdrop_lily:30,moonpetal:25,flamekeeper_ember:15,sunpetal:12,starwort:10,dream_pollen:8,palm_resin:4,spirit_sand:3,oasis_pearl:3,desert_bloom:10,desert_rain_lily:8}},
       {id:'af_palm_garden',name:'Palm Garden',icon:'🌿',desc:'Dense cluster of palms with medicinal bark and aromatic resins.',
-        weights:{sunpetal:28,starwort:24,dewdrop_lily:18,dream_pollen:14,moonpetal:10,flamekeeper_ember:6,palm_resin:7,spirit_sand:3,oasis_pearl:2}},
+        weights:{sunpetal:28,starwort:24,dewdrop_lily:18,dream_pollen:14,moonpetal:10,flamekeeper_ember:6,palm_resin:7,spirit_sand:3,oasis_pearl:2,desert_bloom:8,desert_rain_lily:6}},
       {id:'af_lotus_pools',name:'Lotus Pools',icon:'🪷',desc:'Shallow warm pools where rare lotus flowers bloom at dawn.',
-        weights:{moonpetal:28,dream_pollen:24,dewdrop_lily:18,flamekeeper_ember:14,starwort:10,sunpetal:6,palm_resin:3,spirit_sand:5,oasis_pearl:4}},
+        weights:{moonpetal:28,dream_pollen:24,dewdrop_lily:18,flamekeeper_ember:14,starwort:10,sunpetal:6,palm_resin:3,spirit_sand:5,oasis_pearl:4,desert_bloom:6,desert_rain_lily:10}},
     ],diff:3,unlock:4,time:2,yield:[2,4],dc:14,faction:'flamekeepers',fReq:1,
     flavor:['Water. Actual flowing water, in the middle of the desert. Impossibly lush.']},
   {id:'molten_vents',loc:'ashfall',name:'Molten Vents',icon:'🌋',color:'#6a2a2a',
-    ingr:['magma_diamond','living_ember','forge_heart_shard','volcanic_essence','embervein','obsidian_shard','flamekeeper_ember','fire_opal','molten_pearl','sun_diamond','storm_glass'],pick:3,sites:[
+    ingr:['magma_diamond','living_ember','forge_heart_shard','volcanic_essence','embervein','obsidian_shard','flamekeeper_ember','fire_opal','molten_pearl','sun_diamond','storm_glass','dragon_ash'],pick:3,sites:[
       {id:'af_caldera',name:'The Caldera',icon:'🔥',desc:'Active volcanic crater. Incredibly dangerous.',
-        weights:{magma_diamond:23,living_ember:23,forge_heart_shard:14,volcanic_essence:13,embervein:11,obsidian_shard:7,flamekeeper_ember:9,fire_opal:4,molten_pearl:3,sun_diamond:3,storm_glass:3}},
+        weights:{magma_diamond:22,living_ember:22,forge_heart_shard:13,volcanic_essence:12,embervein:10,obsidian_shard:6,flamekeeper_ember:8,fire_opal:4,molten_pearl:3,sun_diamond:3,storm_glass:3,dragon_ash:7}},
       {id:'af_fumaroles',name:'Fumarole Fields',icon:'♨️',desc:'Sulfurous vents spewing mineral-rich steam from deep below.',
-        weights:{volcanic_essence:28,embervein:24,living_ember:16,flamekeeper_ember:14,obsidian_shard:10,magma_diamond:5,forge_heart_shard:3,fire_opal:3,molten_pearl:4,sun_diamond:2,storm_glass:5}},
+        weights:{volcanic_essence:26,embervein:22,living_ember:15,flamekeeper_ember:13,obsidian_shard:9,magma_diamond:5,forge_heart_shard:3,fire_opal:3,molten_pearl:4,sun_diamond:2,storm_glass:5,dragon_ash:6}},
       {id:'af_lava_shore',name:'Lava Shore',icon:'🌊',desc:'Where molten rock meets ancient stone. Crystals form in the cooling crust.',
-        weights:{forge_heart_shard:24,magma_diamond:22,living_ember:18,volcanic_essence:14,embervein:10,flamekeeper_ember:7,obsidian_shard:5,fire_opal:5,molten_pearl:5,sun_diamond:4,storm_glass:2}},
+        weights:{forge_heart_shard:22,magma_diamond:20,living_ember:16,volcanic_essence:13,embervein:9,flamekeeper_ember:7,obsidian_shard:5,fire_opal:5,molten_pearl:5,sun_diamond:4,storm_glass:2,dragon_ash:8}},
     ],diff:4,unlock:5,time:3,yield:[2,4],dc:15,
     flavor:['The heat is beyond anything you have experienced. Lava glows through cracks.']},
   {id:'mirage_bazaar',loc:'ashfall',name:'Mirage Bazaar',icon:'🏜️',color:'#5a3a6a',
@@ -764,13 +764,13 @@ var REGIONS=[
     ],diff:4,unlock:6,time:3,yield:[2,4],dc:16,faction:'dustwalkers',fReq:2,
     flavor:['The bazaar shimmers into existence around you.']},
   {id:'buried_temple',loc:'ashfall',name:'Buried Temple',icon:'🏛️',color:'#4a3a2a',
-    ingr:['ancient_resin','temple_gold','sand_merchant_seal','mirage_dust','flamekeeper_ember','dustwalker_compass','temple_jade','desert_star','sun_crown_shard'],pick:3,sites:[
+    ingr:['ancient_resin','temple_gold','sand_merchant_seal','mirage_dust','flamekeeper_ember','dustwalker_compass','temple_jade','desert_star','sun_crown_shard','spirit_essence','vault_gold'],pick:3,sites:[
       {id:'af_sanctum',name:'Inner Sanctum',icon:'⚱️',desc:'The heart of the temple. Untouched for millennia.',
-        weights:{temple_gold:25,ancient_resin:25,sand_merchant_seal:15,mirage_dust:12,flamekeeper_ember:12,dustwalker_compass:11,temple_jade:4,desert_star:3,sun_crown_shard:3}},
+        weights:{temple_gold:23,ancient_resin:23,sand_merchant_seal:14,mirage_dust:11,flamekeeper_ember:11,dustwalker_compass:10,temple_jade:4,desert_star:3,sun_crown_shard:3,spirit_essence:8,vault_gold:8}},
       {id:'af_prayer_halls',name:'Prayer Halls',icon:'🕯️',desc:'Long corridors lined with offering niches. Many still hold treasures.',
-        weights:{ancient_resin:30,flamekeeper_ember:24,temple_gold:18,dustwalker_compass:12,sand_merchant_seal:10,mirage_dust:6,temple_jade:5,desert_star:2,sun_crown_shard:2}},
+        weights:{ancient_resin:28,flamekeeper_ember:22,temple_gold:16,dustwalker_compass:11,sand_merchant_seal:9,mirage_dust:5,temple_jade:4,desert_star:2,sun_crown_shard:2,spirit_essence:10,vault_gold:4}},
       {id:'af_crypt_vaults',name:'Crypt Vaults',icon:'💀',desc:'Deep burial chambers where the temple priests interred their greatest works.',
-        weights:{temple_gold:30,sand_merchant_seal:22,mirage_dust:18,ancient_resin:14,dustwalker_compass:10,flamekeeper_ember:6,temple_jade:3,desert_star:4,sun_crown_shard:4}},
+        weights:{temple_gold:28,sand_merchant_seal:20,mirage_dust:16,ancient_resin:12,dustwalker_compass:9,flamekeeper_ember:5,temple_jade:3,desert_star:4,sun_crown_shard:4,spirit_essence:6,vault_gold:10}},
     ],diff:5,unlock:8,time:4,yield:[2,4],dc:18,
     flavor:['Stone doors grind open on hinges that have not moved in a thousand years.']},
 ];
@@ -3048,7 +3048,7 @@ var genBoardQuests=(level,day,bonusQuests=0,loc='cindervale')=>{
   // Build set of locally available ingredients for recipe craftability check
   const locIngrSet=new Set();
   REGIONS.filter(r=>r.loc===loc).forEach(r=>r.ingr.forEach(i=>locIngrSet.add(i)));
-  const canCraftHere=(recipeId)=>{const r=RECIPES.find(x=>x.id===recipeId);return r&&r.ingr.every(id=>locIngrSet.has(id));};
+  const canCraftHere=(recipeId)=>{const r=RECIPES.find(x=>x.id===recipeId);return r&&!r.buff&&r.ingr.every(id=>locIngrSet.has(id));};
   const locFactions=loc==='ashfall'?['sand_merchants','flamekeepers','dustwalkers']:['hearthkeepers','ashwardens','veilwalkers','cinderfolk'];
   const quests=[];var usedGivers=[];
   for(let i=0;i<n;i++){

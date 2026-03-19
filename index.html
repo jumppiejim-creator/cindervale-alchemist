@@ -2457,7 +2457,8 @@ function CindervaleAlchemistInner(){
     const baseGold=15+ailment.tier*12;const baseXp=20+ailment.tier*15;
     const goldReward=Math.floor(baseGold*matchMult*(1+getSkMod('haggling')*0.03));
     const xpReward=Math.floor(baseXp*matchMult);
-    const repFaction=ailment.tier>=3?'hearthkeepers':['hearthkeepers','cinderfolk','ashwardens'][Math.floor(Math.random()*3)];
+    const locFacs=gameLocation==='ashfall'?['flamekeepers','sand_merchants','dustwalkers']:['hearthkeepers','cinderfolk','ashwardens'];
+    const repFaction=ailment.tier>=3?locFacs[0]:locFacs[Math.floor(Math.random()*locFacs.length)];
     const repReward=matchQuality==='great'?10+ailment.tier*5:matchQuality==='good'?5:0;
     if(goldReward>0)setGold(g=>g+goldReward);
     if(xpReward>0)gainXP(xpReward);
@@ -3122,7 +3123,7 @@ function CindervaleAlchemistInner(){
     // Lv10: chance of rare ingredient trade
     let tradeResult='';
     if(rcLv>=10&&Math.random()<0.35){
-      const rareIngr=['moonpetal','volcanic_essence','embervein','starwort','deep_crystal','ashite'];
+      const rareIngr=gameLocation==='ashfall'?['moonpetal','volcanic_essence','embervein','starwort','heatstone','ashite']:['moonpetal','volcanic_essence','embervein','starwort','deep_crystal','ashite'];
       const tradeId=rareIngr[Math.floor(Math.random()*rareIngr.length)];
       setInv(p=>({...p,[tradeId]:(p[tradeId]||0)+1}));
       tradeResult='\n⭐ The buyer offers a trade: '+(INGR[tradeId]?.icon||tradeId)+' '+(INGR[tradeId]?.name||tradeId)+'!';
@@ -3301,7 +3302,7 @@ function CindervaleAlchemistInner(){
       const arcLv=classLevels.scholar||0;
       const fragChance=arcLv>=10?0.50:arcLv>=6?0.40:0.30;
       if(Math.random()<fragChance){
-        const qFaction=q.faction?[q.faction]:['hearthkeepers'];
+        const qFaction=q.faction?[q.faction]:[gameLocation==='ashfall'?'flamekeepers':'hearthkeepers'];
         const undiscovered=ALL_LORE_FRAGMENTS.filter(f=>!loreFragments.includes(f.id)&&f.factions.some(ff=>qFaction.includes(ff)));
         if(undiscovered.length>0){
           const frag=undiscovered[Math.floor(Math.random()*undiscovered.length)];
@@ -3357,7 +3358,7 @@ function CindervaleAlchemistInner(){
     if(specs.scholar==='archivist'){
       const arcLv=classLevels.scholar||0;const fragChance=arcLv>=10?0.50:arcLv>=6?0.40:0.30;
       if(Math.random()<fragChance){
-        const bqFaction=bq.faction?[bq.faction]:['hearthkeepers'];
+        const bqFaction=bq.faction?[bq.faction]:[gameLocation==='ashfall'?'flamekeepers':'hearthkeepers'];
         const undiscovered=ALL_LORE_FRAGMENTS.filter(f=>!loreFragments.includes(f.id)&&f.factions.some(ff=>bqFaction.includes(ff)));
         if(undiscovered.length>0){const frag=undiscovered[Math.floor(Math.random()*undiscovered.length)];
           setLoreFragments(prev=>[...prev,frag.id]);const chain=LORE_CHAINS[frag.chainId];const fragXp=arcLv>=6?40:20;gainXP(fragXp);
@@ -4753,7 +4754,7 @@ function CindervaleAlchemistInner(){
   if(hours<=0&&screen!=='map')alerts.push({text:'The day\'s hours are spent. Time to rest and let tomorrow bring new work.',to:'map',label:'🏘️ '+locName});
   const readyBQ=activeBQ.filter(bq=>{const p=bqProgress(bq);return p.c>=p.n;});
   if(readyBQ.length>0)alerts.push({text:readyBQ.length+' board request'+(readyBQ.length>1?'s':'')+' ready to turn in!',to:'quests',label:'📌 Notice Board'});
-  if(dayFlags.includes('bargain_day'))alerts.push({text:'🏷️ Brenna\'s running a sale — shop prices halved today!',to:'market',label:'🛒 Market'});
+  if(dayFlags.includes('bargain_day'))alerts.push({text:gameLocation==='ashfall'?'🏷️ Razak\'s running a sale — shop prices halved today!':'🏷️ Brenna\'s running a sale — shop prices halved today!',to:'market',label:'🛒 Market'});
   if(dayFlags.includes('clear_sky'))alerts.push({text:'☀️ Clear skies — extraction DCs reduced by 2 in the wilds.',to:'worldmap',label:'🗺️ Wilds'});
   if(dayFlags.includes('ash_storm'))alerts.push({text:'⚠️ Ash storm — expedition travel times +1h today.',to:'worldmap',label:'🗺️ Wilds'});
 
