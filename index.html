@@ -4480,10 +4480,10 @@ function CindervaleAlchemistInner(){
     }
     let totalSpoiled=0;let totalResidueGained=0;
     const spoilSalvage=getFeatureVal('spoilSalvage');
-    const newInv={...inv};
-    Object.entries(newInv).forEach(([id,qty])=>{
+    // Build spoilage plan from current inv snapshot (for report), then apply via functional updater
+    const spoilPlan={};
+    Object.entries(inv).forEach(([id,qty])=>{
       if(qty<=0)return;
-      // Hidden/legendary ingredients get higher base threshold
       const isHidden=HIDDEN_INGR&&HIDDEN_INGR[id];
       const baseT=isHidden?12:totalSpoilThreshold;
       const natBonus=natBonusIngr[id]||0;
@@ -4493,19 +4493,15 @@ function CindervaleAlchemistInner(){
       let spoiled=0;
       for(let i=0;i<excess;i++){if(Math.random()<0.10)spoiled++;}
       if(spoiled>0){
-        newInv[id]=Math.max(0,qty-spoiled);
-        if(newInv[id]<=0)delete newInv[id];
+        spoilPlan[id]=spoiled;
         totalSpoiled+=spoiled;
         const salvaged=spoilSalvage>0?Math.floor(spoiled*spoilSalvage):0;
-        if(salvaged>0){
-          newInv.alchemical_residue=(newInv.alchemical_residue||0)+salvaged;
-          totalResidueGained+=salvaged;
-        }
+        if(salvaged>0)totalResidueGained+=salvaged;
         spoilLines.push({icon:'🗑️',label:(INGR[id]?.icon||'')+' '+(INGR[id]?.name||id),val:'-'+spoiled+(salvaged>0?' (♻'+salvaged+' residue)':''),color:'#c06040'});
       }
     });
     if(spoilLines.length>0){
-      setInv(newInv);
+      setInv(p=>{const n={...p};Object.entries(spoilPlan).forEach(([id,spoiled])=>{n[id]=Math.max(0,(n[id]||0)-spoiled);if(n[id]<=0)delete n[id];});if(totalResidueGained>0)n.alchemical_residue=(n.alchemical_residue||0)+totalResidueGained;return n;});
       mrSections.push({title:'🗑️ Spoilage (threshold: '+totalSpoilThreshold+')',lines:spoilLines});
     }
 
