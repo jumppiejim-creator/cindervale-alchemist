@@ -5967,7 +5967,7 @@ function CindervaleAlchemistInner(){
         const reg=locRegions.find(r=>r.id===zonePopup);if(!reg)return null;
         const locked=level<regUnlock(reg)||(reg.faction&&getRL(reg.faction)<(reg.fReq||0));
         const info=getExpeditionInfo(reg);const canGo=!locked&&info&&info.gatherHours>=1;
-        const imgUrl=ZONE_IMGS[reg.id];
+        const imgUrl=(typeof ZONE_IMGS!=='undefined'?ZONE_IMGS:{})[reg.id];
         const pickN=reg.pick||reg.ingr.length;
         return(<div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'#000000dd',display:'flex',alignItems:'center',justifyContent:'center',zIndex:9998,padding:12}} onClick={()=>setZonePopup(null)}>
           <div style={{background:`linear-gradient(160deg,${TH.panelAlt},${TH.panel})`,border:`2px solid ${reg.color||TH.border}`,borderRadius:12,maxWidth:580,width:'100%',maxHeight:'90vh',overflowY:'auto',boxShadow:`0 0 60px ${reg.color||TH.gold}30`}} onClick={e=>e.stopPropagation()}>
@@ -10255,6 +10255,12 @@ if(!NPC_PORTRAITS.razak)NPC_PORTRAITS.razak='razak.jpg';
 if(!NPC_PORTRAITS.amara)NPC_PORTRAITS.amara='amara.jpg';
 if(!NPC_PORTRAITS.tarek)NPC_PORTRAITS.tarek='tarek.jpg';
 if(!NPC_PORTRAITS.nahla)NPC_PORTRAITS.nahla='nahla.jpg';
+// Tidecrest NPC portraits
+if(!NPC_PORTRAITS.reva)NPC_PORTRAITS.reva='reva.jpg';
+if(!NPC_PORTRAITS.mako)NPC_PORTRAITS.mako='mako.jpg';
+if(!NPC_PORTRAITS.sister_coral)NPC_PORTRAITS.sister_coral='sister_coral.jpg';
+if(!NPC_PORTRAITS.finn)NPC_PORTRAITS.finn='finn.jpg';
+if(!NPC_PORTRAITS.old_anchor)NPC_PORTRAITS.old_anchor='old_anchor.jpg';
 function NpcPortrait({npc,size=80,customerData}){
   const p=npc?.portrait||customerData?.portrait||{bg:['#444','#2a2a2a'],ring:'#888'};
   const icon=npc?.icon||'🧑';
