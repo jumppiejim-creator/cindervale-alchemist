@@ -8008,8 +8008,9 @@ function CindervaleAlchemistInner(){
                 <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
                   <span style={{fontSize:15,color:done?TH.green:TH.textBright,fontWeight:'bold',cursor:known.includes(potId)?'pointer':'default',textDecoration:known.includes(potId)?'underline':'none',textDecorationColor:known.includes(potId)?(done?TH.green+'66':TH.gold+'66'):'transparent',textUnderlineOffset:3}} onClick={()=>{
                     if(!known.includes(potId))return;
-                    const el=document.getElementById('recipe-'+potId);
-                    if(el){el.scrollIntoView({behavior:'smooth',block:'center'});el.style.transition='box-shadow 0.3s';el.style.boxShadow='0 0 20px '+TH.gold+'80';setTimeout(()=>{el.style.boxShadow='none';},1500);}
+                    setWsOpen(p=>({...p,ws25:true}));
+                    setTimeout(()=>{const el=document.getElementById('recipe-'+potId);
+                    if(el){el.scrollIntoView({behavior:'smooth',block:'center'});el.style.transition='box-shadow 0.3s';el.style.boxShadow='0 0 20px '+TH.gold+'80';setTimeout(()=>{el.style.boxShadow='none';},1500);}},100);
                   }}>{r.icon} {r.name}{known.includes(potId)?<span style={{fontSize:11,color:TH.textDim,marginLeft:4}}>↓</span>:''}</span>
                   <span style={{fontSize:14,color:done?TH.green:have>0?TH.gold:TH.red,fontWeight:'bold'}}>{have}/{needed} {done&&'\u2705'}</span>
                 </div>
