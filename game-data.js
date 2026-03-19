@@ -2696,9 +2696,9 @@ var MILESTONES={
 
 // ═══ TOWN EVENTS — random daily occurrences ═══
 var TOWN_EVENTS=[
-  {id:'te_merchant',vibe:'trade',prob:.15,minLv:0,text:'A traveling merchant arrives with a cart full of rare herbs.',
+  {id:'te_merchant',loc:'cindervale',vibe:'trade',prob:.15,minLv:0,text:'A traveling merchant arrives with a cart full of rare herbs.',
     effect:(s)=>{const picks=['moonpetal','starwort','gloomcap','embervein'];var id=picks[Math.floor(Math.random()*picks.length)];return{items:{[id]:2},msg:`You barter for 2× ${INGR[id]?.icon}${INGR[id]?.name}.`};}},
-  {id:'te_tax',vibe:'official',prob:.06,minLv:3,text:'The village council levies a small tax to fund road repairs.',
+  {id:'te_tax',loc:'cindervale',vibe:'official',prob:.06,minLv:3,text:'The village council levies a small tax to fund road repairs.',
     effect:(s)=>{const amt=Math.min(s.gold,5+s.level*2);return{gold:-amt,msg:`You contribute ${amt}g to the village fund. (+5 rep with all factions)`,rep_all:5};}},
   {id:'te_demand',vibe:'trade',prob:.10,minLv:2,text:'Word of your craft is spreading. A courier arrives with advance payment!',
     effect:(s)=>{const g=10+s.level*3;return{gold:g,xp:20,msg:`+${g}g advance payment, +20 XP from the reputation boost.`};}},
@@ -2708,7 +2708,7 @@ var TOWN_EVENTS=[
     effect:(s)=>{const g=15+s.level*2;return{gold:g,msg:`+${g}g found in the pouch.`};}},
   {id:'te_ashstorm',loc:'cindervale',vibe:'danger',prob:.08,minLv:0,text:'A heavy ash storm blankets Cindervale. The wilds will be treacherous today.',
     effect:()=>({flag:'ash_storm',msg:'Expedition travel times +1h today. Plan accordingly.'})},
-  {id:'te_clearsky',vibe:'nature',prob:.08,minLv:0,text:'Crystal-clear skies — perfect foraging weather.',
+  {id:'te_clearsky',loc:'cindervale',vibe:'nature',prob:.08,minLv:0,text:'Crystal-clear skies — perfect foraging weather.',
     effect:()=>({flag:'clear_sky',msg:'Extraction DCs reduced by 2 today!'})},
   {id:'te_bloom',loc:'cindervale',vibe:'nature',prob:.06,minLv:2,text:'An unusual bloom event — wildflowers burst across the Ashfields overnight.',
     effect:()=>({items:{ashbloom:3,moonpetal:1},msg:`Free harvest: 3× 🌿Ashbloom + 1× 🌸Moonpetal`})},
@@ -2723,13 +2723,13 @@ var TOWN_EVENTS=[
   {id:'te_gossip',loc:'cindervale',vibe:'gossip',prob:.18,minLv:0,text:'Marta shares village gossip over morning tea.',
     flavor:['Apparently old Grum once blew up his workshop three times in one week.','The Ashwardens are debating whether to expand patrols eastward.','There\'s talk of a festival if the Heartforge is ever relit.','Someone saw strange lights near the Moonlit Glade.','Brenna says ingredient prices are rising across the region.','The Cinderfolk have been unusually quiet about their deep mine finds.','A pack of ash drakes was spotted near the Ironwood. Stay sharp.','They say a master alchemist once lived in your workshop. Wonder what happened to them.'],
     effect:()=>({msg:''})},
-  {id:'te_apprentice_v',vibe:'trade',prob:.04,minLv:3,text:'A young alchemist passes through, eager to trade knowledge.',
+  {id:'te_apprentice_v',loc:'cindervale',vibe:'trade',prob:.04,minLv:3,text:'A young alchemist passes through, eager to trade knowledge.',
     effect:(s)=>{return{xp:40+s.level*5,msg:`+${40+s.level*5} XP from the exchange of techniques.`};}},
   {id:'te_refugee',loc:'cindervale',vibe:'social',prob:.05,minLv:2,text:'Refugees from a distant village arrive seeking healing supplies.',
     effect:(s)=>{if((s.pots.healing_salve||0)>0)return{pots:{healing_salve:-1},gold:20,xp:50,rep:{hearthkeepers:15},msg:'You donate a Healing Salve. +20g, +50 XP, +15 Hearthkeeper rep.'};return{msg:'They need healing salves, but you have none to spare. Perhaps tomorrow.'};}},
-  {id:'te_inspector',vibe:'official',prob:.04,minLv:5,text:'A guild inspector from the capital evaluates your workshop.',
+  {id:'te_inspector',loc:'cindervale',vibe:'official',prob:.04,minLv:5,text:'A guild inspector from the capital evaluates your workshop.',
     effect:(s)=>{const score=s.upgrades.length*5+s.level*3;if(score>=40)return{gold:30,xp:60,msg:`Rating: Excellent! +30g bonus, +60 XP. "Impressive operation."`};return{xp:20,msg:`Rating: Adequate. +20 XP. "Room for improvement."`};}},
-  {id:'te_thief',vibe:'danger',prob:.04,minLv:3,text:'You catch someone rifling through your ingredient stores!',
+  {id:'te_thief',loc:'cindervale',vibe:'danger',prob:.04,minLv:3,text:'You catch someone rifling through your ingredient stores!',
     effect:(s)=>{const picks=Object.keys(s.inv).filter(k=>s.inv[k]>1);if(picks.length===0)return{msg:'Lucky — your stores are too bare to steal from.'};var id=picks[Math.floor(Math.random()*picks.length)];return{items:{[id]:-2},msg:`Lost 2× ${INGR[id]?.icon}${INGR[id]?.name}! You chase them off before they take more.`};}},
   {id:'te_oldrecipe',vibe:'mystical',prob:.03,minLv:4,text:'You find a faded recipe card stuck between the workshop floorboards.',
     effect:()=>({xp:50,msg:'+50 XP. The handwriting is ancient — but the techniques are sound.'})},
@@ -2754,7 +2754,7 @@ var TOWN_EVENTS=[
   {id:'te_af_sandstorm',vibe:'danger',loc:'ashfall',prob:.08,minLv:0,text:'A massive sandstorm sweeps across Ashfall Crossing. The desert is impassable today.',
     effect:()=>({flag:'ash_storm',msg:'Expedition travel times +1h today. The sand stings your eyes.'})},
   {id:'te_af_refugee',vibe:'social',loc:'ashfall',prob:.05,minLv:2,text:'Desert nomads arrive at the crossing, dehydrated and sunburnt. They need healing.',
-    effect:(s)=>{if((s.pots.healing_salve||0)>0)return{pots:{healing_salve:-1},gold:20,xp:50,rep:{flamekeepers:15},msg:'You donate a Healing Salve. +20g, +50 XP, +15 Flamekeeper rep.'};return{msg:'They need healing salves, but you have none to spare.'};}},
+    effect:(s)=>{if((s.pots.sunstroke_tonic||0)>0)return{pots:{sunstroke_tonic:-1},gold:20,xp:50,rep:{flamekeepers:15},msg:'You donate a Sunstroke Tonic. +20g, +50 XP, +15 Flamekeeper rep.'};return{msg:'They need sunstroke tonics, but you have none to spare.'};}},
   {id:'te_af_ventsurge',vibe:'danger',loc:'ashfall',prob:.05,minLv:5,text:'The Molten Vents erupt violently. Ash and heat wash over the crossing.',
     effect:()=>({items:{volcanic_essence:1,living_ember:1},msg:'Shaken loose by the eruption: 1× 🌋Volcanic Ess. + 1× 🔥Living Ember'})},
   {id:'te_af_donation',vibe:'trade',loc:'ashfall',prob:.05,minLv:4,text:'A grateful caravan master leaves a pouch of gold at your workshop. You saved his crew last season.',
@@ -2779,6 +2779,8 @@ var TOWN_EVENTS=[
     effect:()=>({items:{mirage_dust:2,prismatic_ash:1},msg:'Salvaged from the fading mirage: 2× ✨Mirage Dust + 1× 🌈Prismatic Ash'})},
   {id:'te_af_camel_caravan',vibe:'trade',loc:'ashfall',prob:.06,minLv:1,text:'A massive camel caravan arrives from the far coast, laden with exotic goods and eager to trade.',
     effect:()=>{const picks=['crystal_salt','sandsilk','obsidian_shard','thornvine'];var id=picks[Math.floor(Math.random()*picks.length)];return{items:{[id]:3},gold:5,msg:`The traders share 3× ${INGR[id]?.icon}${INGR[id]?.name} and 5g in good faith.`};}},
+  {id:'te_af_tax',vibe:'official',loc:'ashfall',prob:.06,minLv:3,text:'The Sand Merchants Guild levies a trade fee to maintain the caravan routes.',
+    effect:(s)=>{const amt=Math.min(s.gold,5+s.level*2);return{gold:-amt,msg:`You contribute ${amt}g to the route maintenance fund. (+5 rep with all factions)`,rep_all:5};}},
 ];
 
 // ═══ BOARD QUEST TEMPLATES — repeatable daily quests ═══
