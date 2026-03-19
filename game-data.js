@@ -546,31 +546,59 @@ var INGR={ashbloom:{name:'Ashbloom',icon:'🌿',val:5},embercap:{name:'Embercap'
   buried_relic:{name:'Buried Relic',icon:'🏺',val:24},oasis_pearl:{name:'Oasis Pearl',icon:'🫧',val:26},pharaoh_dust:{name:'Pharaoh Dust',icon:'👑',val:28},
   desert_star:{name:'Desert Star',icon:'⭐',val:30},sun_crown_shard:{name:'Sun Crown Shard',icon:'☀️',val:32},queen_silk:{name:'Queen Silk',icon:'🕸️',val:24},
   glass_bloom:{name:'Glass Bloom',icon:'🌸',val:22},
+  // ═══ TIDECREST HARBOR INGREDIENTS ═══
+  // Common (val 3-8)
+  driftwood:{name:'Driftwood',icon:'🪵',val:4},sea_salt:{name:'Sea Salt',icon:'🧂',val:3},kelp_frond:{name:'Kelp Frond',icon:'🌿',val:5},
+  sand_dollar:{name:'Sand Dollar',icon:'🪙',val:5},tide_moss:{name:'Tide Moss',icon:'🌱',val:4},sea_glass:{name:'Sea Glass',icon:'💎',val:6},
+  foam_bloom:{name:'Foam Bloom',icon:'🫧',val:5},dried_seaweed:{name:'Dried Seaweed',icon:'🍃',val:3},crab_shell:{name:'Crab Shell',icon:'🦀',val:6},
+  barnacle:{name:'Barnacle',icon:'🐚',val:4},sea_snail:{name:'Sea Snail',icon:'🐌',val:7},starfish_arm:{name:'Starfish Arm',icon:'⭐',val:7},
+  // Uncommon (val 8-14)
+  coral_shard:{name:'Coral Shard',icon:'🪸',val:8},urchin_spine:{name:'Urchin Spine',icon:'🦔',val:9},anemone_extract:{name:'Anemone Extract',icon:'🌺',val:10},
+  sponge_pulp:{name:'Sponge Pulp',icon:'🧽',val:8},salt_crystal:{name:'Salt Crystal',icon:'💠',val:9},stormkelp:{name:'Stormkelp',icon:'🌊',val:12},
+  whale_oil:{name:'Whale Oil',icon:'🐋',val:14},jellyfish_essence:{name:'Jellyfish Ess.',icon:'🪼',val:11},nautilus_shell:{name:'Nautilus Shell',icon:'🐚',val:13},
+  phosphor_moss:{name:'Phosphor Moss',icon:'✨',val:10},anglerfish_lure:{name:'Anglerfish Lure',icon:'🐟',val:12},sea_amber:{name:'Sea Amber',icon:'🟡',val:13},
+  pearl_dust:{name:'Pearl Dust',icon:'🤍',val:11},driftstone:{name:'Driftstone',icon:'🪨',val:9},bat_guano:{name:'Bat Guano',icon:'🦇',val:8},
+  cave_pearl:{name:'Cave Pearl',icon:'⚪',val:12},brine_crystal:{name:'Brine Crystal',icon:'💧',val:10},drip_mineral:{name:'Drip Mineral',icon:'💦',val:9},
+  fog_essence:{name:'Fog Essence',icon:'🌫️',val:11},echo_coral:{name:'Echo Coral',icon:'🔔',val:13},blind_shrimp:{name:'Blind Shrimp',icon:'🦐',val:8},
+  cave_lichen_tc:{name:'Cave Lichen',icon:'🍃',val:7},barnacle_cluster:{name:'Barnacle Cluster',icon:'🐚',val:10},
+  // Rare (val 14-20)
+  deep_coral:{name:'Deep Coral',icon:'🪸',val:16},abyssal_pearl:{name:'Abyssal Pearl',icon:'🫧',val:18},moonfish_scale:{name:'Moonfish Scale',icon:'🌙',val:15},
+  giant_clam:{name:'Giant Clam',icon:'🦪',val:14},sea_fan:{name:'Sea Fan',icon:'🌸',val:15},siren_tear:{name:'Siren Tear',icon:'💧',val:18},
+  tidal_diamond:{name:'Tidal Diamond',icon:'💎',val:20},rust_iron:{name:'Rust Iron',icon:'⚙️',val:14},waterlogged_timber:{name:'Waterlogged Timber',icon:'🪵',val:12},
+  ships_tar:{name:'Ship\'s Tar',icon:'⬛',val:10},cannon_bronze:{name:'Cannon Bronze',icon:'🔔',val:16},sharktooth:{name:'Sharktooth',icon:'🦈',val:14},
+  ghost_lantern:{name:'Ghost Lantern',icon:'🏮',val:18},compass_needle:{name:'Compass Needle',icon:'🧭',val:16},storm_glass_tc:{name:'Storm Glass',icon:'⛈️',val:20},
+  kraken_ink:{name:'Kraken Ink',icon:'🖊️',val:20},leviathan_scale:{name:'Leviathan Scale',icon:'🐉',val:19},pressure_crystal:{name:'Pressure Crystal',icon:'💎',val:17},
+  abyssal_vent_mineral:{name:'Vent Mineral',icon:'♨️',val:15},deep_brine:{name:'Deep Brine',icon:'💧',val:14},
+  // Legendary (val 21+)
+  trident_shard:{name:'Trident Shard',icon:'🔱',val:22},harbor_seal:{name:'Harbor Seal',icon:'⚓',val:22},diver_token:{name:'Diver Token',icon:'🤿',val:22},
+  sea_crown_jewel:{name:'Sea Crown Jewel',icon:'👑',val:30},drowned_god_relic:{name:'Drowned Relic',icon:'🏺',val:28},leviathan_heart:{name:'Leviathan Heart',icon:'💜',val:32},
+  primordial_brine:{name:'Primordial Brine',icon:'🌀',val:26},tidekeeper_sigil:{name:'Tidekeeper Sigil',icon:'🌊',val:25},abyssal_diamond:{name:'Abyssal Diamond',icon:'💠',val:35},
+  trade_manifest:{name:'Trade Manifest',icon:'📜',val:22},
 };
 
 // ═══ LOCATION INGREDIENT SUBSTITUTION MAP ═══
 // When a system references a base ingredient, substitute with the local equivalent
 // Keys are base (Cindervale) ingredient IDs; values map location → replacement
 var INGR_SUBS={
-  ironroot_bark:{ashfall:'desert_iron'},
-  embercap:{ashfall:'scorchroot'},
-  bark_resin:{ashfall:'palm_resin'},
-  hearthstone:{ashfall:'heatstone'},
-  sacred_ember:{ashfall:'flamekeeper_ember'},
-  deep_crystal:{ashfall:'temple_gold'},
-  veil_shard:{ashfall:'pharaoh_dust'},
-  warden_sigil:{ashfall:'dustwalker_compass'},
+  ironroot_bark:{ashfall:'desert_iron',tidecrest:'driftstone'},
+  embercap:{ashfall:'scorchroot',tidecrest:'phosphor_moss'},
+  bark_resin:{ashfall:'palm_resin',tidecrest:'ships_tar'},
+  hearthstone:{ashfall:'heatstone',tidecrest:'brine_crystal'},
+  sacred_ember:{ashfall:'flamekeeper_ember',tidecrest:'tidekeeper_sigil'},
+  deep_crystal:{ashfall:'temple_gold',tidecrest:'abyssal_diamond'},
+  veil_shard:{ashfall:'pharaoh_dust',tidecrest:'sea_crown_jewel'},
+  warden_sigil:{ashfall:'dustwalker_compass',tidecrest:'harbor_seal'},
 };
 var FACTION_SUBS={
-  ashwardens:{ashfall:'dustwalkers'},
-  hearthkeepers:{ashfall:'flamekeepers'},
-  veilwalkers:{ashfall:'flamekeepers'},
-  cinderfolk:{ashfall:'sand_merchants'},
+  ashwardens:{ashfall:'dustwalkers',tidecrest:'harbormasters'},
+  hearthkeepers:{ashfall:'flamekeepers',tidecrest:'tidekeepers'},
+  veilwalkers:{ashfall:'flamekeepers',tidecrest:'tidekeepers'},
+  cinderfolk:{ashfall:'sand_merchants',tidecrest:'merchant_marine'},
 };
 var THREAT_SUBS={
-  reavers:{ashfall:'sand_raiders'},
-  blight:{ashfall:'the_scorch'},
-  veilbreakers:{ashfall:'cult_of_buried'},
+  reavers:{ashfall:'sand_raiders',tidecrest:'corsairs'},
+  blight:{ashfall:'the_scorch',tidecrest:'the_murk'},
+  veilbreakers:{ashfall:'cult_of_buried',tidecrest:'drowned_cult'},
 };
 // Returns the local equivalent of an ingredient for the given location
 var locIngr=function(id,loc){
@@ -773,6 +801,87 @@ var REGIONS=[
         weights:{temple_gold:28,sand_merchant_seal:20,mirage_dust:16,ancient_resin:12,dustwalker_compass:9,flamekeeper_ember:5,temple_jade:3,desert_star:4,sun_crown_shard:4,spirit_essence:6,vault_gold:10}},
     ],diff:5,unlock:8,time:4,yield:[2,4],dc:18,
     flavor:['Stone doors grind open on hinges that have not moved in a thousand years.']},
+  // ═══ TIDECREST HARBOR ═══
+  {id:'driftwood_shores',loc:'tidecrest',name:'Driftwood Shores',icon:'🏖️',color:'#4a6a5a',
+    ingr:['driftwood','sea_salt','kelp_frond','sand_dollar','tide_moss','sea_glass','foam_bloom','dried_seaweed','crab_shell','barnacle'],pick:3,sites:[
+      {id:'tc_beachhead',name:'The Beachhead',icon:'🏖️',desc:'A wide stretch of sand littered with ocean debris and shells.',
+        weights:{driftwood:25,sea_salt:22,kelp_frond:14,sand_dollar:12,tide_moss:10,sea_glass:7,foam_bloom:5,dried_seaweed:3,crab_shell:4,barnacle:3}},
+      {id:'tc_tideline',name:'Tideline Walk',icon:'🐚',desc:'The narrow strip where ocean meets land. Best picking at low tide.',
+        weights:{sand_dollar:24,sea_glass:22,foam_bloom:18,kelp_frond:12,driftwood:10,tide_moss:6,sea_salt:4,dried_seaweed:8,crab_shell:3,barnacle:3}},
+      {id:'tc_dune_pools',name:'Dune Pools',icon:'💧',desc:'Shallow pools behind the dunes where rare specimens collect.',
+        weights:{tide_moss:28,foam_bloom:22,dried_seaweed:16,sea_salt:12,kelp_frond:8,sand_dollar:6,driftwood:4,sea_glass:4,crab_shell:5,barnacle:5}},
+    ],diff:1,unlock:0,time:1,yield:[2,4],dc:8,
+    flavor:['Salt spray mists your face as waves crash against the rocky shore.','The beach is littered with treasures the sea no longer wants.']},
+  {id:'tidal_pools',loc:'tidecrest',name:'Tidal Pools',icon:'🪸',color:'#3a7a6a',
+    ingr:['coral_shard','urchin_spine','anemone_extract','sponge_pulp','salt_crystal','barnacle','crab_shell','sea_snail','tide_moss','starfish_arm'],pick:3,sites:[
+      {id:'tc_rock_shelf',name:'Rock Shelf',icon:'🪨',desc:'Exposed reef platforms teeming with creatures at low tide.',
+        weights:{coral_shard:24,urchin_spine:22,anemone_extract:16,sponge_pulp:12,salt_crystal:10,barnacle:6,crab_shell:4,sea_snail:3,tide_moss:4,starfish_arm:6}},
+      {id:'tc_anemone_garden',name:'Anemone Garden',icon:'🌺',desc:'A colorful stretch of pools dominated by waving anemone colonies.',
+        weights:{anemone_extract:28,sponge_pulp:22,coral_shard:14,urchin_spine:12,sea_snail:8,salt_crystal:6,barnacle:4,crab_shell:3,tide_moss:5,starfish_arm:5}},
+      {id:'tc_urchin_beds',name:'Urchin Beds',icon:'🦔',desc:'Dense clusters of sea urchins guarding precious materials beneath.',
+        weights:{urchin_spine:28,salt_crystal:22,coral_shard:16,anemone_extract:10,sponge_pulp:8,starfish_arm:8,barnacle:4,crab_shell:4,sea_snail:3,tide_moss:3}},
+    ],diff:2,unlock:1,time:2,yield:[2,4],dc:10,
+    flavor:['The pools are tiny worlds — each one holding secrets the ocean left behind.']},
+  {id:'kelp_forest',loc:'tidecrest',name:'Kelp Forest',icon:'🌊',color:'#2a5a4a',
+    ingr:['stormkelp','whale_oil','jellyfish_essence','nautilus_shell','kelp_frond','phosphor_moss','anglerfish_lure','sea_amber','pearl_dust','driftstone'],pick:3,sites:[
+      {id:'tc_canopy',name:'Kelp Canopy',icon:'🌿',desc:'The sunlit upper reaches where kelp fronds dance with the current.',
+        weights:{stormkelp:26,kelp_frond:22,whale_oil:14,phosphor_moss:12,jellyfish_essence:8,nautilus_shell:6,sea_amber:4,anglerfish_lure:3,pearl_dust:4,driftstone:6}},
+      {id:'tc_midwater',name:'Midwater Columns',icon:'🐟',desc:'Shadowy passages between towering kelp stalks. Fish school in the gloom.',
+        weights:{jellyfish_essence:24,nautilus_shell:22,whale_oil:16,stormkelp:12,phosphor_moss:10,anglerfish_lure:6,sea_amber:4,kelp_frond:4,pearl_dust:5,driftstone:3}},
+      {id:'tc_holdfast',name:'The Holdfast',icon:'⚓',desc:'The rocky base where kelp anchors to the seafloor. Dense and dark.',
+        weights:{driftstone:24,phosphor_moss:22,anglerfish_lure:18,pearl_dust:12,sea_amber:10,stormkelp:6,whale_oil:4,kelp_frond:4,jellyfish_essence:3,nautilus_shell:4}},
+    ],diff:2,unlock:2,time:2,yield:[2,4],dc:12,
+    flavor:['You descend into an underwater cathedral of swaying green pillars.']},
+  {id:'fog_hollows',loc:'tidecrest',name:'Fog Hollows',icon:'🌫️',color:'#5a5a7a',
+    ingr:['cave_pearl','bat_guano','phosphor_moss','brine_crystal','drip_mineral','fog_essence','echo_coral','blind_shrimp','salt_crystal','cave_lichen_tc'],pick:3,sites:[
+      {id:'tc_grotto',name:'Brine Grotto',icon:'🕳️',desc:'A salt-encrusted cave where the ocean breathes in and out with the tide.',
+        weights:{brine_crystal:26,cave_pearl:22,drip_mineral:14,phosphor_moss:12,fog_essence:8,bat_guano:6,echo_coral:4,blind_shrimp:4,salt_crystal:5,cave_lichen_tc:4}},
+      {id:'tc_echo_cave',name:'Echo Cavern',icon:'🦇',desc:'Sounds carry strangely here. Bats and strange crystalline formations.',
+        weights:{echo_coral:26,bat_guano:22,fog_essence:16,cave_pearl:12,brine_crystal:8,phosphor_moss:6,drip_mineral:4,blind_shrimp:4,salt_crystal:4,cave_lichen_tc:5}},
+      {id:'tc_phosphor_tunnel',name:'Phosphor Tunnel',icon:'✨',desc:'Walls glow with bioluminescent organisms. Beautiful and eerie.',
+        weights:{phosphor_moss:28,fog_essence:22,blind_shrimp:14,cave_pearl:10,brine_crystal:8,echo_coral:6,drip_mineral:4,bat_guano:4,salt_crystal:4,cave_lichen_tc:6}},
+    ],diff:3,unlock:3,time:2,yield:[2,4],dc:14,
+    flavor:['The fog is thick enough to cut. Every sound echoes back distorted.','Somewhere deep in the cave, water drips in a rhythm that sounds almost like speech.']},
+  {id:'coral_labyrinth',loc:'tidecrest',name:'Coral Labyrinth',icon:'🐚',color:'#6a3a5a',
+    ingr:['deep_coral','abyssal_pearl','moonfish_scale','giant_clam','sea_fan','pearl_dust','siren_tear','nautilus_shell','tidal_diamond','coral_shard'],pick:3,sites:[
+      {id:'tc_pearl_beds',name:'Pearl Beds',icon:'🦪',desc:'Vast oyster beds where the finest pearls in the known world grow.',
+        weights:{abyssal_pearl:26,pearl_dust:22,giant_clam:14,deep_coral:12,sea_fan:8,moonfish_scale:6,nautilus_shell:4,siren_tear:3,tidal_diamond:4,coral_shard:6}},
+      {id:'tc_siren_arch',name:'Siren Arch',icon:'🧜',desc:'A natural coral archway where strange songs echo through the water.',
+        weights:{siren_tear:26,moonfish_scale:22,deep_coral:16,sea_fan:12,abyssal_pearl:8,giant_clam:6,pearl_dust:4,nautilus_shell:4,tidal_diamond:3,coral_shard:4}},
+      {id:'tc_fan_gallery',name:'Fan Gallery',icon:'🌸',desc:'Towering sea fans filter the current. Rare specimens hide in their shadows.',
+        weights:{sea_fan:28,deep_coral:22,moonfish_scale:14,giant_clam:10,abyssal_pearl:8,siren_tear:6,pearl_dust:4,nautilus_shell:4,tidal_diamond:4,coral_shard:6}},
+    ],diff:3,unlock:4,time:2,yield:[2,4],dc:15,faction:'pearl_divers',fReq:1,
+    flavor:['The reef twists and turns like a living maze. Without a diver\'s instinct, you\'d be lost in minutes.']},
+  {id:'shipwreck_graveyard',loc:'tidecrest',name:'Shipwreck Graveyard',icon:'⚓',color:'#4a4a3a',
+    ingr:['rust_iron','waterlogged_timber','ships_tar','cannon_bronze','sharktooth','barnacle_cluster','ghost_lantern','compass_needle','whale_oil','storm_glass_tc'],pick:3,sites:[
+      {id:'tc_flagship',name:'The Flagship',icon:'🚢',desc:'A massive warship half-buried in sand. Its holds still contain treasures.',
+        weights:{cannon_bronze:24,compass_needle:22,ships_tar:14,rust_iron:12,waterlogged_timber:10,ghost_lantern:6,sharktooth:4,barnacle_cluster:4,whale_oil:3,storm_glass_tc:6}},
+      {id:'tc_debris_field',name:'Debris Field',icon:'🪵',desc:'Scattered wreckage from dozens of ships. A salvager\'s paradise.',
+        weights:{rust_iron:26,waterlogged_timber:24,ships_tar:16,barnacle_cluster:12,sharktooth:8,cannon_bronze:6,compass_needle:4,ghost_lantern:4,whale_oil:4,storm_glass_tc:3}},
+      {id:'tc_captains_quarters',name:'Captain\'s Quarters',icon:'🗝️',desc:'Sealed cabins where personal effects and alchemical stores survive.',
+        weights:{ghost_lantern:26,compass_needle:22,storm_glass_tc:18,cannon_bronze:10,ships_tar:8,rust_iron:6,waterlogged_timber:4,sharktooth:4,barnacle_cluster:3,whale_oil:4}},
+    ],diff:4,unlock:5,time:3,yield:[2,4],dc:16,
+    flavor:['Broken masts jut from the water like the ribs of dead giants.','Every wreck holds a story — and usually something valuable.']},
+  {id:'abyssal_trench',loc:'tidecrest',name:'Abyssal Trench',icon:'🦑',color:'#1a2a4a',
+    ingr:['kraken_ink','leviathan_scale','pressure_crystal','abyssal_vent_mineral','deep_brine','anglerfish_lure','blind_shrimp','trident_shard','harbor_seal','diver_token'],pick:3,sites:[
+      {id:'tc_vent_field',name:'Hydrothermal Vents',icon:'♨️',desc:'Superheated mineral-rich water erupts from the ocean floor.',
+        weights:{abyssal_vent_mineral:28,pressure_crystal:22,deep_brine:14,leviathan_scale:10,kraken_ink:8,trident_shard:6,anglerfish_lure:4,blind_shrimp:4,harbor_seal:4,diver_token:6}},
+      {id:'tc_leviathan_pass',name:'Leviathan Pass',icon:'🐋',desc:'Massive creatures traverse this corridor. Shed scales litter the path.',
+        weights:{leviathan_scale:28,kraken_ink:22,pressure_crystal:14,trident_shard:12,deep_brine:8,abyssal_vent_mineral:6,anglerfish_lure:4,blind_shrimp:3,harbor_seal:4,diver_token:4}},
+      {id:'tc_ink_pools',name:'Ink Pools',icon:'🖊️',desc:'Dark pools of concentrated kraken secretion. Valuable but dangerous.',
+        weights:{kraken_ink:28,deep_brine:22,leviathan_scale:14,pressure_crystal:12,abyssal_vent_mineral:8,trident_shard:6,anglerfish_lure:4,blind_shrimp:4,harbor_seal:3,diver_token:4}},
+    ],diff:4,unlock:6,time:3,yield:[2,4],dc:17,faction:'harbormasters',fReq:2,
+    flavor:['The pressure is crushing. Only the most prepared divers venture this deep.','Light fades to nothing. Your alchemical lantern is the only star in this abyss.']},
+  {id:'drowned_sanctum',loc:'tidecrest',name:'Drowned Sanctum',icon:'🏛️',color:'#2a3a5a',
+    ingr:['sea_crown_jewel','drowned_god_relic','leviathan_heart','primordial_brine','tidekeeper_sigil','trident_shard','abyssal_diamond','siren_tear','moonfish_scale','trade_manifest'],pick:3,sites:[
+      {id:'tc_nave',name:'The Nave',icon:'⚱️',desc:'The central hall of the sunken temple. Pillars carved with tidal runes.',
+        weights:{drowned_god_relic:24,tidekeeper_sigil:22,sea_crown_jewel:14,primordial_brine:12,trident_shard:10,abyssal_diamond:6,leviathan_heart:4,siren_tear:4,moonfish_scale:4,trade_manifest:6}},
+      {id:'tc_reliquary',name:'The Reliquary',icon:'🔱',desc:'Sealed vaults where the temple\'s holiest artifacts were stored.',
+        weights:{sea_crown_jewel:28,abyssal_diamond:22,leviathan_heart:14,drowned_god_relic:10,primordial_brine:8,tidekeeper_sigil:6,trident_shard:4,siren_tear:4,moonfish_scale:4,trade_manifest:6}},
+      {id:'tc_oracle_pool',name:'Oracle Pool',icon:'🌀',desc:'A still pool where the ancients communed with the deep. It still whispers.',
+        weights:{primordial_brine:28,siren_tear:22,leviathan_heart:16,tidekeeper_sigil:10,drowned_god_relic:8,sea_crown_jewel:6,abyssal_diamond:4,trident_shard:4,moonfish_scale:4,trade_manifest:4}},
+    ],diff:5,unlock:8,time:4,yield:[2,4],dc:18,
+    flavor:['The temple breathes with the tide. Water flows through corridors like blood through veins.','Ancient murals depict a civilization that lived beneath the waves.']},
 ];
 var RECIPES=[
   {id:'healing_salve',name:'Healing Salve',icon:'🧴',ingr:['ashbloom','hearthstone'],xp:30,unlock:0,dc:8,stat:'inu',desc:'A soothing balm that knits flesh and eases pain — the backbone of any apothecary.'},
@@ -1061,6 +1170,11 @@ var LOCATIONS={
     startEnch:['e_sandscour','e_glow','e_dust_shield','e_desert_wind','e_sandward','e_scarab_ward'],
     bgColor:'#2a1a0a',themeAccent:'#c0a040',
     intro:'The Crossing hits you like a wall of heat. Merchants haggle, camels bray, and the smell of spice and sand fills the air. Your mentor\'s name opens a few doors — but out here, reputation is earned daily.'},
+  tidecrest:{id:'tidecrest',name:'Tidecrest Harbor',icon:'⚓',desc:'A weathered port town built into sea cliffs. Coral reefs, sunken ships, and an ancient drowned temple lie beneath the waves.',
+    startGold:20,startInv:{kelp_frond:3,sea_salt:2,coral_shard:1},startRecipes:['brine_tonic'],
+    startEnch:['e_sharp','e_glow','e_salt_ward','e_tide_step','e_coral_edge','e_barnacle_grip'],
+    bgColor:'#0a1a2a',themeAccent:'#40a0d0',
+    intro:'The harbor greets you with the cry of gulls and the creak of rigging. Salt air fills your lungs as you haul your pack up the cliff steps to a workshop overlooking the docks. Below, pearl divers surface with the morning catch. Time to make your mark.'},
 };
 
 // ═══ RELICS (Antiquarian) ═══
@@ -2227,6 +2341,43 @@ var FACTIONS={ashwardens:{id:'ashwardens',loc:'cindervale',name:'Ashwardens',ico
       {name:'Desert Sense',desc:'+30% danger reduction. Unlocks Mirage Bazaar.',effects:{reducedRisk:0.30}},
       {name:'Pathfinder',desc:'Target no yield penalty. +50% discovery.',effects:{targetNoYieldPenalty:true,discoveryChanceBonus:0.50}},
     ]},
+  // ═══ TIDECREST HARBOR FACTIONS ═══
+  harbormasters:{id:'harbormasters',loc:'tidecrest',name:'Harbormaster\'s Guild',icon:'⚓',color:'#4080a0',res:'harbor_seal',
+    alignBonus:{name:'Admiral\'s Trust',desc:'+15% sell prices, +2 combat, +1 Energy.',effects:{sellBonus:0.15,combatBonus:2,bonusEnergyPerDay:1}},
+    tierBonuses:[
+      {name:'Dock Access',desc:'+10% gold from all sales.',effects:{sellBonus:0.10}},
+      {name:'Naval Escort',desc:'Unlocks Abyssal Trench. +20% danger reduction.',effects:{reducedRisk:0.20}},
+      {name:'Harbor Seal',desc:'Quests occasionally reward Harbor Seals.',effects:{factionBonusDrop_harbor_seal:0.25}},
+      {name:'Fleet Commander',desc:'Supply chains +25% income.',effects:{supplyChainBonus:0.25}},
+      {name:'Admiral\'s Trust',desc:'+2 all checks. Free daily patrol.',effects:{craftBonus:2,enchantBonus:2}},
+    ]},
+  pearl_divers:{id:'pearl_divers',loc:'tidecrest',name:'Pearl Divers',icon:'🤿',color:'#60a0c0',res:'diver_token',
+    alignBonus:{name:'Deep Diver',desc:'+2 extraction, +40% rare find, +1 Energy.',effects:{extractionBonus:2,rareForageBonus:0.40,bonusEnergyPerDay:1}},
+    tierBonuses:[
+      {name:'Reef Guide',desc:'Unlocks Coral Labyrinth.',effects:{}},
+      {name:'Breath Training',desc:'+1 expedition yield. -1 travel time.',effects:{forageYieldBonus:1}},
+      {name:'Pearl Harvest',desc:'Quests occasionally reward Diver Tokens.',effects:{factionBonusDrop_diver_token:0.25}},
+      {name:'Pressure Sense',desc:'Target no yield penalty. +30% discovery.',effects:{targetNoYieldPenalty:true,discoveryChanceBonus:0.30}},
+      {name:'Deep Diver',desc:'+50% rare find chance. See hidden site hints.',effects:{rareForageBonus:0.50}},
+    ]},
+  tidekeepers:{id:'tidekeepers',loc:'tidecrest',name:'Tidekeepers',icon:'🌊',color:'#6080c0',res:'tidekeeper_sigil',
+    alignBonus:{name:'Tidebound',desc:'+15% XP, free daily herbs, +1 Energy.',effects:{xpMultiplier:0.15,dailyHerbs:true,bonusEnergyPerDay:1}},
+    tierBonuses:[
+      {name:'Tidal Blessing',desc:'+5% XP from all sources.',effects:{xpMultiplier:0.05}},
+      {name:'Sacred Waters',desc:'+2 research, +1 craft.',effects:{researchBonus:2,craftBonus:1}},
+      {name:'Tidekeeper Sigils',desc:'Quests occasionally reward Tidekeeper Sigils.',effects:{factionBonusDrop_tidekeeper_sigil:0.25}},
+      {name:'Oracle\'s Sight',desc:'+15% recipe & enchantment discovery.',effects:{discoveryChanceBonus:0.15}},
+      {name:'Tidebound',desc:'Research -1 hour. See enchant success %.',effects:{researchCostReduction:1}},
+    ]},
+  merchant_marine:{id:'merchant_marine',loc:'tidecrest',name:'Merchant Marine',icon:'🚢',color:'#a08060',res:'trade_manifest',
+    alignBonus:{name:'Fleet Master',desc:'-20% shop prices, +2 forage yield, +40% rare find.',effects:{buyDiscount:0.20,forageYieldBonus:2,rareForageBonus:0.40}},
+    tierBonuses:[
+      {name:'Trade Discount',desc:'-10% on all shop purchases.',effects:{buyDiscount:0.10}},
+      {name:'Shipping Lanes',desc:'Unlock Merchant Marine trade recipes.',effects:{}},
+      {name:'Trade Manifests',desc:'Quests occasionally reward Trade Manifests.',effects:{factionBonusDrop_trade_manifest:0.25}},
+      {name:'Trade Fleet',desc:'Foraging expeditions yield +1 extra item.',effects:{forageYieldBonus:1}},
+      {name:'Fleet Master',desc:'+25% rare find chance on expeditions.',effects:{rareForageBonus:0.25}},
+    ]},
 };
 var getFactionEffects=(fRepState,alignment)=>{const effs={};for(const [fid,f] of Object.entries(FACTIONS)){const rl=getRepLvl(fRepState[fid]||0);for(let i=0;i<Math.min(rl,f.tierBonuses.length);i++){const tb=f.tierBonuses[i];for(const [k,v] of Object.entries(tb.effects)){effs[k]=(effs[k]||0)+(typeof v==='number'?v:v===true?1:0);}}if(alignment===fid&&f.alignBonus){for(const [k,v] of Object.entries(f.alignBonus.effects)){effs[k]=(effs[k]||0)+(typeof v==='number'?v:v===true?1:0);}}}return effs;};
 var QUESTS=[
@@ -2955,12 +3106,12 @@ var CRISIS_TEMPLATES=[
 var MARCH_RECIPES=[
   {id:'march_fortify',name:'Fortification Draught',icon:'🏰',ingr:['ironroot_bark','hearthstone','volcanic_essence'],xp:120,unlock:10,dc:16,stat:'tec',
     desc:'A legendary potion that hardens walls and wards. Reduces all threats by 10 when brewed during the March.',marchEffect:{threatReduc:10}},
-  {id:'march_veilseal',name:'Veilseal Elixir',icon:'🔮',ingr:['moonpetal','echo_stone','ghost_silk'],xp:130,unlock:10,dc:17,stat:'inu',
-    desc:'Seals tears in the Veil. Reduces Veilbreaker threat by 20 when brewed during the March.',marchEffect:{threatReduc:20,threat:'veilbreakers'}},
-  {id:'march_rallying_cry',name:'Rallying Cry Tonic',icon:'📯',ingr:['embervein','starwort','ironwood_sap'],xp:110,unlock:10,dc:15,stat:'com',
-    desc:'Inspires defenders to fight harder. Grants +2 Energy next day and reduces Reaver threat by 15.',marchEffect:{threatReduc:15,threat:'reavers',bonusEnergy:2}},
-  {id:'march_ironwall',name:'Ironwall Concentrate',icon:'🛡️',ingr:['deep_iron','forge_scale','thermal_clay'],xp:140,unlock:10,dc:18,stat:'tec',
-    desc:'Coats fortifications in alchemical iron. Reduces Blight threat by 20 and grants staff injury immunity for 3 days.',marchEffect:{threatReduc:20,threat:'blight',staffShield:3}},
+  {id:'march_veilseal',name:'Veilseal Elixir',icon:'🔮',ingr:['veil_shard','moonpetal','embercap'],xp:130,unlock:10,dc:17,stat:'inu',
+    desc:'Seals tears in reality. Reduces magical threat by 20 when brewed during the March.',marchEffect:{threatReduc:20,threatPos:2}},
+  {id:'march_rallying_cry',name:'Rallying Cry Tonic',icon:'📯',ingr:['embervein','starwort','bark_resin'],xp:110,unlock:10,dc:15,stat:'com',
+    desc:'Inspires defenders to fight harder. Grants +2 Energy next day and reduces bandit threat by 15.',marchEffect:{threatReduc:15,threatPos:0,bonusEnergy:2}},
+  {id:'march_ironwall',name:'Ironwall Concentrate',icon:'🛡️',ingr:['sacred_ember','hearthstone','ironroot_bark'],xp:140,unlock:10,dc:18,stat:'tec',
+    desc:'Coats fortifications in alchemical compounds. Reduces corruption threat by 20 and grants staff injury immunity for 3 days.',marchEffect:{threatReduc:20,threatPos:1,staffShield:3}},
 ];
 // Append March recipes to main RECIPES array (gated by known[] — learned during Hollow March waves)
 MARCH_RECIPES.forEach(r=>RECIPES.push(r));

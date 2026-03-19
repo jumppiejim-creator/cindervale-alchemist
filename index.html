@@ -27,7 +27,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
 <script src="portraits.js"></script>
 <script src="location-images.js"></script>
-<script src="game-data.js?v=20260315b"></script>
+<script src="game-data.js?v=20260318a"></script>
 <script src="npc-portraits.js"></script>
 <script type="text/babel" data-type="module">
 const { useState, useEffect, useCallback, useRef, Component, createElement } = React;
@@ -368,7 +368,7 @@ function CindervaleAlchemistInner(){
     }
     return s;
   },[locRegions,mappedRegions,prestigeLevels]);
-  const canCraftAtLocation=(ingrList)=>ingrList.every(id=>locIngredients.has(id));
+  const canCraftAtLocation=(ingrList)=>ingrList.every(id=>locIngredients.has(locIngr(id,gameLocation)));
 
   const pickHex=(regId)=>{setSelHex(regId);setZonePopup(regId);const reg=locRegions.find(r=>r.id===regId);setSelFlavor(reg?.flavor?reg.flavor[Math.floor(Math.random()*reg.flavor.length)]:'');};
   const [vBuild,setVBuild]=useState('workshop');
@@ -1882,8 +1882,7 @@ function CindervaleAlchemistInner(){
         haul:Object.fromEntries(Object.entries(prev.haul).map(([k,v])=>[k,used.includes(k)?v-1:v])),
         brewsLeft:prev.brewsLeft-1}));
     } else {
-      // Normal recipe: check haul has required ingredients
-      const cost={};r.ingr.forEach(id=>{cost[id]=(cost[id]||0)+1;});
+      const cost={};r.ingr.forEach(id=>{const lid=li(id);cost[lid]=(cost[lid]||0)+1;});
       if(!Object.entries(cost).every(([id,q])=>(haulIngredients[id]||0)>=q)){addLog('🌿 Not enough in your haul for '+r.icon+r.name+'.','error');return;}
       // Consume from inventory
       Object.entries(cost).forEach(([id,q])=>modInv(id,-q));
@@ -1931,11 +1930,11 @@ function CindervaleAlchemistInner(){
     let effQuality=quality;
     if(quality!=='std'&&(threatContaminate||0)>0&&Math.random()<threatContaminate){effQuality='std';addLog('🦠 Blight contamination! Your '+QUALITY[quality].name+' brew was degraded to Standard quality.','error');}
     const qT=QUALITY[effQuality]||QUALITY.std;
-    const cost={};r.ingr.forEach(id=>{cost[id]=(cost[id]||0)+1;});
+    const cost={};r.ingr.forEach(id=>{const lid=li(id);cost[lid]=(cost[lid]||0)+1;});
     // Quality tier extra ingredients
-    if(qT.extraIngr>=1){const firstIngr=r.ingr[0];cost[firstIngr]=(cost[firstIngr]||0)+1;}
-    if(qT.extraIngr>=2&&r.ingr.length>1){const secondIngr=r.ingr[1];cost[secondIngr]=(cost[secondIngr]||0)+1;}
-    if(qT.extraIngr>=3){const thirdIngr=r.ingr[Math.min(2,r.ingr.length-1)];cost[thirdIngr]=(cost[thirdIngr]||0)+1;}
+    if(qT.extraIngr>=1){const firstIngr=li(r.ingr[0]);cost[firstIngr]=(cost[firstIngr]||0)+1;}
+    if(qT.extraIngr>=2&&r.ingr.length>1){const secondIngr=li(r.ingr[1]);cost[secondIngr]=(cost[secondIngr]||0)+1;}
+    if(qT.extraIngr>=3){const thirdIngr=li(r.ingr[Math.min(2,r.ingr.length-1)]);cost[thirdIngr]=(cost[thirdIngr]||0)+1;}
     // Infusion catalyst cost
     const sbLv=prestigeLevels.spellbrewer||0;
     const selInf=brewInfSel[r.id]?INFUSIONS[brewInfSel[r.id]]:null;
@@ -2038,7 +2037,7 @@ function CindervaleAlchemistInner(){
       }
     }
     const saveChance=upEff('saveIngredient')+getFeatureVal('saveIngredientChance');
-    if(saveChance>0&&Math.random()<saveChance)modInv(r.ingr[0],1);
+    if(saveChance>0&&Math.random()<saveChance)modInv(li(r.ingr[0]),1);
     const dblChance=getFeatureVal('doubleBatchChance')+upEff('doubleBatch');
     let qty2=1;if(dblChance>0&&Math.random()<dblChance)qty2=2;
     const refMod=getSkMod('refinement');const refBonus=refMod>0&&Math.random()<refMod*0.06;
@@ -2064,7 +2063,7 @@ function CindervaleAlchemistInner(){
     // March recipe special effects
     if(r.marchEffect&&hollowMarch?.active&&!hollowMarch?.finalStandComplete){
       const me=r.marchEffect;
-      if(me.threat){setThreats(p=>({...p,[me.threat]:Math.max(0,(p[me.threat]||0)-(me.threatReduc||0))}));addLog(`💀 ${r.icon} March effect: ${THREAT_FACTIONS[me.threat]?.name||me.threat} threat reduced by ${me.threatReduc}!`,'quest');}
+      if(typeof me.threatPos==='number'){const tid=locThreatIds[me.threatPos];setThreats(p=>({...p,[tid]:Math.max(0,(p[tid]||0)-(me.threatReduc||0))}));addLog(`💀 ${r.icon} March effect: ${THREAT_FACTIONS[tid]?.name||tid} threat reduced by ${me.threatReduc}!`,'quest');}
       else if(me.threatReduc){setThreats(p=>{const n={...p};locThreatIds.forEach(tid=>{n[tid]=Math.max(0,(n[tid]||0)-me.threatReduc);});return n;});addLog(`💀 ${r.icon} March effect: All threats reduced by ${me.threatReduc}!`,'quest');}
       if(me.bonusEnergy){setHours(h=>h+me.bonusEnergy);addLog(`⚡ ${r.icon} March effect: +${me.bonusEnergy} Energy!`,'quest');}
       if(me.staffShield){setStaffInjuries({});addLog(`🛡️ ${r.icon} March effect: Staff protected from injury for ${me.staffShield} days!`,'quest');}
@@ -2302,7 +2301,7 @@ function CindervaleAlchemistInner(){
     }
     if(!ench)return;
     const eqT=QUALITY[quality]||QUALITY.std;
-    const cost={};ench.ingr.forEach(id=>{cost[id]=(cost[id]||0)+1;});
+    const cost={};ench.ingr.forEach(id=>{const lid=li(id);cost[lid]=(cost[lid]||0)+1;});
     // Quality tier extra inscription materials
     if(eqT.extraIngr>=1&&ench.ingr.length>0){cost[ench.ingr[0]]=(cost[ench.ingr[0]]||0)+1;}
     if(eqT.extraIngr>=2&&ench.ingr.length>1){cost[ench.ingr[1]]=(cost[ench.ingr[1]]||0)+1;}
@@ -2364,10 +2363,10 @@ function CindervaleAlchemistInner(){
     const qT=QUALITY[quality]||QUALITY.std;
     const sbLv=prestigeLevels.spellbrewer||0;
     const selInf=brewInfSel[r.id]?INFUSIONS[brewInfSel[r.id]]:null;
-    const cost={};r.ingr.forEach(id=>{cost[id]=(cost[id]||0)+qty;});
-    if(qT.extraIngr>=1){const firstIngr=r.ingr[0];cost[firstIngr]=(cost[firstIngr]||0)+qty;}
-    if(qT.extraIngr>=2&&r.ingr.length>1){const secondIngr=r.ingr[1];cost[secondIngr]=(cost[secondIngr]||0)+qty;}
-    if(qT.extraIngr>=3){const thirdIngr=r.ingr[Math.min(2,r.ingr.length-1)];cost[thirdIngr]=(cost[thirdIngr]||0)+qty;}
+    const cost={};r.ingr.forEach(id=>{const lid=li(id);cost[lid]=(cost[lid]||0)+qty;});
+    if(qT.extraIngr>=1){const firstIngr=li(r.ingr[0]);cost[firstIngr]=(cost[firstIngr]||0)+qty;}
+    if(qT.extraIngr>=2&&r.ingr.length>1){const secondIngr=li(r.ingr[1]);cost[secondIngr]=(cost[secondIngr]||0)+qty;}
+    if(qT.extraIngr>=3){const thirdIngr=li(r.ingr[Math.min(2,r.ingr.length-1)]);cost[thirdIngr]=(cost[thirdIngr]||0)+qty;}
     const batchEnergyCost=Math.ceil(qty/2);
     if(hours<batchEnergyCost){addLog('Need ⚡'+batchEnergyCost+' Energy to batch brew '+qty+'×'+r.icon+r.name+'. You have ⚡'+hours+' Energy.','error');return;}
     if(!Object.entries(cost).every(([id,q])=>(inv[id]||0)>=q)){addLog('Not enough ingredients for '+qty+'× '+(qT.name!=='Standard'?qT.name+' ':'')+r.icon+r.name+'.','error');return;}
@@ -3085,9 +3084,9 @@ function CindervaleAlchemistInner(){
     // Lv10 = 150% yield
     if(rcLv>=10)recoveryPct=1.5;
     const recovered={};
-    recipe.ingr.forEach(id=>{if(Math.random()<recoveryPct){recovered[id]=(recovered[id]||0)+1;}});
+    recipe.ingr.forEach(id=>{const lid=li(id);if(Math.random()<recoveryPct){recovered[lid]=(recovered[lid]||0)+1;}});
     // Guarantee at least 1 ingredient
-    if(Object.keys(recovered).length===0){const id=recipe.ingr[0];recovered[id]=1;}
+    if(Object.keys(recovered).length===0){const lid=li(recipe.ingr[0]);recovered[lid]=1;}
     setInv(p=>{const n={...p};Object.entries(recovered).forEach(([id,q])=>{n[id]=(n[id]||0)+q;});return n;});
     gainXP(Math.floor(recipe.xp*0.3));
     const recStr=Object.entries(recovered).map(([id,q])=>(INGR[id]?.icon||id)+'×'+q).join(' ');
@@ -3237,7 +3236,7 @@ function CindervaleAlchemistInner(){
           steps.push({done:false,text:`Brew ${need} more ${r.icon}${r.name}`,nav:{to:'workshop',label:'⚗️ Go to Workshop'}});
           const canBrew=r.ingr.every(id=>(inv[id]||0)>=1);
           if(!canBrew){
-            steps.push({done:false,text:`Need: ${r.ingr.map(id=>`${INGR[id]?.icon||''}${INGR[id]?.name||id} (have ${inv[id]||0})`).join(', ')}`});
+            steps.push({done:false,text:`Need: ${r.ingr.map(id=>{const lid=li(id);return `${INGR[lid]?.icon||''}${INGR[lid]?.name||lid} (have ${inv[lid]||0})`;}).join(', ')}`});
             const regions=locRegions.filter(reg=>reg.ingr.some(i=>r.ingr.includes(i)&&(inv[i]||0)<1));
             if(regions.length>0)steps.push({done:false,text:`Forage at ${regions.slice(0,2).map(rr=>`${rr.icon}${rr.name}`).join(' or ')}`,nav:{to:'worldmap',label:'🗺️ Go to Wilds'}});
             steps.push({done:false,text:'Or buy ingredients',nav:{to:'market',label:'🛒 Go to Market'}});
@@ -3585,7 +3584,7 @@ function CindervaleAlchemistInner(){
           {const _xpGain=Math.floor(15*axp);_xpAdded[ap.id]=(_xpAdded[ap.id]||0)+_xpGain;setApprXP(p=>({...p,[ap.id]:(p[ap.id]||0)+_xpGain}));};}
       } else if(task.type==='brew'&&task.target){
         const recipe=RECIPES.find(r=>r.id===task.target);if(recipe){
-          const cost={};recipe.ingr.forEach(id=>{cost[id]=(cost[id]||0)+1;});
+          const cost={};recipe.ingr.forEach(id=>{const lid=li(id);cost[lid]=(cost[lid]||0)+1;});
           if(Object.entries(cost).every(([id,q])=>(inv[id]||0)>=q)){
             if(Math.random()<0.5+eff*0.3){Object.entries(cost).forEach(([id,q])=>modInv(id,-q));modPot(recipe.id,1);
               report.push({n:ap.name,i:ap.icon,r:`Brewed ${recipe.icon}${recipe.name}`,t:'ok'});gainXP(Math.floor(recipe.xp*.3));
@@ -3860,7 +3859,7 @@ function CindervaleAlchemistInner(){
       if(seLv2>=3&&op.recipe){
         const recipe=RECIPES.find(r=>r.id===op.recipe);
         if(recipe){
-          const cost={};recipe.ingr.forEach(id=>{cost[id]=(cost[id]||0)+1;});
+          const cost={};recipe.ingr.forEach(id=>{const lid=li(id);cost[lid]=(cost[lid]||0)+1;});
           const canBrew=Object.entries(cost).every(([id,q])=>(newStored[id]||0)>=q);
           if(canBrew){
             Object.entries(cost).forEach(([id,q])=>{newStored[id]=(newStored[id]||0)-q;});
@@ -4184,11 +4183,11 @@ function CindervaleAlchemistInner(){
     // Overnight Craft: auto-brew 1 potion while sleeping
     if(getFeatureVal('overnightCraft')){
       const brewable=RECIPES.filter(r=>known.includes(r.id)).filter(r=>{
-        const cost={};r.ingr.forEach(id=>{cost[id]=(cost[id]||0)+1;});
+        const cost={};r.ingr.forEach(id=>{const lid=li(id);cost[lid]=(cost[lid]||0)+1;});
         return Object.entries(cost).every(([id,q])=>(inv[id]||0)>=q);
       }).sort((a,b)=>b.xp-a.xp); // pick highest-value brewable
       if(brewable.length>0){
-        const r=brewable[0];const cost={};r.ingr.forEach(id=>{cost[id]=(cost[id]||0)+1;});
+        const r=brewable[0];const cost={};r.ingr.forEach(id=>{const lid=li(id);cost[lid]=(cost[lid]||0)+1;});
         if(Math.random()<0.65){Object.entries(cost).forEach(([id,q])=>modInv(id,-q));modPot(r.id,1);
           report.push({n:'Overnight Brew',i:'🌙',r:`Auto-brewed ${r.icon}${r.name}`,t:'ok'});
         } else report.push({n:'Overnight Brew',i:'🌙',r:`Attempted ${r.icon}${r.name} — failed`,t:'fail'});
@@ -4408,10 +4407,10 @@ function CindervaleAlchemistInner(){
       const tasks=['brew','forage','shopkeep'];const task=tasks[Math.floor(Math.random()*tasks.length)];
       if(task==='brew'&&Object.keys(pots).length>0){
         // Brew a random known potion
-        const brewable=RECIPES.filter(r=>known.includes(r.id)&&r.ingr.every(id=>(inv[id]||0)>=1));
+        const brewable=RECIPES.filter(r=>known.includes(r.id)&&r.ingr.every(id=>(inv[li(id)]||0)>=1));
         if(brewable.length>0){const r=brewable[Math.floor(Math.random()*brewable.length)];
           if(Math.random()<eff){
-            setInv(p=>{const n={...p};r.ingr.forEach(id=>{n[id]=Math.max(0,(n[id]||0)-1);});return n;});
+            setInv(p=>{const n={...p};r.ingr.forEach(id=>{const lid=li(id);n[lid]=Math.max(0,(n[lid]||0)-1);});return n;});
             setPots(p=>({...p,[r.id]:(p[r.id]||0)+1}));
             clockLines.push({icon:'🤖',label:'Brewed '+r.icon+r.name,val:'×1',color:TH.green});
           } else {clockLines.push({icon:'🤖',label:'Attempted '+r.icon+r.name+' — failed',val:'',color:TH.red});}
@@ -4447,9 +4446,9 @@ function CindervaleAlchemistInner(){
         bpLines.push({icon:'🚇',label:'Supply Tunnel',val:Object.entries(items).map(([id,q])=>(INGR[id]?.icon||id)+'×'+q).join(' '),color:TH.green});}
       // Automaton Forge
       const auto=completedBPs.find(b=>b.bpId==='bp_automaton');
-      if(auto){const brewable=RECIPES.filter(r=>known.includes(r.id)&&r.ingr.every(id=>(inv[id]||0)>=1));
+      if(auto){const brewable=RECIPES.filter(r=>known.includes(r.id)&&r.ingr.every(id=>(inv[li(id)]||0)>=1));
         if(brewable.length>0){const r=brewable[Math.floor(Math.random()*brewable.length)];
-          setInv(p=>{const nn={...p};r.ingr.forEach(id=>{nn[id]=Math.max(0,(nn[id]||0)-1);});return nn;});
+          setInv(p=>{const nn={...p};r.ingr.forEach(id=>{const lid=li(id);nn[lid]=Math.max(0,(nn[lid]||0)-1);});return nn;});
           setPots(p=>({...p,[r.id]:(p[r.id]||0)+1}));
           bpLines.push({icon:'🤖',label:'Automaton Forge',val:'Brewed '+r.icon+r.name,color:TH.green});
         } else {bpLines.push({icon:'🤖',label:'Automaton Forge',val:'No ingredients available',color:TH.textDim});}}
@@ -4534,7 +4533,7 @@ function CindervaleAlchemistInner(){
         if(task.type==='brew'&&task.target){
           const recipe=RECIPES.find(r=>r.id===task.target);
           if(recipe){
-            const cost={};recipe.ingr.forEach(id=>{cost[id]=(cost[id]||0)+1;});
+            const cost={};recipe.ingr.forEach(id=>{const lid=li(id);cost[lid]=(cost[lid]||0)+1;});
             const hasMats=Object.entries(cost).every(([id,q])=>(inv[id]||0)>=q);
             if(hasMats&&Math.random()<totalEff){
               Object.entries(cost).forEach(([id,q])=>modInv(id,-q));modPot(recipe.id,1);
@@ -6977,7 +6976,7 @@ function CindervaleAlchemistInner(){
             <div style={{display:'flex',flexDirection:'column',gap:8}}>
               {elixirRecipes.map(r=>{
                 const buff=ELIXIR_BUFFS[r.buff];if(!buff)return null;
-                const cost={};r.ingr.forEach(id=>{cost[id]=(cost[id]||0)+1;});
+                const cost={};r.ingr.forEach(id=>{const lid=li(id);cost[lid]=(cost[lid]||0)+1;});
                 const canBrew=Object.entries(cost).every(([id,q])=>(inv[id]||0)>=q)&&hours>=1;
                 const fOk=!r.faction||getRL(r.faction)>=(r.fReq||0);
                 const masteryD=getMasteryDiscount(brewCounts,r.id);
@@ -8003,7 +8002,7 @@ function CindervaleAlchemistInner(){
               const stillNeed=Math.max(0,needed-have);
               // Ingredient check for brewing what's still needed
               const ingrNeeded={};
-              if(stillNeed>0)r.ingr.forEach(id=>{ingrNeeded[id]=(ingrNeeded[id]||0)+stillNeed;});
+              if(stillNeed>0)r.ingr.forEach(id=>{const lid=li(id);ingrNeeded[lid]=(ingrNeeded[lid]||0)+stillNeed;});
               const ingrStatus=Object.entries(ingrNeeded).map(([id,q])=>({id,need:q,have:inv[id]||0,ok:(inv[id]||0)>=q}));
               return <div key={potId} style={{padding:'6px 8px',background:done?TH.green+'10':TH.panel,borderRadius:5,marginBottom:4,border:'1px solid '+(done?TH.green+'44':TH.border)}}>
                 <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
@@ -8020,8 +8019,8 @@ function CindervaleAlchemistInner(){
                 </div>
                 {!done&&<div style={{fontSize:12,color:TH.textDim,marginTop:2}}>
                   Brew {stillNeed} more {'\u00b7'} Ingredients per brew: {r.ingr.map(id=>{
-                    const ih=inv[id]||0;const ineed=stillNeed;
-                    return <span key={id} style={{color:ih>=ineed?TH.green:'#c06040'}}>{INGR[id]?.icon}{ih}/{ineed} </span>;
+                    const lid=li(id);const ih=inv[lid]||0;const ineed=stillNeed;
+                    return <span key={lid} style={{color:ih>=ineed?TH.green:'#c06040'}}>{INGR[lid]?.icon}{ih}/{ineed} </span>;
                   })}
                 </div>}
               </div>;
@@ -8193,7 +8192,7 @@ function CindervaleAlchemistInner(){
 
         <div style={S.card} className={isWsOpen('ws25')?'':'ws-closed'}><div style={{...S.cT,cursor:'pointer',userSelect:'none'}} onClick={()=>toggleWs('ws25')}><span style={{display:'flex',justifyContent:'space-between',width:'100%'}}><span>{'\u2697\ufe0f'} Recipes ({known.filter(id=>{const rx=RECIPES.find(r=>r.id===id);return rx&&!rx.fieldOnly&&!(rx.buff&&ELIXIR_BUFFS[rx.buff]);}).length}/{RECIPES.filter(r=>!r.fieldOnly&&!(r.buff&&ELIXIR_BUFFS[r.buff])&&canCraftAtLocation(r.ingr)).length})</span><span style={{fontSize:13,color:TH.textDim}}>{isWsOpen('ws25')?'▲':'▼'}</span></span></div>
         {RECIPES.filter(r=>known.includes(r.id)&&!r.fieldOnly&&!(r.buff&&ELIXIR_BUFFS[r.buff])).map(r=>{
-          const cost={};r.ingr.forEach(id=>{cost[id]=(cost[id]||0)+1;});const can=Object.entries(cost).every(([id,q])=>(inv[id]||0)>=q);
+          const cost={};r.ingr.forEach(id=>{const lid=li(id);cost[lid]=(cost[lid]||0)+1;});const can=Object.entries(cost).every(([id,q])=>(inv[id]||0)>=q);
           const fOk=!r.faction||getRL(r.faction)>=(r.fReq||0);const masteryD=getMasteryDiscount(brewCounts,r.id);const adjDC=Math.max(5,r.dc-masteryD);
           // Calculate success chance for display (Standard quality)
           const craftSk=r.stat==='inu'?'attunement':r.stat==='tec'?'precision':r.stat==='acu'?'research':'improvisation';
@@ -8227,10 +8226,10 @@ function CindervaleAlchemistInner(){
               const selTier=brewTierSel[r.id]||'std';
               const selQT=QUALITY[selTier];
               // Compute cost for selected tier (per unit)
-              const selCost={};r.ingr.forEach(id=>{selCost[id]=(selCost[id]||0)+1;});
-              if(selQT.extraIngr>=1)selCost[r.ingr[0]]=(selCost[r.ingr[0]]||0)+1;
-              if(selQT.extraIngr>=2&&r.ingr.length>1)selCost[r.ingr[1]]=(selCost[r.ingr[1]]||0)+1;
-              if(selQT.extraIngr>=3)selCost[r.ingr[Math.min(2,r.ingr.length-1)]]=(selCost[r.ingr[Math.min(2,r.ingr.length-1)]]||0)+1;
+              const selCost={};r.ingr.forEach(id=>{const lid=li(id);selCost[lid]=(selCost[lid]||0)+1;});
+              if(selQT.extraIngr>=1){const lid=li(r.ingr[0]);selCost[lid]=(selCost[lid]||0)+1;}
+              if(selQT.extraIngr>=2&&r.ingr.length>1){const lid=li(r.ingr[1]);selCost[lid]=(selCost[lid]||0)+1;}
+              if(selQT.extraIngr>=3){const lid=li(r.ingr[Math.min(2,r.ingr.length-1)]);selCost[lid]=(selCost[lid]||0)+1;}
               let selDC=Math.max(5,r.dc+selQT.dcMod-masteryDisc);
               if(selTier==='fine')selDC+=upEff('fineDCBonus');
               if(selTier==='mw'){selDC+=upEff('fineDCBonus');selDC+=upEff('mwDCBonus');}
@@ -8328,7 +8327,7 @@ function CindervaleAlchemistInner(){
             <span style={{fontSize:15,color:TH.textDim}}>❔ {locked?'Unlock at Lv'+(r.unlock+1)+(r.faction?' + '+FACTIONS[r.faction]?.name+' rep':''):
               'Discoverable — use 📚 Research tab to study or experiment!'}</span>
             {!locked&&showInfo>0&&<div style={{fontSize:14,color:TH.cyan,marginTop:2}}>📚 {r.icon} {r.name} — DC{r.dc} {r.desc?'· '+r.desc:''}</div>}
-            {!locked&&showIngr>0&&<div style={{fontSize:13,color:TH.purple,marginTop:1}}>🔍 Needs: {r.ingr.map(id=>INGR[id]?.icon+INGR[id]?.name).join(', ')}</div>}
+            {!locked&&showIngr>0&&<div style={{fontSize:13,color:TH.purple,marginTop:1}}>🔍 Needs: {r.ingr.map(id=>{const lid=li(id);return (INGR[lid]?.icon||'')+(INGR[lid]?.name||lid);}).join(', ')}</div>}
           </div>);})}
         </div>
         {/* Sell potions & ingredients inline */}
@@ -8653,7 +8652,7 @@ function CindervaleAlchemistInner(){
             </div>
             <div style={{fontSize:15,color:TH.gold,marginBottom:6,paddingTop:6,borderTop:'1px solid '+TH.border}}>Requested enchantments:</div>
             {requested.map(ench=>{
-              const cost={};ench.ingr.forEach(id=>{cost[id]=(cost[id]||0)+1;});
+              const cost={};ench.ingr.forEach(id=>{const lid=li(id);cost[lid]=(cost[lid]||0)+1;});
               const can=Object.entries(cost).every(([id,q])=>(inv[id]||0)>=q);
               const adjDC=Math.max(5,ench.dc+upEff('enchDC')+upEff('allDC'));
               const reward=20+ench.dc*3+cust.tier*12+getSkMod('aesthetics')*3+getSkMod('appraisal')*2;
@@ -9544,6 +9543,12 @@ function CindervaleAlchemistInner(){
             </div>
           </div>}
 
+          {/* Preparing state — march active but no crises yet */}
+          {hollowMarch.demands.length===0&&!hollowMarch.finalStandComplete&&hollowMarch.wave===0&&<div style={{padding:'16px',background:'#a040c008',borderRadius:8,border:'1px dashed #a040c044',textAlign:'center'}}>
+            <div style={{fontSize:18,color:'#c060e0',fontWeight:'bold',marginBottom:6}}>⏳ The March Approaches</div>
+            <div style={{fontSize:14,color:TH.textDim}}>The first wave arrives on <b style={{color:'#c060e0'}}>Day {hollowMarch.nextWaveDay}</b>.</div>
+            <div style={{fontSize:13,color:TH.textDim,marginTop:6}}>Stockpile potions, gather ingredients, and prepare your defenses. Each wave brings {HOLLOW_MARCH.crisisCount(1)} crises that demand your alchemical skills.</div>
+          </div>}
           {/* Current crises */}
           {hollowMarch.demands.length>0&&!hollowMarch.finalStandComplete&&<>
             <div style={{fontSize:15,fontWeight:'bold',color:TH.gold,marginBottom:6}}>⚔️ Wave {hollowMarch.wave} Crises — Choose Your Approach</div>
@@ -9965,7 +9970,7 @@ function CindervaleAlchemistInner(){
           {fieldBrewPhase.brewsLeft>0?<div>
             {/* Normal recipes brewable from haul */}
             {RECIPES.filter(r=>known.includes(r.id)&&!r.fieldOnly).filter(r=>{
-              const cost={};r.ingr.forEach(id=>{cost[id]=(cost[id]||0)+1;});
+              const cost={};r.ingr.forEach(id=>{const lid=li(id);cost[lid]=(cost[lid]||0)+1;});
               return Object.entries(cost).every(([id,q])=>(fieldBrewPhase.haul[id]||0)>=q);
             }).map(r=>{
               const masteryD=getMasteryDiscount(brewCounts,r.id);const adjDC=Math.max(5,r.dc-masteryD);
@@ -9991,7 +9996,7 @@ function CindervaleAlchemistInner(){
               })}
             </>}
             {RECIPES.filter(r=>known.includes(r.id)&&!r.fieldOnly).filter(r=>{
-              const cost={};r.ingr.forEach(id=>{cost[id]=(cost[id]||0)+1;});
+              const cost={};r.ingr.forEach(id=>{const lid=li(id);cost[lid]=(cost[lid]||0)+1;});
               return Object.entries(cost).every(([id,q])=>(fieldBrewPhase.haul[id]||0)>=q);
             }).length===0&&(prestigeLevels.wildcrafter||0)<3&&
               <div style={{fontSize:14,color:TH.textDim,textAlign:'center',padding:8}}>No recipes brewable from your haul.</div>}
