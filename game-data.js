@@ -2988,6 +2988,11 @@ var QUESTS=[
     turnIn:['"*clasps your arm in the Dustwalker salute* You\'ve armed us for the impossible."','"Whatever we find down there — you made it possible."','"Three compasses. Full Pathfinder status. The desert has no secrets from you now."']},
   // ═══ TIDECREST HARBOR NPC QUESTS ═══
   // Reva (6 quests)
+  {id:'tq0',name:'Finn\'s First Patient',giver:'Finn',loc:'market',type:'deliver',target:'brine_tonic',count:1,xp:80,gold:15,items:['coral_shard','coral_shard'],unlock:0,faction:null,fRep:0,
+    desc:'A seasick sailor stumbled into Finn\'s shop. He needs a Brine Tonic, fast.',hint:'Brew a Brine Tonic (Sea Salt + Kelp Frond) and return to Finn.',
+    offer:['"You\'re the new alchemist? Perfect timing — I\'ve got a sailor turning green in the back."','"Seasickness, bad case. He needs a Brine Tonic before he ruins my floor."','"Sea Salt and Kelp Frond, that\'s all it takes. Simple work, but I\'m elbow-deep in an experiment and can\'t step away."'],
+    onAccept:'"Thanks — here, take some coral shards. You\'ll want them for the fancier recipes. Now hurry, before he decorates my workshop."',
+    turnIn:['"*hands it to the sailor, who drinks gratefully* That\'s the stuff. Welcome to Tidecrest, alchemist — I think you\'ll fit right in."']},
   {id:'tq1',name:'Harbor Patrol Kits',giver:'Reva',loc:'tavern',type:'deliver',target:'brine_tonic',count:3,xp:40,gold:15,items:['sea_salt','sea_salt'],unlock:0,faction:'harbormasters',fRep:10,
     desc:'Captain Reva needs brine tonics for the morning harbor patrol.',hint:'Brew 3 Brine Tonics.',
     offer:['"My guards walk the docks in all weather. Salt spray, rain, fog — they need something to keep them sharp."','"Three Brine Tonics. Simple work, but the harbor depends on it."'],

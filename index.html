@@ -3250,7 +3250,7 @@ function CindervaleAlchemistInner(){
           }
         } else {
           steps.push({done:true,text:`${r.icon}${r.name} ×${have} ready`});
-          steps.push({done:false,text:`Turn in to ${q.giver}`,nav:{to:turnInScreen,label:turnInLabel,npc:q.giver.toLowerCase()}});
+          steps.push({done:false,text:`Turn in to ${q.giver}`,nav:{to:turnInScreen,label:turnInLabel,npc:q.giver.toLowerCase().replace(/ /g,'_')}});
         }
       }
     } else if(q.type==='gather'){
@@ -3262,7 +3262,7 @@ function CindervaleAlchemistInner(){
         steps.push({done:false,text:'Or buy from shop',nav:{to:'market',label:'🛒 Go to Market'}});
       } else {
         steps.push({done:true,text:`${ing?.icon||''}${ing?.name||q.target} ×${have} collected`});
-        steps.push({done:false,text:`Turn in to ${q.giver}`,nav:{to:turnInScreen,label:turnInLabel,npc:q.giver.toLowerCase()}});
+        steps.push({done:false,text:`Turn in to ${q.giver}`,nav:{to:turnInScreen,label:turnInLabel,npc:q.giver.toLowerCase().replace(/ /g,'_')}});
       }
     } else if(q.type==='multi'){
       const allDone=q.targets.every(t=>(pots[t]||0)>=1);
@@ -3271,7 +3271,7 @@ function CindervaleAlchemistInner(){
         if(have)steps.push({done:true,text:`${r?`${r.icon}${r.name}`:t} ready`});
         else steps.push({done:false,text:`Brew ${r?`${r.icon}${r.name}`:t}`,nav:{to:'workshop',label:'⚗️ Go to Workshop'}});
       });
-      if(allDone)steps.push({done:false,text:`Turn in to ${q.giver}`,nav:{to:turnInScreen,label:turnInLabel,npc:q.giver.toLowerCase()}});
+      if(allDone)steps.push({done:false,text:`Turn in to ${q.giver}`,nav:{to:turnInScreen,label:turnInLabel,npc:q.giver.toLowerCase().replace(/ /g,'_')}});
     }
     return steps;
   };
@@ -4747,7 +4747,7 @@ function CindervaleAlchemistInner(){
   if(skPts>0)alerts.push({text:`You have ${skPts} unspent skill points — your experience is ready to be honed.`,to:'character',label:'📊 Spend Points'});
   if(pendingLevelUp)alerts.push({text:`Level ${(pendingLevelUp.newCharLevel||0)+1}! Complete your advancement.`,color:TH.goldBright});
   const readyQ=aQ.filter(q=>{const p=qP(q);return p.c>=p.n;});
-  if(readyQ.length>0)readyQ.forEach(q=>alerts.push({text:`"${q.name}" is complete! ${q.giver} awaits your return.`,to:q.loc==='market'?'market':'tavern',label:q.loc==='market'?`🛒 ${q.giver}`:`🍺 ${q.giver}`,npc:q.giver.toLowerCase()}));
+  if(readyQ.length>0)readyQ.forEach(q=>alerts.push({text:`"${q.name}" is complete! ${q.giver} awaits your return.`,to:q.loc==='market'?'market':'tavern',label:q.loc==='market'?`🛒 ${q.giver}`:`🍺 ${q.giver}`,npc:q.giver.toLowerCase().replace(/ /g,'_')}));
   if(enchQ.length>0)alerts.push({text:enchQ.length+' enchant customer'+(enchQ.length>1?'s':'')+' waiting.',to:'enchant',label:'✨ Enchant'});
   if(potCustQ.length>0)alerts.push({text:potCustQ.length+' potion order'+(potCustQ.length>1?'s':'')+' waiting.',to:'enchant',label:'🧪 Orders'});
   const clinicWaiting=clinicPatients.filter(p=>!p.prescribed).length;
@@ -9149,7 +9149,7 @@ function CindervaleAlchemistInner(){
               </div>
               {ok&&<div style={{marginTop:6,padding:'5px 8px',background:`${TH.green}15`,borderRadius:4,border:`1px solid ${TH.green}44`,display:'flex',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',gap:4}}>
                 <span style={{fontSize:16,color:TH.green,fontWeight:'bold'}}>✅ Ready to turn in!</span>
-                <GoBtn to={q.loc==='market'?'market':'tavern'} label={q.loc==='market'?`🛒 Go to ${q.giver}`:`🍺 Go to ${q.giver}`} npc={q.giver.toLowerCase()}/>
+                <GoBtn to={q.loc==='market'?'market':'tavern'} label={q.loc==='market'?`🛒 Go to ${q.giver}`:`🍺 Go to ${q.giver}`} npc={q.giver.toLowerCase().replace(/ /g,'_')}/>
               </div>}
             </div>);})}
         </div>}
@@ -9181,7 +9181,7 @@ function CindervaleAlchemistInner(){
                 <span style={{color:TH.gold}}>+{q.xp}XP +{q.gold}g</span>
                 {q.faction&&<span style={{color:FACTIONS[q.faction]?.color}}>{FACTIONS[q.faction]?.icon}+{q.fRep} rep</span>}
               </div>
-              <GoBtn to={goScreen} label={goLabel} npc={q.giver.toLowerCase()}/>
+              <GoBtn to={goScreen} label={goLabel} npc={q.giver.toLowerCase().replace(/ /g,'_')}/>
             </div>);})}
         </div>}
         {/* ── Defense Quests (External Threats) ── */}
