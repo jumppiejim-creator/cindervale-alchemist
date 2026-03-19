@@ -7954,24 +7954,37 @@ function CindervaleAlchemistInner(){
 
         {/* ── Quest Shopping List ── */}
         {(()=>{
-          const needs={};
-          // Active quests
+          const needs={}; // {potionId: {total, sources:[{label,icon,qty}]}}
+          const addNeed=(potId,qty,label,icon)=>{
+            if(!needs[potId])needs[potId]={total:0,sources:[]};
+            needs[potId].total+=qty;
+            needs[potId].sources.push({label,icon,qty});
+          };
+          // Active NPC quests
           aQ.forEach(q=>{
-            if(q.type==='deliver'){needs[q.target]=(needs[q.target]||0)+q.count;}
-            if(q.type==='multi')q.targets.forEach(t=>{needs[t]=(needs[t]||0)+1;});
+            const isChain=q.chain||q.id.startsWith('fc_');
+            const label=isChain?'Faction':'Quest';
+            const icon=isChain?'🏛️':'📜';
+            if(q.type==='deliver')addNeed(q.target,q.count,label+': '+q.name,icon);
+            if(q.type==='multi')q.targets.forEach(t=>addNeed(t,1,label+': '+q.name,icon));
           });
           // Active board quests
           activeBQ.forEach(bq=>{
-            if(bq.type==='deliver'){needs[bq.target]=(needs[bq.target]||0)+bq.count;}
+            if(bq.type==='deliver')addNeed(bq.target,bq.count,'Board: '+bq.giver,bq.itemIcon||'📋');
           });
-          const entries=Object.entries(needs).filter(([,n])=>n>0);
+          // Defense quests
+          defenseQuests.filter(dq=>!dq.done&&dq.type==='deliver').forEach(dq=>{
+            addNeed(dq.target,dq.qty,'Threat: '+(THREAT_FACTIONS[dq.threatId]?.name||dq.threatId),THREAT_FACTIONS[dq.threatId]?.icon||'⚔️');
+          });
+          const entries=Object.entries(needs).filter(([,n])=>n.total>0);
           if(entries.length===0)return null;
           return <div style={{...S.card,borderColor:TH.cyan+'44'}}>
             <div style={{...S.cT,color:TH.cyan}}>{'📋'} Quest Shopping List</div>
-            <div style={{fontSize:13,color:TH.textDim,marginBottom:6}}>Potions needed across all active quests and board requests:</div>
-            {entries.map(([potId,needed])=>{
+            <div style={{fontSize:13,color:TH.textDim,marginBottom:6}}>Potions needed across all active quests, board requests, and defense orders:</div>
+            {entries.map(([potId,data])=>{
               const r=RECIPES.find(x=>x.id===potId);if(!r)return null;
               const have=countAllPots(potId);
+              const needed=data.total;
               const done=have>=needed;
               const stillNeed=Math.max(0,needed-have);
               // Ingredient check for brewing what's still needed
@@ -7986,6 +7999,9 @@ function CindervaleAlchemistInner(){
                     if(el){el.scrollIntoView({behavior:'smooth',block:'center'});el.style.transition='box-shadow 0.3s';el.style.boxShadow='0 0 20px '+TH.gold+'80';setTimeout(()=>{el.style.boxShadow='none';},1500);}
                   }}>{r.icon} {r.name}{known.includes(potId)?<span style={{fontSize:11,color:TH.textDim,marginLeft:4}}>↓</span>:''}</span>
                   <span style={{fontSize:14,color:done?TH.green:have>0?TH.gold:TH.red,fontWeight:'bold'}}>{have}/{needed} {done&&'\u2705'}</span>
+                </div>
+                <div style={{display:'flex',flexWrap:'wrap',gap:3,marginTop:2}}>
+                  {data.sources.map((s,i)=><span key={i} style={{fontSize:11,padding:'1px 5px',background:TH.bg,border:'1px solid '+TH.border,borderRadius:3,color:TH.textDim}}>{s.icon} {s.label} ×{s.qty}</span>)}
                 </div>
                 {!done&&<div style={{fontSize:12,color:TH.textDim,marginTop:2}}>
                   Brew {stillNeed} more {'\u00b7'} Ingredients per brew: {r.ingr.map(id=>{
