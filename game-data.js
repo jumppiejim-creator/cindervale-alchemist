@@ -1053,10 +1053,12 @@ var ENCHANTMENTS=[
 var LOCATIONS={
   cindervale:{id:'cindervale',name:'Cindervale',icon:'🔥',desc:'A quiet mountain village built atop the ancient Heartforge. Rich forests and deep caves surround you.',
     startGold:15,startInv:{ashbloom:3,hearthstone:1,embercap:1},startRecipes:['healing_salve'],
+    startEnch:['e_sharp','e_glow','e_ironbark','e_feather','e_windwalk','e_rootbind'],
     bgColor:'#1a2a1a',themeAccent:'#d4a420',
     intro:'You arrive in Cindervale with little more than a pack and a dream. The workshop is dusty, the shelves are bare, and the villagers eye you with cautious hope. Time to prove yourself.'},
   ashfall:{id:'ashfall',name:'Ashfall Crossing',icon:'☀️',desc:'A bustling desert trading post at the crossroads of three caravan routes. Harsh terrain, fierce competition, but unmatched trade access.',
     startGold:25,startInv:{sunpetal:3,crystal_salt:2,dustite:1},startRecipes:['sunstroke_tonic'],
+    startEnch:['e_sandscour','e_glow','e_dust_shield','e_desert_wind','e_sandward','e_scarab_ward'],
     bgColor:'#2a1a0a',themeAccent:'#c0a040',
     intro:'The Crossing hits you like a wall of heat. Merchants haggle, camels bray, and the smell of spice and sand fills the air. Your mentor\'s name opens a few doors — but out here, reputation is earned daily.'},
 };
@@ -1288,18 +1290,27 @@ var CUST_ITEMS=[
   {name:'Silver Ring',icon:'💍',tier:2,cat:'other'},{name:'Traveler\'s Cloak',icon:'🧣',tier:1,cat:'other'},{name:'Pendant',icon:'📿',tier:1,cat:'other'},{name:'Jeweled Circlet',icon:'👑',tier:3,cat:'other'},{name:'Leather Boots',icon:'👢',tier:1,cat:'other'},
 ];
 var CUST_DATA={
-  'Thorek':{title:'Cinderfolk Miner',portrait:{bg:['#555','#333'],ring:'#aa8866'},lines:['"This pick has seen better days. Can you make it bite deeper?"','"The deep veins don\'t yield to dull steel."','"My grandfather carried this. Treat it well."']},
+  // ═══ CINDERVALE CUSTOMERS ═══
+  'Thorek':{loc:'cindervale',title:'Cinderfolk Miner',portrait:{bg:['#555','#333'],ring:'#aa8866'},lines:['"This pick has seen better days. Can you make it bite deeper?"','"The deep veins don\'t yield to dull steel."','"My grandfather carried this. Treat it well."']},
+  'Barret':{loc:'cindervale',title:'Ashwarden Scout',portrait:{bg:['#5c2020','#3a1515'],ring:'#cc5544'},lines:['"Vents are getting worse. I need every edge I can get."','"Don\'t need it fancy — just need it to keep me alive."','"Lost two blades this season already. Make this one last."']},
+  'Sister Venna':{loc:'cindervale',title:'Hearthkeeper Priestess',portrait:{bg:['#704020','#4a2a15'],ring:'#e88840'},lines:['"The sacred flame asks much of those who carry it."','"Bless this steel, enchanter. The wards along the eastern road are failing."','"I trust your craft. The Hearthkeepers remember your legacy."']},
+  'Gorrik':{loc:'cindervale',title:'Cinderfolk Foreman',portrait:{bg:['#555','#333'],ring:'#aa8866'},lines:['"Regulation says all deep-mine gear gets enchanted now."','"After what happened in Shaft Nine, we\'re not taking chances."','"Strong and practical. That\'s all the lads need."']},
+  'Sera':{loc:'cindervale',title:'Veilwalker Adept',portrait:{bg:['#2d2450','#1a1535'],ring:'#7b68c4'},lines:['"The Veil thins near the Heartforge. Mundane steel won\'t suffice."','"I sense potential in your workshop. The old magic lingers here."','"Careful with arcane resonance — I\'ll know if you cut corners."']},
+  // ═══ ASHFALL CUSTOMERS ═══
+  'Kadir':{loc:'ashfall',title:'Sand Merchant Guard',portrait:{bg:['#5a4a30','#3a2a18'],ring:'#c0a040'},lines:['"The desert eats steel for breakfast. I need something that fights back."','"My blade crumbled against a sandworm scale. Never again."','"The Guild pays for quality. Don\'t disappoint."']},
+  'Yara':{loc:'ashfall',title:'Dustwalker Scout',portrait:{bg:['#4a4030','#2e2a1a'],ring:'#8a7050'},lines:['"Seven days in the deep desert. This blade needs to last all seven."','"Speed over power — I need to strike and vanish."','"The dunes hide things. I need a blade that reveals them."']},
+  'Priestess Zara':{loc:'ashfall',title:'Flamekeeper Acolyte',portrait:{bg:['#5a2a1a','#3a1a0a'],ring:'#d06030'},lines:['"The sacred fire demands consecrated tools."','"Bless this blade, enchanter. The temple wards are thinning."','"The Flamekeepers trust your craft. Do not betray that trust."']},
+  'Haddad':{loc:'ashfall',title:'Bazaar Weaponsmith',portrait:{bg:['#4a3a3a','#2e2020'],ring:'#c06040'},lines:['"My customers expect enchanted goods now. You set the bar too high."','"Something that looks impressive AND works. That\'s the trick."','"The oasis traders will pay triple for a glowing blade."']},
+  'Old Nuri':{loc:'ashfall',title:'Desert Hermit',portrait:{bg:['#3a3030','#2a2020'],ring:'#908070'},lines:['"Forty years in the sand. This staff is all I have left."','"The temple whispers to those who listen. I need a focus."','"Don\'t rush it. I\'ve waited decades — I can wait another hour."']},
+  // ═══ SHARED CUSTOMERS (both locations) ═══
   'Fiona':{title:'Traveling Merchant',portrait:{bg:['#4a3060','#2a1840'],ring:'#c090e0'},lines:['"I\'ve heard your enchantments fetch top coin in the capital."','"Something eye-catching, if you please — my customers love a good glow."','"Make it memorable. I have a reputation to uphold."']},
-  'Barret':{title:'Ashwarden Scout',portrait:{bg:['#5c2020','#3a1515'],ring:'#cc5544'},lines:['"Vents are getting worse. I need every edge I can get."','"Don\'t need it fancy — just need it to keep me alive."','"Lost two blades this season already. Make this one last."']},
-  'Mama Grinn':{title:'Tavern Keeper',portrait:{bg:['#704020','#4a2a15'],ring:'#e88840'},portrait:{bg:['#704020','#4a2a15'],ring:'#e88840',accent:'#e88840'},
+  'Mama Grinn':{title:'Tavern Keeper',portrait:{bg:['#704020','#4a2a15'],ring:'#e88840',accent:'#e88840'},
     lines:['"Don\'t ask why I need a enchanted cleaver. Just do it."','"My late husband always said a good blade needs good magic."','"I\'ll pay fair, and throw in a meal besides."']},
   'Jax':{title:'Young Apprentice',portrait:{bg:['#2a4060','#1a2a40'],ring:'#6090c0'},lines:['"I saved up for weeks for this! Please be careful with it."','"My master says only the best enchanters are worth the coin."','"Will it really glow? That would be so incredible!"']},
-  'Sister Venna':{title:'Hearthkeeper Priestess',portrait:{bg:['#704020','#4a2a15'],ring:'#e88840'},lines:['"The sacred flame asks much of those who carry it."','"Bless this steel, enchanter. The wards along the eastern road are failing."','"I trust your craft. The Hearthkeepers remember your legacy."']},
   'Rorik':{title:'Retired Soldier',portrait:{bg:['#444','#2a2a2a'],ring:'#888'},lines:['"One more fight in this old blade, that\'s all I ask."','"Enchantments weren\'t around in my day. Interesting times."','"Steady hands, steady work. I can respect that."']},
-  'Anya':{title:'Herbalist',portrait:{bg:['#3a5530','#243820'],ring:'#7aaa60'},lines:['"Even gatherers need protection in the wilds these days."','"I brought moonpetals as thanks — oh, you probably have plenty."','"The glade creatures are getting bolder. I need something with teeth."']},
-  'Gorrik':{title:'Cinderfolk Foreman',portrait:{bg:['#555','#333'],ring:'#aa8866'},lines:['"Regulation says all deep-mine gear gets enchanted now."','"After what happened in Shaft Nine, we\'re not taking chances."','"Strong and practical. That\'s all the lads need."']},
-  'Sera':{title:'Veilwalker Adept',portrait:{bg:['#2d2450','#1a1535'],ring:'#7b68c4'},lines:['"The Veil thins near the Heartforge. Mundane steel won\'t suffice."','"I sense potential in your workshop. The old magic lingers here."','"Careful with arcane resonance — I\'ll know if you cut corners."']},
+  'Anya':{title:'Herbalist',portrait:{bg:['#3a5530','#243820'],ring:'#7aaa60'},lines:['"Even gatherers need protection in the wilds these days."','"The creatures are getting bolder. I need something with teeth."','"Practical and sturdy — I can\'t afford to baby it in the field."']},
 };
+var CUST_NAMES_BY_LOC=function(loc){return Object.keys(CUST_DATA).filter(function(n){var d=CUST_DATA[n];return !d.loc||d.loc===loc;});};
 var CUST_NAMES=Object.keys(CUST_DATA);
 
 // ═══ APOTHECARY CLINIC SYSTEM ═══

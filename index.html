@@ -533,7 +533,7 @@ function CindervaleAlchemistInner(){
     setApprTasks(s.apprTasks||{});setApprXP(s.apprXP||{});
     prevLvl.current=getLvl(s.xp||0);
     setDailyReport(s.dailyReport||[]);setEnchQ(s.enchQ||[]);setPotCustQ(s.potCustQ||[]);setClinicPatients(s.clinicPatients||[]);setVenomContracts(s.venomContracts||[]);setForgedWeapons(s.forgedWeapons||[]);setShieldCommissions(s.shieldCommissions||[]);setPlanarFocus(s.planarFocus||null);setGadgets(s.gadgets||[]);setBlueprints(s.blueprints||[]);setFieldJournal(s.fieldJournal||[]);setLoreFragments(s.loreFragments||[]);setCompanions(s.companions||[]);setCaravans(s.caravans||[]);setSupplyChains(s.supplyChains||[]);setCaravanRuns(s.caravanRuns||{});setTrainingSessions(s.trainingSessions||{});setFactionHarmony(s.factionHarmony||{});setPrestigeLevels(s.prestigeLevels||{});setAutomata(s.automata||[]);setCustomPatterns(s.customPatterns||[]);setMappedRegions(s.mappedRegions||[]);setActiveBuffs(s.activeBuffs||{});setDebt(s.debt||0);setDisabledUpgrades(s.disabledUpgrades||[]);setShopLocked(s.shopLocked||false);setInjuryPenalty(s.injuryPenalty||0);setStaffInjuries(s.staffInjuries||{});setShelves(s.shelves||{});setLastCheck(null);setNews([]);setMorningReport(null);
-    setBoardQ(s.boardQ||[]);setActiveBQ(s.activeBQ||[]);setDoneBQCount(s.doneBQCount||0);setDayFlags(s.dayFlags||[]);setKnownEnch(s.knownEnch&&s.knownEnch.length>0?s.knownEnch:['e_sharp','e_glow','e_ironbark','e_feather','e_windwalk','e_rootbind']);
+    setBoardQ(s.boardQ||[]);setActiveBQ(s.activeBQ||[]);setDoneBQCount(s.doneBQCount||0);setDayFlags(s.dayFlags||[]);setKnownEnch(s.knownEnch&&s.knownEnch.length>0?s.knownEnch:(LOCATIONS[s.gameLocation||'cindervale']?.startEnch||['e_sharp','e_glow','e_ironbark','e_feather','e_windwalk','e_rootbind']));
     setBrewCounts(s.brewCounts||{});setProcureItems(s.procureItems||[]);setPubPapers(s.pubPapers||[]);setConstructProgress(s.constructProgress||{});
     setSelHex(null);setVBuild('workshop');setDlgNpc(null);setShowShop(false);setQuestDlg(null);setPendingLevelUp(null);setSelectedSite(s.selectedSite||null);if(s.lineage)setLineage(s.lineage);setBrands(s.brands||[]);setBrandOrders(s.brandOrders||[]);setRelics(s.relics||[]);setMuseum(s.museum||{pottery:0,tablets:0,jewelry:0,mechanisms:0,weapons:0});setThreats(s.threats||Object.fromEntries(locThreatIds.map(t=>[t,0])));setOutposts(s.outposts||[]);setDefenseQuests(s.defenseQuests||[]);setHollowMarch(s.hollowMarch||DEF?.hollowMarch||{active:false,wave:0,nextWaveDay:0,demands:[],history:[],finalStandAvailable:false,finalStandComplete:false,marchRecipesUnlocked:[]});setLegacyFeature(s.legacyFeature||null);
   },[]);
@@ -726,7 +726,7 @@ function CindervaleAlchemistInner(){
     const seasonCustMod=(getSeason(day,gameLocation).customerMod||0);
     const n=shopLocked?0:1+Math.floor(Math.random()*2)+upEff('extraCustomers')+enchBonus+custBonusF+Math.min(3,forgeBonus)+compCustBonus+seasonCustMod;
     const q=[];
-    const effKnownEnch=knownEnch.length>0?knownEnch:['e_sharp','e_glow','e_ironbark','e_feather','e_windwalk','e_rootbind'];
+    const effKnownEnch=knownEnch.length>0?knownEnch:(LOCATIONS[gameLocation]?.startEnch||['e_sharp','e_glow','e_ironbark','e_feather','e_windwalk','e_rootbind']);
     for(let i=0;i<n;i++){const mT=level>=7?3:level>=4?2:1;const items=CUST_ITEMS.filter(it=>it.tier<=mT);
       const name=CUST_NAMES[Math.floor(Math.random()*CUST_NAMES.length)];
       const cd=CUST_DATA[name]||{title:'Villager',lines:['"Can you enchant this for me?"']};
@@ -860,6 +860,7 @@ function CindervaleAlchemistInner(){
       inv:inheritData?.inv||{...locData.startInv},
       known:inheritData?.recipes||[...locData.startRecipes],
       upgrades:inheritData?.heirloom?[inheritData.heirloom]:[],
+      knownEnch:[...(locData.startEnch||['e_sharp','e_glow','e_ironbark','e_feather','e_windwalk','e_rootbind'])],
       fRep:(()=>{
         const locFacs=loc==='ashfall'?{sand_merchants:0,flamekeepers:0,dustwalkers:0}:{ashwardens:0,hearthkeepers:0,veilwalkers:0,cinderfolk:0};
         if(inheritData?.fRep){Object.keys(locFacs).forEach(fid=>{if(inheritData.fRep[fid])locFacs[fid]=inheritData.fRep[fid];});}
@@ -2771,7 +2772,7 @@ function CindervaleAlchemistInner(){
       addLog('🤖 Built automaton: '+name,'quest');
     } else {
       // Partial refund
-      modInv('ironroot_bark',1);modInv('hearthstone',1);
+      modInv(li('ironroot_bark'),1);modInv(li('hearthstone'),1);
       showResult('🔧 Construction Failed','error','The frame didn\'t hold together. Some materials salvaged.\n+1 Ironroot Bark, +1 Hearthstone returned.',ch);
     }
   };
@@ -3723,9 +3724,9 @@ function CindervaleAlchemistInner(){
     const gib=getFeatureVal('goldIncomeBonus');
     if(gib>0){setGold(g=>g+gib);report.push({n:'Class Income',i:'💰',r:`+${gib}g`,t:'ok'});}
     if(upEff('dailyRep')>0)Object.keys(fRep).forEach(f=>addRep(f,upEff('dailyRep')));
-    if(hasUp('garden')){const h=['ashbloom','ironroot_bark'][Math.floor(Math.random()*2)];const q=1+Math.floor(Math.random()*2);modInv(h,q);report.push({n:'Garden',i:'🌱',r:`${INGR[h]?.icon||''}×${q}`,t:'ok'});}
-    if(hasUp('garden_2')){const h=['moonpetal','starwort'][Math.floor(Math.random()*2)];modInv(h,1);report.push({n:'Greenhouse',i:'🌿',r:`${INGR[h]?.icon||''}`,t:'ok'});}
-    if(hasUp('leyline')&&Math.random()<.25){modInv('veil_shard',1);report.push({n:'Ley Line',i:'⚡',r:'Veil Shard!',t:'ok'});}
+    if(hasUp('garden')){const pool=gameLocation==='ashfall'?['sunpetal','scorchroot']:['ashbloom','ironroot_bark'];const h=pool[Math.floor(Math.random()*pool.length)];const q=1+Math.floor(Math.random()*2);modInv(h,q);report.push({n:'Garden',i:'🌱',r:`${INGR[h]?.icon||''}×${q}`,t:'ok'});}
+    if(hasUp('garden_2')){const pool=gameLocation==='ashfall'?['dewdrop_lily','crystal_salt']:['moonpetal','starwort'];const h=pool[Math.floor(Math.random()*pool.length)];modInv(h,1);report.push({n:'Greenhouse',i:'🌿',r:`${INGR[h]?.icon||''}`,t:'ok'});}
+    if(hasUp('leyline')&&Math.random()<.25){const item=li('veil_shard');modInv(item,1);report.push({n:'Ley Line',i:'⚡',r:(INGR[item]?.name||item)+'!',t:'ok'});}
     // forageOnRest: passive overnight foraging
     if(getFeatureVal('forageOnRest')){
       const restRegions=locRegions.filter(r=>level>=regUnlock(r)&&(!r.faction||getRL(r.faction)>=(r.fReq||0)));
@@ -4401,7 +4402,7 @@ function CindervaleAlchemistInner(){
           } else {clockLines.push({icon:'🤖',label:'Attempted '+r.icon+r.name+' — failed',val:'',color:TH.red});}
         } else {clockLines.push({icon:'🤖',label:'No brewable recipes available',val:'idle',color:TH.textDim});}
       } else if(task==='forage'){
-        const common=['ashbloom','embercap','ironroot_bark','char_root','bark_resin'];
+        const common=gameLocation==='ashfall'?['sunpetal','dustite','scorchroot','ash_salt','dried_cactus']:['ashbloom','embercap','ironroot_bark','char_root','bark_resin'];
         const found=Math.max(1,Math.floor(eff*2));
         const items={};for(let i=0;i<found;i++){const id=common[Math.floor(Math.random()*common.length)];items[id]=(items[id]||0)+1;}
         setInv(p=>{const n={...p};Object.entries(items).forEach(([id,q])=>{n[id]=(n[id]||0)+q;});return n;});
@@ -4419,13 +4420,13 @@ function CindervaleAlchemistInner(){
       const bpLines=[];const sanctum=completedBPs.find(b=>b.bpId==='bp_sanctum');const mult=sanctum?1.5:1;
       // Rain Collector
       const rain=completedBPs.find(b=>b.bpId==='bp_rain');
-      if(rain){const n=Math.floor(2*mult);const common=['ashbloom','embercap','ironroot_bark','char_root','bark_resin','ash_salt','cinder_moss','ember_petal'];
+      if(rain){const n=Math.floor(2*mult);const common=gameLocation==='ashfall'?['sunpetal','dustite','scorchroot','ash_salt','crystal_salt','dried_cactus','sand_glass','salt_flake']:['ashbloom','embercap','ironroot_bark','char_root','bark_resin','ash_salt','cinder_moss','ember_petal'];
         const items={};for(let i=0;i<n;i++){const id=common[Math.floor(Math.random()*common.length)];items[id]=(items[id]||0)+1;}
         setInv(p=>{const nn={...p};Object.entries(items).forEach(([id,q])=>{nn[id]=(nn[id]||0)+q;});return nn;});
         bpLines.push({icon:'💧',label:'Rain Collector',val:Object.entries(items).map(([id,q])=>(INGR[id]?.icon||id)+'×'+q).join(' '),color:TH.green});}
       // Supply Tunnel
       const tunnel=completedBPs.find(b=>b.bpId==='bp_tunnel');
-      if(tunnel){const n=Math.floor(3*mult);const mid=['moonpetal','gloomcap','ashite','volcanic_essence','ironroot_bark','hearthstone','embercap'];
+      if(tunnel){const n=Math.floor(3*mult);const mid=gameLocation==='ashfall'?['crystal_salt','obsidian_shard','ashite','brine_moss','heatstone','desert_iron','scorchroot']:['moonpetal','gloomcap','ashite','volcanic_essence','ironroot_bark','hearthstone','embercap'];
         const items={};for(let i=0;i<n;i++){const id=mid[Math.floor(Math.random()*mid.length)];items[id]=(items[id]||0)+1;}
         setInv(p=>{const nn={...p};Object.entries(items).forEach(([id,q])=>{nn[id]=(nn[id]||0)+q;});return nn;});
         bpLines.push({icon:'🚇',label:'Supply Tunnel',val:Object.entries(items).map(([id,q])=>(INGR[id]?.icon||id)+'×'+q).join(' '),color:TH.green});}
@@ -7944,7 +7945,7 @@ function CindervaleAlchemistInner(){
           {/* Build button */}
           {automata.length<getAutoSlots()&&<button style={{...S.btn(hours>=2?'gold':'dim'),fontSize:14,padding:'6px 12px',marginTop:4}} disabled={hours<2}
             onClick={()=>buildAutomaton()}>
-            🔨 Build Automaton (⚡2 · 3× Ironroot Bark + 2× Hearthstone · DC 12)
+            🔨 Build Automaton (⚡2 · 3× {INGR[li('ironroot_bark')]?.name||'Ironroot'} + 2× {INGR[li('hearthstone')]?.name||'Hearthstone'} · DC 12)
           </button>}
           {(prestigeLevels.magitech||0)<3&&<div style={{fontSize:12,color:TH.textDim,marginTop:4}}>🔒 Automata gain XP at Magitech Lv3</div>}
           {(prestigeLevels.magitech||0)>=3&&(prestigeLevels.magitech||0)<4&&<div style={{fontSize:12,color:TH.textDim,marginTop:4}}>🔒 Enchanting task at Magitech Lv4</div>}
