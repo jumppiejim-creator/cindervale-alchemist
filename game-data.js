@@ -3662,7 +3662,12 @@ var MARCH_RECIPES=[
 // Append March recipes to main RECIPES array (gated by known[] — learned during Hollow March waves)
 MARCH_RECIPES.forEach(r=>RECIPES.push(r));
 
-var BQ_GIVERS=['Farmer Aldric','Widow Maren','Trader Osric','Healer Senna','Guard Brennick','Smith Torva','Elder Yara','Prospector Jax','Herbalist Neve','Cook Brindle','Captain Voss','Pilgrim Elowen','Shepherd Grynn','Scribe Felton','Chandler Rue'];
+var BQ_GIVERS_BY_LOC={
+  cindervale:['Farmer Aldric','Widow Maren','Trader Osric','Healer Senna','Guard Brennick','Smith Torva','Elder Yara','Prospector Jax','Herbalist Neve','Cook Brindle','Captain Voss','Pilgrim Elowen','Shepherd Grynn','Scribe Felton','Chandler Rue'],
+  ashfall:['Cameleer Rashid','Spice Trader Yuna','Guard Massoud','Herbalist Dima','Cook Farida','Elder Khoury','Sand Runner Lev','Glassblower Taza','Weaver Basma','Prospector Gul','Scribe Hakim','Well Keeper Rima','Merchant Isra','Tanner Bahir','Bazaar Warden Nox'],
+  tidecrest:['Deckhand Corwin','Net Mender Hale','Dock Warden Petra','Cook Marjorie','Fishmonger Otis','Diver Kael','Sail Mender Bryn','Crab Trapper Guss','Lighthouse Boy Tam','Elder Waverly','Rope Maker Fenn','Tide Watcher Lira','Ship Carpenter Dag','Harbor Clerk Ivy','Chandler Moss'],
+};
+var BQ_GIVERS=BQ_GIVERS_BY_LOC.cindervale; // legacy fallback
 var BQ_TEMPLATES=[
   {type:'deliver',tier:1,pool:['healing_salve','windwalk_salve'],qtyR:[1,2],gPer:12,xPer:18,minLv:0,
     descs:['"Wounded travelers need salves. Can you supply {qty}?"','"The clinic is running low. We need {qty} salve{s}."']},
@@ -3777,8 +3782,8 @@ var genBoardQuests=(level,day,bonusQuests=0,loc='cindervale')=>{
   // Build set of locally available ingredients for recipe craftability check
   const locIngrSet=new Set();
   REGIONS.filter(r=>r.loc===loc).forEach(r=>r.ingr.forEach(i=>locIngrSet.add(i)));
-  const canCraftHere=(recipeId)=>{const r=RECIPES.find(x=>x.id===recipeId);return r&&!r.buff&&r.ingr.every(id=>locIngrSet.has(id));};
-  const locFactions=loc==='ashfall'?['sand_merchants','flamekeepers','dustwalkers']:['hearthkeepers','ashwardens','veilwalkers','cinderfolk'];
+  const canCraftHere=(recipeId)=>{const r=RECIPES.find(x=>x.id===recipeId);return r&&!r.buff&&r.ingr.every(id=>locIngrSet.has(id)||locIngrSet.has(locIngr(id,loc)));};
+  const locFactions=loc==='tidecrest'?['harbormasters','pearl_divers','tidekeepers','merchant_marine']:loc==='ashfall'?['sand_merchants','flamekeepers','dustwalkers']:['hearthkeepers','ashwardens','veilwalkers','cinderfolk'];
   const quests=[];var usedGivers=[];
   for(let i=0;i<n;i++){
     // For deliver templates, filter pool to locally craftable recipes
@@ -3791,7 +3796,8 @@ var genBoardQuests=(level,day,bonusQuests=0,loc='cindervale')=>{
       attempts++;
     }while(localPool.length===0&&attempts<20);
     if(localPool.length===0)continue;
-    let giver;do{giver=BQ_GIVERS[Math.floor(Math.random()*BQ_GIVERS.length)];}while(usedGivers.includes(giver));
+    const giverPool=BQ_GIVERS_BY_LOC[loc]||BQ_GIVERS;
+    let giver;do{giver=giverPool[Math.floor(Math.random()*giverPool.length)];}while(usedGivers.includes(giver));
     usedGivers.push(giver);
     const itemId=localPool[Math.floor(Math.random()*localPool.length)];
     const qty=tmpl.qtyR[0]+Math.floor(Math.random()*(tmpl.qtyR[1]-tmpl.qtyR[0]+1))+Math.floor(level/5);
