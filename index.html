@@ -26,9 +26,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
 <script src="portraits.js"></script>
-<script src="location-images.js"></script>
-<script src="game-data.js?v=20260318a"></script>
-<script src="npc-portraits.js"></script>
+<script src="game-data.js?v=20260319a"></script>
 <script type="text/babel" data-type="module">
 const { useState, useEffect, useCallback, useRef, Component, createElement } = React;
 const Tone = window.Tone;
@@ -5717,7 +5715,7 @@ function CindervaleAlchemistInner(){
             {id:'character',icon:'📋',label:'Character',img:'map'},
           ].map(nav=>{
             const active=screen===nav.id||(nav.id==='workshop'&&['research','enchant','transmute','upgrades'].includes(screen));
-            const thumb=TOWN_IMGS[nav.img];
+            const thumb=nav.img?nav.img+'.jpg':null;
             return(<button key={nav.id} onClick={()=>setScreen(nav.id)} style={{
               background:'transparent',border:active?`2px solid ${TH.gold}`:`1px solid ${TH.border}44`,
               color:active?TH.gold:TH.textDim,cursor:'pointer',padding:0,
@@ -5739,7 +5737,7 @@ function CindervaleAlchemistInner(){
       <div style={{display:'flex',width:'100%',maxWidth:1200,flex:1,gap:0,justifyContent:'center',position:'relative'}}>
 
       {/* Background image layer */}
-      {(()=>{const bgKey=SCREEN_BG[screen];const bgImg=bgKey&&TOWN_IMGS[bgKey];
+      {(()=>{const bgMap={market:'market',tavern:'tavern',workshop:'workshop',research:'workshop',enchant:'workshop',transmute:'workshop',upgrades:'workshop',worldmap:'map',map:'map',quests:'tavern',character:'map',staff:'workshop'};const bgKey=bgMap[screen];const bgImg=bgKey?bgKey+'.jpg':null;
         return bgImg?<>
           <div style={{position:'absolute',top:0,left:0,right:0,bottom:0,backgroundImage:`url(${bgImg})`,backgroundSize:'cover',backgroundPosition:'center',opacity:0.5,pointerEvents:'none',zIndex:0}}/>
           <div style={{position:'absolute',top:0,left:0,right:0,bottom:0,background:'linear-gradient(180deg, #1a1a2ecc 0%, transparent 30%, transparent 70%, #1a1a2ecc 100%)',pointerEvents:'none',zIndex:0}}/>
@@ -5967,7 +5965,7 @@ function CindervaleAlchemistInner(){
         const reg=locRegions.find(r=>r.id===zonePopup);if(!reg)return null;
         const locked=level<regUnlock(reg)||(reg.faction&&getRL(reg.faction)<(reg.fReq||0));
         const info=getExpeditionInfo(reg);const canGo=!locked&&info&&info.gatherHours>=1;
-        const imgUrl=(typeof ZONE_IMGS!=='undefined'?ZONE_IMGS:{})[reg.id];
+        const imgUrl=reg.id+'.jpg';
         const pickN=reg.pick||reg.ingr.length;
         return(<div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'#000000dd',display:'flex',alignItems:'center',justifyContent:'center',zIndex:9998,padding:12}} onClick={()=>setZonePopup(null)}>
           <div style={{background:`linear-gradient(160deg,${TH.panelAlt},${TH.panel})`,border:`2px solid ${reg.color||TH.border}`,borderRadius:12,maxWidth:580,width:'100%',maxHeight:'90vh',overflowY:'auto',boxShadow:`0 0 60px ${reg.color||TH.gold}30`}} onClick={e=>e.stopPropagation()}>
@@ -10248,27 +10246,14 @@ function CindervaleAlchemistInner(){
 function CindervaleAlchemist(){return <EB><CindervaleAlchemistInner/></EB>;}
 
 // ═══════ NPC PORTRAIT COMPONENT ═══════
-const NPC_PORTRAITS=typeof NPC_PORTRAIT_IMGS!=='undefined'?{...NPC_PORTRAIT_IMGS}:{};
-// Ashfall NPC portraits (Leonardo AI .jpg files on GitHub)
-if(!NPC_PORTRAITS.sola)NPC_PORTRAITS.sola='sola.jpg';
-if(!NPC_PORTRAITS.razak)NPC_PORTRAITS.razak='razak.jpg';
-if(!NPC_PORTRAITS.amara)NPC_PORTRAITS.amara='amara.jpg';
-if(!NPC_PORTRAITS.tarek)NPC_PORTRAITS.tarek='tarek.jpg';
-if(!NPC_PORTRAITS.nahla)NPC_PORTRAITS.nahla='nahla.jpg';
-// Tidecrest NPC portraits
-if(!NPC_PORTRAITS.reva)NPC_PORTRAITS.reva='reva.jpg';
-if(!NPC_PORTRAITS.mako)NPC_PORTRAITS.mako='mako.jpg';
-if(!NPC_PORTRAITS.sister_coral)NPC_PORTRAITS.sister_coral='sister_coral.jpg';
-if(!NPC_PORTRAITS.finn)NPC_PORTRAITS.finn='finn.jpg';
-if(!NPC_PORTRAITS.old_anchor)NPC_PORTRAITS.old_anchor='old_anchor.jpg';
 function NpcPortrait({npc,size=80,customerData}){
   const p=npc?.portrait||customerData?.portrait||{bg:['#444','#2a2a2a'],ring:'#888'};
   const icon=npc?.icon||'🧑';
   const name=npc?.name||'';
   const s=size;
-  // Check for Canva portrait image — try npc key (lowercase) first, then full name
-  const imgKey=npc?.id||name;
-  const imgSrc=NPC_PORTRAITS[imgKey]||NPC_PORTRAITS[name]||NPC_PORTRAITS[name.toLowerCase()]||NPC_PORTRAITS[name.split(' ').pop()]||null;
+  // NPC portraits are {id}.jpg in the repo root — try id, then lowercase name
+  const imgKey=npc?.id||name.toLowerCase().replace(/\s+/g,'_');
+  const imgSrc=imgKey?imgKey+'.jpg':null;
   return(
     <div style={{width:s,height:s,borderRadius:'50%',position:'relative',flexShrink:0,
       background:imgSrc?'#1a1610':`linear-gradient(135deg, ${p.bg[0]}, ${p.bg[1]})`,
