@@ -352,7 +352,7 @@ function CindervaleAlchemistInner(){
   const lf=id=>locFaction(id,gameLocation);
   const lt=id=>locThreat(id,gameLocation);
   const locFactions=Object.fromEntries(Object.entries(FACTIONS).filter(([,f])=>!f.loc||f.loc===gameLocation));
-  const locQuests=QUESTS.filter(q=>{if(q.id.startsWith('aq'))return gameLocation==='ashfall';if(q.id.startsWith('q')||q.id.startsWith('fc_'))return gameLocation==='cindervale';return true;});
+  const locQuests=QUESTS.filter(q=>{if(q.id.startsWith('aq'))return gameLocation==='ashfall';if(q.id.startsWith('q')&&!q.id.startsWith('q '))return gameLocation==='cindervale';if(q.id.startsWith('fc_')){const ashChains=['fc_sm','fc_fk','fc_dw'];return ashChains.some(p=>q.id.startsWith(p))?gameLocation==='ashfall':gameLocation==='cindervale';}return true;});
   const locApprentices=AP_POOL.filter(a=>!a.loc||a.loc===gameLocation);
 
   // Ingredients available at current location (computed from locRegions + mapped hidden areas)
