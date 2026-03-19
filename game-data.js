@@ -110,14 +110,14 @@ var CLASSES={
       {classLv:7,name:'Master Brewer',desc:'+2 to all craft checks (stacks). Unlock one legendary recipe.',effects:{craftBonus:2,discoveryChanceBonus:0.15}},
       {classLv:8,name:'Reagent Attunement',desc:'Foraging may yield bonus ingredients attuned to your most-brewed recipe. +15% ingredient efficiency on all crafts.',effects:{attunedForaging:true,ingredientEfficiency:0.15}},
       {classLv:9,name:'Perfected Art',desc:'Craft failures on recipes brewed 10+ times produce a lesser version instead. Once per day, reroll a failed craft.',effects:{lesserOnFail:true,craftReroll:1}},
-      {classLv:10,name:'Magnum Opus',desc:'Once per day, auto-succeed any craft check with double-batch quality.',effects:{freeCraft:1,doubleBatchChance:0.50}},
+      {classLv:10,name:'Magnum Opus',desc:'Your 3 most-brewed recipes auto-succeed at Masterwork quality. Once per day, brew any recipe mastered 20+ times with zero ingredients. Alchemy flows through you like breathing.',effects:{freeCraft:1,doubleBatchChance:0.50,masteryAutoMW:true,zeroIngrMastery:20}},
     ],
     specs:{
       apothecary:{id:'apothecary',name:'Apothecary',icon:'💊',color:'#50c070',bStat:'inu',bSkills:['attunement','divination'],
         features:[
           {classLv:3,name:"Healer's Touch",desc:'Healing potions are 2× value/XP. Healing recipes -2 DC.',effects:{craftBonus:1,sellBonus:0.20}},
           {classLv:6,name:'Panacea',desc:'Unlock multi-cure recipes. Healing potions also restore morale to staff.',effects:{healMorale:true,customerBonus:1,freeHealBrew:1}},
-          {classLv:10,name:'Miracle Worker',desc:'One free healing brew per day, no ingredients needed.',effects:{freeHealBrew:1}},
+          {classLv:10,name:'Miracle Worker',desc:'Clinic patients auto-diagnosed on arrival. Clinic treatments pay 3× gold and XP. Once per day, perform a Miracle Cure on any patient regardless of potion requirements (5× reward). All healing potions have 50% chance to produce a bonus Masterwork copy.',effects:{freeHealBrew:1,clinicAutoDiagnose:true,clinicPayMult:3,miracleCure:true,healingBonusMW:0.50}},
         ]},
       transmuter:{id:'transmuter',name:'Transmuter',icon:'🔄',color:'#d090e0',bStat:'cre',bSkills:['improvisation','innovation'],
         features:[
@@ -127,9 +127,9 @@ var CLASSES={
         ]},
       venomist:{id:'venomist',name:'Venomist',icon:'☠️',color:'#a0d040',bStat:'tec',bSkills:['precision','extraction'],
         features:[
-          {classLv:3,name:'Volatile Mixtures',desc:'Unlock offensive/volatile recipes. Poisons sell 2× to Ashwardens. +2 craft bonus on volatile recipes.',effects:{sellBonus:0.30,craftBonus:2}},
+          {classLv:3,name:'Volatile Mixtures',desc:'Unlock offensive/volatile recipes. Poisons sell 2× to local guard factions. +2 craft bonus on volatile recipes.',effects:{sellBonus:0.30,craftBonus:2}},
           {classLv:6,name:'Concentrated Dose',desc:'Brew with deadly precision. +20% double batch chance. +2 craft bonus.',effects:{doubleBatchChance:0.20,craftBonus:2}},
-          {classLv:10,name:'Plague Doctor',desc:'Legendary venom recipes. +3 craft bonus. 30% double batch on volatile brews. Craft failures produce lesser venoms.',effects:{craftBonus:3,doubleBatchChance:0.30,lesserOnFail:true}},
+          {classLv:10,name:'Plague Doctor',desc:'Legendary venom recipes. +3 craft bonus. 30% double batch on volatile brews. Craft failures produce lesser venoms. Venom contracts pay 3× base price. Unlock 2 legendary poisons that reduce specific threat levels by 15 when brewed.',effects:{craftBonus:3,doubleBatchChance:0.30,lesserOnFail:true,venomContractMult:3,threatPoisons:true}},
         ]},
     }},
   enchanter:{id:'enchanter',name:'Enchanter',icon:'✨',color:TH.purple,primaryStat:'cre',
@@ -159,7 +159,7 @@ var CLASSES={
         features:[
           {classLv:3,name:'Wards',desc:'Defensive enchantments +50% value. +2 to defensive inscription checks.',effects:{enchantBonus:1,failEnchantReturn:0.50}},
           {classLv:6,name:'Layered Wards',desc:'Can apply 3 enchantments to armor items. 40% chance to save materials on enchant success.',effects:{enchantMatSave:0.40,dualInscription:true}},
-          {classLv:10,name:'Unbreakable',desc:'Permanent wards that never fade. Defensive enchants auto-succeed DC 15.',effects:{autoEnchantDC:15,enchantSuccessFlat:10,enchantMatSave:0.60}},
+          {classLv:10,name:'Unbreakable',desc:'Permanent wards that never fade. Defensive enchants auto-succeed DC 15. Shield commissions pay 3× gold. Once per day, apply a Fortress Ward to the settlement — reduces all threats by 5 for 3 days.',effects:{autoEnchantDC:15,enchantSuccessFlat:10,enchantMatSave:0.60,shieldPayMult:3,fortressWard:true}},
         ]},
       spellweaver:{id:'spellweaver',name:'Spellweaver',icon:'🌀',color:'#a060e0',bStat:'inu',bSkills:['arcane_sense','divination'],
         features:[
@@ -182,20 +182,20 @@ var CLASSES={
       {classLv:7,name:'Prototype',desc:'Once per day, reroll a failed craft. +15% discovery chance from research.',effects:{craftReroll:1,discoveryChanceBonus:0.15}},
       {classLv:8,name:'Grand Artificer',desc:'Unlock legendary device recipes. Workshop upgrade costs -25%.',effects:{craftFloor:8,upgradeCostReduction:0.25}},
       {classLv:9,name:'Systematic Mastery',desc:'Batch brew cap +3. All batch brews show individual roll results.',effects:{batchSizeBonus:3,batchSuccessBonus:0.15}},
-      {classLv:10,name:'Masterwork Engine',desc:'Two free 0-hour crafting actions per day. Batch size +2. 100% salvage on failures. Workshop upgrades cost -30%.',effects:{freeCraft:2,batchSizeBonus:2,salvagePercent:1.0,upgradeCostReduction:0.30}},
+      {classLv:10,name:'Masterwork Engine',desc:'Two free 0-hour crafting actions per day. Batch size +2. 100% salvage on failures. Workshop upgrades cost -30% and provide double their normal bonuses. Your workshop is a precision engine.',effects:{freeCraft:2,batchSizeBonus:2,salvagePercent:1.0,upgradeCostReduction:0.30,upgradeDoubleBonus:true}},
     ],
     specs:{
       tinkerer:{id:'tinkerer',name:'Tinkerer',icon:'🔩',color:'#c0a040',bStat:'acu',bSkills:['analysis','research'],
         features:[
           {classLv:3,name:'Gadgeteer',desc:'Craft utility gadgets for passive bonuses. +2 to ACU-based checks.',effects:{craftBonus:1,bonusSkillPerLevel:1}},
           {classLv:6,name:'Swiss Army',desc:'Gadgets provide multiple benefits. +15% batch brew success. Workshop upgrades cost -15%.',effects:{batchSuccessBonus:0.15,upgradeCostReduction:0.15}},
-          {classLv:10,name:'Masterwork Tools',desc:'Legendary utility tools. All craft DCs -2 permanently. 90% salvage on failure.',effects:{craftBonus:3,salvagePercent:0.90}},
+          {classLv:10,name:'Masterwork Tools',desc:'Legendary utility tools. All craft DCs -2 permanently. 90% salvage on failure. Gadgets can be upgraded indefinitely beyond mark caps (+1 power per extra mark). Equip 2 gadgets simultaneously.',effects:{craftBonus:3,salvagePercent:0.90,infiniteGadgetMarks:true,dualGadgets:true}},
         ]},
       constructor:{id:'constructor',name:'Constructor',icon:'🏗️',color:'#8090a0',bStat:'dis',bSkills:['stockpiling','endurance'],
         features:[
           {classLv:3,name:'Workshop Pro',desc:'Workshop upgrades cost 50% less gold. +2 to DIS checks.',effects:{upgradeCostReduction:0.5,staffEfficiencyBonus:0.15}},
           {classLv:6,name:'Assembly Floor',desc:'Can batch craft 2 different recipes simultaneously. Staff efficiency +20%.',effects:{batchSizeBonus:2,staffEfficiencyBonus:0.20}},
-          {classLv:10,name:'Master Builder',desc:'Unique legendary structures. Workshop runs partially automated overnight.',effects:{passiveIncomeMulti:3,overnightCraft:true}},
+          {classLv:10,name:'Master Builder',desc:'Unlock 3 legendary blueprints: Alchemical Forge (auto-brews your most profitable recipe each morning), Crystal Greenhouse (produces 1 random rare ingredient daily), Arcane Conduit (+2 Energy per day permanently). All construction completes in half time.',effects:{passiveIncomeMulti:3,overnightCraft:true,legendaryBlueprints:true,bonusEnergy:2,halfConstructTime:true}},
         ]},
       reclaimer:{id:'reclaimer',name:'Reclaimer',icon:'♻️',color:'#60a080',bStat:'com',bSkills:['procurement','haggling'],
         features:[
@@ -225,19 +225,19 @@ var CLASSES={
         features:[
           {classLv:3,name:'Published Research',desc:'2× XP from research and experiments. Can publish papers for passive gold.',effects:{researchXPMulti:2,publishPapers:true}},
           {classLv:6,name:'Peer Review',desc:'Research studies have +20% discovery chance. Papers earn more over time.',effects:{discoveryChanceBonus:0.20,paperScaling:true}},
-          {classLv:10,name:'Grand Unified Theory',desc:'All research auto-discovers. Papers generate substantial passive income.',effects:{discoveryChanceBonus:0.35,grandPapers:true}},
+          {classLv:10,name:'Grand Unified Theory',desc:'Research sessions produce 2 discoveries instead of 1. Papers earn faction reputation for the discovered recipe\'s faction. After 10 papers: permanent +1 craft. After 25: +2. After 50: +3. Your academic legacy compounds.',effects:{discoveryChanceBonus:0.35,grandPapers:true,doubleDiscovery:true,citationCraftBonus:true}},
         ]},
       naturalist:{id:'naturalist',name:'Naturalist',icon:'🌿',color:'#60b060',bStat:'inu',bSkills:['divination','extraction'],
         features:[
           {classLv:3,name:'Field Guide',desc:'See full ingredient tables for explored regions. Experiments with foraged ingredients get +15% discovery.',effects:{showIngredients:true,experimentBonus:0.15}},
           {classLv:6,name:'Ecological Insight',desc:'Research discovers region-specific recipes. +20% XP from foraging and experiments.',effects:{xpMultiplier:0.20,discoveryChanceBonus:0.15}},
-          {classLv:10,name:'Nature\'s Library',desc:'Foraging expeditions have a 30% chance to also discover a recipe using gathered ingredients. +25% XP from foraging.',effects:{discoveryChanceBonus:0.30,xpMultiplier:0.25}},
+          {classLv:10,name:'Nature\'s Library',desc:'Every expedition yields 1 bonus hidden-area ingredient (even unmapped areas). Seasonal ingredients available in all seasons. Once per day, commune to reveal the highest-yield region. Field Journal entries grant permanent +2 craft bonus for documented ingredients.',effects:{forageDiscovery:0.30,forageXPBonus:0.25,hiddenForageBonus:true,allSeasonIngr:true,journalCraftBonus:2}},
         ]},
       archivist:{id:'archivist',name:'Archivist',icon:'📜',color:'#c0a060',bStat:'dis',bSkills:['lore','focus'],
         features:[
           {classLv:3,name:'Deep Records',desc:'Quest log shows hidden objectives. +30% quest XP.',effects:{questRepBonus:5,questXPBonus:0.30}},
           {classLv:6,name:'Master Index',desc:'Board quests refresh twice daily. Quest chains unlock earlier.',effects:{doubleQuestRefresh:true,questGoldBonus:0.25}},
-          {classLv:10,name:'Living Archive',desc:'Legendary quest chain. All quests reward double reputation.',effects:{questXPBonus:0.50,doubleRep:true}},
+          {classLv:10,name:'Living Archive',desc:'Completed lore chains grant permanent +1 to a stat of your choice (up to 3 total). Quest turn-ins have 25% chance to also reward a lore fragment. Board quests refresh 3× daily with at least one rare-ingredient quest. Faction alignment bonuses are 50% stronger.',effects:{questXPBonus:0.50,doubleRep:true,loreStatBonus:true,loreDropChance:0.25,tripleBoardRefresh:true,alignmentBoost:0.50}},
         ]},
     }},
   merchant:{id:'merchant',name:'Merchant',icon:'💰',color:TH.gold,primaryStat:'com',
@@ -254,14 +254,14 @@ var CLASSES={
       {classLv:7,name:'Golden Tongue',desc:'Enchanting/potion customers pay 20% more. +1 customer per morning.',effects:{customerPayBonus:0.20,customerBonus:1}},
       {classLv:8,name:'Trade Empire',desc:'Staff efficiency +30% (stacks). +1 max apprentice. Payroll -25%.',effects:{staffEfficiencyBonus:0.30,maxApprenticeBonus:1,payrollDiscount:0.25}},
       {classLv:9,name:'Connections',desc:'Commission 1 specific rare ingredient per day at 3× price (guaranteed).',effects:{commissionAccess:1}},
-      {classLv:10,name:'Tycoon',desc:'All gold income +50%. Staff can perform 2 tasks simultaneously.',effects:{goldIncomeBonus:0.50,dualStaffTasks:true}},
+      {classLv:10,name:'Trade Empire',desc:'Staff perform 2 tasks simultaneously. All customers pay double. +2 premium customers each morning at 3× price. Once per day, conjure any ingredient into your shop at standard price — your network reaches everywhere.',effects:{goldIncomeBonus:1.0,dualStaffTasks:true,premiumCustomers:2,conjureIngredient:true}},
     ],
     specs:{
       guildmaster:{id:'guildmaster',name:'Guildmaster',icon:'👑',color:'#d0a030',bStat:'com',bSkills:['networking','persuasion'],
         features:[
           {classLv:3,name:'Training Program',desc:'Staff gain XP 50% faster. Can assign staff to skill training.',effects:{staffXPBonus:0.50,staffEfficiencyBonus:0.15}},
           {classLv:6,name:'Guild Network',desc:'Hire from expanded pool. Staff have higher base stats.',effects:{expandedHirePool:true,betterStaffStats:true}},
-          {classLv:10,name:'Grand Guildmaster',desc:'Staff can handle legendary tasks. Staff salary costs halved.',effects:{staffForageBonus:0.30,halfPayroll:true}},
+          {classLv:10,name:'Grand Guildmaster',desc:'Hire up to 8 staff. Staff salary costs halved. Max-level staff gain a Mastery trait doubling their task efficiency. Once per week, a Legendary Apprentice applies (starts Lv3, 2 positive traits, no negatives).',effects:{staffForageBonus:0.30,halfPayroll:true,maxStaff:8,staffMastery:true,legendaryHire:true}},
         ]},
       diplomat:{id:'diplomat',name:'Diplomat',icon:'🤝',color:'#4090c0',bStat:'inu',bSkills:['persuasion','lore'],
         features:[
@@ -297,7 +297,7 @@ var CLASSES={
         features:[
           {classLv:3,name:'Tracker',desc:'Target ingredients without yield penalty. Befriend wild creatures.',effects:{luckyFindChance:0.20,extractionBonus:2,targetNoYieldPenalty:true}},
           {classLv:6,name:'Pathfinder',desc:'Discover hidden sub-regions with unique ingredients. Creature bonuses grow.',effects:{yieldMultiplier:0.50,critExtractionMulti:2}},
-          {classLv:10,name:'Apex Predator',desc:'Legendary expedition zones. Guaranteed rare finds. Companions perform a second daily action.',effects:{companionDualAction:true,guaranteedRare:true}},
+          {classLv:10,name:'Apex Predator',desc:'Companions perform 2 actions per day. Your highest-loyalty companion gains a Legendary ability unique to its type. Once per day, send a companion on a solo expedition that returns ingredients without costing you Energy.',effects:{companionDualAction:true,guaranteedRare:true,legendaryCompanion:true,soloExpedition:true}},
         ]},
       quartermaster:{id:'quartermaster',name:'Quartermaster',icon:'📋',color:'#6080a0',bStat:'dis',bSkills:['stockpiling','efficiency'],
         features:[
@@ -309,7 +309,7 @@ var CLASSES={
         features:[
           {classLv:3,name:'Night Watch',desc:'Night expeditions: +4 bonus gathering hours, increased danger.',effects:{nightExpeditions:true,nightBonusHours:4}},
           {classLv:6,name:'Trap Setter',desc:'Set traps for guaranteed rare ingredient finds. Night danger reduced.',effects:{guaranteedRare:true,nightDangerReduction:true}},
-          {classLv:10,name:'Fortified Outpost',desc:'Build permanent outposts at regions for daily passive ingredient income. +1 night hour.',effects:{forageOnRest:true,nightBonusHours:1,staffForageBonus:0.20}},
+          {classLv:10,name:'Eternal Vigil',desc:'Night expeditions last 6 hours with drastically reduced danger. All threats passively decay by 3 per day from your patrols alone. Once per day, launch a Preemptive Strike: spend 2 Energy to reduce any threat by 20 and earn XP/gold. You are the settlement\'s shield.',effects:{forageOnRest:true,nightBonusHours:3,staffForageBonus:0.20,passiveThreatDecay:3,preemptiveStrike:true}},
         ]},
     }},
 };
