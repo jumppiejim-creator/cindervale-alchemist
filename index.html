@@ -2754,11 +2754,12 @@ function CindervaleAlchemistInner(){
   const getAutoLvl=(autoId)=>Math.min(5,Math.floor((automata.find(a=>a.id===autoId)?.xp||0)/80));
   const canAutoEnchant=()=>(prestigeLevels.magitech||0)>=4;
   const buildAutomaton=()=>{
-    if(automata.length>=getAutoSlots()){addLog('Maximum automaton slots reached.','error');return;}
-    // Automaton build: free (prestige feature)
+    if(automata.length>=getAutoSlots()){showResult('🤖 No Slots','error','Maximum automaton slots reached. Upgrade Magitech to unlock more.');return;}
+    if(hours<2){showResult('🤖 No Energy','error','Need 2 Energy to build an automaton.');return;}
     const matCost=lmc({ironroot_bark:3,hearthstone:2});
-    if(!Object.entries(matCost).every(([id,q])=>(inv[id]||0)>=q)){addLog('Need '+Object.entries(matCost).map(([id,q])=>q+'× '+(INGR[id]?.icon||'')+INGR[id]?.name).join(' + ')+' to build an automaton.','error');return;}
+    if(!Object.entries(matCost).every(([id,q])=>(inv[id]||0)>=q)){showResult('🤖 Missing Materials','error','Need '+Object.entries(matCost).map(([id,q])=>q+'× '+(INGR[id]?.icon||'')+INGR[id]?.name+' (have '+(inv[id]||0)+')').join(' + '));return;}
     snapshot();
+    setHours(h=>h-2);
     Object.entries(matCost).forEach(([id,q])=>modInv(id,-q));
     const ch=doCheck('precision',12);
     const cfb=getFeatureVal('craftBonus');if(cfb){ch.total+=cfb;ch.extras.push({label:'Craft',val:cfb});}
@@ -2773,7 +2774,7 @@ function CindervaleAlchemistInner(){
     } else {
       // Partial refund
       modInv(li('ironroot_bark'),1);modInv(li('hearthstone'),1);
-      showResult('🔧 Construction Failed','error','The frame didn\'t hold together. Some materials salvaged.\n+1 Ironroot Bark, +1 Hearthstone returned.',ch);
+      showResult('🔧 Construction Failed','error','The frame didn\'t hold together. Some materials salvaged.\n+1 '+(INGR[li('ironroot_bark')]?.name||'material')+', +1 '+(INGR[li('hearthstone')]?.name||'material')+' returned.',ch);
     }
   };
   const assignAutoTask=(autoId,type,target)=>{
@@ -7943,10 +7944,10 @@ function CindervaleAlchemistInner(){
             </div>;
           })}
           {/* Build button */}
-          {automata.length<getAutoSlots()&&<button style={{...S.btn(hours>=2?'gold':'dim'),fontSize:14,padding:'6px 12px',marginTop:4}} disabled={hours<2}
+          {automata.length<getAutoSlots()&&(()=>{const mc=lmc({ironroot_bark:3,hearthstone:2});const hasMats=Object.entries(mc).every(([id,q])=>(inv[id]||0)>=q);const canBuild=hours>=2&&hasMats;return <button style={{...S.btn(canBuild?'gold':'dim'),fontSize:14,padding:'6px 12px',marginTop:4}}
             onClick={()=>buildAutomaton()}>
-            🔨 Build Automaton (⚡2 · 3× {INGR[li('ironroot_bark')]?.name||'Ironroot'} + 2× {INGR[li('hearthstone')]?.name||'Hearthstone'} · DC 12)
-          </button>}
+            🔨 Build Automaton (⚡2 · {Object.entries(mc).map(([id,q])=>(inv[id]||0)>=q?'✓':'✗').join('')} {Object.entries(mc).map(([id,q])=>q+'× '+(INGR[id]?.icon||'')+INGR[id]?.name).join(' + ')} · DC 12)
+          </button>;})()}
           {(prestigeLevels.magitech||0)<3&&<div style={{fontSize:12,color:TH.textDim,marginTop:4}}>🔒 Automata gain XP at Magitech Lv3</div>}
           {(prestigeLevels.magitech||0)>=3&&(prestigeLevels.magitech||0)<4&&<div style={{fontSize:12,color:TH.textDim,marginTop:4}}>🔒 Enchanting task at Magitech Lv4</div>}
         </div>}
