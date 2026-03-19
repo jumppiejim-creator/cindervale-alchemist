@@ -3231,7 +3231,7 @@ function CindervaleAlchemistInner(){
   const qSteps=q=>{
     const steps=[];const p=qP(q);
     const turnInScreen=q.loc==='market'?'market':'tavern';
-    const turnInLabel=q.loc==='market'?(gameLocation==='ashfall'?`🛒 Go to Bazaar (${q.giver})`:`🛒 Go to Market (${q.giver})`):(q.loc==='chapel'?(gameLocation==='ashfall'?`🕯️ Visit Flamekeepers (${q.giver})`:`⛪ Visit Chapel (${q.giver})`):(gameLocation==='ashfall'?`🍺 Go to Cantina (${q.giver})`:`🍺 Go to Tavern (${q.giver})`));
+    const turnInLabel=q.loc==='market'?(gameLocation==='tidecrest'?`🛒 Go to Harbor Market (${q.giver})`:gameLocation==='ashfall'?`🛒 Go to Bazaar (${q.giver})`:`🛒 Go to Market (${q.giver})`):(q.loc==='chapel'?(gameLocation==='tidecrest'?`🌊 Visit Tidekeepers (${q.giver})`:gameLocation==='ashfall'?`🕯️ Visit Flamekeepers (${q.giver})`:`⛪ Visit Chapel (${q.giver})`):(gameLocation==='tidecrest'?`🍺 Go to Driftwood Tavern (${q.giver})`:gameLocation==='ashfall'?`🍺 Go to Cantina (${q.giver})`:`🍺 Go to Tavern (${q.giver})`));
     if(q.type==='deliver'){
       const r=RECIPES.find(r=>r.id===q.target);
       if(r){
@@ -6712,11 +6712,14 @@ function CindervaleAlchemistInner(){
 
       {/* ═══════════ MARKET ═══════════ */}
       {screen==='market'&&<>
-        <BackBar title={gameLocation==='ashfall'?'Desert Bazaar':'Market Square'} icon="🛒"/>
+        <BackBar title={gameLocation==='tidecrest'?'Harbor Market':gameLocation==='ashfall'?'Desert Bazaar':'Market Square'} icon="🛒"/>
         <div style={S.card}>
           <div style={{...S.row,marginBottom:8}}>
             <button style={S.btn(showShop?'gold':'def')} onClick={()=>{setShowShop(true);setDlgNpc(null);setQuestDlg(null);}}>🛒 Shop</button>
-            {gameLocation==='ashfall'?<>
+            {gameLocation==='tidecrest'?<>
+              <button style={S.btn(dlgNpc==='mako'?'gold':'def')} onClick={()=>openNpc('mako')}>💬 Mako</button>
+              <button style={S.btn(dlgNpc==='finn'?'gold':'def')} onClick={()=>openNpc('finn')}>💬 Finn</button>
+            </>:gameLocation==='ashfall'?<>
               <button style={S.btn(dlgNpc==='sola'?'gold':'def')} onClick={()=>openNpc('sola')}>💬 Sola</button>
               <button style={S.btn(dlgNpc==='razak'?'gold':'def')} onClick={()=>openNpc('razak')}>💬 Razak</button>
             </>:<button style={S.btn(dlgNpc==='brenna'?'gold':'def')} onClick={()=>openNpc('brenna')}>💬 Brenna</button>}
@@ -6761,7 +6764,7 @@ function CindervaleAlchemistInner(){
                 {qty>1&&<button style={S.btn()} onClick={()=>{modInv(id,-qty);setGold(g=>g+sp*qty);addLog(`Sold ${qty}× ${ig.icon}${ig.name}. (+${sp*qty}g)`,'info');}}>All ({sp*qty}g)</button>}
               </div>);})}
           </div>}
-          {(dlgNpc==='brenna'||dlgNpc==='sola'||dlgNpc==='razak')&&!showShop&&NPCS[dlgNpc]&&<NpcDlg npc={{...NPCS[dlgNpc],id:dlgNpc}} {...{dlgLine,setDlgLine,setDlgNpc,availQ,aQ,acceptQ,compQ,qP,qObj,S,questDlg,setQuestDlg,openNpc}}/>}
+          {(dlgNpc==='brenna'||dlgNpc==='sola'||dlgNpc==='razak'||dlgNpc==='mako'||dlgNpc==='finn')&&!showShop&&NPCS[dlgNpc]&&<NpcDlg npc={{...NPCS[dlgNpc],id:dlgNpc}} {...{dlgLine,setDlgLine,setDlgNpc,availQ,aQ,acceptQ,compQ,qP,qObj,S,questDlg,setQuestDlg,openNpc}}/>}
         </div>
         {/* ── Black Market (Merchant Fence) ── */}
         {getFeatureVal('blackMarket')&&<div style={{...S.card,borderColor:'#800040',background:TH.panel+'cc'}}>
@@ -6813,10 +6816,12 @@ function CindervaleAlchemistInner(){
 
       {/* ═══════════ TAVERN ═══════════ */}
       {screen==='tavern'&&<>
-        <BackBar title={gameLocation==='ashfall'?'Oasis Cantina':'Ember & Anvil'} icon="🍺"/>
+        <BackBar title={gameLocation==='tidecrest'?'Driftwood Tavern':gameLocation==='ashfall'?'Oasis Cantina':'Ember & Anvil'} icon="🍺"/>
         <div style={S.card}>
           <div style={{...S.row,marginBottom:8}}>
-            {gameLocation==='ashfall'
+            {gameLocation==='tidecrest'
+              ?['reva','sister_coral','old_anchor'].map(n=>NPCS[n]?<button key={n} style={S.btn(dlgNpc===n?'gold':'def')} onClick={()=>openNpc(n)}>{NPCS[n]?.icon} {NPCS[n]?.name}</button>:null)
+              :gameLocation==='ashfall'
               ?['amara','nahla','tarek'].map(n=>NPCS[n]?<button key={n} style={S.btn(dlgNpc===n?'gold':'def')} onClick={()=>openNpc(n)}>{NPCS[n]?.icon} {NPCS[n]?.name}</button>:null)
               :['tarn','holst','marta','gretta'].map(n=><button key={n} style={S.btn(dlgNpc===n?'gold':'def')} onClick={()=>openNpc(n)}>{NPCS[n]?.icon} {NPCS[n]?.name}</button>)}
           </div>
@@ -9151,7 +9156,7 @@ function CindervaleAlchemistInner(){
         {aQ.length===0&&activeBQ.length===0&&boardQ.length===0&&<div style={S.card}><div style={{color:TH.textDim,textAlign:'center',padding:8}}>
           <div style={{fontSize:16,marginBottom:4}}>The quest board is bare. The people of {locName} have needs — seek them out.</div>
           <div style={{marginTop:6,display:'flex',gap:6,justifyContent:'center'}}>
-            <GoBtn to="market" label="🛒 Visit Market" npc="brenna"/>
+            <GoBtn to="market" label="🛒 Visit Market" npc={gameLocation==='tidecrest'?'finn':gameLocation==='ashfall'?'sola':'brenna'}/>
             <GoBtn to="tavern" label="🍺 Visit Tavern"/>
           </div>
         </div></div>}
