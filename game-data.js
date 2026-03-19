@@ -741,7 +741,7 @@ var REGIONS=[
         weights:{sunpetal:28,starwort:24,dewdrop_lily:18,dream_pollen:14,moonpetal:10,flamekeeper_ember:6,palm_resin:7,spirit_sand:3,oasis_pearl:2}},
       {id:'af_lotus_pools',name:'Lotus Pools',icon:'🪷',desc:'Shallow warm pools where rare lotus flowers bloom at dawn.',
         weights:{moonpetal:28,dream_pollen:24,dewdrop_lily:18,flamekeeper_ember:14,starwort:10,sunpetal:6,palm_resin:3,spirit_sand:5,oasis_pearl:4}},
-    ],diff:3,unlock:4,time:2,yield:[2,4],dc:14,faction:'flamekeepers',fReq:2,
+    ],diff:3,unlock:4,time:2,yield:[2,4],dc:14,faction:'flamekeepers',fReq:1,
     flavor:['Water. Actual flowing water, in the middle of the desert. Impossibly lush.']},
   {id:'molten_vents',loc:'ashfall',name:'Molten Vents',icon:'🌋',color:'#6a2a2a',
     ingr:['magma_diamond','living_ember','forge_heart_shard','volcanic_essence','embervein','obsidian_shard','flamekeeper_ember','fire_opal','molten_pearl','sun_diamond','storm_glass'],pick:3,sites:[
@@ -2189,7 +2189,7 @@ var FACTIONS={ashwardens:{id:'ashwardens',loc:'cindervale',name:'Ashwardens',ico
   alignBonus:{name:'Stone Sibling',desc:'-20% shop prices, +2 forage yield, +40% rare find chance.',effects:{buyDiscount:0.20,forageYieldBonus:2,rareForageBonus:0.40}},
   tierBonuses:[
     {name:'Ore Discounts',desc:'-10% on all shop purchases.',effects:{buyDiscount:0.10}},
-    {name:'Rare Minerals',desc:'Unlock Cinderfolk rare mineral recipes.',effects:{}},
+    {name:'Rare Minerals',desc:'Unlocks Deep Mines. Unlock Cinderfolk rare mineral recipes.',effects:{}},
     {name:'Deep Crystals',desc:'Quests occasionally reward bonus Deep Crystals.',effects:{factionBonusDrop_deep_crystal:0.25}},
     {name:'Mining Crew',desc:'Foraging expeditions yield +1 extra item.',effects:{forageYieldBonus:1}},
     {name:'Stone Sibling',desc:'+25% rare find chance on expeditions.',effects:{rareForageBonus:0.25}},
@@ -2205,7 +2205,7 @@ var FACTIONS={ashwardens:{id:'ashwardens',loc:'cindervale',name:'Ashwardens',ico
   flamekeepers:{id:'flamekeepers',loc:'ashfall',name:'Flamekeepers',icon:'🕯️',color:'#d06030',res:'flamekeeper_ember',
     alignBonus:{name:'Flamekeeper Acolyte',desc:'+15% XP, free herbs, +1 Energy.',effects:{xpMultiplier:0.15,dailyHerbs:true,bonusEnergyPerDay:1}},
     tierBonuses:[
-      {name:'Temple Access',desc:'Oasis Grove unlocked early.',effects:{}},
+      {name:'Temple Access',desc:'Unlocks Oasis Grove.',effects:{}},
       {name:'Sacred Rites',desc:'+2 research, +1 craft.',effects:{researchBonus:2,craftBonus:1}},
       {name:'Eternal Flame',desc:'All checks +1. +1 Energy on quest.',effects:{craftBonus:1,enchantBonus:1,extractionBonus:1,questEnergyRestore:1}},
     ]},
@@ -2213,7 +2213,7 @@ var FACTIONS={ashwardens:{id:'ashwardens',loc:'cindervale',name:'Ashwardens',ico
     alignBonus:{name:'Dustwalker Scout',desc:'+2 extraction, danger reduced, +1 Energy.',effects:{extractionBonus:2,reducedRisk:0.25,bonusEnergyPerDay:1}},
     tierBonuses:[
       {name:'Trail Knowledge',desc:'Travel time -1 Ashfall regions.',effects:{}},
-      {name:'Desert Sense',desc:'+30% danger reduction. Mirage Bazaar access.',effects:{reducedRisk:0.30}},
+      {name:'Desert Sense',desc:'+30% danger reduction. Unlocks Mirage Bazaar.',effects:{reducedRisk:0.30}},
       {name:'Pathfinder',desc:'Target no yield penalty. +50% discovery.',effects:{targetNoYieldPenalty:true,discoveryChanceBonus:0.50}},
     ]},
 };
