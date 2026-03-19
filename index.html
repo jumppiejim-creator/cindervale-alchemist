@@ -47,9 +47,10 @@ if(typeof FACTIONS==='undefined'||typeof CLASSES==='undefined'||typeof RECIPES==
 
 // ── Threat Alert Vibes (extend EVENT_VIBES from game-data.js) ──
 // Safety: ensure Hollow March constants exist even if game-data.js is cached
-if(typeof HOLLOW_MARCH==='undefined')var HOLLOW_MARCH={triggerLevel:10,wavesForTorch:5,finalStandWave:10,waveInterval:function(w){return w<=3?{min:5,max:7}:w<=6?{min:4,max:5}:{min:3,max:4};},crisisCount:function(w){return w<=2?2:w<=5?3:w<=8?4:5;},baseDC:function(w){return 14+w;},goldCost:function(w){return 80+w*60+Math.floor(w*w*8);},potionQty:function(w){return Math.ceil(w*0.6)+1;},ingrQty:function(w){return 3+Math.ceil(w*1.2);},energyCost:function(w){return Math.min(4,1+Math.floor(w/3));},staffQty:function(w){return 1+Math.floor(w/4);},crisisReward:function(w){return{xp:60+w*25,gold:25+w*15};},masteryThreshold:5,masteryReward:function(w){return{xp:40+w*15,gold:20+w*10,threatReduc:3+w};},failurePenalty:function(w){return{threatSpike:12+w*2,staffInjury:true,ingrLossCount:3+Math.floor(w/2),goldLoss:20+w*15,upgradeDisableDays:w>=6?3:0};},waveRewards:function(w){return{xp:150+w*60,gold:60+w*30,threatReduc:5+Math.floor(w/2),recipeUnlock:w%3===0};},marchRecipes:['march_fortify','march_veilseal','march_rallying_cry','march_ironwall'],finalStandCrises:6,finalStandDCBonus:4,finalStandRewards:{xp:3000,gold:800,title:'Defender of the Vale',threatCap:25},waveFlavor:['Scouts report movement.','The ground trembles.','Patrols have gone silent.','Shadows mass at the edge.','The sky darkens.','Bells toll.','The Veil tears open.','Every faction rallies.','The earth groans.','This is the crucible.','The final wave.']};
-if(typeof CRISIS_TEMPLATES==='undefined')var CRISIS_TEMPLATES=[];
-if(typeof MARCH_RECIPES==='undefined')var MARCH_RECIPES=[];
+// NOTE: Do NOT use 'var' here — it creates hoisted local variables that shadow globals from game-data.js
+if(typeof HOLLOW_MARCH==='undefined')HOLLOW_MARCH={triggerLevel:10,wavesForTorch:5,finalStandWave:10,waveInterval:function(w){return w<=3?{min:5,max:7}:w<=6?{min:4,max:5}:{min:3,max:4};},crisisCount:function(w){return w<=2?2:w<=5?3:w<=8?4:5;},baseDC:function(w){return 14+w;},goldCost:function(w){return 80+w*60+Math.floor(w*w*8);},potionQty:function(w){return Math.ceil(w*0.6)+1;},ingrQty:function(w){return 3+Math.ceil(w*1.2);},energyCost:function(w){return Math.min(4,1+Math.floor(w/3));},staffQty:function(w){return 1+Math.floor(w/4);},crisisReward:function(w){return{xp:60+w*25,gold:25+w*15};},masteryThreshold:5,masteryReward:function(w){return{xp:40+w*15,gold:20+w*10,threatReduc:3+w};},failurePenalty:function(w){return{threatSpike:12+w*2,staffInjury:true,ingrLossCount:3+Math.floor(w/2),goldLoss:20+w*15,upgradeDisableDays:w>=6?3:0};},waveRewards:function(w){return{xp:150+w*60,gold:60+w*30,threatReduc:5+Math.floor(w/2),recipeUnlock:w%3===0};},marchRecipes:['march_fortify','march_veilseal','march_rallying_cry','march_ironwall'],finalStandCrises:6,finalStandDCBonus:4,finalStandRewards:{xp:3000,gold:800,title:'Defender of the Vale',threatCap:25},waveFlavor:['Scouts report movement.','The ground trembles.','Patrols have gone silent.','Shadows mass at the edge.','The sky darkens.','Bells toll.','The Veil tears open.','Every faction rallies.','The earth groans.','This is the crucible.','The final wave.']};
+if(typeof CRISIS_TEMPLATES==='undefined')CRISIS_TEMPLATES=[];
+if(typeof MARCH_RECIPES==='undefined')MARCH_RECIPES=[];
 if(typeof DEF!=='undefined'&&!DEF.hollowMarch)DEF.hollowMarch={active:false,wave:0,nextWaveDay:0,demands:[],history:[],finalStandAvailable:false,finalStandComplete:false,marchRecipesUnlocked:[]};
 if(typeof EVENT_VIBES!=='undefined'){
   EVENT_VIBES.threat_rise={bg:'linear-gradient(160deg,#1a1008,#2a1a0a)',border:'#c08030',text:'#e8c060',
@@ -352,7 +353,7 @@ function CindervaleAlchemistInner(){
   const lf=id=>locFaction(id,gameLocation);
   const lt=id=>locThreat(id,gameLocation);
   const locFactions=Object.fromEntries(Object.entries(FACTIONS).filter(([,f])=>!f.loc||f.loc===gameLocation));
-  const locQuests=QUESTS.filter(q=>{if(q.id.startsWith('aq'))return gameLocation==='ashfall';if(q.id.startsWith('q')&&!q.id.startsWith('q '))return gameLocation==='cindervale';if(q.id.startsWith('fc_')){const ashChains=['fc_sm','fc_fk','fc_dw'];return ashChains.some(p=>q.id.startsWith(p))?gameLocation==='ashfall':gameLocation==='cindervale';}return true;});
+  const locQuests=QUESTS.filter(q=>{if(q.id.startsWith('aq'))return gameLocation==='ashfall';if(q.id.startsWith('tq'))return gameLocation==='tidecrest';if(q.id.startsWith('q')&&!q.id.startsWith('q '))return gameLocation==='cindervale';if(q.id.startsWith('fc_')){const ashChains=['fc_sm','fc_fk','fc_dw'];const tcChains=['fc_hg','fc_pd','fc_tk','fc_mm'];if(ashChains.some(p=>q.id.startsWith(p)))return gameLocation==='ashfall';if(tcChains.some(p=>q.id.startsWith(p)))return gameLocation==='tidecrest';return gameLocation==='cindervale';}return true;});
   const locApprentices=AP_POOL.filter(a=>!a.loc||a.loc===gameLocation);
 
   // Ingredients available at current location (computed from locRegions + mapped hidden areas)
@@ -787,7 +788,9 @@ function CindervaleAlchemistInner(){
       const maxTier=apothLv>=10?3:apothLv>=6?2:1;
       const available=CLINIC_AILMENTS.filter(a=>a.tier<=maxTier);
       const patients=[];
-      const patientNames=gameLocation==='ashfall'
+      const patientNames=gameLocation==='tidecrest'
+        ?['Seasick Sailor','Dock Worker','Pearl Diver Recruit','Tavern Regular','Ship\'s Cook','Fisherman','Harbor Guard','Net Mender','Lighthouse Keeper\'s Son','Crab Trapper']
+        :gameLocation==='ashfall'
         ?['Dehydrated Nomad','Young Pilgrim','Dustwalker Scout','Cantina Regular','Guild Apprentice','Desert Traveler','Caravan Driver','Bazaar Vendor','Smith\'s Daughter','Sand Runner']
         :['Elderly Miner','Young Farmer','Ashwarden Recruit','Tavern Regular','Cinderfolk Worker','Pilgrim','Traveling Peddler','Quarry Hand','Blacksmith\'s Wife','Shepherd Boy'];
       for(let i=0;i<clinicN&&available.length>0;i++){
@@ -823,7 +826,9 @@ function CindervaleAlchemistInner(){
       const maxLayers=wkLv>=6?3:2;
       const available=SHIELD_COMMISSIONS.filter(c=>c.tier<=maxTier&&c.layers.length<=maxLayers&&!c.threatReq);
       const commissions=[];
-      const commNames=gameLocation==='ashfall'
+      const commNames=gameLocation==='tidecrest'
+        ?['Harbor Guard','Pearl Diver','Ship\'s Mate','Dock Foreman','Lighthouse Keeper','Fisherman','Merchant Sailor','Tidekeeper Acolyte']
+        :gameLocation==='ashfall'
         ?['Desert Guard','Dustwalker Scout','Traveling Merchant','Young Pilgrim','Forge Apprentice','Temple Acolyte','Caravan Master','Crossing Elder']
         :['Grizzled Miner','Ashwarden Sergeant','Traveling Scholar','Young Recruit','Forge Worker','Veilwalker Initiate','Caravan Guard','Village Elder'];
       for(let i=0;i<commissionN&&available.length>0;i++){
@@ -1820,7 +1825,7 @@ function CindervaleAlchemistInner(){
       }],idx:0});
     }
   };
-  const marchWavesCleared=(hollowMarch?.history||[]).filter(h=>h.met===h.total).length+((hollowMarch?.demands||[]).every(d=>d.resolved&&d.result?.success)&&hollowMarch?.wave>0&&(hollowMarch?.demands||[]).length>0?1:0);
+  const marchWavesCleared=(hollowMarch?.history||[]).filter(h=>h.met===h.total&&h.total>0).length+((hollowMarch?.demands||[]).every(d=>d.resolved&&d.result?.success)&&hollowMarch?.wave>0&&(hollowMarch?.demands||[]).length>0?1:0);
   const canPassTorch=getLvl(xp)>=9&&(marchWavesCleared>=(typeof HOLLOW_MARCH!=='undefined'?HOLLOW_MARCH.wavesForTorch:5)||hollowMarch?.finalStandComplete);
 
     // ═══ BRAND HELPERS (Brand Master) ═══
@@ -2456,7 +2461,7 @@ function CindervaleAlchemistInner(){
     const baseGold=15+ailment.tier*12;const baseXp=20+ailment.tier*15;
     const goldReward=Math.floor(baseGold*matchMult*(1+getSkMod('haggling')*0.03));
     const xpReward=Math.floor(baseXp*matchMult);
-    const locFacs=gameLocation==='ashfall'?['flamekeepers','sand_merchants','dustwalkers']:['hearthkeepers','cinderfolk','ashwardens'];
+    const locFacs=gameLocation==='tidecrest'?['tidekeepers','harbormasters','pearl_divers']:gameLocation==='ashfall'?['flamekeepers','sand_merchants','dustwalkers']:['hearthkeepers','cinderfolk','ashwardens'];
     const repFaction=ailment.tier>=3?locFacs[0]:locFacs[Math.floor(Math.random()*locFacs.length)];
     const repReward=matchQuality==='great'?10+ailment.tier*5:matchQuality==='good'?5:0;
     if(goldReward>0)setGold(g=>g+goldReward);
@@ -3122,7 +3127,7 @@ function CindervaleAlchemistInner(){
     // Lv10: chance of rare ingredient trade
     let tradeResult='';
     if(rcLv>=10&&Math.random()<0.35){
-      const rareIngr=gameLocation==='ashfall'?['moonpetal','volcanic_essence','embervein','starwort','heatstone','ashite']:['moonpetal','volcanic_essence','embervein','starwort','deep_crystal','ashite'];
+      const rareIngr=gameLocation==='tidecrest'?['deep_coral','abyssal_pearl','reef_crystal','living_coral','giant_clam_pearl','nautilus_shell']:gameLocation==='ashfall'?['moonpetal','volcanic_essence','embervein','starwort','heatstone','ashite']:['moonpetal','volcanic_essence','embervein','starwort','deep_crystal','ashite'];
       const tradeId=rareIngr[Math.floor(Math.random()*rareIngr.length)];
       setInv(p=>({...p,[tradeId]:(p[tradeId]||0)+1}));
       tradeResult='\n⭐ The buyer offers a trade: '+(INGR[tradeId]?.icon||tradeId)+' '+(INGR[tradeId]?.name||tradeId)+'!';
@@ -3301,7 +3306,7 @@ function CindervaleAlchemistInner(){
       const arcLv=classLevels.scholar||0;
       const fragChance=arcLv>=10?0.50:arcLv>=6?0.40:0.30;
       if(Math.random()<fragChance){
-        const qFaction=q.faction?[q.faction]:[gameLocation==='ashfall'?'flamekeepers':'hearthkeepers'];
+        const qFaction=q.faction?[q.faction]:[gameLocation==='tidecrest'?'tidekeepers':gameLocation==='ashfall'?'flamekeepers':'hearthkeepers'];
         const undiscovered=ALL_LORE_FRAGMENTS.filter(f=>!loreFragments.includes(f.id)&&f.factions.some(ff=>qFaction.includes(ff)));
         if(undiscovered.length>0){
           const frag=undiscovered[Math.floor(Math.random()*undiscovered.length)];
@@ -3357,7 +3362,7 @@ function CindervaleAlchemistInner(){
     if(specs.scholar==='archivist'){
       const arcLv=classLevels.scholar||0;const fragChance=arcLv>=10?0.50:arcLv>=6?0.40:0.30;
       if(Math.random()<fragChance){
-        const bqFaction=bq.faction?[bq.faction]:[gameLocation==='ashfall'?'flamekeepers':'hearthkeepers'];
+        const bqFaction=bq.faction?[bq.faction]:[gameLocation==='tidecrest'?'tidekeepers':gameLocation==='ashfall'?'flamekeepers':'hearthkeepers'];
         const undiscovered=ALL_LORE_FRAGMENTS.filter(f=>!loreFragments.includes(f.id)&&f.factions.some(ff=>bqFaction.includes(ff)));
         if(undiscovered.length>0){const frag=undiscovered[Math.floor(Math.random()*undiscovered.length)];
           setLoreFragments(prev=>[...prev,frag.id]);const chain=LORE_CHAINS[frag.chainId];const fragXp=arcLv>=6?40:20;gainXP(fragXp);
@@ -3738,8 +3743,8 @@ function CindervaleAlchemistInner(){
     const gib=getFeatureVal('goldIncomeBonus');
     if(gib>0){setGold(g=>g+gib);report.push({n:'Class Income',i:'💰',r:`+${gib}g`,t:'ok'});}
     if(upEff('dailyRep')>0)Object.keys(fRep).forEach(f=>addRep(f,upEff('dailyRep')));
-    if(hasUp('garden')){const pool=gameLocation==='ashfall'?['sunpetal','scorchroot']:['ashbloom','ironroot_bark'];const h=pool[Math.floor(Math.random()*pool.length)];const q=1+Math.floor(Math.random()*2);modInv(h,q);report.push({n:'Garden',i:'🌱',r:`${INGR[h]?.icon||''}×${q}`,t:'ok'});}
-    if(hasUp('garden_2')){const pool=gameLocation==='ashfall'?['dewdrop_lily','crystal_salt']:['moonpetal','starwort'];const h=pool[Math.floor(Math.random()*pool.length)];modInv(h,1);report.push({n:'Greenhouse',i:'🌿',r:`${INGR[h]?.icon||''}`,t:'ok'});}
+    if(hasUp('garden')){const pool=gameLocation==='tidecrest'?['kelp_frond','tide_moss']:gameLocation==='ashfall'?['sunpetal','scorchroot']:['ashbloom','ironroot_bark'];const h=pool[Math.floor(Math.random()*pool.length)];const q=1+Math.floor(Math.random()*2);modInv(h,q);report.push({n:'Garden',i:'🌱',r:`${INGR[h]?.icon||''}×${q}`,t:'ok'});}
+    if(hasUp('garden_2')){const pool=gameLocation==='tidecrest'?['coral_shard','pearl_dust']:gameLocation==='ashfall'?['dewdrop_lily','crystal_salt']:['moonpetal','starwort'];const h=pool[Math.floor(Math.random()*pool.length)];modInv(h,1);report.push({n:'Greenhouse',i:'🌿',r:`${INGR[h]?.icon||''}`,t:'ok'});}
     if(hasUp('leyline')&&Math.random()<.25){const item=li('veil_shard');modInv(item,1);report.push({n:'Ley Line',i:'⚡',r:(INGR[item]?.name||item)+'!',t:'ok'});}
     // forageOnRest: passive overnight foraging
     if(getFeatureVal('forageOnRest')){
@@ -3806,9 +3811,9 @@ function CindervaleAlchemistInner(){
     // Natural decay (only kicks in above 10 — threats build up before they erode)
     locThreatIds.forEach(tid=>{if((newThreats[tid]||0)>10)newThreats[tid]=Math.max(0,newThreats[tid]-1);});
     // Faction rep decay: -1 per threat if Trusted (Lv3+) with relevant mitigating faction
-    const facMit0=gameLocation==='ashfall'?['dustwalkers']:['ashwardens'];
-    const facMit1=gameLocation==='ashfall'?['flamekeepers']:['cinderfolk'];
-    const facMit2=gameLocation==='ashfall'?['flamekeepers']:['veilwalkers'];
+    const facMit0=gameLocation==='tidecrest'?['harbormasters']:gameLocation==='ashfall'?['dustwalkers']:['ashwardens'];
+    const facMit1=gameLocation==='tidecrest'?['tidekeepers']:gameLocation==='ashfall'?['flamekeepers']:['cinderfolk'];
+    const facMit2=gameLocation==='tidecrest'?['tidekeepers']:gameLocation==='ashfall'?['flamekeepers']:['veilwalkers'];
     if(facMit0.some(f=>getRepLvl(fRep[f]||0)>=3))newThreats[locThreatIds[0]]=Math.max(0,(newThreats[locThreatIds[0]]||0)-1);
     if(facMit1.some(f=>getRepLvl(fRep[f]||0)>=3))newThreats[locThreatIds[1]]=Math.max(0,(newThreats[locThreatIds[1]]||0)-1);
     if(facMit2.some(f=>getRepLvl(fRep[f]||0)>=3))newThreats[locThreatIds[2]]=Math.max(0,(newThreats[locThreatIds[2]]||0)-1);
@@ -3980,7 +3985,7 @@ function CindervaleAlchemistInner(){
       }
       // Record resolved crises in history
       const metCount=prevDemands.filter(d=>d.resolved&&d.result?.success).length;
-      if(updMarch.wave>0){
+      if(updMarch.wave>0&&prevDemands.length>0){
         updMarch.history.push({wave:updMarch.wave,met:metCount,total:prevDemands.length,day:curDay});
       }
       // Advance wave
@@ -4214,7 +4219,9 @@ function CindervaleAlchemistInner(){
     }
     setProcureItems(procList);
     setDailyReport(report);const custResult=genCust();
-    const DAY_FLAVOR=gameLocation==='ashfall'
+    const DAY_FLAVOR=gameLocation==='tidecrest'
+      ?['Dawn breaks over Tidecrest Harbor. Gulls wheel above the fishing boats.','The tide horn sounds across the docks. Another day at sea.','Another day begins — the scent of salt and kelp fills the workshop.','Fishermen haul their catch as the harbor market stirs to life.','Morning fog rolls off the cliffs as Tidecrest wakes.']
+      :gameLocation==='ashfall'
       ?['Dawn breaks over the Crossing. Heat already shimmers on the sand.','The morning call to prayer echoes from the Flamekeeper shrine.','Another day begins — the scent of spice and sand fills the air.','The bazaar stirs as merchants unroll their awnings.','Warm wind sweeps through Ashfall Crossing as the sun climbs.']
       :['Dawn breaks over Cindervale. Smoke curls from the workshop chimney.','The morning bell rings across the village square.','Another day begins — the scent of ash and hearthfire fills the air.','Birdsong mixes with the distant clang of the smithy as you open shop.','Mist clings to the cobblestones as Cindervale stirs to life.'];
     addLog('🌅 '+DAY_FLAVOR[Math.floor(Math.random()*DAY_FLAVOR.length)]+' Day '+(day+1)+'. '+baseH+' hours ahead.'+(hiredAppr.length>0?' '+hiredAppr.length+' staff report for duty.':''),'story');
@@ -4416,7 +4423,7 @@ function CindervaleAlchemistInner(){
           } else {clockLines.push({icon:'🤖',label:'Attempted '+r.icon+r.name+' — failed',val:'',color:TH.red});}
         } else {clockLines.push({icon:'🤖',label:'No brewable recipes available',val:'idle',color:TH.textDim});}
       } else if(task==='forage'){
-        const common=gameLocation==='ashfall'?['sunpetal','dustite','scorchroot','ash_salt','dried_cactus']:['ashbloom','embercap','ironroot_bark','char_root','bark_resin'];
+        const common=gameLocation==='tidecrest'?['kelp_frond','sea_salt','barnacle','tide_moss','sand_dollar']:gameLocation==='ashfall'?['sunpetal','dustite','scorchroot','ash_salt','dried_cactus']:['ashbloom','embercap','ironroot_bark','char_root','bark_resin'];
         const found=Math.max(1,Math.floor(eff*2));
         const items={};for(let i=0;i<found;i++){const id=common[Math.floor(Math.random()*common.length)];items[id]=(items[id]||0)+1;}
         setInv(p=>{const n={...p};Object.entries(items).forEach(([id,q])=>{n[id]=(n[id]||0)+q;});return n;});
@@ -4434,13 +4441,13 @@ function CindervaleAlchemistInner(){
       const bpLines=[];const sanctum=completedBPs.find(b=>b.bpId==='bp_sanctum');const mult=sanctum?1.5:1;
       // Rain Collector
       const rain=completedBPs.find(b=>b.bpId==='bp_rain');
-      if(rain){const n=Math.floor(2*mult);const common=gameLocation==='ashfall'?['sunpetal','dustite','scorchroot','ash_salt','crystal_salt','dried_cactus','sand_glass','salt_flake']:['ashbloom','embercap','ironroot_bark','char_root','bark_resin','ash_salt','cinder_moss','ember_petal'];
+      if(rain){const n=Math.floor(2*mult);const common=gameLocation==='tidecrest'?['kelp_frond','sea_salt','barnacle','tide_moss','sand_dollar','crab_shell','sea_glass','foam_bloom']:gameLocation==='ashfall'?['sunpetal','dustite','scorchroot','ash_salt','crystal_salt','dried_cactus','sand_glass','salt_flake']:['ashbloom','embercap','ironroot_bark','char_root','bark_resin','ash_salt','cinder_moss','ember_petal'];
         const items={};for(let i=0;i<n;i++){const id=common[Math.floor(Math.random()*common.length)];items[id]=(items[id]||0)+1;}
         setInv(p=>{const nn={...p};Object.entries(items).forEach(([id,q])=>{nn[id]=(nn[id]||0)+q;});return nn;});
         bpLines.push({icon:'💧',label:'Rain Collector',val:Object.entries(items).map(([id,q])=>(INGR[id]?.icon||id)+'×'+q).join(' '),color:TH.green});}
       // Supply Tunnel
       const tunnel=completedBPs.find(b=>b.bpId==='bp_tunnel');
-      if(tunnel){const n=Math.floor(3*mult);const mid=gameLocation==='ashfall'?['crystal_salt','obsidian_shard','ashite','brine_moss','heatstone','desert_iron','scorchroot']:['moonpetal','gloomcap','ashite','volcanic_essence','ironroot_bark','hearthstone','embercap'];
+      if(tunnel){const n=Math.floor(3*mult);const mid=gameLocation==='tidecrest'?['coral_shard','pearl_dust','nautilus_shell','sponge_extract','salt_crystal','phosphor_moss','brine_crystal']:gameLocation==='ashfall'?['crystal_salt','obsidian_shard','ashite','brine_moss','heatstone','desert_iron','scorchroot']:['moonpetal','gloomcap','ashite','volcanic_essence','ironroot_bark','hearthstone','embercap'];
         const items={};for(let i=0;i<n;i++){const id=mid[Math.floor(Math.random()*mid.length)];items[id]=(items[id]||0)+1;}
         setInv(p=>{const nn={...p};Object.entries(items).forEach(([id,q])=>{nn[id]=(nn[id]||0)+q;});return nn;});
         bpLines.push({icon:'🚇',label:'Supply Tunnel',val:Object.entries(items).map(([id,q])=>(INGR[id]?.icon||id)+'×'+q).join(' '),color:TH.green});}
@@ -4692,7 +4699,9 @@ function CindervaleAlchemistInner(){
       if(compLines.length>0)mrSections.push({title:'🦊 Companions',lines:compLines});
     }
     // Always show morning report
-    const MR_FLAVOR=gameLocation==='ashfall'
+    const MR_FLAVOR=gameLocation==='tidecrest'
+      ?['Dawn breaks over Tidecrest Harbor. Gulls wheel above the fishing boats.','The tide horn sounds across the docks. Another day at sea.','Another day begins — the scent of salt and kelp fills the workshop.','Fishermen haul their catch as the harbor market stirs to life.','Morning fog rolls off the cliffs as Tidecrest wakes.','The sun glitters on the harbor. Ships rock gently at their moorings.','A salt breeze carries the cry of gulls through the open window.','You wake to the creak of rigging and the splash of the first divers.']
+      :gameLocation==='ashfall'
       ?['Dawn breaks over the Crossing. Heat already shimmers on the sand.','The morning call to prayer echoes from the Flamekeeper shrine.','Another day begins — the scent of spice and sand fills the air.','The bazaar stirs as merchants unroll their awnings.','Warm wind sweeps through Ashfall Crossing as the sun climbs.','The sun crests the dunes, painting the sand in copper and gold.','A dry breeze carries the scent of scorchroot through the streets.','You wake to the sound of camel bells as the first caravan departs.']
       :['Dawn breaks over Cindervale. Smoke curls from the workshop chimney.','The morning bell rings across the village square.','Another day begins — the scent of ash and hearthfire fills the air.','Birdsong mixes with the distant clang of the smithy as you open shop.','Mist clings to the cobblestones as Cindervale stirs to life.','The sun crests the eastern ridge, painting the rooftops in amber.','A cool breeze carries the scent of ashbloom through the village.','You wake to the rhythmic tapping of the notice board being updated.'];
     const seasonFlavor=curSeason.flavor?curSeason.flavor[Math.floor(Math.random()*curSeason.flavor.length)]:null;
@@ -4749,11 +4758,11 @@ function CindervaleAlchemistInner(){
   if(contractsWaiting>0)alerts.push({text:contractsWaiting+' venom contract'+(contractsWaiting!==1?'s':'')+' available.',to:'workshop',label:'☠️ Contracts'});
   const commissionsWaiting=shieldCommissions.filter(c=>!c.done).length;
   if(commissionsWaiting>0)alerts.push({text:commissionsWaiting+' shield commission'+(commissionsWaiting!==1?'s':'')+' waiting.',to:'workshop',label:'🛡️ Commissions'});
-  if(day===1&&aQ.length===0&&screen!=='quests')alerts.push(gameLocation==='ashfall'?{text:'Sola at the Bazaar needs an alchemist. Introduce yourself.',to:'market',label:'🛒 Visit Sola',npc:'sola'}:{text:'Brenna at the Market has work for a new alchemist. Introduce yourself.',to:'market',label:'🛒 Visit Brenna',npc:'brenna'});
+  if(day===1&&aQ.length===0&&screen!=='quests')alerts.push(gameLocation==='tidecrest'?{text:'Finn at the Harbor Market is looking for an alchemist. Introduce yourself.',to:'market',label:'🛒 Visit Finn',npc:'finn'}:gameLocation==='ashfall'?{text:'Sola at the Bazaar needs an alchemist. Introduce yourself.',to:'market',label:'🛒 Visit Sola',npc:'sola'}:{text:'Brenna at the Market has work for a new alchemist. Introduce yourself.',to:'market',label:'🛒 Visit Brenna',npc:'brenna'});
   if(hours<=0&&screen!=='map')alerts.push({text:'The day\'s hours are spent. Time to rest and let tomorrow bring new work.',to:'map',label:'🏘️ '+locName});
   const readyBQ=activeBQ.filter(bq=>{const p=bqProgress(bq);return p.c>=p.n;});
   if(readyBQ.length>0)alerts.push({text:readyBQ.length+' board request'+(readyBQ.length>1?'s':'')+' ready to turn in!',to:'quests',label:'📌 Notice Board'});
-  if(dayFlags.includes('bargain_day'))alerts.push({text:gameLocation==='ashfall'?'🏷️ Razak\'s running a sale — shop prices halved today!':'🏷️ Brenna\'s running a sale — shop prices halved today!',to:'market',label:'🛒 Market'});
+  if(dayFlags.includes('bargain_day'))alerts.push({text:gameLocation==='tidecrest'?'🏷️ Finn\'s running a sale — shop prices halved today!':gameLocation==='ashfall'?'🏷️ Razak\'s running a sale — shop prices halved today!':'🏷️ Brenna\'s running a sale — shop prices halved today!',to:'market',label:'🛒 Market'});
   if(dayFlags.includes('clear_sky'))alerts.push({text:'☀️ Clear skies — extraction DCs reduced by 2 in the wilds.',to:'worldmap',label:'🗺️ Wilds'});
   if(dayFlags.includes('ash_storm'))alerts.push({text:'⚠️ Ash storm — expedition travel times +1h today.',to:'worldmap',label:'🗺️ Wilds'});
 
@@ -5121,23 +5130,36 @@ function CindervaleAlchemistInner(){
               const c=CLASSES[startingClass];
               const locN=LOCATIONS[gameLocation]?.name||'Cindervale';
               const isAsh=gameLocation==='ashfall';
+              const isTc=gameLocation==='tidecrest';
               const CLASS_INTROS={
-                alchemist:isAsh
+                alchemist:isTc
+                  ?`${charName} the ${c.name} hauls a salt-stained satchel up the harbor steps. The workshop overlooks the docks — gulls wheel overhead and the air tastes of brine and possibility. Where there's kelp, there's work.`
+                  :isAsh
                   ?`${charName} the ${c.name} steps through the Crossing's sun-bleached gates, a leather satchel heavy with tinctures. The heat is staggering, but the smell of desert spice and rare herbs fills the air — where there's sunpetal, there's work.`
                   :`${charName} the ${c.name} steps through Cindervale's gates, a leather satchel heavy with tinctures and a well-thumbed recipe journal. The village is smaller than expected, but the hearth smoke carries the scent of ashbloom — and where there's ashbloom, there's work to be done.`,
-                enchanter:isAsh
+                enchanter:isTc
+                  ?`${charName} the ${c.name} steps off the gangplank with ink-stained fingers and a waterproof case of inscription tools. The tidal ley lines pulse beneath the harbor like a second heartbeat. Perfect.`
+                  :isAsh
                   ?`${charName} the ${c.name} arrives at the Crossing with ink-stained fingers and a case of inscription tools. The desert ley lines are wild and untamed — you can feel them crackling beneath the sand. A perfect challenge.`
                   :`${charName} the ${c.name} arrives in Cindervale with ink-stained fingers and a case of inscription tools. The ley lines here are strong — you can feel them humming beneath the cobblestones. A perfect place to practice the art.`,
-                artificer:isAsh
+                artificer:isTc
+                  ?`${charName} the ${c.name} surveys Tidecrest with a shipwright's eye. Salt-eaten timber, corroded winches, leaky hulls everywhere... this harbor needs an engineer desperately. You unpack your tools. Time to build.`
+                  :isAsh
                   ?`${charName} the ${c.name} surveys the Crossing with a craftsman's eye. Sand-blasted walls, improvised plumbing, jury-rigged cooling systems... this place needs an engineer. You unpack your tools. Time to build something that lasts.`
                   :`${charName} the ${c.name} surveys Cindervale with a craftsman's eye. The workshop chimney is sound, the water supply reliable, the supply chains... improvable. You unpack your calibration tools. Time to build something efficient.`,
-                scholar:isAsh
+                scholar:isTc
+                  ?`${charName} the ${c.name} ducks into the harbor archive — a cramped room above the tavern, reeking of mildew. But the Drowned Sanctum lies offshore, sealed for millennia. You open your waterproof notebook.`
+                  :isAsh
                   ?`${charName} the ${c.name} enters the Crossing's cramped archive — sand-damaged scrolls and a cracked reading stone. But the Buried Temple holds secrets no library in the known world can match. You open your notebook.`
                   :`${charName} the ${c.name} enters Cindervale's modest library — three shelves and a reading desk — and smiles. The village has untapped potential, and you brought a notebook full of theories to test. Knowledge is the greatest catalyst.`,
-                merchant:isAsh
+                merchant:isTc
+                  ?`${charName} the ${c.name} watches the harbor market with calculating eyes. Ships unload exotic cargo while captains haggle over dock fees. You smell opportunity on the salt wind. Best corner stall. Sign up. Open for business.`
+                  :isAsh
                   ?`${charName} the ${c.name} watches the Bazaar's chaos with calculating eyes. Gold changes hands faster here than anywhere — but so do lies. You find the best corner stall, hang your sign, and prepare to outmaneuver them all.`
                   :`${charName} the ${c.name} counts the coins in the village square fountain — seven copper, one tarnished silver. This economy needs help, and you're just the one to provide it. You find the best corner stall and hang your sign.`,
-                warden:isAsh
+                warden:isTc
+                  ?`${charName} the ${c.name} stands on the cliff edge and watches the sea churn below. Tidal pools, kelp forests, fog-shrouded caves, and the deep trench beyond. The ocean is merciless and wild. You shoulder your diving pack and head for the shore.`
+                  :isAsh
                   ?`${charName} the ${c.name} crests a dune above the Crossing and squints against the glare. Scorched flats, obsidian wastes, sandworm tunnels beyond. The desert is merciless and wild. You shoulder your pack and head for the trails.`
                   :`${charName} the ${c.name} crests the ridge above Cindervale and breathes deep. Ashfields to the east, whispering woods to the north, volcanic vents beyond. The land here is rich and wild. You shoulder your pack and head for the trails.`,
               };
@@ -5145,9 +5167,11 @@ function CindervaleAlchemistInner(){
               addLog('💡 You have 4 skill points to spend! Visit Your Quarters on the map.','level');setPhase('play');
               const initBQ=genBoardQuests(0,1,0,gameLocation);setBoardQ(initBQ);
               const initCust=genCust();
-              const firstNPC=isAsh?{icon:'🛒',text:'Sola at the Bazaar has work for you.',to:'market',label:'🛒 Meet Sola',color:TH.gold,npc:'sola'}
+              const firstNPC=isTc?{icon:'🛒',text:'Finn at the Harbor Market has work for you.',to:'market',label:'🛒 Meet Finn',color:TH.gold,npc:'finn'}
+                :isAsh?{icon:'🛒',text:'Sola at the Bazaar has work for you.',to:'market',label:'🛒 Meet Sola',color:TH.gold,npc:'sola'}
                 :{icon:'🛒',text:'Brenna at the Market has work for you.',to:'market',label:'🛒 Meet Brenna',color:TH.gold,npc:'brenna'};
-              const firstRegion=isAsh?{icon:'🗺️',text:'The Sunscorch Flats are open for foraging.',to:'worldmap',label:'🗺️ Explore',color:TH.teal}
+              const firstRegion=isTc?{icon:'🗺️',text:'The Driftwood Shores are open for foraging.',to:'worldmap',label:'🗺️ Explore',color:TH.teal}
+                :isAsh?{icon:'🗺️',text:'The Sunscorch Flats are open for foraging.',to:'worldmap',label:'🗺️ Explore',color:TH.teal}
                 :{icon:'🗺️',text:'The Ashfields are open for foraging.',to:'worldmap',label:'🗺️ Explore',color:TH.teal};
               const initNews=[{icon:'📊',text:'Welcome! You have 4 skill points to spend.',to:'character',label:'📊 Your Quarters',color:TH.purple},firstNPC,firstRegion,{icon:'📌',text:initBQ.length+' requests on the village notice board.',to:'quests',label:'📜 Quests',color:TH.cyan}];
               if((initCust.ench||0)+(initCust.pot||0)>0){const cp=[];if(initCust.ench>0)cp.push(initCust.ench+' enchant');if(initCust.pot>0)cp.push(initCust.pot+' potion');initNews.push({icon:'🛒',text:cp.join(' & ')+' customer'+(((initCust.ench||0)+(initCust.pot||0))>1?'s':'')+' waiting!',to:'enchant',label:'🛒 Customers',color:TH.purple});}
@@ -6643,9 +6667,9 @@ function CindervaleAlchemistInner(){
           {/* Buildings — 4×2 grid */}
           <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(90px,1fr))',gap:8,position:'relative',zIndex:1}}>
             <MapB icon="⚗️" name="Workshop" screen="workshop" color={TH.green} sub={`${upgrades.length} upgrades`}/>
-            <MapB icon="🛒" name={gameLocation==='ashfall'?'Bazaar':'Market'} screen="market" color={TH.gold} sub={gameLocation==='ashfall'?'Shop · Sola · Razak':'Shop · Brenna'}/>
-            <MapB icon="🍺" name={gameLocation==='ashfall'?'Oasis Cantina':'Ember & Anvil'} screen="tavern" color={TH.ember} sub={gameLocation==='ashfall'?'Amara · Nahla · Tarek':'Tavern · NPCs'}/>
-            <MapB icon="🗺️" name={gameLocation==='ashfall'?'Desert Gates':'Village Gates'} screen="worldmap" color={TH.teal} sub={`⚡${hours} to explore`}/>
+            <MapB icon="🛒" name={gameLocation==='tidecrest'?'Harbor Market':gameLocation==='ashfall'?'Bazaar':'Market'} screen="market" color={TH.gold} sub={gameLocation==='tidecrest'?'Shop · Mako · Finn':gameLocation==='ashfall'?'Shop · Sola · Razak':'Shop · Brenna'}/>
+            <MapB icon="🍺" name={gameLocation==='tidecrest'?'Driftwood Tavern':gameLocation==='ashfall'?'Oasis Cantina':'Ember & Anvil'} screen="tavern" color={TH.ember} sub={gameLocation==='tidecrest'?'Reva · Old Anchor':gameLocation==='ashfall'?'Amara · Nahla · Tarek':'Tavern · NPCs'}/>
+            <MapB icon="🗺️" name={gameLocation==='tidecrest'?'Harbor Docks':gameLocation==='ashfall'?'Desert Gates':'Village Gates'} screen="worldmap" color={TH.teal} sub={`⚡${hours} to explore`}/>
 
             <MapB icon="📜" name="Quest Board" screen="quests" color={TH.cyan} note={questNote}/>
             <MapB icon="👥" name="Staff Hall" screen="staff" color={TH.orange} sub={`${hiredAppr.length}/${maxAppr}`} note={staffNote}/>
