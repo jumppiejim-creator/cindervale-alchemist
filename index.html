@@ -4202,7 +4202,7 @@ function CindervaleAlchemistInner(){
     const procMod=getSkMod('procurement');const procList=[];
     const restockB=getFeatureVal('shopRestockBonus');
     const rareIngr=new Set();locRegions.filter(r=>r.diff>=3&&level>=regUnlock(r)).forEach(r=>r.ingr.forEach(id=>rareIngr.add(id)));
-    const alreadyInShop=new Set(SHOP_I.map(s=>s.id));
+    const alreadyInShop=new Set(SHOP_I.filter(s=>!s.loc||s.loc===gameLocation).map(s=>s.id));
     const rarePool=[...rareIngr].filter(id=>!alreadyInShop.has(id));
     if(procMod>0||restockB>0){
       rarePool.forEach(id=>{
@@ -6722,7 +6722,7 @@ function CindervaleAlchemistInner(){
           </div>
           {showShop&&<div>
             <div style={{fontSize:16,color:TH.gold,marginBottom:4}}>Buy Ingredients{dayFlags.includes('bargain_day')?' — 🏷️ Half Price Today!':''}</div>
-            {[...SHOP_I].sort((a,b)=>(INGR[a.id]?.name||'').localeCompare(INGR[b.id]?.name||'')).map(item=>{let bp=getBuyPrice(Math.max(1,item.price-Math.floor(getSkMod('haggling')/2)));if(dayFlags.includes('bargain_day'))bp=Math.max(1,Math.floor(bp/2));const have=inv[item.id]||0;return(
+            {[...SHOP_I].filter(s=>!s.loc||s.loc===gameLocation).sort((a,b)=>(INGR[a.id]?.name||'').localeCompare(INGR[b.id]?.name||'')).map(item=>{let bp=getBuyPrice(Math.max(1,item.price-Math.floor(getSkMod('haggling')/2)));if(dayFlags.includes('bargain_day'))bp=Math.max(1,Math.floor(bp/2));const have=inv[item.id]||0;return(
               <div key={item.id} style={{display:'flex',alignItems:'center',gap:6,padding:'3px 0',fontSize:16}}>
                 <span>{INGR[item.id]?.icon} {INGR[item.id]?.name}</span>
                 <span style={{fontSize:14,color:TH.textDim}}>×{have}</span>
@@ -6793,7 +6793,7 @@ function CindervaleAlchemistInner(){
           {/* Commission: buy specific rare ingredient */}
           {getFeatureVal('commissionAccess')>0&&(()=>{
             const rareIngr=new Set();locRegions.filter(r=>r.diff>=3&&level>=r.unlock).forEach(r=>r.ingr.forEach(id=>rareIngr.add(id)));
-            const commItems=[...rareIngr].filter(id=>!SHOP_I.find(s=>s.id===id)).slice(0,5);
+            const commItems=[...rareIngr].filter(id=>!SHOP_I.find(s=>s.id===id&&(!s.loc||s.loc===gameLocation))).slice(0,5);
             return commItems.length>0?(
               <div style={{marginTop:8,padding:'6px 8px',background:'#40002010',borderRadius:4,border:'1px solid #80004033'}}>
                 <div style={{fontSize:14,color:'#ff4080',marginBottom:4}}>📋 Commissions — guaranteed rare ingredients (3× price)</div>
@@ -8227,11 +8227,11 @@ function CindervaleAlchemistInner(){
           const hagMod=Math.floor(getSkMod('haggling')/2);
           const buyCalc=(n)=>{
             const needed={};Object.entries(cost).forEach(([id,q])=>{const need=q*n-(inv[id]||0);if(need>0)needed[id]=need;});
-            const allShop=Object.keys(needed).every(id=>SHOP_I.find(i=>i.id===id));
-            const total=Object.entries(needed).reduce((s,[id,q])=>{const si=SHOP_I.find(i=>i.id===id);return si?s+q*getBuyPrice(Math.max(1,si.price-hagMod)):s;},0);
+            const allShop=Object.keys(needed).every(id=>SHOP_I.find(i=>i.id===id&&(!i.loc||i.loc===gameLocation)));
+            const total=Object.entries(needed).reduce((s,[id,q])=>{const si=SHOP_I.find(i=>i.id===id&&(!i.loc||i.loc===gameLocation));return si?s+q*getBuyPrice(Math.max(1,si.price-hagMod)):s;},0);
             return{needed,allShop,total,canBuy:allShop&&total>0&&total<=gold};
           };
-          const doBuy=(n)=>{const{needed}=buyCalc(n);Object.entries(needed).forEach(([id,q])=>{const si=SHOP_I.find(i=>i.id===id);if(si){const bp=getBuyPrice(Math.max(1,si.price-hagMod));for(let i=0;i<q;i++){setGold(g=>g-bp);modInv(id,1);}}});};
+          const doBuy=(n)=>{const{needed}=buyCalc(n);Object.entries(needed).forEach(([id,q])=>{const si=SHOP_I.find(i=>i.id===id&&(!i.loc||i.loc===gameLocation));if(si){const bp=getBuyPrice(Math.max(1,si.price-hagMod));for(let i=0;i<q;i++){setGold(g=>g-bp);modInv(id,1);}}});};
           return(<div key={r.id} id={'recipe-'+r.id} style={{padding:'6px 8px',background:TH.panelLight,borderRadius:4,marginBottom:4,border:`1px solid ${can&&fOk?TH.borderGold:TH.border}`,opacity:fOk?1:.5}}>
             <div style={{display:'flex',justifyContent:'space-between'}}><span style={{fontSize:16,color:TH.textBright}}>{r.icon}{r.name}{(()=>{const br=getBrandForRecipe(r.id);return br?<span style={{fontSize:11,color:'#d0a060',marginLeft:4}}>{br.icon}{br.name}</span>:null;})()}</span>
               <span style={{fontSize:14}}><span style={{color:TH.textDim}}>DC{adjDC}{masteryD>0?' (-'+masteryD+')':''}</span> <span style={{color:successPct>=70?TH.green:successPct>=40?TH.gold:TH.red,fontSize:13}}>{successPct}%</span></span></div>
@@ -8264,11 +8264,11 @@ function CindervaleAlchemistInner(){
               // Buy calc for selected tier
               const selBuyCalc=(n)=>{
                 const needed={};Object.entries(selCost).forEach(([id,q])=>{const need=q*n-(inv[id]||0);if(need>0)needed[id]=need;});
-                const allShop=Object.keys(needed).every(id=>SHOP_I.find(i=>i.id===id));
-                const total=Object.entries(needed).reduce((s,[id,q])=>{const si=SHOP_I.find(i=>i.id===id);return si?s+q*getBuyPrice(Math.max(1,si.price-hagMod)):s;},0);
+                const allShop=Object.keys(needed).every(id=>SHOP_I.find(i=>i.id===id&&(!i.loc||i.loc===gameLocation)));
+                const total=Object.entries(needed).reduce((s,[id,q])=>{const si=SHOP_I.find(i=>i.id===id&&(!i.loc||i.loc===gameLocation));return si?s+q*getBuyPrice(Math.max(1,si.price-hagMod)):s;},0);
                 return{needed,allShop,total,canBuy:allShop&&total>0&&total<=gold};
               };
-              const selDoBuy=(n)=>{const{needed}=selBuyCalc(n);Object.entries(needed).forEach(([id,q])=>{const si=SHOP_I.find(i=>i.id===id);if(si){const bp=getBuyPrice(Math.max(1,si.price-hagMod));for(let i=0;i<q;i++){setGold(g=>g-bp);modInv(id,1);}}});};
+              const selDoBuy=(n)=>{const{needed}=selBuyCalc(n);Object.entries(needed).forEach(([id,q])=>{const si=SHOP_I.find(i=>i.id===id&&(!i.loc||i.loc===gameLocation));if(si){const bp=getBuyPrice(Math.max(1,si.price-hagMod));for(let i=0;i<q;i++){setGold(g=>g-bp);modInv(id,1);}}});};
               return <>
               {/* Tier selector (toggle, doesn't brew) */}
               <div style={{display:'flex',gap:2,marginBottom:4}}>
@@ -8704,7 +8704,7 @@ function CindervaleAlchemistInner(){
                   {Object.entries(cost).map(([id,q])=>{
                     const have=(inv[id]||0)>=q;
                     const regions=locRegions.filter(reg=>reg.ingr.includes(id)&&level>=regUnlock(reg)&&(!reg.faction||getRL(reg.faction)>=(reg.fReq||0)));
-                    const shopItem=SHOP_I.find(s=>s.id===id);
+                    const shopItem=SHOP_I.find(s=>s.id===id&&(!s.loc||s.loc===gameLocation));
                     return(
                     <div key={id} style={{padding:'3px 0',fontSize:15,display:'flex',alignItems:'center',flexWrap:'wrap',gap:4}}>
                       <span style={{color:have?TH.green:TH.red}}>{have?'✅':'❌'} {INGR[id]?.icon}{INGR[id]?.name}</span>

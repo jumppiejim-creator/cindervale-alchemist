@@ -3259,14 +3259,24 @@ var NPCS={
     portrait:{bg:['#4a3a2a','#2e2418'],ring:'#a08060',accent:'#c0a080'},
     lines:['"Everyone who passes through Tidecrest ends up at my bar eventually. That\'s how I know everything."','"I smuggled for twenty years. Gems, potions, the occasional fugitive. Now I just serve drinks."','"The Corsairs used to leave the harbor alone. Something changed. Something down in the deep."','"Need a contact? A rumor? A very strong drink? I can help with all three."']},
 };var SHOP_I=[
-  // Tidecrest ingredients
-  {id:'driftwood',price:4},{id:'sea_salt',price:3},{id:'kelp_frond',price:5},{id:'sand_dollar',price:6},{id:'tide_moss',price:5},{id:'barnacle',price:4},
-  {id:'crab_shell',price:5},{id:'sea_glass',price:6},{id:'tidal_herb',price:8},{id:'coral_shard',price:10},{id:'sponge_extract',price:9},{id:'anemone_gel',price:9},
+  // Tidecrest ingredients (common + mid-tier for recipe completion)
+  {id:'driftwood',price:4,loc:'tidecrest'},{id:'sea_salt',price:3,loc:'tidecrest'},{id:'kelp_frond',price:5,loc:'tidecrest'},{id:'sand_dollar',price:6,loc:'tidecrest'},
+  {id:'tide_moss',price:5,loc:'tidecrest'},{id:'barnacle',price:4,loc:'tidecrest'},{id:'crab_shell',price:5,loc:'tidecrest'},{id:'sea_glass',price:6,loc:'tidecrest'},
+  {id:'coral_shard',price:10,loc:'tidecrest'},{id:'sponge_extract',price:9,loc:'tidecrest'},{id:'anemone_gel',price:9,loc:'tidecrest'},
+  {id:'urchin_spine',price:9,loc:'tidecrest'},{id:'salt_crystal',price:9,loc:'tidecrest'},{id:'pearl_dust',price:14,loc:'tidecrest'},
+  {id:'phosphor_moss',price:12,loc:'tidecrest'},{id:'jellyfish_essence',price:14,loc:'tidecrest'},{id:'stormkelp',price:15,loc:'tidecrest'},
+  {id:'nautilus_shell',price:16,loc:'tidecrest'},{id:'whale_oil',price:18,loc:'tidecrest'},
   // Ashfall ingredients
-  {id:'sunpetal',price:5},{id:'dustite',price:7},{id:'scorchroot',price:6},{id:'crystal_salt',price:8},{id:'brine_moss',price:10},{id:'obsidian_shard',price:12},
-  {id:'dried_cactus',price:3},{id:'sand_glass',price:4},{id:'salt_flake',price:3},{id:'red_clay',price:6},{id:'palm_resin',price:7},{id:'scarab_shell',price:8},{id:'fire_ant_chitin',price:7},{id:'desert_iron',price:9},
+  {id:'sunpetal',price:5,loc:'ashfall'},{id:'dustite',price:7,loc:'ashfall'},{id:'scorchroot',price:6,loc:'ashfall'},{id:'crystal_salt',price:8,loc:'ashfall'},
+  {id:'brine_moss',price:10,loc:'ashfall'},{id:'obsidian_shard',price:12,loc:'ashfall'},
+  {id:'dried_cactus',price:3,loc:'ashfall'},{id:'sand_glass',price:4,loc:'ashfall'},{id:'salt_flake',price:3,loc:'ashfall'},
+  {id:'red_clay',price:6,loc:'ashfall'},{id:'palm_resin',price:7,loc:'ashfall'},{id:'scarab_shell',price:8,loc:'ashfall'},{id:'fire_ant_chitin',price:7,loc:'ashfall'},{id:'desert_iron',price:9,loc:'ashfall'},
   // Cindervale ingredients
-  {id:'ashbloom',price:5},{id:'embercap',price:8},{id:'hearthstone',price:14},{id:'ironroot_bark',price:7},{id:'moonpetal',price:16},{id:'gloomcap',price:12},{id:'volcanic_essence',price:20},{id:'char_root',price:3},{id:'wind_dust',price:4},{id:'bark_resin',price:6},{id:'ash_salt',price:4},{id:'cinder_moss',price:5},{id:'ember_petal',price:3},{id:'soot_crystal',price:4},{id:'amber_sap',price:6},{id:'beetle_shell',price:7},{id:'echo_fungus',price:9},{id:'ghost_silk',price:11}];
+  {id:'ashbloom',price:5,loc:'cindervale'},{id:'embercap',price:8,loc:'cindervale'},{id:'hearthstone',price:14,loc:'cindervale'},{id:'ironroot_bark',price:7,loc:'cindervale'},
+  {id:'moonpetal',price:16,loc:'cindervale'},{id:'gloomcap',price:12,loc:'cindervale'},{id:'volcanic_essence',price:20,loc:'cindervale'},
+  {id:'char_root',price:3,loc:'cindervale'},{id:'wind_dust',price:4,loc:'cindervale'},{id:'bark_resin',price:6,loc:'cindervale'},{id:'ash_salt',price:4,loc:'cindervale'},
+  {id:'cinder_moss',price:5,loc:'cindervale'},{id:'ember_petal',price:3,loc:'cindervale'},{id:'soot_crystal',price:4,loc:'cindervale'},
+  {id:'amber_sap',price:6,loc:'cindervale'},{id:'beetle_shell',price:7,loc:'cindervale'},{id:'echo_fungus',price:9,loc:'cindervale'},{id:'ghost_silk',price:11,loc:'cindervale'}];
 var H_EVENTS=[
   // Simple events (no check) — generic
   {prob:0.025,text:'You stumble upon a hidden cache beneath a fallen log — someone\'s forgotten stash!',effect:'bonus',good:true},
