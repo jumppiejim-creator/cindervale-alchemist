@@ -441,6 +441,19 @@ function CindervaleAlchemistInner(){
   const [musicVol,setMusicVol]=useState(50);
   const [sfxVol,setSfxVol]=useState(70);
   const [showAudioPanel,setShowAudioPanel]=useState(false);
+  const [wsOpen,setWsOpen]=useState({}); // workshop section open state — keys present = open
+  const toggleWs=(id)=>setWsOpen(p=>({...p,[id]:!p[id]}));
+  const isWsOpen=(id)=>!!wsOpen[id]; // default closed
+  const WS=({id,title,icon,children,badge,borderColor})=>{
+    const open=isWsOpen(id);
+    return <div style={{...S.card,borderColor:borderColor||TH.border}}>
+      <div style={{...S.cT,cursor:'pointer',display:'flex',justifyContent:'space-between',alignItems:'center',userSelect:'none'}} onClick={()=>toggleWs(id)}>
+        <span>{icon?icon+' ':''}{title}{badge?<span style={{fontSize:12,color:TH.textDim,fontWeight:'normal',marginLeft:6}}>{badge}</span>:''}</span>
+        <span style={{fontSize:13,color:TH.textDim}}>{open?'▲':'▼'}</span>
+      </div>
+      {open&&children}
+    </div>;
+  };
   const musicRef=useRef(null);
   const [confirmRest,setConfirmRest]=useState(false);
   const [confirmAlign,setConfirmAlign]=useState(null); // null or faction id
@@ -703,7 +716,7 @@ function CindervaleAlchemistInner(){
     const potN=known.length>=1?(1+Math.floor(Math.random()*(1+Math.floor(netB/3)+Math.floor(level/5)))+custBonusF):0;
     const pQ=[];
     if(potN>0){
-      const availPots=RECIPES.filter(r=>known.includes(r.id)&&!r.fieldOnly&&canCraftAtLocation(r.ingr));
+      const availPots=RECIPES.filter(r=>known.includes(r.id)&&!r.fieldOnly&&!r.buff&&canCraftAtLocation(r.ingr));
       for(let i=0;i<potN;i++){
         const name=CUST_NAMES[Math.floor(Math.random()*CUST_NAMES.length)];
         const cd=CUST_DATA[name]||{title:'Villager'};
@@ -3501,7 +3514,7 @@ function CindervaleAlchemistInner(){
     const injPen=injuryPenalty||0;
     if(injPen>0)setInjuryPenalty(0);setInfusionsUsedToday(0); // Clear after applying
     const baseH=Math.max(3,4+upEff('bonusEnergy')+getFeatureVal('bonusEnergyPerDay')+enduranceBonus+(getFeatureVal('freeAction')?1:0)-injPen);
-    setDay(d=>d+1);setHours(baseH);setLastCheck(null);const report=[];let totalSal=0;
+    setDay(d=>d+1);setHours(baseH);setLastCheck(null);setWsOpen({});const report=[];let totalSal=0;
     // ── Season check ──
     const curDay=day+1;
     const curSeason=getSeason(curDay,gameLocation);
@@ -3899,7 +3912,7 @@ function CindervaleAlchemistInner(){
     locThreatIds.forEach(tid=>{
       if(newThreats[tid]>=25&&Math.random()<0.5){
         const tf=THREAT_FACTIONS[tid];
-        const potRecipes=RECIPES.filter(r=>known.includes(r.id)&&!r.fieldOnly&&canCraftAtLocation(r.ingr));
+        const potRecipes=RECIPES.filter(r=>known.includes(r.id)&&!r.fieldOnly&&!r.buff&&canCraftAtLocation(r.ingr));
         const ingrPool=Object.entries(inv).filter(([,q])=>q>0).map(([id])=>id).filter(id=>INGR[id]);
         const isDeliver=potRecipes.length>0&&Math.random()<0.6;
         if(isDeliver){
@@ -6653,8 +6666,8 @@ function CindervaleAlchemistInner(){
         </div>}
 
         {/* Milestones earned */}
-        {milestones.length>0&&<div style={{...S.card,marginTop:8}}>
-          <div style={S.cT}>🏆 Milestones ({milestones.length}/{Object.keys(MILESTONES).length})</div>
+        {milestones.length>0&&<div style={{...S.card,marginTop:8}} className={isWsOpen('ws1')?'':'ws-closed'}>
+          <div style={{...S.cT,cursor:'pointer',userSelect:'none'}} onClick={()=>toggleWs('ws1')}><span style={{display:'flex',justifyContent:'space-between',width:'100%'}}><span>🏆 Milestones ({milestones.length}/{Object.keys(MILESTONES).length})</span><span style={{fontSize:13,color:TH.textDim}}>{isWsOpen('ws1')?'▲':'▼'}</span></span></div>
           <div style={{display:'flex',flexWrap:'wrap',gap:6}}>
             {milestones.map(mid=>{const m=MILESTONES[mid];return m?<div key={mid} style={{...S.tag,border:`1px solid ${TH.goldDim}`,background:TH.panelAlt}}>
               <span>{m.icon}</span><span style={{color:TH.gold,fontSize:14}}>{m.name}</span>
@@ -6667,7 +6680,7 @@ function CindervaleAlchemistInner(){
 
         {/* Journal on map — hidden on desktop where sidebar shows */}
         <div className="cv-journal-mobile" style={{display:'none'}}>
-        <div style={{...S.card,marginTop:4,overflowAnchor:'none'}}><div style={S.cT}>📜 Journal</div>
+        <div style={{...S.card,marginTop:4,overflowAnchor:'none'}} className={isWsOpen('ws2')?'':'ws-closed'}><div style={{...S.cT,cursor:'pointer',userSelect:'none'}} onClick={()=>toggleWs('ws2')}><span style={{display:'flex',justifyContent:'space-between',width:'100%'}}><span>📜 Journal</span><span style={{fontSize:13,color:TH.textDim}}>{isWsOpen('ws2')?'▲':'▼'}</span></span></div>
           <div style={S.logBox}>{log.slice(-30).map((e,i)=><div key={i} style={{color:LC[e.type]||TH.text}}>{e.text}</div>)}</div>
         </div>
         </div>
@@ -6817,8 +6830,8 @@ function CindervaleAlchemistInner(){
           </div>}
         </div>}
         {/* ── Outposts (Siege Engineer) ── */}
-        {seLv>=1&&<div style={{...S.card,borderColor:'#80806044'}}>
-          <div style={S.cT}>🏗️ Outposts ({outposts.filter(op=>op.built).length}/{maxOutpostSlots} slots)</div>
+        {seLv>=1&&<div style={{...S.card,borderColor:'#80806044'}} className={isWsOpen('ws3')?'':'ws-closed'}>
+          <div style={{...S.cT,cursor:'pointer',userSelect:'none'}} onClick={()=>toggleWs('ws3')}><span style={{display:'flex',justifyContent:'space-between',width:'100%'}}><span>🏗️ Outposts ({outposts.filter(op=>op.built).length}/{maxOutpostSlots} slots)</span><span style={{fontSize:13,color:TH.textDim}}>{isWsOpen('ws3')?'▲':'▼'}</span></span></div>
           {outposts.map(op=>{
             const reg=REGIONS.find(r=>r.id===op.regionId);if(!reg)return null;
             const suppressTarget=reg.diff>=5?'All':reg.diff>=3?'🦠 Blight':'🏴 Reavers';
@@ -6856,7 +6869,7 @@ function CindervaleAlchemistInner(){
             </select>
           </div>}
         </div>}
-        <div style={S.card}><div style={S.cT}>Expeditions — ⚡{hours} Energy remaining</div>
+        <div style={S.card} className={isWsOpen('ws4')?'':'ws-closed'}><div style={{...S.cT,cursor:'pointer',userSelect:'none'}} onClick={()=>toggleWs('ws4')}><span style={{display:'flex',justifyContent:'space-between',width:'100%'}}><span>Expeditions — ⚡{hours} Energy remaining</span><span style={{fontSize:13,color:TH.textDim}}>{isWsOpen('ws4')?'▲':'▼'}</span></span></div>
           {dayFlags.includes('ash_storm')&&<div style={{fontSize:14,color:TH.red,marginBottom:4,padding:'3px 6px',background:`${TH.red}10`,borderRadius:3}}>⚠️ Ash Storm — travel times +1h today</div>}
           {dayFlags.includes('clear_sky')&&<div style={{fontSize:14,color:TH.green,marginBottom:4,padding:'3px 6px',background:`${TH.green}10`,borderRadius:3}}>☀️ Clear Skies — extraction DCs reduced by 2 today</div>}
           <div style={{fontSize:14,color:TH.textDim,marginBottom:6}}>Expeditions use your remaining hours. Travel takes time — leave earlier to gather more.</div>
@@ -6877,7 +6890,7 @@ function CindervaleAlchemistInner(){
           const nightH=getFeatureVal('nightBonusHours')||3;
           const nightDR=getFeatureVal('nightDangerReduction');
           return(<div style={{...S.card,borderColor:TH.purple+'66',background:`${TH.purple}08`}}>
-            <div style={S.cT}>🌙 Night Expeditions</div>
+            <div style={{...S.cT,cursor:'pointer',userSelect:'none'}} onClick={()=>toggleWs('ws5')}><span style={{display:'flex',justifyContent:'space-between',width:'100%'}}><span>🌙 Night Expeditions</span><span style={{fontSize:13,color:TH.textDim}}>{isWsOpen('ws5')?'▲':'▼'}</span></span></div>
             <div style={{fontSize:14,color:TH.text,lineHeight:1.5,marginBottom:6}}>
               Your Sentinel training lets you forage after dark for <b style={{color:TH.purple}}>{nightH} bonus hours</b> (DC +2, higher danger{nightDR?' — reduced by Trap Setter':''}).
             </div>
@@ -6892,7 +6905,7 @@ function CindervaleAlchemistInner(){
           const pickN=reg.pick||reg.ingr.length;
           const estTotal=canGo?estPerHr*info.gatherHours:0;
           return(
-          <div style={S.card}><div style={S.cT}>{reg.icon} {reg.name}</div>
+          <div style={S.card} className={isWsOpen('ws6')?'':'ws-closed'}><div style={{...S.cT,cursor:'pointer',userSelect:'none'}} onClick={()=>toggleWs('ws6')}><span style={{display:'flex',justifyContent:'space-between',width:'100%'}}><span>{reg.icon} {reg.name}</span><span style={{fontSize:13,color:TH.textDim}}>{isWsOpen('ws6')?'▲':'▼'}</span></span></div>
             {selFlavor&&<div style={{fontSize:15,color:TH.text,fontStyle:'italic',margin:'0 0 6px',lineHeight:1.5}}>{selFlavor}</div>}
             <div style={{fontSize:14,color:TH.textDim,marginBottom:4}}>Difficulty {reg.diff}/5 · DC{reg.dc} Extraction</div>
             {canGo&&<div style={{background:TH.bg,borderRadius:4,padding:'6px 8px',marginBottom:6,border:'1px solid '+TH.border}}>
@@ -6958,8 +6971,8 @@ function CindervaleAlchemistInner(){
         {(()=>{
           const elixirRecipes=RECIPES.filter(r=>known.includes(r.id)&&r.buff&&ELIXIR_BUFFS[r.buff]);
           if(elixirRecipes.length===0)return null;
-          return <div style={{...S.card,borderColor:'#50a0a044',background:'linear-gradient(135deg,#14110c,#0e1418)'}}>
-            <div style={S.cT}>🧪 Elixir Cabinet <span style={{fontSize:13,color:TH.textDim,fontWeight:'normal'}}>— personal buff potions (brew & drink)</span></div>
+          return <div style={{...S.card,borderColor:'#50a0a044',background:'linear-gradient(135deg,#14110c,#0e1418)'}} className={isWsOpen('ws7')?'':'ws-closed'}>
+            <div style={{...S.cT,cursor:'pointer',userSelect:'none'}} onClick={()=>toggleWs('ws7')}><span style={{display:'flex',justifyContent:'space-between',width:'100%'}}><span>🧪 Elixir Cabinet <span style={{fontSize:13,color:TH.textDim,fontWeight:'normal'}}>— personal buff potions (brew & drink)</span></span><span style={{fontSize:13,color:TH.textDim}}>{isWsOpen('ws7')?'▲':'▼'}</span></span></div>
             <div style={{display:'flex',flexDirection:'column',gap:8}}>
               {elixirRecipes.map(r=>{
                 const buff=ELIXIR_BUFFS[r.buff];if(!buff)return null;
@@ -7023,8 +7036,8 @@ function CindervaleAlchemistInner(){
         })()}
 
         {/* ═══ APOTHECARY CLINIC ═══ */}
-        {clinicPatients.length>0&&<div style={{...S.card,borderColor:'#6a9a6a',background:'#6a9a6a08'}}>
-          <div style={S.cT}>🏥 Apothecary Clinic — {clinicPatients.filter(p=>!p.prescribed).length} patient{clinicPatients.filter(p=>!p.prescribed).length!==1?'s':''} waiting</div>
+        {clinicPatients.length>0&&<div style={{...S.card,borderColor:'#6a9a6a',background:'#6a9a6a08'}} className={isWsOpen('ws8')?'':'ws-closed'}>
+          <div style={{...S.cT,cursor:'pointer',userSelect:'none'}} onClick={()=>toggleWs('ws8')}><span style={{display:'flex',justifyContent:'space-between',width:'100%'}}><span>🏥 Apothecary Clinic — {clinicPatients.filter(p=>!p.prescribed).length} patient{clinicPatients.filter(p=>!p.prescribed).length!==1?'s':''} waiting</span><span style={{fontSize:13,color:TH.textDim}}>{isWsOpen('ws8')?'▲':'▼'}</span></span></div>
           {clinicPatients.map(patient=>{
             const ailment=CLINIC_AILMENTS.find(a=>a.id===patient.ailmentId);if(!ailment)return null;
             const treated=patient.prescribed;
@@ -7056,8 +7069,8 @@ function CindervaleAlchemistInner(){
         </div>}
 
         {/* ═══ VENOMIST CONTRACTS ═══ */}
-        {venomContracts.length>0&&<div style={{...S.card,borderColor:'#9a4a6a',background:'#9a4a6a08'}}>
-          <div style={S.cT}>☠️ Venom Contracts — {venomContracts.filter(v=>!v.fulfilled).length} active</div>
+        {venomContracts.length>0&&<div style={{...S.card,borderColor:'#9a4a6a',background:'#9a4a6a08'}} className={isWsOpen('ws9')?'':'ws-closed'}>
+          <div style={{...S.cT,cursor:'pointer',userSelect:'none'}} onClick={()=>toggleWs('ws9')}><span style={{display:'flex',justifyContent:'space-between',width:'100%'}}><span>☠️ Venom Contracts — {venomContracts.filter(v=>!v.fulfilled).length} active</span><span style={{fontSize:13,color:TH.textDim}}>{isWsOpen('ws9')?'▲':'▼'}</span></span></div>
           {venomContracts.map(vc=>{
             const contract=VENOM_CONTRACTS.find(c=>c.id===vc.contractId);if(!contract)return null;
             const done=vc.fulfilled;
@@ -7091,8 +7104,8 @@ function CindervaleAlchemistInner(){
         </div>}
 
         {/* ═══ RUNESMITH FORGE ═══ */}
-        {specs.enchanter==='runesmith'&&<div style={{...S.card,borderColor:'#d08040',background:'#d0804008'}}>
-          <div style={S.cT}>🔨 Runesmith Forge — {(()=>{const used=dayFlags.filter(f=>f==='forge_used').length;const rsLv=classLevels.enchanter||0;const max=rsLv>=10?3:rsLv>=6?2:1;return `${max-used}/${max} forges remaining`;})()}</div>
+        {specs.enchanter==='runesmith'&&<div style={{...S.card,borderColor:'#d08040',background:'#d0804008'}} className={isWsOpen('ws10')?'':'ws-closed'}>
+          <div style={{...S.cT,cursor:'pointer',userSelect:'none'}} onClick={()=>toggleWs('ws10')}><span style={{display:'flex',justifyContent:'space-between',width:'100%'}}><span>🔨 Runesmith Forge — {(()=>{const used=dayFlags.filter(f=>f==='forge_used').length;const rsLv=classLevels.enchanter||0;const max=rsLv>=10?3:rsLv>=6?2:1;return `${max-used}/${max} forges remaining`;})()}</span><span style={{fontSize:13,color:TH.textDim}}>{isWsOpen('ws10')?'▲':'▼'}</span></span></div>
           {(()=>{
             const rsLv=classLevels.enchanter||0;
             const maxTier=rsLv>=10?3:rsLv>=6?2:1;
@@ -7137,8 +7150,8 @@ function CindervaleAlchemistInner(){
         </div>}
 
         {/* ═══ WARDKEEPER SHIELD COMMISSIONS ═══ */}
-        {shieldCommissions.length>0&&<div style={{...S.card,borderColor:'#4080d0',background:'#4080d008'}}>
-          <div style={S.cT}>🛡️ Shield Commissions — {shieldCommissions.filter(c=>!c.done).length} active</div>
+        {shieldCommissions.length>0&&<div style={{...S.card,borderColor:'#4080d0',background:'#4080d008'}} className={isWsOpen('ws11')?'':'ws-closed'}>
+          <div style={{...S.cT,cursor:'pointer',userSelect:'none'}} onClick={()=>toggleWs('ws11')}><span style={{display:'flex',justifyContent:'space-between',width:'100%'}}><span>🛡️ Shield Commissions — {shieldCommissions.filter(c=>!c.done).length} active</span><span style={{fontSize:13,color:TH.textDim}}>{isWsOpen('ws11')?'▲':'▼'}</span></span></div>
           {shieldCommissions.map(sc=>{
             const comm=SHIELD_COMMISSIONS.find(c=>c.id===sc.commissionId);if(!comm)return null;
             const totalLayers=comm.layers.length;
@@ -7185,8 +7198,8 @@ function CindervaleAlchemistInner(){
         </div>}
 
         {/* ═══ SPELLWEAVER PLANAR ATTUNEMENT ═══ */}
-        {specs.enchanter==='spellweaver'&&<div style={{...S.card,borderColor:'#a060e0',background:'#a060e008'}}>
-          <div style={S.cT}>🌀 Planar Attunement</div>
+        {specs.enchanter==='spellweaver'&&<div style={{...S.card,borderColor:'#a060e0',background:'#a060e008'}} className={isWsOpen('ws12')?'':'ws-closed'}>
+          <div style={{...S.cT,cursor:'pointer',userSelect:'none'}} onClick={()=>toggleWs('ws12')}><span style={{display:'flex',justifyContent:'space-between',width:'100%'}}><span>🌀 Planar Attunement</span><span style={{fontSize:13,color:TH.textDim}}>{isWsOpen('ws12')?'▲':'▼'}</span></span></div>
           {(()=>{
             const swLv=classLevels.enchanter||0;
             const activePlanes=getActivePlanes();
@@ -7230,8 +7243,8 @@ function CindervaleAlchemistInner(){
         </div>}
 
         {/* ═══ TINKERER GADGET BENCH ═══ */}
-        {specs.artificer==='tinkerer'&&<div style={{...S.card,borderColor:'#c0a040',background:'#c0a04008'}}>
-          <div style={S.cT}>⚙️ Gadget Bench — {gadgets.filter(g=>g.equipped).length}/{getGadgetSlots()} slots</div>
+        {specs.artificer==='tinkerer'&&<div style={{...S.card,borderColor:'#c0a040',background:'#c0a04008'}} className={isWsOpen('ws13')?'':'ws-closed'}>
+          <div style={{...S.cT,cursor:'pointer',userSelect:'none'}} onClick={()=>toggleWs('ws13')}><span style={{display:'flex',justifyContent:'space-between',width:'100%'}}><span>⚙️ Gadget Bench — {gadgets.filter(g=>g.equipped).length}/{getGadgetSlots()} slots</span><span style={{fontSize:13,color:TH.textDim}}>{isWsOpen('ws13')?'▲':'▼'}</span></span></div>
           {(()=>{
             const tkLv=classLevels.artificer||0;
             const maxTier=tkLv>=10?3:tkLv>=6?2:1;
@@ -7282,8 +7295,8 @@ function CindervaleAlchemistInner(){
         </div>}
 
         {/* ═══ CONSTRUCTOR BLUEPRINTS ═══ */}
-        {specs.artificer==='constructor'&&<div style={{...S.card,borderColor:'#8090a0',background:'#8090a008'}}>
-          <div style={S.cT}>🏗️ Blueprint Workshop — {blueprints.length}/{getBPSlots()} projects</div>
+        {specs.artificer==='constructor'&&<div style={{...S.card,borderColor:'#8090a0',background:'#8090a008'}} className={isWsOpen('ws14')?'':'ws-closed'}>
+          <div style={{...S.cT,cursor:'pointer',userSelect:'none'}} onClick={()=>toggleWs('ws14')}><span style={{display:'flex',justifyContent:'space-between',width:'100%'}}><span>🏗️ Blueprint Workshop — {blueprints.length}/{getBPSlots()} projects</span><span style={{fontSize:13,color:TH.textDim}}>{isWsOpen('ws14')?'▲':'▼'}</span></span></div>
           {(()=>{
             const cLv=classLevels.artificer||0;
             const maxTier=cLv>=10?3:cLv>=6?2:1;
@@ -7343,8 +7356,8 @@ function CindervaleAlchemistInner(){
         </div>}
 
         {/* ═══ RECLAIMER DECONSTRUCTION LAB ═══ */}
-        {specs.artificer==='reclaimer'&&<div style={{...S.card,borderColor:'#60a080',background:'#60a00808'}}>
-          <div style={S.cT}>♻️ Deconstruction Lab</div>
+        {specs.artificer==='reclaimer'&&<div style={{...S.card,borderColor:'#60a080',background:'#60a00808'}} className={isWsOpen('ws15')?'':'ws-closed'}>
+          <div style={{...S.cT,cursor:'pointer',userSelect:'none'}} onClick={()=>toggleWs('ws15')}><span style={{display:'flex',justifyContent:'space-between',width:'100%'}}><span>♻️ Deconstruction Lab</span><span style={{fontSize:13,color:TH.textDim}}>{isWsOpen('ws15')?'▲':'▼'}</span></span></div>
           {(()=>{
             const rcLv=classLevels.artificer||0;
             const auctionUsed=dayFlags.includes('salvage_auction_used');
@@ -7412,8 +7425,8 @@ function CindervaleAlchemistInner(){
         </div>}
 
         {/* ═══ NATURALIST FIELD JOURNAL ═══ */}
-        {specs.scholar==='naturalist'&&<div style={{...S.card,borderColor:'#60b060',background:'#60b00808'}}>
-          <div style={S.cT}>🌿 Field Journal — {fieldJournal.length} discoveries</div>
+        {specs.scholar==='naturalist'&&<div style={{...S.card,borderColor:'#60b060',background:'#60b00808'}} className={isWsOpen('ws16')?'':'ws-closed'}>
+          <div style={{...S.cT,cursor:'pointer',userSelect:'none'}} onClick={()=>toggleWs('ws16')}><span style={{display:'flex',justifyContent:'space-between',width:'100%'}}><span>🌿 Field Journal — {fieldJournal.length} discoveries</span><span style={{fontSize:13,color:TH.textDim}}>{isWsOpen('ws16')?'▲':'▼'}</span></span></div>
           {(()=>{
             const natLv=classLevels.scholar||0;
             const canGeo=natLv>=6;
@@ -7454,8 +7467,8 @@ function CindervaleAlchemistInner(){
         </div>}
 
         {/* ═══ ARCHIVIST LORE ARCHIVE ═══ */}
-        {specs.scholar==='archivist'&&<div style={{...S.card,borderColor:'#c0a060',background:'#c0a06008'}}>
-          <div style={S.cT}>📜 Lore Archive — {loreFragments.length}/{ALL_LORE_FRAGMENTS.length} fragments</div>
+        {specs.scholar==='archivist'&&<div style={{...S.card,borderColor:'#c0a060',background:'#c0a06008'}} className={isWsOpen('ws17')?'':'ws-closed'}>
+          <div style={{...S.cT,cursor:'pointer',userSelect:'none'}} onClick={()=>toggleWs('ws17')}><span style={{display:'flex',justifyContent:'space-between',width:'100%'}}><span>📜 Lore Archive — {loreFragments.length}/{ALL_LORE_FRAGMENTS.length} fragments</span><span style={{fontSize:13,color:TH.textDim}}>{isWsOpen('ws17')?'▲':'▼'}</span></span></div>
           {(()=>{
             const arcLv=classLevels.scholar||0;
             const chainsAvail=arcLv>=6?4:2;
@@ -7497,8 +7510,8 @@ function CindervaleAlchemistInner(){
         </div>}
 
         {/* ═══ RANGER COMPANIONS ═══ */}
-        {specs.warden==='ranger'&&<div style={{...S.card,borderColor:'#40a060',background:'#40a00808'}}>
-          <div style={S.cT}>🦊 Companions — {companions.length}/{(classLevels.warden||0)>=10?3:(classLevels.warden||0)>=6?2:1} slots</div>
+        {specs.warden==='ranger'&&<div style={{...S.card,borderColor:'#40a060',background:'#40a00808'}} className={isWsOpen('ws18')?'':'ws-closed'}>
+          <div style={{...S.cT,cursor:'pointer',userSelect:'none'}} onClick={()=>toggleWs('ws18')}><span style={{display:'flex',justifyContent:'space-between',width:'100%'}}><span>🦊 Companions — {companions.length}/{(classLevels.warden||0)>=10?3:(classLevels.warden||0)>=6?2:1} slots</span><span style={{fontSize:13,color:TH.textDim}}>{isWsOpen('ws18')?'▲':'▼'}</span></span></div>
           {companions.length===0&&<div style={{fontSize:14,color:TH.textDim,marginBottom:6}}>
             No companions yet. Forage in the wilds — creatures may appear and can be tamed with an Attunement check.
             <br/>Encounter chance: {(classLevels.warden||0)>=10?'35%':(classLevels.warden||0)>=6?'25%':'15%'} per forage hour.
@@ -7544,8 +7557,8 @@ function CindervaleAlchemistInner(){
         </div>}
 
         {/* ═══ QUARTERMASTER SUPPLY NETWORK ═══ */}
-        {specs.warden==='quartermaster'&&<div style={{...S.card,borderColor:'#6080a0',background:'#6080a008'}}>
-          <div style={S.cT}>🚚 Supply Network</div>
+        {specs.warden==='quartermaster'&&<div style={{...S.card,borderColor:'#6080a0',background:'#6080a008'}} className={isWsOpen('ws19')?'':'ws-closed'}>
+          <div style={{...S.cT,cursor:'pointer',userSelect:'none'}} onClick={()=>toggleWs('ws19')}><span style={{display:'flex',justifyContent:'space-between',width:'100%'}}><span>🚚 Supply Network</span><span style={{fontSize:13,color:TH.textDim}}>{isWsOpen('ws19')?'▲':'▼'}</span></span></div>
           {(()=>{
             const qLv=classLevels.warden||0;
             const maxTier=qLv>=10?3:qLv>=6?2:1;
@@ -7621,8 +7634,8 @@ function CindervaleAlchemistInner(){
         </div>}
 
         {/* ═══ GUILDMASTER ACADEMY ═══ */}
-        {specs.merchant==='guildmaster'&&<div style={{...S.card,borderColor:'#d0a030',background:'#d0a03008'}}>
-          <div style={S.cT}>🎓 Staff Academy</div>
+        {specs.merchant==='guildmaster'&&<div style={{...S.card,borderColor:'#d0a030',background:'#d0a03008'}} className={isWsOpen('ws20')?'':'ws-closed'}>
+          <div style={{...S.cT,cursor:'pointer',userSelect:'none'}} onClick={()=>toggleWs('ws20')}><span style={{display:'flex',justifyContent:'space-between',width:'100%'}}><span>🎓 Staff Academy</span><span style={{fontSize:13,color:TH.textDim}}>{isWsOpen('ws20')?'▲':'▼'}</span></span></div>
           {(()=>{
             const gmLv=classLevels.merchant||0;
             const canCurriculum=gmLv>=6;
@@ -7686,8 +7699,8 @@ function CindervaleAlchemistInner(){
         </div>}
 
         {/* ═══ DIPLOMAT EMBASSY ═══ */}
-        {specs.merchant==='diplomat'&&<div style={{...S.card,borderColor:'#4090c0',background:'#4090c008'}}>
-          <div style={S.cT}>🤝 Embassy — Faction Harmony</div>
+        {specs.merchant==='diplomat'&&<div style={{...S.card,borderColor:'#4090c0',background:'#4090c008'}} className={isWsOpen('ws21')?'':'ws-closed'}>
+          <div style={{...S.cT,cursor:'pointer',userSelect:'none'}} onClick={()=>toggleWs('ws21')}><span style={{display:'flex',justifyContent:'space-between',width:'100%'}}><span>🤝 Embassy — Faction Harmony</span><span style={{fontSize:13,color:TH.textDim}}>{isWsOpen('ws21')?'▲':'▼'}</span></span></div>
           {(()=>{
             const dLv=classLevels.merchant||0;
             const maxHarmony=getHarmonyCap();
@@ -7740,8 +7753,8 @@ function CindervaleAlchemistInner(){
         </div>}
 
         {/* ═══ CARTOGRAPHER — ATLAS ═══ */}
-        {(prestigeLevels.cartographer||0)>=1&&<div style={{...S.card,borderColor:'#50a0a0',background:'linear-gradient(135deg,#1a2828,#1e2e30)'}}>
-          <div style={S.cT}>🗺️ Cartographer Atlas — {mappedRegions.length}/{HIDDEN_REGIONS.filter(hr=>!hr.legendary||(prestigeLevels.cartographer||0)>=5).length} hidden areas mapped</div>
+        {(prestigeLevels.cartographer||0)>=1&&<div style={{...S.card,borderColor:'#50a0a0',background:'linear-gradient(135deg,#1a2828,#1e2e30)'}} className={isWsOpen('ws22')?'':'ws-closed'}>
+          <div style={{...S.cT,cursor:'pointer',userSelect:'none'}} onClick={()=>toggleWs('ws22')}><span style={{display:'flex',justifyContent:'space-between',width:'100%'}}><span>🗺️ Cartographer Atlas — {mappedRegions.length}/{HIDDEN_REGIONS.filter(hr=>!hr.legendary||(prestigeLevels.cartographer||0)>=5).length} hidden areas mapped</span><span style={{fontSize:13,color:TH.textDim}}>{isWsOpen('ws22')?'▲':'▼'}</span></span></div>
           {(()=>{
             const cLv=prestigeLevels.cartographer||0;
             const discChance=cLv>=2?40:25;
@@ -7789,8 +7802,8 @@ function CindervaleAlchemistInner(){
           const maxEff=getMaxEffects();
           // Category, power, and effect selections managed via DOM (getElementById)
           // Use a ref-based approach for local UI state within the IIFE
-          return <div style={{...S.card,borderColor:'#8060c0',background:'linear-gradient(135deg,#1a1830,#22203a)'}}>
-            <div style={S.cT}>✨ Arcanist Pattern Workshop — {customPatterns.length}/{getPatternSlots()} patterns</div>
+          return <div style={{...S.card,borderColor:'#8060c0',background:'linear-gradient(135deg,#1a1830,#22203a)'}} className={isWsOpen('ws23')?'':'ws-closed'}>
+            <div style={{...S.cT,cursor:'pointer',userSelect:'none'}} onClick={()=>toggleWs('ws23')}><span style={{display:'flex',justifyContent:'space-between',width:'100%'}}><span>✨ Arcanist Pattern Workshop — {customPatterns.length}/{getPatternSlots()} patterns</span><span style={{fontSize:13,color:TH.textDim}}>{isWsOpen('ws23')?'▲':'▼'}</span></span></div>
             <div style={{fontSize:13,color:TH.textDim,marginBottom:8}}>
               Design custom enchantments by combining effects. Max {maxEff} effect{maxEff>1?'s':''} per pattern.
               {aLv>=2&&' · +2 inscription bonus on custom patterns'}
@@ -7873,8 +7886,8 @@ function CindervaleAlchemistInner(){
         })()}
 
         {/* ═══ MAGITECH ENGINEER — AUTOMATA ═══ */}
-        {(prestigeLevels.magitech||0)>=1&&<div style={{...S.card,borderColor:'#a0a060',background:'#a0a00808'}}>
-          <div style={S.cT}>🤖 Automata — {automata.length}/{getAutoSlots()} slots · Efficiency: {Math.round(getAutoEfficiency()*100)}%</div>
+        {(prestigeLevels.magitech||0)>=1&&<div style={{...S.card,borderColor:'#a0a060',background:'#a0a00808'}} className={isWsOpen('ws24')?'':'ws-closed'}>
+          <div style={{...S.cT,cursor:'pointer',userSelect:'none'}} onClick={()=>toggleWs('ws24')}><span style={{display:'flex',justifyContent:'space-between',width:'100%'}}><span>🤖 Automata — {automata.length}/{getAutoSlots()} slots · Efficiency: {Math.round(getAutoEfficiency()*100)}%</span><span style={{fontSize:13,color:TH.textDim}}>{isWsOpen('ws24')?'▲':'▼'}</span></span></div>
           {automata.length===0&&<div style={{fontSize:14,color:TH.textDim,marginBottom:6}}>
             No automata built yet. Build one to start autonomous operations.
           </div>}
@@ -8014,6 +8027,63 @@ function CindervaleAlchemistInner(){
           </div>;
         })()}
 
+        {/* ── Customer Shopping List ── */}
+        {(()=>{
+          const custNeeds={};
+          const addCust=(potId,qty,label,icon)=>{
+            if(!custNeeds[potId])custNeeds[potId]={total:0,sources:[]};
+            custNeeds[potId].total+=qty;
+            custNeeds[potId].sources.push({label,icon,qty});
+          };
+          // Potion customers
+          potCustQ.forEach(cust=>{
+            addCust(cust.potionId,cust.qty,'Customer: '+cust.customer,cust.potionIcon||'🧪');
+          });
+          // Enchantment customers — list enchantment ingredients needed
+          const enchNeeds={};
+          enchQ.forEach(cust=>{
+            (cust.reqEnch||[]).forEach(enchId=>{
+              const e=ENCHANTMENTS.find(x=>x.id===enchId);
+              if(e)e.ingr.forEach(id=>{enchNeeds[id]=(enchNeeds[id]||0)+1;});
+            });
+          });
+          const potEntries=Object.entries(custNeeds).filter(([,n])=>n.total>0);
+          const enchEntries=Object.entries(enchNeeds).filter(([,n])=>n>0);
+          if(potEntries.length===0&&enchEntries.length===0)return null;
+          return <div style={{...S.card,borderColor:'#a080d044'}}>
+            <div style={{...S.cT,color:'#a080d0',cursor:'pointer',userSelect:'none'}} onClick={()=>toggleWs('cust_shop')}><span style={{display:'flex',justifyContent:'space-between',width:'100%'}}><span>🛒 Customer Shopping List</span><span style={{fontSize:13,color:TH.textDim}}>{isWsOpen('cust_shop')?'▲':'▼'}</span></span></div>
+            {isWsOpen('cust_shop')&&<>
+            {potEntries.length>0&&<>
+              <div style={{fontSize:13,color:TH.textDim,marginBottom:4}}>Potions for today's customers:</div>
+              {potEntries.map(([potId,data])=>{
+                const r=RECIPES.find(x=>x.id===potId);if(!r)return null;
+                const have=countAllPots(potId);const needed=data.total;const done=have>=needed;
+                return <div key={potId} style={{padding:'4px 8px',background:done?TH.green+'10':TH.panel,borderRadius:4,marginBottom:3,border:'1px solid '+(done?TH.green+'44':TH.border)}}>
+                  <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                    <span style={{fontSize:14,color:done?TH.green:TH.textBright}}>{r.icon} {r.name}</span>
+                    <span style={{fontSize:13,color:done?TH.green:have>0?TH.gold:TH.red}}>{have}/{needed}{done&&' ✅'}</span>
+                  </div>
+                  <div style={{display:'flex',flexWrap:'wrap',gap:2,marginTop:1}}>
+                    {data.sources.map((s,i)=><span key={i} style={{fontSize:11,padding:'1px 4px',background:TH.bg,border:'1px solid '+TH.border,borderRadius:3,color:TH.textDim}}>{s.icon} {s.label} ×{s.qty}</span>)}
+                  </div>
+                </div>;
+              })}
+            </>}
+            {enchEntries.length>0&&<>
+              <div style={{fontSize:13,color:TH.textDim,marginTop:6,marginBottom:4}}>Ingredients for today's enchantment orders:</div>
+              <div style={{display:'flex',flexWrap:'wrap',gap:4}}>
+                {enchEntries.map(([id,qty])=>{
+                  const have=inv[id]||0;const ok=have>=qty;
+                  return <span key={id} style={{fontSize:13,padding:'2px 6px',background:ok?TH.green+'10':TH.panel,border:'1px solid '+(ok?TH.green+'44':TH.border),borderRadius:4,color:ok?TH.green:'#c06040'}}>
+                    {INGR[id]?.icon||''}{INGR[id]?.name||id} {have}/{qty}
+                  </span>;
+                })}
+              </div>
+            </>}
+            </>}
+          </div>;
+        })()}
+
         {/* ── Brand Manager (Brand Master) ── */}
         {(prestigeLevels.brandmaster||0)>=1&&<div style={{...S.card,borderColor:'#d0a06044'}}>
           <div style={{...S.cT,color:'#d0a060',cursor:'pointer',display:'flex',justifyContent:'space-between'}} onClick={()=>setShowBrandMgr(p=>!p)}>
@@ -8119,7 +8189,7 @@ function CindervaleAlchemistInner(){
           {relics.length===0&&<div style={{fontSize:14,color:TH.textDim,textAlign:'center',padding:6}}>Go on expeditions to discover relics! (15% chance per hour)</div>}
         </div>}
 
-        <div style={S.card}><div style={S.cT}>{'\u2697\ufe0f'} Recipes ({known.filter(id=>{const rx=RECIPES.find(r=>r.id===id);return rx&&!rx.fieldOnly&&!(rx.buff&&ELIXIR_BUFFS[rx.buff]);}).length}/{RECIPES.filter(r=>!r.fieldOnly&&!(r.buff&&ELIXIR_BUFFS[r.buff])&&canCraftAtLocation(r.ingr)).length})</div>
+        <div style={S.card} className={isWsOpen('ws25')?'':'ws-closed'}><div style={{...S.cT,cursor:'pointer',userSelect:'none'}} onClick={()=>toggleWs('ws25')}><span style={{display:'flex',justifyContent:'space-between',width:'100%'}}><span>{'\u2697\ufe0f'} Recipes ({known.filter(id=>{const rx=RECIPES.find(r=>r.id===id);return rx&&!rx.fieldOnly&&!(rx.buff&&ELIXIR_BUFFS[rx.buff]);}).length}/{RECIPES.filter(r=>!r.fieldOnly&&!(r.buff&&ELIXIR_BUFFS[r.buff])&&canCraftAtLocation(r.ingr)).length})</span><span style={{fontSize:13,color:TH.textDim}}>{isWsOpen('ws25')?'▲':'▼'}</span></span></div>
         {RECIPES.filter(r=>known.includes(r.id)&&!r.fieldOnly&&!(r.buff&&ELIXIR_BUFFS[r.buff])).map(r=>{
           const cost={};r.ingr.forEach(id=>{cost[id]=(cost[id]||0)+1;});const can=Object.entries(cost).every(([id,q])=>(inv[id]||0)>=q);
           const fOk=!r.faction||getRL(r.faction)>=(r.fReq||0);const masteryD=getMasteryDiscount(brewCounts,r.id);const adjDC=Math.max(5,r.dc-masteryD);
@@ -8260,8 +8330,8 @@ function CindervaleAlchemistInner(){
           </div>);})}
         </div>
         {/* Sell potions & ingredients inline */}
-        {(Object.entries(pots).some(([,q])=>q>0)||Object.entries(inv).some(([,q])=>q>0))&&<div style={S.card}>
-          <div style={S.cT}>💰 Sell</div>
+        {(Object.entries(pots).some(([,q])=>q>0)||Object.entries(inv).some(([,q])=>q>0))&&<div style={S.card} className={isWsOpen('ws26')?'':'ws-closed'}>
+          <div style={{...S.cT,cursor:'pointer',userSelect:'none'}} onClick={()=>toggleWs('ws26')}><span style={{display:'flex',justifyContent:'space-between',width:'100%'}}><span>💰 Sell</span><span style={{fontSize:13,color:TH.textDim}}>{isWsOpen('ws26')?'▲':'▼'}</span></span></div>
           {Object.entries(pots).filter(([,q])=>q>0).length>0&&<div style={{fontSize:15,color:TH.gold,marginBottom:4}}>Potions</div>}
           {Object.entries(pots).filter(([,q])=>q>0).map(([id,qty])=>{const baseId=getBaseRecipeId(id);const r=RECIPES.find(r=>r.id===baseId);if(!r)return null;const pq=getPotQuality(id);const qT=QUALITY[pq]||QUALITY.std;
             const sp=Math.floor((r.xp+getSkMod('aesthetics')*2+getSkMod('haggling')+Math.floor(upEff('sellBonus')*r.xp))*qT.sellMult);
@@ -8294,8 +8364,8 @@ function CindervaleAlchemistInner(){
       {screen==='research'&&<>
         <BackBar title="Research" icon="📚" back="workshop"/>
         {/* ── Study (spend hours to discover recipes/enchantments) ── */}
-        <div style={{...S.card,borderColor:TH.cyan+'44'}}>
-          <div style={S.cT}>📚 Study</div>
+        <div style={{...S.card,borderColor:TH.cyan+'44'}} className={isWsOpen('ws27')?'':'ws-closed'}>
+          <div style={{...S.cT,cursor:'pointer',userSelect:'none'}} onClick={()=>toggleWs('ws27')}><span style={{display:'flex',justifyContent:'space-between',width:'100%'}}><span>📚 Study</span><span style={{fontSize:13,color:TH.textDim}}>{isWsOpen('ws27')?'▲':'▼'}</span></span></div>
           <div style={{fontSize:14,color:TH.textDim,marginBottom:6,lineHeight:1.5}}>
             Spend 2 hours studying your notes and references to discover new recipes or enchantment techniques. Discovery chance scales with 🌟 Innovation ({getSkMod('innovation')}) and 🔬 Research ({getSkMod('research')}) skill ranks.
           </div>
@@ -8357,8 +8427,8 @@ function CindervaleAlchemistInner(){
           </div>}
         </div>
         {/* ── Experiment Bench ── */}
-        <div style={{...S.card,borderColor:TH.purple+'66'}}>
-          <div style={S.cT}>🧪 Experiment Bench</div>
+        <div style={{...S.card,borderColor:TH.purple+'66'}} className={isWsOpen('ws28')?'':'ws-closed'}>
+          <div style={{...S.cT,cursor:'pointer',userSelect:'none'}} onClick={()=>toggleWs('ws28')}><span style={{display:'flex',justifyContent:'space-between',width:'100%'}}><span>🧪 Experiment Bench</span><span style={{fontSize:13,color:TH.textDim}}>{isWsOpen('ws28')?'▲':'▼'}</span></span></div>
           <div style={{fontSize:14,color:TH.textDim,marginBottom:6,lineHeight:1.5}}>
             Combine ingredients and attempt a brew. If the combination matches an undiscovered recipe, you'll learn it! Quest givers often hint at ingredients.
           </div>
@@ -8402,8 +8472,8 @@ function CindervaleAlchemistInner(){
           </div>
         </div>
         {/* ── Published Papers (Scholar) ── */}
-        {getFeatureVal('publishPapers')&&<div style={{...S.card,borderColor:TH.cyan+'44'}}>
-          <div style={S.cT}>📝 Research Papers ({pubPapers.length})</div>
+        {getFeatureVal('publishPapers')&&<div style={{...S.card,borderColor:TH.cyan+'44'}} className={isWsOpen('ws29')?'':'ws-closed'}>
+          <div style={{...S.cT,cursor:'pointer',userSelect:'none'}} onClick={()=>toggleWs('ws29')}><span style={{display:'flex',justifyContent:'space-between',width:'100%'}}><span>📝 Research Papers ({pubPapers.length})</span><span style={{fontSize:13,color:TH.textDim}}>{isWsOpen('ws29')?'▲':'▼'}</span></span></div>
           <div style={{fontSize:14,color:TH.textDim,marginBottom:6,lineHeight:1.5}}>
             Publish papers on your discoveries for passive daily gold income. Each discovery can be published once.
             {getFeatureVal('paperScaling')?' Paper income grows over time.':''}
@@ -8455,8 +8525,8 @@ function CindervaleAlchemistInner(){
           if(canFaction)Object.keys(FACTIONS).forEach(fid=>{if(FACTIONS[fid].res)targetSet.add(FACTIONS[fid].res);});
           const targets=[...targetSet].filter(id=>id!==txSource);
           return(
-            <div style={S.card}>
-              <div style={S.cT}>🔄 Transmute Ingredients</div>
+            <div style={S.card} className={isWsOpen('ws30')?'':'ws-closed'}>
+              <div style={{...S.cT,cursor:'pointer',userSelect:'none'}} onClick={()=>toggleWs('ws30')}><span style={{display:'flex',justifyContent:'space-between',width:'100%'}}><span>🔄 Transmute Ingredients</span><span style={{fontSize:13,color:TH.textDim}}>{isWsOpen('ws30')?'▲':'▼'}</span></span></div>
               <div style={{fontSize:14,color:TH.textDim,marginBottom:8,lineHeight:1.5}}>
                 Convert {ratio} of one ingredient into 1 of another.{free?' Transmutations are free!':' Costs 1 hour per transmutation.'}{canFaction?' Faction ingredients available.':''}
               </div>
@@ -8499,8 +8569,8 @@ function CindervaleAlchemistInner(){
         <BackBar title="Customers" icon="🛒" back="workshop"/>
 
         {/* ── Shop Shelves ── */}
-        <div style={S.card}>
-          <div style={S.cT}>🏪 Shop Shelves ({shelfTotal}/{SHELF_MAX})</div>
+        <div style={S.card} className={isWsOpen('ws31')?'':'ws-closed'}>
+          <div style={{...S.cT,cursor:'pointer',userSelect:'none'}} onClick={()=>toggleWs('ws31')}><span style={{display:'flex',justifyContent:'space-between',width:'100%'}}><span>🏪 Shop Shelves ({shelfTotal}/{SHELF_MAX})</span><span style={{fontSize:13,color:TH.textDim}}>{isWsOpen('ws31')?'▲':'▼'}</span></span></div>
           <div style={{fontSize:14,color:TH.textDim,marginBottom:6}}>Stock potions for townsfolk to browse. Shelved potions sell passively overnight.</div>
           {Object.entries(shelves).filter(([,q])=>q>0).length>0?
             <div style={{marginBottom:6}}>{Object.entries(shelves).filter(([,q])=>q>0).map(([id,qty])=>{const baseId=getBaseRecipeId(id);const r=RECIPES.find(x=>x.id===baseId);if(!r)return null;const _inf=getInfusion(id);const _infObj=_inf?INFUSIONS[_inf]:null;
@@ -8522,8 +8592,8 @@ function CindervaleAlchemistInner(){
         </div>
 
         {/* ── Potion Orders ── */}
-        {potCustQ.length>0&&<div style={S.card}>
-          <div style={S.cT}>🧪 Potion Orders ({potCustQ.length})</div>
+        {potCustQ.length>0&&<div style={S.card} className={isWsOpen('ws32')?'':'ws-closed'}>
+          <div style={{...S.cT,cursor:'pointer',userSelect:'none'}} onClick={()=>toggleWs('ws32')}><span style={{display:'flex',justifyContent:'space-between',width:'100%'}}><span>🧪 Potion Orders ({potCustQ.length})</span><span style={{fontSize:13,color:TH.textDim}}>{isWsOpen('ws32')?'▲':'▼'}</span></span></div>
           {potCustQ.map(cust=>{
             const have=countAllPots(getBaseRecipeId(cust.potionId))>=cust.qty;
             return(
@@ -8551,7 +8621,7 @@ function CindervaleAlchemistInner(){
         {enchQ.length===0&&potCustQ.length===0&&<div style={S.card}><div style={{color:TH.textDim,textAlign:'center',padding:12}}>
           <div style={{fontSize:20,marginBottom:4}}>🛒</div>No customers today. Stock your shelves and rest to attract buyers.
         </div></div>}
-        {enchQ.length>0&&<div style={{...S.card,borderColor:TH.purple+'44'}}><div style={S.cT}>✨ Enchant Requests ({enchQ.length})</div>
+        {enchQ.length>0&&<div style={{...S.card,borderColor:TH.purple+'44'}} className={isWsOpen('ws33')?'':'ws-closed'}><div style={{...S.cT,cursor:'pointer',userSelect:'none'}} onClick={()=>toggleWs('ws33')}><span style={{display:'flex',justifyContent:'space-between',width:'100%'}}><span>✨ Enchant Requests ({enchQ.length})</span><span style={{fontSize:13,color:TH.textDim}}>{isWsOpen('ws33')?'▲':'▼'}</span></span></div>
           <div style={{fontSize:14,color:TH.textDim,marginBottom:6}}>Each customer brings a specific item and requests specific enchantments. Discover new enchantments via Research.</div>
         </div>}
         {enchQ.map(cust=>{
@@ -8873,7 +8943,7 @@ function CindervaleAlchemistInner(){
         </>}
         {workshopListView&&<>
           {/* ═══ LIST VIEW (original) ═══ */}
-          <div style={S.card}><div style={S.cT}>🏗️ Upgrades ({upgrades.length})</div>
+          <div style={S.card} className={isWsOpen('ws34')?'':'ws-closed'}><div style={{...S.cT,cursor:'pointer',userSelect:'none'}} onClick={()=>toggleWs('ws34')}><span style={{display:'flex',justifyContent:'space-between',width:'100%'}}><span>🏗️ Upgrades ({upgrades.length})</span><span style={{fontSize:13,color:TH.textDim}}>{isWsOpen('ws34')?'▲':'▼'}</span></span></div>
           {['Crafting','Storage','Business','Comfort','Advanced'].map(cat=>{
             const catUps=Object.values(UPGRADES).filter(u=>u.cat===cat);return(
             <div key={cat} style={{marginBottom:8}}>
@@ -8918,7 +8988,7 @@ function CindervaleAlchemistInner(){
             <div><b style={{color:TH.text}}>🔨 Construct</b> — Prepares a workshop upgrade overnight. Progress scales with <b style={{color:STATS.dis.color}}>Discipline</b>. When prep reaches 100%, the upgrade's gold cost drops 40% and one material requirement is waived.</div>
           </div>}
         </div>
-        <div style={S.card}><div style={S.cT}>👥 Employees ({hiredAppr.length}/{maxAppr})</div>
+        <div style={S.card} className={isWsOpen('ws35')?'':'ws-closed'}><div style={{...S.cT,cursor:'pointer',userSelect:'none'}} onClick={()=>toggleWs('ws35')}><span style={{display:'flex',justifyContent:'space-between',width:'100%'}}><span>👥 Employees ({hiredAppr.length}/{maxAppr})</span><span style={{fontSize:13,color:TH.textDim}}>{isWsOpen('ws35')?'▲':'▼'}</span></span></div>
           {hiredAppr.length===0&&<div style={{color:TH.textDim,fontSize:15,padding:4}}>Your workshop is quiet. Hire apprentices to help with foraging, brewing, and running the shop while you focus on what matters.</div>}
           {hiredAppr.map(ap=>{const task=apprTasks[ap.id];const aLvl=getApprLvl(ap.id);
             // Skill fit calculation for each task type
@@ -8993,7 +9063,7 @@ function CindervaleAlchemistInner(){
                 </div>;})()}
             </div>);})}
         </div>
-        {hiredAppr.length<maxAppr&&availPool.length>0&&<div style={S.card}><div style={S.cT}>📋 Available for Hire</div>
+        {hiredAppr.length<maxAppr&&availPool.length>0&&<div style={S.card} className={isWsOpen('ws36')?'':'ws-closed'}><div style={{...S.cT,cursor:'pointer',userSelect:'none'}} onClick={()=>toggleWs('ws36')}><span style={{display:'flex',justifyContent:'space-between',width:'100%'}}><span>📋 Available for Hire</span><span style={{fontSize:13,color:TH.textDim}}>{isWsOpen('ws36')?'▲':'▼'}</span></span></div>
           {availPool.map(ap=>{
             const taskRanks=Object.entries(TASK_TYPES).map(([type,td])=>{
               const sv=ap.baseStat[td.stat]||10;const mod=getMod(sv);
@@ -9026,7 +9096,7 @@ function CindervaleAlchemistInner(){
       {/* ═══════════ QUESTS ═══════════ */}
       {screen==='quests'&&<>
         <BackBar title="Quest Board" icon="📜"/>
-        {aQ.length>0&&<div style={S.card}><div style={S.cT}>📜 Active Quests ({aQ.length})</div>
+        {aQ.length>0&&<div style={S.card} className={isWsOpen('ws37')?'':'ws-closed'}><div style={{...S.cT,cursor:'pointer',userSelect:'none'}} onClick={()=>toggleWs('ws37')}><span style={{display:'flex',justifyContent:'space-between',width:'100%'}}><span>📜 Active Quests ({aQ.length})</span><span style={{fontSize:13,color:TH.textDim}}>{isWsOpen('ws37')?'▲':'▼'}</span></span></div>
           {aQ.map(q=>{const p=qP(q);const ok=p.c>=p.n;const steps=qSteps(q);return(
             <div key={q.id} style={{padding:'8px 10px',background:TH.panelLight,borderRadius:4,marginBottom:6,border:`1px solid ${ok?TH.green:TH.borderGold}`}}>
               <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
@@ -9060,7 +9130,7 @@ function CindervaleAlchemistInner(){
             <GoBtn to="tavern" label="🍺 Visit Tavern"/>
           </div>
         </div></div>}
-        {availQ.length>0&&<div style={S.card}><div style={S.cT}>📋 Available Quests</div>
+        {availQ.length>0&&<div style={S.card} className={isWsOpen('ws38')?'':'ws-closed'}><div style={{...S.cT,cursor:'pointer',userSelect:'none'}} onClick={()=>toggleWs('ws38')}><span style={{display:'flex',justifyContent:'space-between',width:'100%'}}><span>📋 Available Quests</span><span style={{fontSize:13,color:TH.textDim}}>{isWsOpen('ws38')?'▲':'▼'}</span></span></div>
           <div style={{fontSize:14,color:TH.textDim,marginBottom:6}}>Visit the quest giver to hear their story and accept.</div>
           {availQ.map(q=>{
             const goScreen=q.loc==='market'?'market':'tavern';
@@ -9085,8 +9155,8 @@ function CindervaleAlchemistInner(){
             </div>);})}
         </div>}
         {/* ── Defense Quests (External Threats) ── */}
-        {defenseQuests.length>0&&<div style={{...S.card,borderColor:'#cc444433'}}>
-          <div style={S.cT}>🛡️ Defense Requests</div>
+        {defenseQuests.length>0&&<div style={{...S.card,borderColor:'#cc444433'}} className={isWsOpen('ws39')?'':'ws-closed'}>
+          <div style={{...S.cT,cursor:'pointer',userSelect:'none'}} onClick={()=>toggleWs('ws39')}><span style={{display:'flex',justifyContent:'space-between',width:'100%'}}><span>🛡️ Defense Requests</span><span style={{fontSize:13,color:TH.textDim}}>{isWsOpen('ws39')?'▲':'▼'}</span></span></div>
           <div style={{fontSize:13,color:TH.textDim,marginBottom:4}}>Supply materials to defend {locName} against external threats. Reduces threat levels.</div>
           {defenseQuests.map(dq=>{
             const tf=THREAT_FACTIONS[dq.threatId];
@@ -9105,8 +9175,8 @@ function CindervaleAlchemistInner(){
         </div>}
 
         {/* ── Notice Board (Repeatable Quests) ── */}
-        <div style={{...S.card,borderColor:TH.borderGold}}>
-          <div style={S.cT}>📌 Village Notice Board <span style={{fontSize:14,color:TH.textDim,fontWeight:'normal'}}>— daily requests ({doneBQCount} fulfilled)</span></div>
+        <div style={{...S.card,borderColor:TH.borderGold}} className={isWsOpen('ws40')?'':'ws-closed'}>
+          <div style={{...S.cT,cursor:'pointer',userSelect:'none'}} onClick={()=>toggleWs('ws40')}><span style={{display:'flex',justifyContent:'space-between',width:'100%'}}><span>📌 Village Notice Board <span style={{fontSize:14,color:TH.textDim,fontWeight:'normal'}}>— daily requests ({doneBQCount} fulfilled)</span></span><span style={{fontSize:13,color:TH.textDim}}>{isWsOpen('ws40')?'▲':'▼'}</span></span></div>
 
           {/* Active board quests */}
           {activeBQ.length>0&&<>
@@ -9189,7 +9259,7 @@ function CindervaleAlchemistInner(){
             </div>
           </div>
         </div>
-        <div style={S.card}><div style={S.cT}>🛡️ Factions</div>
+        <div style={S.card} className={isWsOpen('ws41')?'':'ws-closed'}><div style={{...S.cT,cursor:'pointer',userSelect:'none'}} onClick={()=>toggleWs('ws41')}><span style={{display:'flex',justifyContent:'space-between',width:'100%'}}><span>🛡️ Factions</span><span style={{fontSize:13,color:TH.textDim}}>{isWsOpen('ws41')?'▲':'▼'}</span></span></div>
         {Object.entries(locFactions).map(([fid,f])=>{const rep=fRep[fid]||0;const rl=getRepLvl(rep);const nxt=rl<REP_TH.length-1?REP_TH[rl+1]:null;const isAligned=factionAlign===fid;
           const activeBonuses=f.tierBonuses.filter((_,i)=>i<rl&&Object.keys(f.tierBonuses[i].effects).length>0).length+(isAligned?1:0);
           return(
@@ -9225,7 +9295,7 @@ function CindervaleAlchemistInner(){
               </div>);})}
         </div>
         {/* Faction Quest Chains */}
-        <div style={S.card}><div style={S.cT}>⛓️ Faction Quest Chains</div>
+        <div style={S.card} className={isWsOpen('ws42')?'':'ws-closed'}><div style={{...S.cT,cursor:'pointer',userSelect:'none'}} onClick={()=>toggleWs('ws42')}><span style={{display:'flex',justifyContent:'space-between',width:'100%'}}><span>⛓️ Faction Quest Chains</span><span style={{fontSize:13,color:TH.textDim}}>{isWsOpen('ws42')?'▲':'▼'}</span></span></div>
         {Object.entries(locFactions).map(([fid,f])=>{
           const chainQs=QUESTS.filter(q=>q.chain===fid);
           if(!chainQs.length)return null;
@@ -10136,6 +10206,7 @@ function CindervaleAlchemistInner(){
           .cv-journal-mobile{display:block!important;}
         }
         * { overflow-anchor: none; }
+        .ws-closed > *:not(:first-child) { display: none !important; }
         .cv-sidebar-left::-webkit-scrollbar,.cv-sidebar-right::-webkit-scrollbar{width:4px;}
         .cv-sidebar-left::-webkit-scrollbar-thumb,.cv-sidebar-right::-webkit-scrollbar-thumb{background:${TH.border};border-radius:2px;}
       `}</style>
