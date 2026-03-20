@@ -87,7 +87,7 @@ const Portrait=({cls,race,gender,size=120,style:extraStyle={}})=>{
 };
 
 const d20=()=>Math.floor(Math.random()*20)+1;
-const XP_TBL=[0,400,1040,2960,5760,9760,18160,28960,42760,66760,104760,164760,254360,382360,562360,814360,1144360];
+const XP_TBL=[0,400,1040,2800,5200,8800,14000,20800,29600,41600,57600,78400,105600,140800,188000,252000,340000];
 const getLvl=xp=>{let l=0;for(let i=0;i<XP_TBL.length;i++)if(xp>=XP_TBL[i])l=i;return l;};
 const nxtXP=xp=>{const l=getLvl(xp);return l>=XP_TBL.length-1?null:XP_TBL[l+1];};
 const profB=lvl=>Math.floor(lvl/4)+2;
