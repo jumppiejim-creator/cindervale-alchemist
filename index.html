@@ -605,7 +605,7 @@ function CindervaleAlchemistInner(){
       setPendingLevelUp({
         newCharLevel:newLv,step:'overview',
         chosenClass:null,chosenSpec:null,asiChoices:null,chosenFeat:null,
-        skillPointsSpent:{},needsASI,needsFeat,needsSpec:false,skillPointsAvailable:2+getFeatureVal('bonusSkillPerLevel'),
+        skillPointsSpent:{},needsASI,needsFeat,needsSpec:false,skillPointsAvailable:2+(getFeatureVal('bonusSkillEveryOther')&&newLv%2===0?1:0),
       });
       addLog(`⬆ Level ${newLv+1}! Time to advance your training.`,'level');
       const nw=[{icon:'⬆',text:`Level ${newLv+1}! Choose how to advance.`,color:TH.goldBright}];
@@ -3199,7 +3199,7 @@ function CindervaleAlchemistInner(){
   };
 
   // ─── SHOP SHELVES ───
-  const baseShelf=(hasUp('display')?12:hasUp('shopfront')?8:4)+getSkMod('stockpiling')*2;
+  const baseShelf=(hasUp('display')?12:hasUp('shopfront')?8:4)+getSkMod('stockpiling')*2+Math.floor(getFeatureVal('shelfCapBonus'));
   const SHELF_MAX=Math.floor(baseShelf*(1+getFeatureVal('shelfCapacityBonus'))*(getFeatureVal('doubleStorage')?2:1));
   const shelfTotal=Object.values(shelves).reduce((s,v)=>s+v,0);
   const stockShelf=(potId,qty)=>{
@@ -6561,12 +6561,20 @@ function CindervaleAlchemistInner(){
                 // Apply feat
                 if(pendingLevelUp.chosenFeat){
                   setPlayerFeats(p=>[...p,pendingLevelUp.chosenFeat]);
-                  // Grant retroactive skill points for feats with bonusSkillPerLevel
+                  // Grant retroactive skill points for feats with bonusSkillEveryOther
                   const featDef=FEATS[pendingLevelUp.chosenFeat];
-                  if(featDef?.effects?.bonusSkillPerLevel){
-                    const retroPts=pendingLevelUp.newCharLevel*featDef.effects.bonusSkillPerLevel;
+                  if(featDef?.effects?.bonusSkillEveryOther){
+                    const retroPts=Math.floor((pendingLevelUp.newCharLevel+1)/2);
                     setSkPts(p=>p+retroPts);
-                    addLog(`🧠 ${featDef.name}: +${retroPts} retroactive skill points (${featDef.effects.bonusSkillPerLevel}/level × ${(pendingLevelUp.newCharLevel+1)} levels)`,'level');
+                    addLog(`🧠 ${featDef.name}: +${retroPts} retroactive skill points (every other level × ${(pendingLevelUp.newCharLevel+1)} levels)`,'level');
+                  }
+                  // Grant immediate enchantment patterns for learnEnchOnPick
+                  if(featDef?.effects?.learnEnchOnPick){
+                    const n=featDef.effects.learnEnchOnPick;
+                    const unk=ENCHANTMENTS.filter(e=>!knownEnch.includes(e.id));
+                    const picks=unk.sort(()=>Math.random()-0.5).slice(0,n);
+                    if(picks.length>0){setKnownEnch(p=>[...p,...picks.map(e=>e.id)]);
+                      addLog(`📖 ${featDef.name}: Learned ${picks.map(e=>e.icon+e.name).join(', ')}!`,'level');}
                   }
                 }
                 // Apply ASI
@@ -8312,7 +8320,9 @@ function CindervaleAlchemistInner(){
               </div>}
               {/* Brew + Batch buttons */}
               <div style={{display:'flex',gap:3,alignItems:'center',flexWrap:'wrap'}}>
-                {[1,2,3,5].map(n=>{
+                {(()=>{const maxBatch=5+Math.floor(getFeatureVal('batchSizeBonus')+upEff('batchSizeBonus'));
+                  const sizes=[1,2,3,5,...(maxBatch>5?[maxBatch]:[])].filter((v,i,a)=>v<=maxBatch&&a.indexOf(v)===i).sort((a,b)=>a-b);
+                  return sizes.map(n=>{
                   const batchEC=n===1?1:Math.ceil(n/2);
                   const canN=fOk&&hours>=batchEC&&Object.entries(selCost).every(([id,q])=>(inv[id]||0)>=q*n);
                   const bc=selBuyCalc(n);
@@ -8324,7 +8334,7 @@ function CindervaleAlchemistInner(){
                     {!canN&&bc.canBuy&&fOk&&hours>=batchEC&&<button style={{fontSize:11,padding:'2px 5px',background:TH.gold,color:TH.bg,border:'none',borderRadius:3,cursor:'pointer',fontFamily:'inherit'}}
                       onClick={()=>selDoBuy(n)}>🛒 {bc.total}g</button>}
                   </span>;
-                })}
+                })})()}
               </div>
               {/* Show what's needed if can't brew ×1 */}
               {(()=>{
