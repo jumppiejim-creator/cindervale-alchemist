@@ -3638,9 +3638,13 @@ function CindervaleAlchemistInner(){
       } else if(task.type==='research_task'){
         const undP=RECIPES.filter(r=>!known.includes(r.id)&&!staffDiscR.includes(r.id)&&level>=r.unlock&&(!r.faction||getRL(r.faction)>=(r.fReq||0))&&canCraftAtLocation(r.ingr)&&!r.fieldOnly);
         const undE=ENCHANTMENTS.filter(e=>!knownEnch.includes(e.id)&&!staffDiscE.includes(e.id)&&(!e.faction||getRL(e.faction)>=(e.fReq||0))&&canCraftAtLocation(e.ingr));
-        const discoveryChance=0.15+eff*0.2;
+        const playerDiscBonus=getFeatureVal('discoveryChanceBonus');
+        const discoveryChance=Math.min(0.85,0.20+eff*0.25+playerDiscBonus*0.5);
         if(Math.random()<discoveryChance){
-          if((undP.length>0&&Math.random()<0.5)||undE.length===0){
+          // Weight toward whichever pool is larger
+          const totalPool=undP.length+undE.length;
+          const pickRecipe=totalPool>0?Math.random()<(undP.length/totalPool):true;
+          if((pickRecipe&&undP.length>0)||undE.length===0){
             if(undP.length>0){const d=undP[Math.floor(Math.random()*undP.length)];staffDiscR.push(d.id);setKnown(p=>[...p,d.id]);
               report.push({n:ap.name,i:ap.icon,r:`Discovered ${d.icon}${d.name}!`,t:'ok'});}
             else report.push({n:ap.name,i:ap.icon,r:'Studied. No breakthrough.',t:'idle'});

@@ -591,14 +591,67 @@ var INGR={ashbloom:{name:'Ashbloom',icon:'🌿',val:5},embercap:{name:'Embercap'
 // When a system references a base ingredient, substitute with the local equivalent
 // Keys are base (Cindervale) ingredient IDs; values map location → replacement
 var INGR_SUBS={
-  ironroot_bark:{ashfall:'desert_iron',tidecrest:'driftstone'},
-  embercap:{ashfall:'scorchroot',tidecrest:'phosphor_moss'},
-  bark_resin:{ashfall:'palm_resin',tidecrest:'ships_tar'},
-  hearthstone:{ashfall:'heatstone',tidecrest:'brine_crystal'},
+  // === COMMON TIER (val 3-7) ===
+  ashbloom:{ashfall:'sunpetal',tidecrest:'kelp_frond'},        // val 5→5
+  char_root:{ashfall:'dried_cactus',tidecrest:'sea_salt'},     // val 3→3
+  wind_dust:{ashfall:'salt_flake',tidecrest:'tide_moss'},      // val 4→4
+  cinder_moss:{ashfall:'sand_glass',tidecrest:'foam_bloom'},   // val 5→5
+  ember_petal:{ashfall:'salt_flake',tidecrest:'dried_seaweed'},// val 3→3
+  soot_crystal:{ashfall:'sand_glass',tidecrest:'barnacle'},    // val 4→4
+  ash_salt:{ashfall:'salt_flake',tidecrest:'driftwood'},       // val 4→4
+  amber_sap:{ashfall:'red_clay',tidecrest:'sea_glass'},        // val 6→6
+  beetle_shell:{ashfall:'fire_ant_chitin',tidecrest:'crab_shell'},// val 7→6
+  thornvine:{ashfall:'scorchroot',tidecrest:'starfish_arm'},   // val 8→7
+  // === ASHFALL COMMON ===
+  sunpetal:{tidecrest:'sand_dollar'},                          // val 5→5
+  dustite:{tidecrest:'sea_snail'},                             // val 7→7
+  scorchroot:{tidecrest:'crab_shell'},                         // val 6→6
+  crystal_salt:{tidecrest:'coral_shard'},                      // val 8→8
+  dried_cactus:{tidecrest:'dried_seaweed'},                    // val 3→3
+  sand_glass:{tidecrest:'barnacle'},                           // val 4→4
+  salt_flake:{tidecrest:'sea_salt'},                           // val 3→3
+  red_clay:{tidecrest:'sea_glass'},                            // val 6→6
+  palm_resin:{tidecrest:'sponge_pulp'},                        // val 7→8
+  scarab_shell:{tidecrest:'bat_guano'},                        // val 8→8
+  fire_ant_chitin:{tidecrest:'cave_lichen_tc'},                // val 7→7
+  desert_iron:{tidecrest:'salt_crystal'},                      // val 9→9
+  // === MID TIER (val 8-16) ===
+  ironroot_bark:{ashfall:'desert_iron',tidecrest:'driftstone'},// val 7→9
+  embercap:{ashfall:'scorchroot',tidecrest:'phosphor_moss'},   // val 8→10
+  bark_resin:{ashfall:'palm_resin',tidecrest:'ships_tar'},     // val 6→10
+  hearthstone:{ashfall:'heatstone',tidecrest:'brine_crystal'}, // val 14→10
+  moonpetal:{ashfall:'dewdrop_lily',tidecrest:'deep_coral'},   // val 16→16
+  gloomcap:{ashfall:'obsidian_shard',tidecrest:'stormkelp'},   // val 12→12
+  echo_fungus:{ashfall:'scarab_shell',tidecrest:'urchin_spine'},// val 9→9
+  ghost_silk:{ashfall:'sandsilk',tidecrest:'jellyfish_essence'},// val 11→11
+  spore_dust:{ashfall:'sandstone_dust',tidecrest:'anemone_extract'},// val 10→10
+  mineral_clay:{ashfall:'red_clay',tidecrest:'pearl_dust'},    // val 11→11
+  crystal_shard:{ashfall:'crystal_salt',tidecrest:'nautilus_shell'},// val 13→13
+  nightdew:{ashfall:'dewdrop_lily',tidecrest:'whale_oil'},     // val 14→14
+  ashite:{ashfall:'heatstone',tidecrest:'barnacle_cluster'},   // val 10→10
+  brine_moss:{tidecrest:'barnacle_cluster'},                   // val 10→10
+  obsidian_shard:{tidecrest:'anglerfish_lure'},                // val 12→12
+  sandsilk:{tidecrest:'sharktooth'},                           // val 14→14
+  // === HIGH TIER (val 15-22) ===
+  volcanic_essence:{ashfall:'heatstone',tidecrest:'tidal_diamond'},// val 20→20
+  starwort:{ashfall:'desert_rose',tidecrest:'moonfish_scale'}, // val 15→15
+  embervein:{ashfall:'sulfur_crystal',tidecrest:'siren_tear'}, // val 18→18
+  dewdrop_lily:{tidecrest:'sea_fan'},                          // val 15→15
+  venomgland:{tidecrest:'cannon_bronze'},                      // val 16→16
+  dream_pollen:{tidecrest:'compass_needle'},                   // val 16→16
+  mirage_dust:{tidecrest:'trident_shard'},                     // val 22→22
+  sulfur_bloom:{ashfall:'heatstone',tidecrest:'abyssal_pearl'},// val 18→18
+  shadow_quartz:{ashfall:'obsidian_shard',tidecrest:'ghost_lantern'},// val 22→18
+  deep_iron:{ashfall:'desert_iron',tidecrest:'rust_iron'},     // val 20→14
+  // === FACTION RESOURCES ===
   sacred_ember:{ashfall:'flamekeeper_ember',tidecrest:'tidekeeper_sigil'},
   deep_crystal:{ashfall:'temple_gold',tidecrest:'abyssal_diamond'},
   veil_shard:{ashfall:'pharaoh_dust',tidecrest:'sea_crown_jewel'},
   warden_sigil:{ashfall:'dustwalker_compass',tidecrest:'harbor_seal'},
+  flamekeeper_ember:{tidecrest:'tidekeeper_sigil'},
+  // === ASHFALL HIGH ===
+  heatstone:{tidecrest:'salt_crystal'},                        // val 9→9
+  sandstone_dust:{tidecrest:'sponge_pulp'},                    // val 8→8
 };
 var FACTION_SUBS={
   ashwardens:{ashfall:'dustwalkers',tidecrest:'harbormasters'},
