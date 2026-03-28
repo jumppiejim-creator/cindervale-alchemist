@@ -187,7 +187,7 @@ var CLASSES={
     specs:{
       tinkerer:{id:'tinkerer',name:'Tinkerer',icon:'🔩',color:'#c0a040',bStat:'acu',bSkills:['analysis','research'],
         features:[
-          {classLv:3,name:'Gadgeteer',desc:'Craft utility gadgets for passive bonuses. +2 to ACU-based checks.',effects:{craftBonus:1,bonusSkillPerLevel:1}},
+          {classLv:3,name:'Gadgeteer',desc:'Craft utility gadgets for passive bonuses. +1 craft bonus. +15% experiment discovery. 50% salvage on failures.',effects:{craftBonus:1,experimentBonus:0.15,salvagePercent:0.50}},
           {classLv:6,name:'Swiss Army',desc:'Gadgets provide multiple benefits. +15% batch brew success. Workshop upgrades cost -15%.',effects:{batchSuccessBonus:0.15,upgradeCostReduction:0.15}},
           {classLv:10,name:'Masterwork Tools',desc:'Legendary utility tools. All craft DCs -2 permanently. 90% salvage on failure. Gadgets can be upgraded indefinitely beyond mark caps (+1 power per extra mark). Equip 2 gadgets simultaneously.',effects:{craftBonus:3,salvagePercent:0.90,infiniteGadgetMarks:true,dualGadgets:true}},
         ]},
@@ -215,9 +215,9 @@ var CLASSES={
       {classLv:4,name:'Eureka!',desc:'Experiments: +15% discovery chance. On discovery, show recipe stat/DC info.',effects:{experimentBonus:0.15,showRecipeInfo:true}},
       {classLv:5,name:'Academic Network',desc:'+15% XP from all sources. +1 free research study per day (2 total).',effects:{xpMultiplier:0.15,freeResearchPerDay:1}},
       {classLv:6,name:'Cross-Reference',desc:'Experiment Bench shows hints based on how close your combination is.',effects:{experimentHints:true}},
-      {classLv:7,name:'Thesis Defense',desc:'+3 to all ACU-based checks. Research can discover enchantment patterns too. +1 bonus skill point per level.',effects:{craftBonus:1,bonusSkillPerLevel:1,xpMultiplier:0.10}},
+      {classLv:7,name:'Thesis Defense',desc:'+3 to all ACU-based checks. Research can discover enchantment patterns too. +15% discovery chance. +10% XP.',effects:{craftBonus:3,discoveryChanceBonus:0.15,xpMultiplier:0.10}},
       {classLv:8,name:'Grand Theorem',desc:'+25% discovery chance from all sources. See full ingredient tables for explored regions.',effects:{discoveryChanceBonus:0.25,showIngredients:true}},
-      {classLv:9,name:'Polymath',desc:'+1 rank in every skill where you have 0 ranks. Baseline competence in everything.',effects:{bonusSkillPerLevel:2,craftBonus:1}},
+      {classLv:9,name:'Polymath',desc:'Baseline competence in everything. +2 to all craft, inscription, and extraction checks. +10% XP from all sources.',effects:{craftBonus:2,enchantBonus:2,extractionBonus:2,xpMultiplier:0.10}},
       {classLv:10,name:'Omniscience',desc:'Know all recipes. Experiment Bench shows exact results. +2 craft bonus from deep knowledge. +30% XP from all sources. Publish theoretical papers for passive gold.',effects:{xpMultiplier:0.30,discoveryChanceBonus:0.40,craftBonus:2,publishPapers:true}},
     ],
     specs:{
@@ -302,7 +302,7 @@ var CLASSES={
       quartermaster:{id:'quartermaster',name:'Quartermaster',icon:'📋',color:'#6080a0',bStat:'dis',bSkills:['stockpiling','efficiency'],
         features:[
           {classLv:3,name:'Supply Chain',desc:'Workshop storage doubled. Ingredient efficiency +25%. Spoilage threshold +4.',effects:{doubleStorage:true,ingredientEfficiency:0.25,spoilThreshold:4}},
-          {classLv:6,name:'Logistics Master',desc:'Auto-sort ingredients. Batch foraging. Free supply chain maintenance. Supply chain deliveries exempt from spoilage.',effects:{staffForageBonus:0.25,freeSupplyMaint:true,supplyChainNoSpoil:true}},
+          {classLv:6,name:'Logistics Master',desc:'Ingredient management mastery. Staff foraging +25%. +25% personal foraging yield. +4 spoilage threshold. Caravan deliveries are always fresh.',effects:{staffForageBonus:0.25,yieldMultiplier:0.25,spoilThreshold:4}},
           {classLv:10,name:'War Room',desc:'Fully automated ingredient management. Foraging yield +100%. Spoilage threshold +8.',effects:{staffEfficiencyBonus:0.30,yieldMultiplier:1,spoilThreshold:8}},
         ]},
       sentinel:{id:'sentinel',name:'Sentinel',icon:'🗼',color:'#a07040',bStat:'tec',bSkills:['extraction','precision'],

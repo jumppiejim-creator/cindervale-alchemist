@@ -1090,7 +1090,8 @@ function CindervaleAlchemistInner(){
     const sk=SKILLS[skId];if(!sk)return{success:false,total:0,roll:0,name:'?',mod:0,rb:0,dc,statName:'',icon:'',extras:[]};
     const roll=d20();const mod=getMod(eStat(sk.stat));const rb=rankB(skRanks[skId]||0,pb);const total=roll+mod+rb;
     const effDc=skId==='extraction'&&dayFlags.includes('clear_sky')?dc-2:dc;
-    return{roll,mod,rb,total,dc:effDc,success:total>=effDc,name:sk.name,icon:sk.icon,statName:STATS[sk.stat]?.name||'',extras:dayFlags.includes('clear_sky')&&skId==='extraction'?[{val:-2,label:'Clear Sky'}]:[]};
+    const dcNote=skId==='extraction'&&dayFlags.includes('clear_sky')?'☀️ -2':'';
+    return{roll,mod,rb,total,dc:effDc,dcNote,success:total>=effDc,name:sk.name,icon:sk.icon,statName:STATS[sk.stat]?.name||'',extras:[]};
   };
   const doHarvest=()=>{
     const reg=locRegions.find(r=>r.id===selHex);if(!reg)return;
@@ -10718,6 +10719,7 @@ function ExpeditionHourPopup({hr,TH,S,LC,INGR,FACTIONS,onOk,onSkipAll,remaining,
       <span style={{color:TH.textBright,fontWeight:'bold'}}> = {ch.total}</span>
       <span style={{color:TH.textDim,fontSize:14}}>vs</span>
       <span style={{fontWeight:'bold',color:TH.gold}}>DC{ch.dc}</span>
+      {ch.dcNote&&<span style={{fontSize:11,color:TH.green}}>({ch.dcNote})</span>}
     </div>);
   };
 
