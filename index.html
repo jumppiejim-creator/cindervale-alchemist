@@ -510,8 +510,10 @@ function CindervaleAlchemistInner(){
       // journalCraftBonus: field journal entries grant craft bonus
       const jcb=playerFeats.some(fid=>FEATS[fid]?.effects?.journalCraftBonus)||Object.values(classLevels).some((lv,i)=>lv>=4);const fjLen=fieldJournal?.length||0;if(fjLen>0){let jBonus=0;for(const [cid3,lv3] of Object.entries(classLevels)){const cls3=CLASSES[cid3];if(!cls3)continue;const sp3=specs[cid3];if(sp3&&cls3.specs?.[sp3]){for(const sf3 of cls3.specs[sp3].features){if(sf3.classLv<=lv3&&sf3.effects?.journalCraftBonus)jBonus+=sf3.effects.journalCraftBonus;}}}if(jBonus>0)total+=Math.min(jBonus*2,Math.floor(fjLen/3)*jBonus);}
     }
+    // Companion passive bonuses (always-on while companion is active)
+    if(companions?.length>0&&typeof RANGER_COMPANIONS!=='undefined'){companions.filter(cc=>cc.active).forEach(cc=>{const comp=RANGER_COMPANIONS.find(r=>r.id===cc.compId);if(comp?.passive?.[effectKey]!=null){const v=comp.passive[effectKey];total+=typeof v==='number'?v:v===true?1:0;}});}
     return total;
-  },[classLevels,specs,playerFeats,fRep,factionAlign,loreFragments,activeBuffs,mentorBonuses,museumBonuses,legacyFeature,pubPapers,fieldJournal]);
+  },[classLevels,specs,playerFeats,fRep,factionAlign,loreFragments,activeBuffs,mentorBonuses,museumBonuses,legacyFeature,pubPapers,fieldJournal,companions]);
   const hasFeature=useCallback((effectKey)=>{
     for(const [cid,lv] of Object.entries(classLevels)){
       const cls=CLASSES[cid];if(!cls)continue;
@@ -2073,8 +2075,8 @@ function CindervaleAlchemistInner(){
     const luckyChance=getFeatureVal('luckyBrewChance');
     if(!ch.success&&luckyChance>0&&Math.random()<luckyChance){ch.success=true;ch.extras.push({label:'🍀 Lucky!',val:'Auto'});}
     if(!ch.success){
-      // craftReroll: once per day, reroll a failed craft
-      const rerollCharges=getFeatureVal('craftReroll');
+      // craftReroll: once per day, reroll a failed craft (includes companion resurrect charges)
+      const rerollCharges=getFeatureVal('craftReroll')+dayFlags.filter(f=>f==='companion_reroll').length;
       const rerollsUsed=dayFlags.filter(f=>f==='craft_rerolled').length;
       if(rerollCharges>rerollsUsed){
         const rr=doCheck(sk,adjDC);
@@ -2419,7 +2421,7 @@ function CindervaleAlchemistInner(){
     if(arcPatternB){ch.total+=arcPatternB;ch.extras.push({label:'\u2728 Arcanist',val:arcPatternB});}
     const adj=ch.total+arcB+focB+csb+efb+esf+arcPatternB;ch.total=adj;ch.success=adj>=adjDC||(autoEnchDC>0&&adjDC<=autoEnchDC)||isCrit;
     if(!ch.success){
-      const crCharges=getFeatureVal('checkReroll');
+      const crCharges=getFeatureVal('checkReroll')+dayFlags.filter(f=>f==='companion_reroll').length;
       const crUsed=dayFlags.filter(f=>f==='check_rerolled').length;
       if(crCharges>crUsed){
         const rr=doCheck('inscription',adjDC);
@@ -3291,7 +3293,8 @@ function CindervaleAlchemistInner(){
   };
 
   // ─── SHOP SHELVES ───
-  const baseShelf=(hasUp('display')?12:hasUp('shopfront')?8:4)+getSkMod('stockpiling')*2+Math.floor(getFeatureVal('shelfCapBonus'));
+  const compShelfBonus=(()=>{let b=0;companions.filter(c=>c.active).forEach(c=>{const comp=RANGER_COMPANIONS.find(r=>r.id===c.compId);if(comp?.secondary?.type==='organize'&&c.loyalty>=(comp.secondary.unlockLv||3))b+=c.loyalty;});return b;})();
+  const baseShelf=(hasUp('display')?12:hasUp('shopfront')?8:4)+getSkMod('stockpiling')*2+Math.floor(getFeatureVal('shelfCapBonus'))+compShelfBonus;
   const SHELF_MAX=Math.floor(baseShelf*(1+getFeatureVal('shelfCapacityBonus'))*(getFeatureVal('doubleStorage')?2:1));
   const shelfTotal=Object.values(shelves).reduce((s,v)=>s+v,0);
   const stockShelf=(potId,qty)=>{
@@ -3996,7 +3999,9 @@ function CindervaleAlchemistInner(){
     const banditTier=getThreatTier(newThreats[locThreatIds[0]]||0);
     const banditTF=THREAT_FACTIONS[locThreatIds[0]];
     const fortWard=getFeatureVal('fortressWard');
-    const theftChance=(fortWard&&(newThreats[locThreatIds[0]]||0)<75)?0:(banditTier==='critical'?0.20:banditTier==='dangerous'?0.10:0);
+    // Companion guard: block negative gold/ingredient events
+    const hasCompGuard=companions.some(cc=>cc.active&&(()=>{const comp=RANGER_COMPANIONS.find(r=>r.id===cc.compId);return comp?.secondary?.type==='guard'&&cc.loyalty>=(comp.secondary.unlockLv||3);})());
+    const theftChance=(fortWard&&(newThreats[locThreatIds[0]]||0)<75)?0:hasCompGuard?0:(banditTier==='critical'?0.20:banditTier==='dangerous'?0.10:0);
     let stolenGold=0;
     if(theftChance>0&&shelfGold>0&&Math.random()<theftChance*2){
       stolenGold=Math.floor(shelfGold*theftChance);
@@ -4005,7 +4010,7 @@ function CindervaleAlchemistInner(){
 
     // Corruption ingredient loss (position 1 threat, Critical only)
     const corruptTF=THREAT_FACTIONS[locThreatIds[1]];
-    if(getThreatTier(newThreats[locThreatIds[1]]||0)==='critical'&&!(fortWard&&(newThreats[locThreatIds[1]]||0)<75)&&Math.random()<0.10){
+    if(getThreatTier(newThreats[locThreatIds[1]]||0)==='critical'&&!hasCompGuard&&!(fortWard&&(newThreats[locThreatIds[1]]||0)<75)&&Math.random()<0.10){
       const ingrKeys=Object.entries(inv).filter(([,q])=>q>0).map(([id])=>id);
       if(ingrKeys.length>0){
         const lostId=ingrKeys[Math.floor(Math.random()*ingrKeys.length)];
@@ -4777,15 +4782,17 @@ function CindervaleAlchemistInner(){
         const compEffB=1+getFeatureVal('companionEffBonus');
         const entry={id:comp.id,icon:comp.icon,name:comp.name,loyalty:loy,actions:[]};
         // Primary abilities
+        const lvBonus=Math.floor(level/3); // +1 yield/gold per 3 player levels
         if(comp.primary.type==='gather'){
-          const yield_=Math.floor(comp.primary.baseYield[Math.min(loy-1,4)]*compEffB);
+          const yield_=Math.floor((comp.primary.baseYield[Math.min(loy-1,4)]+lvBonus)*compEffB);
           const items={};for(let i=0;i<yield_;i++){const id=comp.primary.ingr[Math.floor(Math.random()*comp.primary.ingr.length)];items[id]=(items[id]||0)+1;}
           setInv(p=>{const n={...p};Object.entries(items).forEach(([id,q])=>{n[id]=(n[id]||0)+q;});return n;});
           const valStr=Object.entries(items).map(([id,q])=>(INGR[id]?.icon||id)+'×'+q).join(' ');
-          compLines.push({icon:comp.icon,label:comp.name+' gathered',val:valStr,color:TH.green});
+          const gatherXp=Math.floor(yield_*2);gainXP(gatherXp);
+          compLines.push({icon:comp.icon,label:comp.name+' gathered',val:valStr+' (+'+gatherXp+' XP)',color:TH.green});
           entry.actions.push({type:'gather',text:comp.name+' brought back ingredients',val:valStr,color:TH.green});
         } else if(comp.primary.type==='shop'){
-          const g=Math.floor(comp.primary.baseGold[Math.min(loy-1,4)]*compEffB);setGold(gg=>gg+g);
+          const g=Math.floor((comp.primary.baseGold[Math.min(loy-1,4)]+lvBonus*3)*compEffB);setGold(gg=>gg+g);
           compLines.push({icon:comp.icon,label:comp.name+' tended shop',val:'+'+g+'g',color:TH.gold});
           entry.actions.push({type:'shop',text:comp.name+' helped at the shop',val:'+'+g+'g',color:TH.gold});
         } else if(comp.primary.type==='staff_morale'){
@@ -4809,30 +4816,69 @@ function CindervaleAlchemistInner(){
         // companionDualAction: companions perform primary action a second time
         if(getFeatureVal('companionDualAction')&&(comp.primary.type==='gather'||comp.primary.type==='shop')){
           if(comp.primary.type==='gather'){
-            const yield2=Math.floor(comp.primary.baseYield[Math.min(loy-1,4)]*compEffB);
+            const yield2=Math.floor((comp.primary.baseYield[Math.min(loy-1,4)]+lvBonus)*compEffB);
             const items2={};for(let i=0;i<yield2;i++){const id=comp.primary.ingr[Math.floor(Math.random()*comp.primary.ingr.length)];items2[id]=(items2[id]||0)+1;}
             setInv(p=>{const n={...p};Object.entries(items2).forEach(([id,q])=>{n[id]=(n[id]||0)+q;});return n;});
             const valStr2=Object.entries(items2).map(([id,q])=>(INGR[id]?.icon||id)+'×'+q).join(' ');
             compLines.push({icon:comp.icon,label:comp.name+' gathered (2nd)',val:valStr2,color:TH.green});
             entry.actions.push({type:'gather',text:comp.name+' went out again',val:valStr2,color:TH.green});
           } else if(comp.primary.type==='shop'){
-            const g2=Math.floor(comp.primary.baseGold[Math.min(loy-1,4)]*compEffB);setGold(gg=>gg+g2);
+            const g2=Math.floor((comp.primary.baseGold[Math.min(loy-1,4)]+lvBonus*3)*compEffB);setGold(gg=>gg+g2);
             compLines.push({icon:comp.icon,label:comp.name+' tended shop (2nd)',val:'+'+g2+'g',color:TH.gold});
             entry.actions.push({type:'shop',text:comp.name+' helped at the shop again',val:'+'+g2+'g',color:TH.gold});
           }
         }
-        // Secondary abilities (loyalty 3+)
-        if(loy>=3&&comp.secondary){
-          if(comp.secondary.type==='organize'&&comp.id==='rc_monkey'){
+        // Secondary abilities (loyalty 3+ unless unlockLv is 2)
+        const secUnlock=comp.secondary?.unlockLv||3;
+        if(loy>=secUnlock&&comp.secondary){
+          const sec=comp.secondary;
+          if(sec.type==='organize'){
             compLines.push({icon:'📦',label:'Organized shelves',val:'+'+loy+' capacity',color:TH.textDim});
             entry.actions.push({type:'secondary',text:'Organized the shop shelves',val:'+'+loy+' shelf capacity',color:TH.textDim});
-          } else if(comp.secondary.type==='xp_aura'&&comp.id==='rc_moth'){
-            compLines.push({icon:'✨',label:'Muse aura',val:'+5% XP',color:'#9080c0'});
-            entry.actions.push({type:'secondary',text:'Muse aura sharpened your mind',val:'+5% XP today',color:'#9080c0'});
-          } else if(comp.secondary.type==='morale_aura'&&comp.id==='rc_hound'){
-            setHiredAppr(prev=>prev.map(a=>({...a,morale:Math.min(100,(a.morale||50)+5)})));
-            compLines.push({icon:'❤️',label:'Hound cheered staff',val:'+5% morale',color:TH.green});
-            entry.actions.push({type:'secondary',text:'Cheered up the workshop crew',val:'+5% staff morale',color:TH.green});
+          } else if(sec.type==='xp_aura'||sec.type==='xp_boost'){
+            const xpPct=sec.bonusPerLoyalty?Math.floor(sec.bonusPerLoyalty*loy*100):5;
+            compLines.push({icon:'✨',label:comp.name+' inspiration',val:'+'+xpPct+'% XP',color:'#9080c0'});
+            entry.actions.push({type:'secondary',text:comp.name+' sharpened your mind',val:'+'+xpPct+'% XP today',color:'#9080c0'});
+          } else if(sec.type==='morale_aura'){
+            const morB=5+Math.floor(loy*1.5);
+            setHiredAppr(prev=>prev.map(a=>({...a,morale:Math.min(100,(a.morale||50)+morB)})));
+            compLines.push({icon:'❤️',label:comp.name+' cheered staff',val:'+'+morB+'% morale',color:TH.green});
+            entry.actions.push({type:'secondary',text:'Cheered up the workshop crew',val:'+'+morB+'% staff morale',color:TH.green});
+          } else if(sec.type==='yield'){
+            const yieldPct=Math.floor((sec.bonusPerLoyalty||0.10)*loy*100);
+            compLines.push({icon:'🌿',label:comp.name+' yield bonus',val:'+'+yieldPct+'% forage yield',color:TH.green});
+            entry.actions.push({type:'secondary',text:comp.name+' guides your foraging',val:'+'+yieldPct+'% yield today',color:TH.green});
+          } else if(sec.type==='craft'){
+            const craftB=Math.floor((sec.bonusPerLoyalty||1)*Math.min(loy,3));
+            compLines.push({icon:'⚗️',label:comp.name+' craft focus',val:'+'+craftB+' craft bonus',color:TH.gold});
+            entry.actions.push({type:'secondary',text:comp.name+' assists your crafting',val:'+'+craftB+' craft bonus',color:TH.gold});
+          } else if(sec.type==='discovery'){
+            const discPct=Math.floor((sec.bonusPerLoyalty||0.05)*loy*100);
+            compLines.push({icon:'🔬',label:comp.name+' research aid',val:'+'+discPct+'% discovery',color:'#9080c0'});
+            entry.actions.push({type:'secondary',text:comp.name+' found a research clue',val:'+'+discPct+'% discovery chance',color:'#9080c0'});
+          } else if(sec.type==='guard'){
+            const guardBlocked=banditTier==='dangerous'||banditTier==='critical'||getThreatTier(newThreats[locThreatIds[1]]||0)==='critical';
+            compLines.push({icon:'🛡️',label:comp.name+' on guard',val:guardBlocked?'Blocked threat event!':'Watching for danger',color:guardBlocked?TH.green:'#6090c0'});
+            entry.actions.push({type:'secondary',text:comp.name+' guarded the workshop',val:guardBlocked?'Threat event blocked!':'No threats today',color:guardBlocked?TH.green:'#6090c0'});
+          } else if(sec.type==='travel_reduce'){
+            compLines.push({icon:'🗺️',label:comp.name+' scouting ahead',val:'-1 travel time',color:'#6090c0'});
+            entry.actions.push({type:'secondary',text:comp.name+' scouted the route',val:'-1 hour travel time',color:'#6090c0'});
+          } else if(sec.type==='scout_gather'){
+            // Gather 2-3 bonus items from a random unlocked region
+            const bonusRegs=locRegions.filter(r=>level>=regUnlock(r)&&r.id!==comp.region);
+            if(bonusRegs.length>0){
+              const bReg=bonusRegs[Math.floor(Math.random()*bonusRegs.length)];
+              const bItems={};const bN=2+Math.floor(loy/2);
+              for(let i=0;i<bN;i++){const id=bReg.ingr[Math.floor(Math.random()*bReg.ingr.length)];bItems[id]=(bItems[id]||0)+1;}
+              setInv(p=>{const n={...p};Object.entries(bItems).forEach(([id,q])=>{n[id]=(n[id]||0)+q;});return n;});
+              const bStr=Object.entries(bItems).map(([id,q])=>(INGR[id]?.icon||id)+'×'+q).join(' ');
+              compLines.push({icon:'🌍',label:comp.name+' scouted '+bReg.icon+bReg.name,val:bStr,color:TH.green});
+              entry.actions.push({type:'secondary',text:comp.name+' found extras at '+bReg.name,val:bStr,color:TH.green});
+            }
+          } else if(sec.type==='resurrect'){
+            setDayFlags(f=>[...f,'companion_reroll']);
+            compLines.push({icon:'🔄',label:comp.name+' standing by',val:'Free craft reroll today',color:TH.gold});
+            entry.actions.push({type:'secondary',text:comp.name+' will help retry a failure',val:'1 free craft reroll',color:TH.gold});
           }
         }
         // legendaryCompanion: highest-loyalty companion gains legendary ability
@@ -7188,7 +7234,7 @@ function CindervaleAlchemistInner(){
               if(!best)return null;const bComp=RANGER_COMPANIONS.find(rc=>rc.id===best.compId);if(!bComp)return null;
               return <div style={{marginTop:4}}><button style={{...S.btn('def'),fontSize:13,background:'#60a06010',border:'1px solid #60a06044',color:'#60a060'}}
                 onClick={()=>{snapshot();setDayFlags(f=>[...f,'solo_exp_used']);
-                  const yield_=Math.max(2,Math.floor(reg.diff*1.5+best.loyalty));
+                  const yield_=Math.max(4,Math.floor(reg.diff*2+best.loyalty*2+Math.floor(level/3)));
                   const items={};for(let i=0;i<yield_;i++){const id=reg.ingr[Math.floor(Math.random()*reg.ingr.length)];items[id]=(items[id]||0)+1;}
                   setInv(p=>{const n={...p};Object.entries(items).forEach(([id,q])=>{n[id]=(n[id]||0)+q;});return n;});
                   const soloXp=Math.floor(reg.diff*12);gainXP(soloXp);
@@ -7796,8 +7842,10 @@ function CindervaleAlchemistInner(){
           {companions.map(c=>{
             const comp=RANGER_COMPANIONS.find(r=>r.id===c.compId);if(!comp)return null;
             const loy=c.loyalty;const loyPct=Math.min(100,((loy-1)*25)+Math.min(25,((day-c.tamedDay)%3)/3*25));
-            const hasSecondary=loy>=3&&comp.secondary;
-            const hasLegendary=loy>=5;
+            const hasSecondary=comp.secondary;
+            const secUnlocked=loy>=(comp.secondary?.unlockLv||3);
+            const hasLegendary=!!comp.legendary;
+            const legUnlocked=loy>=5;
             return <div key={c.compId} style={{padding:'8px 10px',background:c.active?comp.color+'10':TH.bg,borderRadius:6,marginBottom:5,border:'2px solid '+(c.active?comp.color+'66':TH.border)}}>
               <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
                 <div>
@@ -7816,18 +7864,21 @@ function CindervaleAlchemistInner(){
                 <div style={{flex:1,height:4,background:TH.panel,borderRadius:2}}><div style={{height:'100%',width:loyPct+'%',background:comp.color,borderRadius:2}}/></div>
                 <span style={{fontSize:11,color:comp.color}}>→ {'★'.repeat(loy+1)}</span>
               </div>}
-              {/* Abilities */}
-              <div style={{display:'flex',flexWrap:'wrap',gap:4,marginTop:4}}>
+              {/* Abilities — always show all three tiers, dim if locked */}
+              <div style={{display:'flex',flexDirection:'column',gap:3,marginTop:4}}>
                 <span style={{padding:'2px 6px',fontSize:12,background:comp.color+'15',border:'1px solid '+comp.color+'33',borderRadius:3,color:comp.color}}>
-                  {comp.role==='gatherer'?'🌿':comp.role==='shopkeeper'?'🏪':comp.role==='scout'?'🦅':comp.role==='greeter'?'🐕':comp.role==='guardian'?'🛡️':comp.role==='muse'?'✨':'🔥'} Primary: {comp.role}
+                  {comp.role==='gatherer'||comp.role==='gather'?'🌿':comp.role==='shopkeeper'?'🏪':comp.role==='scout'||comp.role==='combat'?'🦅':comp.role==='greeter'||comp.role==='trade'?'🐕':comp.role==='guardian'?'🛡️':comp.role==='muse'||comp.role==='research'?'✨':'🔥'} <b>Primary:</b> {comp.primary.type==='gather'?'Gather — brings '+comp.primary.baseYield[Math.min(loy-1,4)]+' ingredients/day':comp.primary.type==='shop'?'Shop — earns '+comp.primary.baseGold[Math.min(loy-1,4)]+'g/day':comp.primary.type==='customers'?'Greeter — +'+comp.primary.values[Math.min(loy-1,4)]+' customers/day':comp.primary.type==='staff_morale'?'Guardian — +'+comp.primary.values[Math.min(loy-1,4)]+'% staff morale':comp.primary.type==='research'?'Muse — +'+(comp.primary.values[Math.min(loy-1,4)]*100).toFixed(0)+'% discovery':comp.primary.type==='danger_reduce'||comp.primary.type==='danger'?'Scout — -'+(comp.primary.values[Math.min(loy-1,4)]*100).toFixed(0)+'% danger':comp.role}
                 </span>
-                {hasSecondary&&<span style={{padding:'2px 6px',fontSize:12,background:TH.gold+'15',border:'1px solid '+TH.gold+'33',borderRadius:3,color:TH.gold}}>
-                  🔓 {comp.secondary.desc}
+                {hasSecondary&&<span style={{padding:'2px 6px',fontSize:12,background:secUnlocked?TH.gold+'15':TH.panel,border:'1px solid '+(secUnlocked?TH.gold+'33':TH.border),borderRadius:3,color:secUnlocked?TH.gold:TH.textDim,opacity:secUnlocked?1:0.6}}>
+                  {secUnlocked?'🔓':'🔒'} <b>Secondary{secUnlocked?'':' (★'+(comp.secondary.unlockLv||3)+')'}</b>: {comp.secondary.desc||comp.secondary.type}
                 </span>}
-                {hasLegendary&&<span style={{padding:'2px 6px',fontSize:12,background:'#d4a42020',border:'1px solid #d4a42066',borderRadius:3,color:'#d4a420'}}>
-                  ⭐ {comp.legendary}
+                {hasLegendary&&<span style={{padding:'2px 6px',fontSize:12,background:legUnlocked?'#d4a42020':TH.panel,border:'1px solid '+(legUnlocked?'#d4a42066':TH.border),borderRadius:3,color:legUnlocked?'#d4a420':TH.textDim,opacity:legUnlocked?1:0.5}}>
+                  {legUnlocked?'⭐':'🔒'} <b>Legendary{legUnlocked?'':' (★5)'}</b>: {comp.legendary}
                 </span>}
               </div>
+              {comp.passive&&c.active&&<div style={{fontSize:12,color:TH.green,marginTop:3,padding:'3px 6px',background:TH.green+'08',borderRadius:3,border:'1px solid '+TH.green+'22'}}>
+                🔋 Passive: {Object.entries(comp.passive).map(([k,v])=>k.replace(/([A-Z])/g,' $1').replace(/^./,s=>s.toUpperCase())+' +'+(typeof v==='number'&&v<1?(v*100).toFixed(0)+'%':v)).join(', ')}
+              </div>}
             </div>;
           })}
           {(classLevels.warden||0)<6&&<div style={{fontSize:12,color:TH.textDim,marginTop:4}}>🔒 More slots at Warden Lv6</div>}
