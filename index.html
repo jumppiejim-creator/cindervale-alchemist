@@ -435,6 +435,7 @@ function CindervaleAlchemistInner(){
   const [apprXP,setApprXP]=useState({});
   const [dailyReport,setDailyReport]=useState([]);
   const [morningReport,setMorningReport]=useState(null);
+  const [companionReport,setCompanionReport]=useState(null);
   const [eventPopup,setEventPopup]=useState(null); // {events:[...], idx:0}
   const [undoStack,setUndoStack]=useState([]);
   const [musicOn,setMusicOn]=useState(false);
@@ -546,7 +547,7 @@ function CindervaleAlchemistInner(){
     setUpgrades(s.upgrades||[]);setHiredAppr(s.hiredAppr||[]);
     setApprTasks(s.apprTasks||{});setApprXP(s.apprXP||{});
     prevLvl.current=getLvl(s.xp||0);
-    setDailyReport(s.dailyReport||[]);setEnchQ(s.enchQ||[]);setPotCustQ(s.potCustQ||[]);setClinicPatients(s.clinicPatients||[]);setVenomContracts(s.venomContracts||[]);setForgedWeapons(s.forgedWeapons||[]);setShieldCommissions(s.shieldCommissions||[]);setPlanarFocus(s.planarFocus||null);setGadgets(s.gadgets||[]);setBlueprints(s.blueprints||[]);setFieldJournal(s.fieldJournal||[]);setLoreFragments(s.loreFragments||[]);setCompanions(s.companions||[]);setCaravans(s.caravans||[]);setSupplyChains(s.supplyChains||[]);setCaravanRuns(s.caravanRuns||{});setTrainingSessions(s.trainingSessions||{});setFactionHarmony(s.factionHarmony||{});setPrestigeLevels(s.prestigeLevels||{});setAutomata(s.automata||[]);setCustomPatterns(s.customPatterns||[]);setMappedRegions(s.mappedRegions||[]);setActiveBuffs(s.activeBuffs||{});setDebt(s.debt||0);setDisabledUpgrades(s.disabledUpgrades||[]);setShopLocked(s.shopLocked||false);setInjuryPenalty(s.injuryPenalty||0);setStaffInjuries(s.staffInjuries||{});setShelves(s.shelves||{});setLastCheck(null);setNews([]);setMorningReport(null);
+    setDailyReport(s.dailyReport||[]);setEnchQ(s.enchQ||[]);setPotCustQ(s.potCustQ||[]);setClinicPatients(s.clinicPatients||[]);setVenomContracts(s.venomContracts||[]);setForgedWeapons(s.forgedWeapons||[]);setShieldCommissions(s.shieldCommissions||[]);setPlanarFocus(s.planarFocus||null);setGadgets(s.gadgets||[]);setBlueprints(s.blueprints||[]);setFieldJournal(s.fieldJournal||[]);setLoreFragments(s.loreFragments||[]);setCompanions(s.companions||[]);setCaravans(s.caravans||[]);setSupplyChains(s.supplyChains||[]);setCaravanRuns(s.caravanRuns||{});setTrainingSessions(s.trainingSessions||{});setFactionHarmony(s.factionHarmony||{});setPrestigeLevels(s.prestigeLevels||{});setAutomata(s.automata||[]);setCustomPatterns(s.customPatterns||[]);setMappedRegions(s.mappedRegions||[]);setActiveBuffs(s.activeBuffs||{});setDebt(s.debt||0);setDisabledUpgrades(s.disabledUpgrades||[]);setShopLocked(s.shopLocked||false);setInjuryPenalty(s.injuryPenalty||0);setStaffInjuries(s.staffInjuries||{});setShelves(s.shelves||{});setLastCheck(null);setNews([]);setMorningReport(null);setCompanionReport(null);
     setBoardQ(s.boardQ||[]);setActiveBQ(s.activeBQ||[]);setDoneBQCount(s.doneBQCount||0);setDayFlags(s.dayFlags||[]);setKnownEnch(s.knownEnch&&s.knownEnch.length>0?s.knownEnch:(LOCATIONS[s.gameLocation||'cindervale']?.startEnch||['e_sharp','e_glow','e_ironbark','e_feather','e_windwalk','e_rootbind']));
     setBrewCounts(s.brewCounts||{});setProcureItems(s.procureItems||[]);setPubPapers(s.pubPapers||[]);setConstructProgress(s.constructProgress||{});
     setSelHex(null);setVBuild('workshop');setDlgNpc(null);setShowShop(false);setQuestDlg(null);setPendingLevelUp(null);setSelectedSite(s.selectedSite||null);if(s.lineage)setLineage(s.lineage);setBrands(s.brands||[]);setBrandOrders(s.brandOrders||[]);setRelics(s.relics||[]);setMuseum(s.museum||{pottery:0,tablets:0,jewelry:0,mechanisms:0,weapons:0});setThreats(s.threats||Object.fromEntries(locThreatIds.map(t=>[t,0])));setOutposts(s.outposts||[]);setDefenseQuests(s.defenseQuests||[]);setHollowMarch(s.hollowMarch||DEF?.hollowMarch||{active:false,wave:0,nextWaveDay:0,demands:[],history:[],finalStandAvailable:false,finalStandComplete:false,marchRecipesUnlocked:[]});setLegacyFeature(s.legacyFeature||null);
@@ -4682,44 +4683,57 @@ function CindervaleAlchemistInner(){
     // ═══ RANGER COMPANION MORNING EFFECTS ═══
     if(companions.length>0){
       const compLines=[];
+      const compReportEntries=[];
       companions.filter(c=>c.active).forEach(c=>{
         const comp=RANGER_COMPANIONS.find(r=>r.id===c.compId);if(!comp)return;
         const loy=c.loyalty;
         const effMult=loy>=5?1.5:loy>=4?1.0:loy>=3?1.0:loy>=2?0.75:0.5;
+        const entry={id:comp.id,icon:comp.icon,name:comp.name,loyalty:loy,actions:[]};
         // Primary abilities
         if(comp.primary.type==='gather'){
           const yield_=comp.primary.baseYield[Math.min(loy-1,4)];
           const items={};for(let i=0;i<yield_;i++){const id=comp.primary.ingr[Math.floor(Math.random()*comp.primary.ingr.length)];items[id]=(items[id]||0)+1;}
           setInv(p=>{const n={...p};Object.entries(items).forEach(([id,q])=>{n[id]=(n[id]||0)+q;});return n;});
-          compLines.push({icon:comp.icon,label:comp.name+' gathered',val:Object.entries(items).map(([id,q])=>(INGR[id]?.icon||id)+'×'+q).join(' '),color:TH.green});
+          const valStr=Object.entries(items).map(([id,q])=>(INGR[id]?.icon||id)+'×'+q).join(' ');
+          compLines.push({icon:comp.icon,label:comp.name+' gathered',val:valStr,color:TH.green});
+          entry.actions.push({type:'gather',text:comp.name+' brought back ingredients',val:valStr,color:TH.green});
         } else if(comp.primary.type==='shop'){
           const g=comp.primary.baseGold[Math.min(loy-1,4)];setGold(gg=>gg+g);
           compLines.push({icon:comp.icon,label:comp.name+' tended shop',val:'+'+g+'g',color:TH.gold});
+          entry.actions.push({type:'shop',text:comp.name+' helped at the shop',val:'+'+g+'g',color:TH.gold});
         } else if(comp.primary.type==='staff_morale'){
           const morBoost=comp.primary.values[Math.min(loy-1,4)];
           setHiredAppr(prev=>prev.map(a=>({...a,morale:Math.min(100,(a.morale||50)+morBoost)})));
           compLines.push({icon:comp.icon,label:comp.name+' boosted morale',val:'+'+morBoost+'% all staff',color:TH.green});
+          entry.actions.push({type:'morale',text:comp.name+' lifted everyone\'s spirits',val:'+'+morBoost+'% staff morale',color:TH.green});
         } else if(comp.primary.type==='customers'){
           const extra=comp.primary.values[Math.min(loy-1,4)];
-          if(extra>0)compLines.push({icon:comp.icon,label:comp.name+' attracted customers',val:'+'+extra+' today',color:TH.gold});
+          if(extra>0){compLines.push({icon:comp.icon,label:comp.name+' attracted customers',val:'+'+extra+' today',color:TH.gold});
+          entry.actions.push({type:'customers',text:comp.name+' drew in visitors',val:'+'+extra+' extra customers',color:TH.gold});}
         } else if(comp.primary.type==='research'){
           const bonus=comp.primary.values[Math.min(loy-1,4)];
           compLines.push({icon:comp.icon,label:comp.name+' sharpened focus',val:'+'+(bonus*100).toFixed(0)+'% discovery',color:'#9080c0'});
-        } else if(comp.primary.type==='danger_reduce'){
+          entry.actions.push({type:'research',text:comp.name+' enhanced your concentration',val:'+'+(bonus*100).toFixed(0)+'% discovery chance',color:'#9080c0'});
+        } else if(comp.primary.type==='danger_reduce'||comp.primary.type==='danger'){
           const pct=comp.primary.values[Math.min(loy-1,4)];
           compLines.push({icon:comp.icon,label:comp.name+' scouting',val:'-'+(pct*100).toFixed(0)+'% danger',color:'#6090c0'});
+          entry.actions.push({type:'scout',text:comp.name+' scouted the area',val:'-'+(pct*100).toFixed(0)+'% expedition danger',color:'#6090c0'});
         }
         // Secondary abilities (loyalty 3+)
         if(loy>=3&&comp.secondary){
           if(comp.secondary.type==='organize'&&comp.id==='rc_monkey'){
             compLines.push({icon:'📦',label:'Organized shelves',val:'+'+loy+' capacity',color:TH.textDim});
+            entry.actions.push({type:'secondary',text:'Organized the shop shelves',val:'+'+loy+' shelf capacity',color:TH.textDim});
           } else if(comp.secondary.type==='xp_aura'&&comp.id==='rc_moth'){
             compLines.push({icon:'✨',label:'Muse aura',val:'+5% XP',color:'#9080c0'});
+            entry.actions.push({type:'secondary',text:'Muse aura sharpened your mind',val:'+5% XP today',color:'#9080c0'});
           } else if(comp.secondary.type==='morale_aura'&&comp.id==='rc_hound'){
             setHiredAppr(prev=>prev.map(a=>({...a,morale:Math.min(100,(a.morale||50)+5)})));
             compLines.push({icon:'❤️',label:'Hound cheered staff',val:'+5% morale',color:TH.green});
+            entry.actions.push({type:'secondary',text:'Cheered up the workshop crew',val:'+5% staff morale',color:TH.green});
           }
         }
+        if(entry.actions.length>0)compReportEntries.push(entry);
       });
       // Loyalty increases — +1 per day for active companions (every 3 days)
       setCompanions(prev=>prev.map(c=>{
@@ -4730,7 +4744,9 @@ function CindervaleAlchemistInner(){
         return{...c,loyalty:Math.max(c.loyalty,newLoy)};
       }));
       if(compLines.length>0)mrSections.push({title:'🦊 Companions',lines:compLines});
-    }
+      if(compReportEntries.length>0)setCompanionReport({dayNum:day+1,companions:compReportEntries});
+      else setCompanionReport(null);
+    } else { setCompanionReport(null); }
     // Always show morning report
     const MR_FLAVOR=gameLocation==='tidecrest'
       ?['Dawn breaks over Tidecrest Harbor. Gulls wheel above the fishing boats.','The tide horn sounds across the docks. Another day at sea.','Another day begins — the scent of salt and kelp fills the workshop.','Fishermen haul their catch as the harbor market stirs to life.','Morning fog rolls off the cliffs as Tidecrest wakes.','The sun glitters on the harbor. Ships rock gently at their moorings.','A salt breeze carries the cry of gulls through the open window.','You wake to the creak of rigging and the splash of the first divers.']
@@ -5908,9 +5924,42 @@ function CindervaleAlchemistInner(){
         </div>
       </div>}
 
+      {/* ═══ COMPANION REPORT POPUP ═══ */}
+      {!morningReport&&companionReport&&<div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'#000000dd',display:'flex',alignItems:'center',justifyContent:'center',zIndex:99998,padding:8}} onClick={()=>setCompanionReport(null)}>
+        <div style={{background:`linear-gradient(160deg,#1a2a1a,#0a1a0a)`,border:'2px solid #4a8a4a',borderRadius:16,padding:'20px 24px',maxWidth:500,width:'calc(100% - 16px)',maxHeight:'85vh',overflowY:'auto',boxShadow:'0 0 60px #2a6a2a30',position:'relative'}} onClick={e=>e.stopPropagation()}>
+          <div style={{textAlign:'center',marginBottom:16}}>
+            <div style={{fontSize:24,letterSpacing:3,color:'#8ac08a',marginBottom:4}}>🐾 Companion Report</div>
+            <div style={{fontSize:13,color:'#6a8a6a'}}>Your companions were busy overnight</div>
+          </div>
+          {companionReport.companions.map((c,ci)=>{
+            const imgSrc='companion_'+c.id+'.jpg';
+            return <div key={c.id} style={{position:'relative',marginBottom:16,borderRadius:12,overflow:'hidden',border:'1px solid #4a8a4a44',background:'#0a150a'}}>
+              <img src={imgSrc} alt="" style={{position:'absolute',top:0,left:0,width:'100%',height:'100%',objectFit:'cover',opacity:0.2,pointerEvents:'none'}}
+                onError={e=>{e.target.style.display='none';}}/>
+              <div style={{position:'relative',zIndex:1,padding:'16px 20px'}}>
+                <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:8}}>
+                  <div style={{fontSize:36,filter:'drop-shadow(0 2px 8px rgba(0,0,0,0.6))'}}>{c.icon}</div>
+                  <div>
+                    <div style={{fontSize:18,fontWeight:'bold',color:'#c0e0c0',textShadow:'0 1px 4px rgba(0,0,0,0.5)'}}>{c.name}</div>
+                    <div style={{fontSize:12,color:'#8aaa8a'}}>{'★'.repeat(c.loyalty)}{'☆'.repeat(5-c.loyalty)} Loyalty {c.loyalty}</div>
+                  </div>
+                </div>
+                {c.actions.map((a,ai)=><div key={ai} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'4px 8px',marginBottom:3,borderRadius:4,background:'rgba(0,0,0,0.3)'}}>
+                  <span style={{fontSize:14,color:'#b0d0b0'}}>{a.text}</span>
+                  <span style={{fontSize:14,fontWeight:'bold',color:a.color||'#8ac08a',whiteSpace:'nowrap',marginLeft:8}}>{a.val}</span>
+                </div>)}
+              </div>
+            </div>;
+          })}
+          <div style={{textAlign:'center',marginTop:8}}>
+            <button style={{...S.btn('green'),fontSize:16,padding:'8px 24px'}} onClick={()=>setCompanionReport(null)}>Continue</button>
+          </div>
+        </div>
+      </div>}
+
       {/* ═══ NIGHT EXPEDITION REGION PICKER ═══ */}
       {/* ═══ EVENT POPUP — Shows after morning report is dismissed ═══ */}
-      {!morningReport&&eventPopup&&(()=>{
+      {!morningReport&&!companionReport&&eventPopup&&(()=>{
         const evt=eventPopup.events[eventPopup.idx];if(!evt)return null;
         const vibe=EVENT_VIBES[evt.vibe]||EVENT_VIBES.social;
         const isLast=eventPopup.idx>=eventPopup.events.length-1;
