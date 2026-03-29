@@ -1104,6 +1104,16 @@ function CindervaleAlchemistInner(){
     const gatherHours=Math.max(0,hours-travelTime);
     return{travelTime,gatherHours,season};
   };
+  // Weighted discovery pick — favors lower-unlock recipes/enchantments
+  const weightedDiscPick=(arr)=>{
+    if(arr.length<=1)return arr[0];
+    const maxUn=Math.max(...arr.map(x=>x.unlock||x.dc||0));
+    const weights=arr.map(x=>{const un=x.unlock!=null?x.unlock:(x.dc||10);return Math.max(1,maxUn-un+3);});
+    const total=weights.reduce((s,w)=>s+w,0);
+    let roll=Math.random()*total;
+    for(let i=0;i<arr.length;i++){roll-=weights[i];if(roll<=0)return arr[i];}
+    return arr[arr.length-1];
+  };
   // Pure check — no state side effects, for pre-computation
   const pureCheck=(skId,dc)=>{
     const sk=SKILLS[skId];if(!sk)return{success:false,total:0,roll:0,name:'?',mod:0,rb:0,dc,statName:'',icon:'',extras:[]};
@@ -2222,7 +2232,7 @@ function CindervaleAlchemistInner(){
       if(undiscovered.length===0){addLog('📚 You spend two hours poring over your notes, but you already know every recipe available to you.','info');return;}
       if(ch.success){
         const successXp=Math.floor(baseResXp*2*resXpMult);gainXP(successXp);
-        const found=undiscovered[Math.floor(Math.random()*undiscovered.length)];
+        const found=weightedDiscPick(undiscovered);
         setKnown(p=>[...p,found.id]);
         showResult('📚 Research Breakthrough!','craft',`You discovered ${found.icon} ${found.name}!\n"${found.desc}"\n+${successXp} XP`,ch);
         addLog(`📚 After hours of study, you discover the formula for ${found.icon}${found.name}!`,'quest');
@@ -2236,7 +2246,7 @@ function CindervaleAlchemistInner(){
       if(undiscovered.length===0){addLog('📚 You study your inscription notes, but you\'ve mastered every enchantment available to you.','info');return;}
       if(ch.success){
         const successXp=Math.floor(baseResXp*2*resXpMult);gainXP(successXp);
-        const found=undiscovered[Math.floor(Math.random()*undiscovered.length)];
+        const found=weightedDiscPick(undiscovered);
         setKnownEnch(p=>[...p,found.id]);
         const catName=ENCH_CATS[found.cat]?.name||'';
         showResult('📚 Inscription Discovered!','craft',`You learned ${found.icon} ${found.name} (${catName})!\n"${found.desc}"\n+${successXp} XP`,ch);
@@ -3647,11 +3657,11 @@ function CindervaleAlchemistInner(){
           const totalPool=undP.length+undE.length;
           const pickRecipe=totalPool>0?Math.random()<(undP.length/totalPool):true;
           if((pickRecipe&&undP.length>0)||undE.length===0){
-            if(undP.length>0){const d=undP[Math.floor(Math.random()*undP.length)];staffDiscR.push(d.id);setKnown(p=>[...p,d.id]);
+            if(undP.length>0){const d=weightedDiscPick(undP);staffDiscR.push(d.id);setKnown(p=>[...p,d.id]);
               report.push({n:ap.name,i:ap.icon,r:`Discovered ${d.icon}${d.name}!`,t:'ok'});}
             else report.push({n:ap.name,i:ap.icon,r:'Studied. No breakthrough.',t:'idle'});
           } else if(undE.length>0){
-            const d=undE[Math.floor(Math.random()*undE.length)];staffDiscE.push(d.id);setKnownEnch(p=>[...p,d.id]);
+            const d=weightedDiscPick(undE);staffDiscE.push(d.id);setKnownEnch(p=>[...p,d.id]);
             report.push({n:ap.name,i:ap.icon,r:`Inscription: ${d.icon}${d.name}!`,t:'ok'});
           }
         } else report.push({n:ap.name,i:ap.icon,r:'Studied. No breakthrough.',t:'idle'});
@@ -4321,7 +4331,7 @@ function CindervaleAlchemistInner(){
       setEventPopup({events:allPopupEvents,idx:0});
     }
     // ── Board Quests ──
-    const newBQ=genBoardQuests(curLv,day+1,getFeatureVal('doubleQuestRefresh')?2:0,gameLocation);
+    const newBQ=genBoardQuests(curLv,day+1,getFeatureVal('doubleQuestRefresh')?2:0,gameLocation,known);
     setBoardQ(newBQ);
     // Expire un-accepted board quests from yesterday (already replaced)
     if(newBQ.length>0)nw.push({icon:'📌',text:`${newBQ.length} new request${newBQ.length>1?'s':''} on the notice board.`,to:'quests',label:'📜 Quests',color:TH.cyan});
@@ -5215,7 +5225,7 @@ function CindervaleAlchemistInner(){
               };
               addLog(CLASS_INTROS[startingClass]||`${charName} the ${c.name} arrives at ${locN} for the first time.`,'story');
               addLog('💡 You have 4 skill points to spend! Visit Your Quarters on the map.','level');setPhase('play');
-              const initBQ=genBoardQuests(0,1,0,gameLocation);setBoardQ(initBQ);
+              const initBQ=genBoardQuests(0,1,0,gameLocation,known);setBoardQ(initBQ);
               const initCust=genCust();
               const firstNPC=isTc?{icon:'🛒',text:'Finn at the Harbor Market has work for you.',to:'market',label:'🛒 Meet Finn',color:TH.gold,npc:'finn'}
                 :isAsh?{icon:'🛒',text:'Sola at the Bazaar has work for you.',to:'market',label:'🛒 Meet Sola',color:TH.gold,npc:'sola'}

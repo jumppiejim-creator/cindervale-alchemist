@@ -3833,7 +3833,7 @@ var BQ_TEMPLATES=[
     descs:['"Only the harbor\'s finest alchemist can fill this. {qty} {itemName}{s}."','"The Tidekeepers request {qty} {itemName}{s}. Sacred commission."']},
 ];
 
-var genBoardQuests=(level,day,bonusQuests=0,loc='cindervale')=>{
+var genBoardQuests=(level,day,bonusQuests=0,loc='cindervale',knownRecipes=[])=>{
   const n=2+Math.floor(Math.random()*2)+bonusQuests; // 2-3 quests + bonus
   const avail=BQ_TEMPLATES.filter(t=>level>=t.minLv&&(!t.loc||t.loc===loc));
   if(avail.length===0)return[];
@@ -3841,7 +3841,7 @@ var genBoardQuests=(level,day,bonusQuests=0,loc='cindervale')=>{
   const locIngrSet=new Set();
   REGIONS.filter(r=>r.loc===loc).forEach(r=>r.ingr.forEach(i=>locIngrSet.add(i)));
   const canCraftHere=(recipeId)=>{const r=RECIPES.find(x=>x.id===recipeId);return r&&!r.buff&&r.ingr.every(id=>locIngrSet.has(id)||locIngrSet.has(locIngr(id,loc)));};
-  const locFactions=loc==='tidecrest'?['harbormasters','pearl_divers','tidekeepers','merchant_marine']:loc==='ashfall'?['sand_merchants','flamekeepers','dustwalkers']:['hearthkeepers','ashwardens','veilwalkers','cinderfolk'];
+  const isKnownHere=(recipeId)=>knownRecipes.includes(recipeId)&&canCraftHere(recipeId);  const locFactions=loc==='tidecrest'?['harbormasters','pearl_divers','tidekeepers','merchant_marine']:loc==='ashfall'?['sand_merchants','flamekeepers','dustwalkers']:['hearthkeepers','ashwardens','veilwalkers','cinderfolk'];
   const quests=[];var usedGivers=[];
   for(let i=0;i<n;i++){
     // For deliver templates, filter pool to locally craftable recipes
@@ -3849,7 +3849,7 @@ var genBoardQuests=(level,day,bonusQuests=0,loc='cindervale')=>{
     let attempts=0;
     do{
       tmpl=avail[Math.floor(Math.random()*avail.length)];
-      if(tmpl.type==='deliver'){localPool=tmpl.pool.filter(canCraftHere);}
+      if(tmpl.type==='deliver'){localPool=tmpl.pool.filter(isKnownHere);}
       else{localPool=tmpl.pool;}
       attempts++;
     }while(localPool.length===0&&attempts<20);
