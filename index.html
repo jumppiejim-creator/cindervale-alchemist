@@ -3272,10 +3272,10 @@ function CindervaleAlchemistInner(){
         if(have<q.count){
           const need=q.count-have;
           steps.push({done:false,text:`Brew ${need} more ${r.icon}${r.name}`,nav:{to:'workshop',label:'⚗️ Go to Workshop'}});
-          const canBrew=r.ingr.every(id=>(inv[id]||0)>=1);
+          const canBrew=r.ingr.every(id=>(inv[li(id)]||0)>=1);
           if(!canBrew){
             steps.push({done:false,text:`Need: ${r.ingr.map(id=>{const lid=li(id);return `${INGR[lid]?.icon||''}${INGR[lid]?.name||lid} (have ${inv[lid]||0})`;}).join(', ')}`});
-            const regions=locRegions.filter(reg=>reg.ingr.some(i=>r.ingr.includes(i)&&(inv[i]||0)<1));
+            const regions=locRegions.filter(reg=>reg.ingr.some(i=>r.ingr.map(x=>li(x)).includes(i)&&(inv[i]||0)<1));
             if(regions.length>0)steps.push({done:false,text:`Forage at ${regions.slice(0,2).map(rr=>`${rr.icon}${rr.name}`).join(' or ')}`,nav:{to:'worldmap',label:'🗺️ Go to Wilds'}});
             steps.push({done:false,text:'Or buy ingredients',nav:{to:'market',label:'🛒 Go to Market'}});
           } else {
