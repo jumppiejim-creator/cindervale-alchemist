@@ -268,15 +268,15 @@ function CindervaleAlchemistInner(){
     merchant:{type:'sellBonus',val:0.10,desc:'+10% sell prices',icon:'💰'},
     warden:{type:'extractionBonus',val:1,desc:'+1 extraction checks',icon:'🌲'},
     artificer:{type:'craftBonus',val:1,desc:'+1 all craft checks',icon:'🔧'},
-    // Prestige mentor types
-    cartographer:{type:'extractionBonus',val:1,desc:'+1 extraction (Cartographer legacy)',icon:'🗺️'},
-    spellbrewer:{type:'brewBonus',val:1,desc:'+1 brew (Spellbrewer legacy)',icon:'⚗️'},
-    magitech:{type:'craftBonus',val:1,desc:'+1 craft (Magitech legacy)',icon:'🤖'},
-    arcanist:{type:'enchantBonus',val:1,desc:'+1 inscription (Arcanist legacy)',icon:'🔮'},
-    brandmaster:{type:'sellBonus',val:0.10,desc:'+10% sell (Brand Master legacy)',icon:'🏷️'},
-    wildcrafter:{type:'extractionBonus',val:1,desc:'+1 extraction (Wildcrafter legacy)',icon:'🌿'},
-    antiquarian:{type:'researchBonus',val:1,desc:'+1 research (Antiquarian legacy)',icon:'📖'},
-    siegeengineer:{type:'extractionBonus',val:1,desc:'+1 extraction (Siege Engineer legacy)',icon:'🏗️'},
+    // Prestige mentor types — each unique to the prestige identity
+    cartographer:{type:'discoveryChanceBonus',val:0.05,desc:'+5% discovery chance (Cartographer legacy)',icon:'🗺️'},
+    spellbrewer:{type:'enchantMatSave',val:0.10,desc:'+10% enchant material save (Spellbrewer legacy)',icon:'⚗️'},
+    magitech:{type:'experimentBonus',val:0.08,desc:'+8% experiment success (Magitech legacy)',icon:'🤖'},
+    arcanist:{type:'enchantSuccessFlat',val:3,desc:'+3 inscription bonus (Arcanist legacy)',icon:'🔮'},
+    brandmaster:{type:'customerPayBonus',val:0.08,desc:'+8% customer pay (Brand Master legacy)',icon:'🏷️'},
+    wildcrafter:{type:'yieldMultiplier',val:0.10,desc:'+10% foraging yield (Wildcrafter legacy)',icon:'🌿'},
+    antiquarian:{type:'xpMultiplier',val:0.05,desc:'+5% XP from all sources (Antiquarian legacy)',icon:'📖'},
+    siegeengineer:{type:'staffEfficiencyBonus',val:0.10,desc:'+10% staff efficiency (Siege Engineer legacy)',icon:'🏗️'},
   };
   const [saveSlots,setSaveSlots]=useState([null,null]);
   const [autoSaveData,setAutoSaveData]=useState(null);
@@ -3429,7 +3429,8 @@ function CindervaleAlchemistInner(){
     let foundRelic=null;
     const nightSite=siteId?reg.sites?.find(s=>s.id===siteId):null;
     const nightHours=getFeatureVal('nightBonusHours')||3;
-    const nightDC=reg.dc+2; // +2 DC at night
+    const nightDCPenalty=Math.max(1,4-Math.floor(getFeatureVal('nightDCReduction')));
+    const nightDC=reg.dc+nightDCPenalty; // +4 DC at night (capstone reduces to +3)
     const nightDR=getFeatureVal('nightDangerReduction');
     const yieldMult=1+Math.min(getFeatureVal('yieldMultiplier'),2);
     const extB=getFeatureVal('extractionBonus');
@@ -5876,10 +5877,11 @@ function CindervaleAlchemistInner(){
         })()}
         {getFeatureVal('nightExpeditions')>0&&(()=>{
           const nightH=getFeatureVal('nightBonusHours')||3;
+          const nightDCPen=Math.max(1,4-Math.floor(getFeatureVal('nightDCReduction')));
           return(
             <div style={{marginBottom:10,padding:'10px 12px',background:`${TH.purple}12`,borderRadius:6,border:`1px solid ${TH.purple}55`,boxShadow:`0 0 12px ${TH.purple}15`}}>
               <div style={{fontSize:16,color:TH.purple,fontWeight:'bold',marginBottom:4}}>🌙 Night Expedition Available ({nightH}h)</div>
-              <div style={{fontSize:14,color:TH.textDim,marginBottom:4}}>After resting, you can forage in the dark — bonus resources with higher danger (DC +2).</div>
+              <div style={{fontSize:14,color:TH.textDim,marginBottom:4}}>After resting, you can forage in the dark — bonus resources with higher danger (DC +{nightDCPen}).</div>
               <div style={{fontSize:14,color:TH.text,fontStyle:'italic'}}>Choose your region after you rest.</div>
             </div>
           );
@@ -6004,16 +6006,17 @@ function CindervaleAlchemistInner(){
         const nightRegs=locRegions.filter(r=>level>=regUnlock(r)&&(!r.faction||getRL(r.faction)>=(r.fReq||0)));
         const nightH=getFeatureVal('nightBonusHours')||3;
         const nightDR=getFeatureVal('nightDangerReduction');
+        const nightDCPen=Math.max(1,4-Math.floor(getFeatureVal('nightDCReduction')));
         return(<div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'#000000cc',display:'flex',alignItems:'center',justifyContent:'center',zIndex:9999,padding:16}}>
         <div style={{background:`linear-gradient(160deg,${TH.panelAlt},${TH.panel})`,border:`2px solid ${TH.purple}`,borderRadius:12,padding:'20px 24px',maxWidth:540,width:'100%',maxHeight:'85vh',overflowY:'auto',boxShadow:`0 0 40px ${TH.purple}30`}} onClick={e=>e.stopPropagation()}>
           <div style={{textAlign:'center',marginBottom:12}}>
             <div style={{fontSize:22,color:TH.purple,letterSpacing:2,marginBottom:4}}>🌙 Night Expedition</div>
             <div style={{fontSize:15,color:TH.textBright}}>The day is done, but the night belongs to the Sentinel.</div>
-            <div style={{fontSize:14,color:TH.textDim,marginTop:4}}>Choose a region and site to forage under cover of darkness ({nightH}h, DC +2{nightDR?', reduced danger':''}).</div>
+            <div style={{fontSize:14,color:TH.textDim,marginTop:4}}>Choose a region and site to forage under cover of darkness ({nightH}h, DC +{nightDCPen}{nightDR?', reduced danger':''}).</div>
           </div>
           <div style={{display:'flex',flexDirection:'column',gap:10,marginBottom:12}}>
             {nightRegs.map(reg=>{
-              const nightDC=reg.dc+2;
+              const nightDC=reg.dc+nightDCPen;
               return(<div key={reg.id} style={{...S.card,borderColor:TH.purple+'44',padding:'10px 12px'}}>
                 <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:6}}>
                   <span style={{fontSize:22}}>{reg.icon}</span>
@@ -7011,7 +7014,7 @@ function CindervaleAlchemistInner(){
           return(<div style={{...S.card,borderColor:TH.purple+'66',background:`${TH.purple}08`}}>
             <div style={{...S.cT,cursor:'pointer',userSelect:'none'}} onClick={()=>toggleWs('ws5')}><span style={{display:'flex',justifyContent:'space-between',width:'100%'}}><span>🌙 Night Expeditions</span><span style={{fontSize:13,color:TH.textDim}}>{isWsOpen('ws5')?'▲':'▼'}</span></span></div>
             <div style={{fontSize:14,color:TH.text,lineHeight:1.5,marginBottom:6}}>
-              Your Sentinel training lets you forage after dark for <b style={{color:TH.purple}}>{nightH} bonus hours</b> (DC +2, higher danger{nightDR?' — reduced by Trap Setter':''}).
+              Your Sentinel training lets you forage after dark for <b style={{color:TH.purple}}>{nightH} bonus hours</b> (DC +{Math.max(1,4-Math.floor(getFeatureVal('nightDCReduction')))}, higher danger{nightDR?' — reduced by Trap Setter':''}).
             </div>
             <div style={{fontSize:14,color:TH.gold,padding:'6px 10px',background:`${TH.gold}10`,borderRadius:4,border:`1px solid ${TH.gold}33`}}>
               💡 Use the <b>🌙 Rest & Night Forage</b> button when you end your day to launch a night expedition.
