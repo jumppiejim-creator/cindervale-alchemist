@@ -1544,7 +1544,13 @@ INGR.desert_rain_lily={id:'desert_rain_lily',name:'Desert Rain Lily',icon:'🌺'
 INGR.wet_sand_crystal={id:'wet_sand_crystal',name:'Wet Sand Crystal',icon:'💎',val:16,desc:'Sand crystal formed by rapid evaporation of rare desert rain.'};
 INGR.dust_amber={id:'dust_amber',name:'Dust Amber',icon:'💨',val:12,desc:'Amber-like resin formed from compressed dust during sandstorms.'};
 // Seasonal ingredient availability function
-var getSeasonalIngr=(season,loc)=>{
+var getSeasonalIngr=(season,loc,allSeason)=>{
+  if(allSeason){
+    if(loc==='cindervale')return['frostbloom','ice_crystal','amber_leaf','harvest_root','spring_dewdrop'];
+    if(loc==='ashfall')return['desert_rain_lily','wet_sand_crystal','dust_amber'];
+    if(loc==='tidecrest')return['storm_glass_tc','stormkelp','moonfish_scale','whale_oil','pressure_crystal','deep_brine'];
+    return[];
+  }
   if(loc==='cindervale'){
     if(season.id==='winter')return['frostbloom','ice_crystal'];
     if(season.id==='autumn')return['amber_leaf','harvest_root'];
@@ -1606,7 +1612,7 @@ var QUALITY={
 var getBaseRecipeId=(potId)=>{let id=potId.replace(/_fresh/,'');for(const s of INFUSION_SUFFIXES)id=id.replace(s,'');return id.replace(/_[FMG]$/,'');};
 var getPotQuality=(potId)=>{const stripped=stripInfusion(potId);return stripped.endsWith('_G')?'gm':stripped.endsWith('_M')?'mw':stripped.endsWith('_F')?'fine':'std';};
 var qualPotId=(recipeId,q)=>q==='fine'?recipeId+'_F':q==='mw'?recipeId+'_M':q==='gm'?recipeId+'_G':recipeId;
-var getMasteryDiscount=(brewCounts,recipeId)=>{const bc=brewCounts[recipeId]||0;return bc>=25?2:bc>=10?1:0;};
+var getMasteryDiscount=(brewCounts,recipeId,bonusCap)=>{const bc=brewCounts[recipeId]||0;const base=bc>=25?2:bc>=10?1:0;const extra=bonusCap>0?(bc>=50?Math.min(bonusCap,2):bc>=35?Math.min(bonusCap,1):0):0;return base+extra;};
 
 // Spoilage color coding for inventory display
 var getSpoilColor=(qty,threshold)=>qty>16?'#c04040':qty>12?'#d08030':qty>8?'#c0a040':'';
@@ -1906,6 +1912,15 @@ var CONSTRUCTOR_BPS=[
   {id:'bp_sanctum',name:'Architect\'s Sanctum',icon:'🏛️',tier:3,draftDC:20,buildSessions:8,legendary:true,
     matCost:{deep_crystal:3,embervein:2,volcanic_essence:2,starwort:2},desc:'A master architect\'s study that enhances all your other constructions.',
     effect:'reinforceAll',value:true,effectDesc:'All blueprints get +50% effect, future build time halved'},
+  {id:'bp_alch_forge',name:'Alchemical Forge',icon:'🔥',tier:3,draftDC:22,buildSessions:8,legendary:true,
+    matCost:{embervein:4,volcanic_essence:2,deep_crystal:2,ashite:3},desc:'A self-sustaining arcane furnace that brews your most profitable recipe each morning.',
+    effect:'autoBrew',value:true,effectDesc:'Auto-brews your top-selling recipe each morning (free)'},
+  {id:'bp_greenhouse',name:'Crystal Greenhouse',icon:'🌿',tier:3,draftDC:21,buildSessions:7,legendary:true,
+    matCost:{deep_crystal:3,moonpetal:3,starwort:2,hearthstone:2},desc:'A prismatic growing chamber that cultivates rare ingredients from ambient magical energy.',
+    effect:'rareIngredient',value:true,effectDesc:'Produces 1 random rare ingredient daily'},
+  {id:'bp_conduit',name:'Arcane Conduit',icon:'⚡',tier:3,draftDC:20,buildSessions:6,legendary:true,
+    matCost:{deep_crystal:4,embervein:2,volcanic_essence:1},desc:'A ley line tap that channels ambient energy directly into your morning reserves.',
+    effect:'conduitEnergy',value:2,effectDesc:'+2 Energy per day permanently'},
 ];
 
 // ═══ NATURALIST FIELD JOURNAL ═══
@@ -2745,7 +2760,7 @@ var FACTIONS={ashwardens:{id:'ashwardens',loc:'cindervale',name:'Ashwardens',ico
       {name:'Fleet Master',desc:'+25% rare find chance on expeditions.',effects:{rareForageBonus:0.25}},
     ]},
 };
-var getFactionEffects=(fRepState,alignment)=>{const effs={};for(const [fid,f] of Object.entries(FACTIONS)){const rl=getRepLvl(fRepState[fid]||0);for(let i=0;i<Math.min(rl,f.tierBonuses.length);i++){const tb=f.tierBonuses[i];for(const [k,v] of Object.entries(tb.effects)){effs[k]=(effs[k]||0)+(typeof v==='number'?v:v===true?1:0);}}if(alignment===fid&&f.alignBonus){for(const [k,v] of Object.entries(f.alignBonus.effects)){effs[k]=(effs[k]||0)+(typeof v==='number'?v:v===true?1:0);}}}return effs;};
+var getFactionEffects=(fRepState,alignment,alignBoostMult)=>{const abm=1+(alignBoostMult||0);const effs={};for(const [fid,f] of Object.entries(FACTIONS)){const rl=getRepLvl(fRepState[fid]||0);for(let i=0;i<Math.min(rl,f.tierBonuses.length);i++){const tb=f.tierBonuses[i];for(const [k,v] of Object.entries(tb.effects)){effs[k]=(effs[k]||0)+(typeof v==='number'?v:v===true?1:0);}}if(alignment===fid&&f.alignBonus){for(const [k,v] of Object.entries(f.alignBonus.effects)){effs[k]=(effs[k]||0)+(typeof v==='number'?v*abm:v===true?1:0);}}}return effs;};
 var QUESTS=[
   {id:'q1',name:'Brenna\'s Request',giver:'Brenna',loc:'market',type:'deliver',target:'healing_salve',count:1,xp:80,gold:15,items:['moonpetal','moonpetal'],unlock:0,faction:null,fRep:0,
     desc:'Brenna needs a Healing Salve for an injured traveler.',hint:'Brew a Healing Salve (🌿 Ashbloom + 💎 Hearthstone) and return to Brenna.',
