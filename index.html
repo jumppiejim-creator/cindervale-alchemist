@@ -4879,6 +4879,9 @@ function CindervaleAlchemistInner(){
     setNews(nw);
   };
 
+  // ─── INGREDIENT TOOLTIP HELPER ───
+  const iT=(id,showName)=>{const ig=INGR[id];if(!ig)return id;return showName?React.createElement('span',{title:ig.name+' ('+id+')',style:{cursor:'help'}},ig.icon+' '+ig.name):React.createElement('span',{title:ig.name,style:{cursor:'help'}},ig.icon);};
+
   // ─── STYLES ───
   const S={
     app:{minHeight:'100vh',background:TH.bg,color:TH.text,fontFamily:"'Almendra','Palatino',serif",display:'flex',flexDirection:'column',alignItems:'center',overflowAnchor:'none'},
@@ -6147,7 +6150,7 @@ function CindervaleAlchemistInner(){
                       onClick={()=>doNightExpedition(reg.id,site.id)}>
                       <span>{site.icon}</span>
                       <span style={{flex:1}}>{site.name}</span>
-                      <span style={{color:TH.textDim,fontSize:12}}>{favored.map(([id])=>INGR[id]?.icon).join('')}</span>
+                      <span style={{color:TH.textDim,fontSize:12}}>{favored.map(([id])=><span key={id} title={INGR[id]?.name||id}>{INGR[id]?.icon}</span>)}</span>
                     </button>);
                   })}
                 </div>}
@@ -6209,7 +6212,7 @@ function CindervaleAlchemistInner(){
               {/* Ingredients overview */}
               <div style={{marginBottom:12}}>
                 <div style={{fontSize:15,color:TH.gold,marginBottom:4}}>Available Ingredients:</div>
-                <div style={{display:'flex',flexWrap:'wrap',gap:2}}>{reg.ingr.map(id=><span key={id} style={{...S.tag,fontSize:14,padding:'2px 5px'}}>{INGR[id]?.icon} {INGR[id]?.name} <span style={{color:TH.textDim}}>({inv[id]||0})</span></span>)}</div>
+                <div style={{display:'flex',flexWrap:'wrap',gap:2}}>{reg.ingr.map(id=><span key={id} title={INGR[id]?.name||id} style={{...S.tag,fontSize:14,padding:'2px 5px',cursor:'help'}}>{INGR[id]?.icon} {INGR[id]?.name} <span style={{color:TH.textDim}}>({inv[id]||0})</span></span>)}</div>
               </div>
 
               {/* Targeted Foraging */}
@@ -6224,7 +6227,7 @@ function CindervaleAlchemistInner(){
                       border:'1px solid '+(isTgt?TH.gold:TH.border+'66'),
                       fontWeight:isTgt?'bold':'normal'}}
                       onClick={()=>setTargetIngr(isTgt?null:id)}>
-                      {isTgt&&'🎯 '}{INGR[id]?.icon} {INGR[id]?.name}
+                      {isTgt&&'🎯 '}<span title={INGR[id]?.name||id}>{INGR[id]?.icon} {INGR[id]?.name}</span>
                     </button>;
                   })}
                 </div>
@@ -6259,7 +6262,7 @@ function CindervaleAlchemistInner(){
                         {sorted.slice(0,4).map(([id,w])=>{
                           const isFav=w>=20;
                           return(<div key={id} style={{display:'flex',alignItems:'center',gap:3,fontSize:13,minWidth:0}}>
-                            <span>{INGR[id]?.icon}</span>
+                            <span title={INGR[id]?.name||id}>{INGR[id]?.icon}</span>
                             <div style={{width:50,height:6,background:TH.border,borderRadius:3,overflow:'hidden'}}>
                               <div style={{width:`${w}%`,height:'100%',background:isFav?TH.gold:TH.textDim,borderRadius:3}}/>
                             </div>
@@ -6299,7 +6302,7 @@ function CindervaleAlchemistInner(){
                         {hr.ingr.map(id=>{
                           const isHidIngr=HIDDEN_INGR&&HIDDEN_INGR[id];
                           return <span key={id} style={{display:'inline-flex',alignItems:'center',gap:3,fontSize:13,padding:'2px 6px',borderRadius:3,background:isHidIngr?'#50a0a015':'transparent',border:'1px solid '+(isHidIngr?'#50a0a044':TH.border+'44')}}>
-                            {INGR[id]?.icon} <b style={{color:isHidIngr?'#70c0c0':TH.text}}>{INGR[id]?.name}</b>
+                            <span title={INGR[id]?.name||id}>{INGR[id]?.icon}</span> <b style={{color:isHidIngr?'#70c0c0':TH.text}}>{INGR[id]?.name}</b>
                             <span style={{color:TH.textDim}}>({inv[id]||0})</span>
                             {isHidIngr&&<span style={{fontSize:11,color:'#50a0a0'}}>~35%</span>}
                           </span>;
@@ -7170,7 +7173,7 @@ function CindervaleAlchemistInner(){
               </div>
             </div>}
             <div style={{fontSize:15,color:TH.gold,marginBottom:3}}>Available ingredients ({pickN} types gathered per check):</div>
-            <div style={{marginBottom:8}}>{reg.ingr.map(id=><span key={id} style={{...S.tag,padding:'3px 6px'}}>{INGR[id]?.icon} {INGR[id]?.name} <span style={{color:TH.textDim,fontSize:13}}>(have {inv[id]||0})</span></span>)}</div>
+            <div style={{marginBottom:8}}>{reg.ingr.map(id=><span key={id} title={INGR[id]?.name||id} style={{...S.tag,padding:'3px 6px',cursor:'help'}}>{INGR[id]?.icon} {INGR[id]?.name} <span style={{color:TH.textDim,fontSize:13}}>(have {inv[id]||0})</span></span>)}</div>
             <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
               <button style={S.btn(canGo?'gold':'dim')} onClick={()=>setZonePopup(reg.id)} disabled={!canGo}>
                 {canGo?`📍 Choose Forage Site in ${reg.name}`:hours<1?'No Energy':`Need ⚡${reg.time+1}+ (have ⚡${hours})`}
@@ -7278,7 +7281,7 @@ function CindervaleAlchemistInner(){
                   <div style={{display:'flex',flexWrap:'wrap',gap:2,marginBottom:6}}>
                     {Object.entries(cost).map(([id,q])=>{
                       const have=(inv[id]||0)>=q;
-                      return <span key={id} style={{...S.tag,fontSize:13,borderColor:have?TH.green+'88':TH.red+'88'}}>
+                      return <span key={id} title={INGR[id]?.name||id} style={{...S.tag,fontSize:13,borderColor:have?TH.green+'88':TH.red+'88',cursor:'help'}}>
                         {INGR[id]?.icon}{INGR[id]?.name} <b style={{color:have?TH.green:TH.red}}>{inv[id]||0}/{q}</b>
                       </span>;
                     })}
@@ -8490,7 +8493,7 @@ function CindervaleAlchemistInner(){
               const have=(inv[id]||0)>=q;
               const iQty=inv[id]||0;const iHid=HIDDEN_INGR&&HIDDEN_INGR[id];const iThresh=(iHid?12:8)+getFeatureVal('spoilThreshold')+upEff('spoilThreshold')+getSkMod('stockpiling')*3;
               const iWarn=iQty>iThresh;
-              return <span key={id} style={{...S.tag,borderColor:have?TH.green:TH.red}}>
+              return <span key={id} title={INGR[id]?.name||id} style={{...S.tag,borderColor:have?TH.green:TH.red,cursor:'help'}}>
                 {INGR[id]?.icon}{INGR[id]?.name} <b style={{color:have?TH.green:TH.red}}>{iQty}/{q}</b>{iWarn&&<span style={{fontSize:10,color:'#c0a040'}}> ⚠️</span>}
               </span>;})}
             </div>
@@ -8712,8 +8715,8 @@ function CindervaleAlchemistInner(){
           {/* Selected ingredients on bench */}
           <div style={{display:'flex',gap:4,flexWrap:'wrap',minHeight:32,padding:'6px 8px',background:TH.panelAlt,borderRadius:4,border:'1px solid '+TH.purple+'44',marginBottom:6}}>
             {expBench.length===0&&<span style={{fontSize:15,color:TH.textDim,fontStyle:'italic'}}>Add ingredients below...</span>}
-            {expBench.map((id,i)=><span key={i} style={{...S.tag,borderColor:TH.purple+'88',cursor:'pointer',background:TH.panelAlt,color:TH.textBright}} onClick={()=>rmFromExp(i)}>
-              {INGR[id]?.icon} {INGR[id]?.name} <span style={{fontSize:13,color:TH.red}}>✕</span>
+            {expBench.map((id,i)=><span key={i} title={INGR[id]?.name||id} style={{...S.tag,borderColor:TH.purple+'88',cursor:'pointer',background:TH.panelAlt,color:TH.textBright}} onClick={()=>rmFromExp(i)}>
+              <span title={INGR[id]?.name||id}>{INGR[id]?.icon} {INGR[id]?.name}</span> <span style={{fontSize:13,color:TH.red}}>✕</span>
             </span>)}
             {expBench.length>0&&<span style={{fontSize:13,color:TH.textDim,alignSelf:'center'}}>({expBench.length}/4)</span>}
           </div>
@@ -8958,7 +8961,7 @@ function CindervaleAlchemistInner(){
                     const shopItem=SHOP_I.find(s=>s.id===id&&(!s.loc||s.loc===gameLocation));
                     return(
                     <div key={id} style={{padding:'3px 0',fontSize:15,display:'flex',alignItems:'center',flexWrap:'wrap',gap:4}}>
-                      <span style={{color:have?TH.green:TH.red}}>{have?'✅':'❌'} {INGR[id]?.icon}{INGR[id]?.name}</span>
+                      <span title={INGR[id]?.name||id} style={{color:have?TH.green:TH.red,cursor:'help'}}>{have?'✅':'❌'} {INGR[id]?.icon}{INGR[id]?.name}</span>
                       <span style={{fontSize:14,color:have?TH.green:TH.red}}>({inv[id]||0}/{q})</span>
                       {!have&&<span style={{display:'flex',gap:4,marginLeft:'auto'}}>
                         {regions.length>0&&<button style={{...S.btn('def'),fontSize:13,padding:'1px 6px'}} onClick={()=>setScreen('worldmap')}>🗺️ Forage</button>}
@@ -9134,8 +9137,8 @@ function CindervaleAlchemistInner(){
                   {prepped&&<div style={{fontSize:14,color:TH.gold,marginBottom:4}}>🔨 Prepped: gold -40%{waivedMat?', '+((INGR[waivedMat]?.icon||'')+' '+(INGR[waivedMat]?.name||waivedMat))+' waived':''}</div>}
                   <div style={{...S.row}}>
                     <span style={{fontSize:16,color:TH.gold,fontWeight:'bold'}}>{gc}g</span>
-                    {adjMats.map(([id,q])=><span key={id} style={{...S.tag,fontSize:14,borderColor:(inv[id]||0)>=q?TH.green:TH.red}}>{INGR[id]?.icon||id} {inv[id]||0}/{q}</span>)}
-                    {waivedMat&&<span style={{...S.tag,fontSize:14,borderColor:TH.gold,textDecoration:'line-through',opacity:.5}}>{INGR[waivedMat]?.icon||''}{INGR[waivedMat]?.name||waivedMat}</span>}
+                    {adjMats.map(([id,q])=><span key={id} title={INGR[id]?.name||id} style={{...S.tag,fontSize:14,borderColor:(inv[id]||0)>=q?TH.green:TH.red,cursor:'help'}}>{INGR[id]?.icon||id} {inv[id]||0}/{q}</span>)}
+                    {waivedMat&&<span title={INGR[waivedMat]?.name||waivedMat} style={{...S.tag,fontSize:14,borderColor:TH.gold,textDecoration:'line-through',opacity:.5,cursor:'help'}}>{INGR[waivedMat]?.icon||''}{INGR[waivedMat]?.name||waivedMat}</span>}
                     <button style={{...S.btn(canBuy?'gold':'dim'),fontSize:15,padding:'4px 14px'}} onClick={()=>{if(canBuy)buyUpgrade(uid);}}>{!reqMet?'🔒 Locked':'Build '+u?.name}</button>
                   </div>
                 </div>
@@ -9208,8 +9211,8 @@ function CindervaleAlchemistInner(){
                   {!owned&&prepped&&<div style={{fontSize:14,color:TH.gold,margin:'3px 0'}}>🔨 Prepped: gold -40%{waivedMat?', '+((INGR[waivedMat]?.icon||'')+' '+(INGR[waivedMat]?.name||waivedMat))+' waived':''}</div>}
                   {!owned&&<div style={{...S.row,marginTop:6}}>
                     <span style={{fontSize:15,color:TH.gold,fontWeight:'bold'}}>{gc}g{prepped?' ✦':''}</span>
-                    {adjMats.map(([id,q])=><span key={id} style={{...S.tag,fontSize:14,borderColor:(inv[id]||0)>=q?TH.green:TH.red}}>{INGR[id]?.icon||id} {inv[id]||0}/{q}</span>)}
-                    {waivedMat&&<span style={{...S.tag,fontSize:14,borderColor:TH.gold,textDecoration:'line-through',opacity:.5}}>{INGR[waivedMat]?.icon||''}{INGR[waivedMat]?.name||waivedMat}</span>}
+                    {adjMats.map(([id,q])=><span key={id} title={INGR[id]?.name||id} style={{...S.tag,fontSize:14,borderColor:(inv[id]||0)>=q?TH.green:TH.red,cursor:'help'}}>{INGR[id]?.icon||id} {inv[id]||0}/{q}</span>)}
+                    {waivedMat&&<span title={INGR[waivedMat]?.name||waivedMat} style={{...S.tag,fontSize:14,borderColor:TH.gold,textDecoration:'line-through',opacity:.5,cursor:'help'}}>{INGR[waivedMat]?.icon||''}{INGR[waivedMat]?.name||waivedMat}</span>}
                     <button style={{...S.btn(canBuy?'gold':'dim'),fontSize:15,padding:'4px 12px'}} onClick={()=>{if(canBuy){buyUpgrade(uid);setSelectedUpgrade(null);}}}>{!reqMet?'🔒 Locked':'Build'}</button>
                   </div>}
                   {owned&&<div style={{fontSize:14,color:TH.green,marginTop:4}}>✓ Installed and active</div>}
@@ -9240,8 +9243,8 @@ function CindervaleAlchemistInner(){
                   {!owned&&cProg>0&&cProg<100&&<div style={{margin:'3px 0'}}><div style={{height:4,background:TH.panel,borderRadius:2,overflow:'hidden'}}><div style={{height:'100%',width:cProg+'%',background:TH.gold,borderRadius:2}}/></div><div style={{fontSize:12,color:TH.gold}}>🔨 Construction prep: {cProg}%</div></div>}
                   {!owned&&prepped&&<div style={{fontSize:13,color:TH.gold,margin:'2px 0'}}>🔨 Prepped: gold -40%{waivedMat?`, ${INGR[waivedMat]?.icon||''}${INGR[waivedMat]?.name||waivedMat} waived`:''}</div>}
                   {!owned&&<div style={S.row}><span style={{fontSize:14,color:prepped?TH.gold:TH.gold}}>{gc}g{prepped?' ✦':''}</span>
-                    {adjMats.map(([id,q])=><span key={id} style={{...S.tag,fontSize:14,borderColor:(inv[id]||0)>=q?TH.green:TH.red}}>{INGR[id]?.icon||id}{inv[id]||0}/{q}</span>)}
-                    {waivedMat&&<span style={{...S.tag,fontSize:14,borderColor:TH.gold,textDecoration:'line-through',opacity:.5}}>{INGR[waivedMat]?.icon||''}{INGR[waivedMat]?.name||waivedMat}</span>}
+                    {adjMats.map(([id,q])=><span key={id} title={INGR[id]?.name||id} style={{...S.tag,fontSize:14,borderColor:(inv[id]||0)>=q?TH.green:TH.red,cursor:'help'}}>{INGR[id]?.icon||id}{inv[id]||0}/{q}</span>)}
+                    {waivedMat&&<span title={INGR[waivedMat]?.name||waivedMat} style={{...S.tag,fontSize:14,borderColor:TH.gold,textDecoration:'line-through',opacity:.5,cursor:'help'}}>{INGR[waivedMat]?.icon||''}{INGR[waivedMat]?.name||waivedMat}</span>}
                     <button style={S.btn(canBuy?'gold':'dim')} onClick={()=>canBuy&&buyUpgrade(u.id)}>{!reqMet?'Locked':'Build'}</button></div>}
                 </div>);})}
           </div>);})}
@@ -10371,7 +10374,7 @@ function CindervaleAlchemistInner(){
               const spThresh=(isHid?12:8)+getFeatureVal('spoilThreshold')+upEff('spoilThreshold')+getSkMod('stockpiling')*3;
               const spColor=q>spThresh+8?'#c04040':q>spThresh+4?'#d08030':q>spThresh?'#c0a040':'';
               return <div key={id} style={{display:'flex',justifyContent:'space-between',fontSize:13,padding:'1px 0'}}>
-              <span style={{color:spColor||TH.text}}>{INGR[id]?.icon} {INGR[id]?.name||id}</span>
+              <span title={INGR[id]?.name||id} style={{color:spColor||TH.text,cursor:'help'}}>{INGR[id]?.icon} {INGR[id]?.name||id}</span>
               <span style={{color:spColor||TH.textBright}}>×{q}{spColor?'⚠️':''}</span>
             </div>;})}
             {Object.entries(inv).filter(([,q])=>q>0).length===0&&<div style={{fontSize:13,color:TH.textDim}}>No ingredients</div>}
@@ -10414,7 +10417,7 @@ function CindervaleAlchemistInner(){
           <div style={S.sideSec}>
             <div style={S.sideHd}>🌿 Inventory</div>
             {Object.entries(inv).filter(([,q])=>q>0).sort((a,b)=>b[1]-a[1]).map(([id,q])=><div key={id} style={{display:'flex',justifyContent:'space-between',fontSize:13,padding:'1px 0'}}>
-              <span style={{color:TH.text}}>{INGR[id]?.icon} {INGR[id]?.name||id}</span>
+              <span title={INGR[id]?.name||id} style={{color:TH.text,cursor:'help'}}>{INGR[id]?.icon} {INGR[id]?.name||id}</span>
               <span style={{color:TH.textBright}}>×{q}</span>
             </div>)}
           </div>
@@ -10432,7 +10435,7 @@ function CindervaleAlchemistInner(){
           <div style={S.sideSec}>
             <div style={S.sideHd}>🌿 Carrying</div>
             {Object.entries(inv).filter(([,q])=>q>0).sort((a,b)=>b[1]-a[1]).slice(0,10).map(([id,q])=><div key={id} style={{display:'flex',justifyContent:'space-between',fontSize:13,padding:'1px 0'}}>
-              <span style={{color:TH.text}}>{INGR[id]?.icon} {INGR[id]?.name||id}</span>
+              <span title={INGR[id]?.name||id} style={{color:TH.text,cursor:'help'}}>{INGR[id]?.icon} {INGR[id]?.name||id}</span>
               <span style={{color:TH.textBright}}>×{q}</span>
             </div>)}
           </div>
@@ -11016,7 +11019,7 @@ function ExpeditionHourPopup({hr,TH,S,LC,INGR,FACTIONS,onOk,onSkipAll,remaining,
             {Object.entries(hr.gathered).map(([id,q])=>(
               <span key={id} style={{fontSize:15,padding:'2px 6px',borderRadius:3,background:q>0?`${TH.green}15`:TH.panelLight,
                 color:q>0?TH.green:TH.textDim,border:'1px solid '+(q>0?TH.green+'44':TH.border)}}>
-                {INGR[id]?.icon}{INGR[id]?.name} ×{q}
+                <span title={INGR[id]?.name||id}>{INGR[id]?.icon}{INGR[id]?.name}</span> ×{q}
               </span>))}
           </div>
           <div style={{fontSize:14,color:TH.gold,marginTop:3}}>+{hr.xp-(hr.event?.effectXp||0)} XP</div>
@@ -11115,7 +11118,7 @@ function ExpeditionHourPopup({hr,TH,S,LC,INGR,FACTIONS,onOk,onSkipAll,remaining,
           <div style={{fontSize:14,color:TH.gold,marginBottom:3,fontWeight:'bold'}}>📦 Running Total ({hr.hourNum}/{hr.totalHours}h)</div>
           <div style={{display:'flex',flexWrap:'wrap',gap:3}}>
             {Object.entries(hr.cumGathered).filter(([,q])=>q>0).map(([id,q])=>(
-              <span key={id} style={{fontSize:14,padding:'1px 5px',borderRadius:2,background:TH.bg,color:TH.textBright,border:'1px solid '+TH.border}}>
+              <span key={id} title={INGR[id]?.name||id} style={{fontSize:14,padding:'1px 5px',borderRadius:2,background:TH.bg,color:TH.textBright,border:'1px solid '+TH.border,cursor:'help'}}>
                 {INGR[id]?.icon}{q}
               </span>))}
           </div>

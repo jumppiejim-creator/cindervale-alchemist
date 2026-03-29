@@ -515,20 +515,20 @@ var INGR={ashbloom:{name:'Ashbloom',icon:'🌿',val:5},embercap:{name:'Embercap'
   crystal_shard:{name:'Crystal Shard',icon:'🔷',val:13},mineral_clay:{name:'Mineral Clay',icon:'🟤',val:11},
   nightdew:{name:'Nightdew',icon:'💧',val:14},lunar_moss:{name:'Lunar Moss',icon:'🌑',val:15},
   sulfur_bloom:{name:'Sulfur Bloom',icon:'💛',val:18},magma_salt:{name:'Magma Salt',icon:'🧡',val:19},
-  deep_iron:{name:'Deep Iron',icon:'⬛',val:20},shadow_quartz:{name:'Shadow Quartz',icon:'🖤',val:22},
-  forge_scale:{name:'Forge Scale',icon:'🔶',val:28},primordial_ash:{name:'Primordial Ash',icon:'⚫',val:32},
+  deep_iron:{name:'Deep Iron',icon:'⬛',val:20},shadow_quartz:{name:'Shadow Quartz',icon:'◼️',val:22},
+  forge_scale:{name:'Forge Scale',icon:'⚖️',val:28},primordial_ash:{name:'Primordial Ash',icon:'⚫',val:32},
   // New region-specific resources
-  char_root:{name:'Char Root',icon:'🫚',val:3},wind_dust:{name:'Wind Dust',icon:'💨',val:4},
-  bark_resin:{name:'Bark Resin',icon:'🫗',val:6},moss_amber:{name:'Moss Amber',icon:'🟡',val:7},
+  char_root:{name:'Char Root',icon:'🫚',val:3},wind_dust:{name:'Wind Dust',icon:'🌬️',val:4},
+  bark_resin:{name:'Bark Resin',icon:'🪹',val:6},moss_amber:{name:'Moss Amber',icon:'🟡',val:7},
   biolumen_gel:{name:'Biolumen Gel',icon:'💚',val:9},mycelium_thread:{name:'Mycelium Thread',icon:'🧵',val:10},
   geode_dust:{name:'Geode Dust',icon:'🔹',val:12},resonance_ore:{name:'Resonance Ore',icon:'🔔',val:13},
-  dew_crystal:{name:'Dew Crystal',icon:'💎',val:15},silver_lichen:{name:'Silver Lichen',icon:'🪨',val:14},
-  obsidian_flake:{name:'Obsidian Flake',icon:'♦️',val:17},thermal_clay:{name:'Thermal Clay',icon:'🟠',val:18},
-  echo_stone:{name:'Echo Stone',icon:'🔊',val:21},dark_amber:{name:'Dark Amber',icon:'🟤',val:20},
-  phoenix_ash:{name:'Phoenix Ash',icon:'🔥',val:30},runespark:{name:'Runespark',icon:'✨',val:28},
+  dew_crystal:{name:'Dew Crystal',icon:'🌟',val:15},silver_lichen:{name:'Silver Lichen',icon:'🥈',val:14},
+  obsidian_flake:{name:'Obsidian Flake',icon:'🔺',val:17},thermal_clay:{name:'Thermal Clay',icon:'🟠',val:18},
+  echo_stone:{name:'Echo Stone',icon:'🔊',val:21},dark_amber:{name:'Dark Amber',icon:'🍫',val:20},
+  phoenix_ash:{name:'Phoenix Ash',icon:'🐦',val:30},runespark:{name:'Runespark',icon:'✨',val:28},
   // Expansion wave 2 — 2 per region
   ember_petal:{name:'Ember Petal',icon:'🌺',val:3},soot_crystal:{name:'Soot Crystal',icon:'🔸',val:4},
-  amber_sap:{name:'Amber Sap',icon:'🍯',val:6},beetle_shell:{name:'Beetle Shell',icon:'🪲',val:7},
+  amber_sap:{name:'Amber Sap',icon:'🍯',val:6},beetle_shell:{name:'Beetle Shell',icon:'🐞',val:7},
   echo_fungus:{name:'Echo Fungus',icon:'🔉',val:9},ghost_silk:{name:'Ghost Silk',icon:'🕸️',val:11},
   singing_quartz:{name:'Singing Quartz',icon:'🎵',val:13},copper_vein:{name:'Copper Vein',icon:'🟫',val:12},
   moth_scale:{name:'Moth Scale',icon:'🦋',val:15},dream_pollen:{name:'Dream Pollen',icon:'💤',val:16},
@@ -537,54 +537,54 @@ var INGR={ashbloom:{name:'Ashbloom',icon:'🌿',val:5},embercap:{name:'Embercap'
   heartstone_sliver:{name:'Heartstone Sliver',icon:'❤️',val:32},titan_bone:{name:'Titan Bone',icon:'🦴',val:31},
   // ═══ ASHFALL EXPANSION INGREDIENTS ═══
   // Common (val 1-5)
-  dried_cactus:{name:'Dried Cactus',icon:'🌵',val:3},sand_glass:{name:'Sand Glass',icon:'🪟',val:4},salt_flake:{name:'Salt Flake',icon:'🧊',val:3},
+  dried_cactus:{name:'Dried Cactus',icon:'🌵',val:3},sand_glass:{name:'Sand Glass',icon:'⌛',val:4},salt_flake:{name:'Salt Flake',icon:'❇️',val:3},
   // Uncommon (val 6-12)
   fire_ant_chitin:{name:'Fire Ant Chitin',icon:'🐜',val:7},desert_iron:{name:'Desert Iron',icon:'⛏️',val:9},scarab_shell:{name:'Scarab Shell',icon:'🪲',val:8},
   red_clay:{name:'Red Clay',icon:'🏺',val:6},heatstone:{name:'Heatstone',icon:'🔆',val:10},palm_resin:{name:'Palm Resin',icon:'🌴',val:7},
-  sandstone_dust:{name:'Sandstone Dust',icon:'🪨',val:6},sulfur_crystal:{name:'Sulfur Crystal',icon:'💛',val:11},
+  sandstone_dust:{name:'Sandstone Dust',icon:'🏜️',val:6},sulfur_crystal:{name:'Sulfur Crystal',icon:'⚗️',val:11},
   // Rare (val 13-20)
-  sun_diamond:{name:'Sun Diamond',icon:'💎',val:18},venom_silk:{name:'Venom Silk',icon:'🕷️',val:14},storm_glass:{name:'Storm Glass',icon:'⚡',val:16},
-  molten_pearl:{name:'Molten Pearl',icon:'🫧',val:19},fire_opal:{name:'Fire Opal',icon:'🔸',val:17},desert_rose:{name:'Desert Rose',icon:'🌹',val:13},
-  spirit_sand:{name:'Spirit Sand',icon:'👻',val:15},gold_dust:{name:'Gold Dust',icon:'✨',val:18},ghost_pepper:{name:'Ghost Pepper',icon:'🌶️',val:13},
-  worm_tooth:{name:'Worm Tooth',icon:'🦷',val:14},lava_glass:{name:'Lava Glass',icon:'🔮',val:16},temple_jade:{name:'Temple Jade',icon:'💚',val:19},
+  sun_diamond:{name:'Sun Diamond',icon:'🌞',val:18},venom_silk:{name:'Venom Silk',icon:'🕷️',val:14},storm_glass:{name:'Storm Glass',icon:'⚡',val:16},
+  molten_pearl:{name:'Molten Pearl',icon:'🫨',val:19},fire_opal:{name:'Fire Opal',icon:'🪔',val:17},desert_rose:{name:'Desert Rose',icon:'🌹',val:13},
+  spirit_sand:{name:'Spirit Sand',icon:'👻',val:15},gold_dust:{name:'Gold Dust',icon:'🥇',val:18},ghost_pepper:{name:'Ghost Pepper',icon:'🌶️',val:13},
+  worm_tooth:{name:'Worm Tooth',icon:'🪱',val:14},lava_glass:{name:'Lava Glass',icon:'🥏',val:16},temple_jade:{name:'Temple Jade',icon:'🐢',val:19},
   // Legendary (val 21+)
-  buried_relic:{name:'Buried Relic',icon:'🏺',val:24},oasis_pearl:{name:'Oasis Pearl',icon:'🫧',val:26},pharaoh_dust:{name:'Pharaoh Dust',icon:'👑',val:28},
-  desert_star:{name:'Desert Star',icon:'⭐',val:30},sun_crown_shard:{name:'Sun Crown Shard',icon:'☀️',val:32},queen_silk:{name:'Queen Silk',icon:'🕸️',val:24},
-  glass_bloom:{name:'Glass Bloom',icon:'🌸',val:22},
+  buried_relic:{name:'Buried Relic',icon:'⚱️',val:24},oasis_pearl:{name:'Oasis Pearl',icon:'🫶',val:26},pharaoh_dust:{name:'Pharaoh Dust',icon:'👑',val:28},
+  desert_star:{name:'Desert Star',icon:'🌠',val:30},sun_crown_shard:{name:'Sun Crown Shard',icon:'🌅',val:32},queen_silk:{name:'Queen Silk',icon:'👘',val:24},
+  glass_bloom:{name:'Glass Bloom',icon:'💟',val:22},
   // ═══ TIDECREST HARBOR INGREDIENTS ═══
   // Common (val 3-8)
-  driftwood:{name:'Driftwood',icon:'🪵',val:4},sea_salt:{name:'Sea Salt',icon:'🧂',val:3},kelp_frond:{name:'Kelp Frond',icon:'🌿',val:5},
-  sand_dollar:{name:'Sand Dollar',icon:'🪙',val:5},tide_moss:{name:'Tide Moss',icon:'🌱',val:4},sea_glass:{name:'Sea Glass',icon:'💎',val:6},
-  foam_bloom:{name:'Foam Bloom',icon:'🫧',val:5},dried_seaweed:{name:'Dried Seaweed',icon:'🍃',val:3},crab_shell:{name:'Crab Shell',icon:'🦀',val:6},
-  barnacle:{name:'Barnacle',icon:'🐚',val:4},sea_snail:{name:'Sea Snail',icon:'🐌',val:7},starfish_arm:{name:'Starfish Arm',icon:'⭐',val:7},
+  driftwood:{name:'Driftwood',icon:'🪃',val:4},sea_salt:{name:'Sea Salt',icon:'🫙',val:3},kelp_frond:{name:'Kelp Frond',icon:'🥬',val:5},
+  sand_dollar:{name:'Sand Dollar',icon:'🪙',val:5},tide_moss:{name:'Tide Moss',icon:'🍀',val:4},sea_glass:{name:'Sea Glass',icon:'🪟',val:6},
+  foam_bloom:{name:'Foam Bloom',icon:'🧴',val:5},dried_seaweed:{name:'Dried Seaweed',icon:'🍃',val:3},crab_shell:{name:'Crab Shell',icon:'🦀',val:6},
+  barnacle:{name:'Barnacle',icon:'🐚',val:4},sea_snail:{name:'Sea Snail',icon:'🐌',val:7},starfish_arm:{name:'Starfish Arm',icon:'🪐',val:7},
   // Uncommon (val 8-14)
-  coral_shard:{name:'Coral Shard',icon:'🪸',val:8},urchin_spine:{name:'Urchin Spine',icon:'🦔',val:9},anemone_extract:{name:'Anemone Extract',icon:'🌺',val:10},
-  sponge_pulp:{name:'Sponge Pulp',icon:'🧽',val:8},salt_crystal:{name:'Salt Crystal',icon:'💠',val:9},stormkelp:{name:'Stormkelp',icon:'🌊',val:12},
-  whale_oil:{name:'Whale Oil',icon:'🐋',val:14},jellyfish_essence:{name:'Jellyfish Ess.',icon:'🪼',val:11},nautilus_shell:{name:'Nautilus Shell',icon:'🐚',val:13},
-  phosphor_moss:{name:'Phosphor Moss',icon:'✨',val:10},anglerfish_lure:{name:'Anglerfish Lure',icon:'🐟',val:12},sea_amber:{name:'Sea Amber',icon:'🟡',val:13},
-  pearl_dust:{name:'Pearl Dust',icon:'🤍',val:11},driftstone:{name:'Driftstone',icon:'🪨',val:9},bat_guano:{name:'Bat Guano',icon:'🦇',val:8},
-  cave_pearl:{name:'Cave Pearl',icon:'⚪',val:12},brine_crystal:{name:'Brine Crystal',icon:'💧',val:10},drip_mineral:{name:'Drip Mineral',icon:'💦',val:9},
-  fog_essence:{name:'Fog Essence',icon:'🌫️',val:11},echo_coral:{name:'Echo Coral',icon:'🔔',val:13},blind_shrimp:{name:'Blind Shrimp',icon:'🦐',val:8},
-  cave_lichen_tc:{name:'Cave Lichen',icon:'🍃',val:7},barnacle_cluster:{name:'Barnacle Cluster',icon:'🐚',val:10},
+  coral_shard:{name:'Coral Shard',icon:'🪸',val:8},urchin_spine:{name:'Urchin Spine',icon:'🦔',val:9},anemone_extract:{name:'Anemone Extract',icon:'🐙',val:10},
+  sponge_pulp:{name:'Sponge Pulp',icon:'🧽',val:8},salt_crystal:{name:'Salt Crystal',icon:'◽',val:9},stormkelp:{name:'Stormkelp',icon:'🌊',val:12},
+  whale_oil:{name:'Whale Oil',icon:'🐋',val:14},jellyfish_essence:{name:'Jellyfish Ess.',icon:'🪼',val:11},nautilus_shell:{name:'Nautilus Shell',icon:'🌀',val:13},
+  phosphor_moss:{name:'Phosphor Moss',icon:'🔅',val:10},anglerfish_lure:{name:'Anglerfish Lure',icon:'🐟',val:12},sea_amber:{name:'Sea Amber',icon:'🟨',val:13},
+  pearl_dust:{name:'Pearl Dust',icon:'🤍',val:11},driftstone:{name:'Driftstone',icon:'🧱',val:9},bat_guano:{name:'Bat Guano',icon:'🦇',val:8},
+  cave_pearl:{name:'Cave Pearl',icon:'⚪',val:12},brine_crystal:{name:'Brine Crystal',icon:'🧪',val:10},drip_mineral:{name:'Drip Mineral',icon:'💦',val:9},
+  fog_essence:{name:'Fog Essence',icon:'🌫️',val:11},echo_coral:{name:'Echo Coral',icon:'🎶',val:13},blind_shrimp:{name:'Blind Shrimp',icon:'🦐',val:8},
+  cave_lichen_tc:{name:'Cave Lichen',icon:'🧫',val:7},barnacle_cluster:{name:'Barnacle Cluster',icon:'🫘',val:10},
   // Rare (val 14-20)
-  deep_coral:{name:'Deep Coral',icon:'🪸',val:16},abyssal_pearl:{name:'Abyssal Pearl',icon:'🫧',val:18},moonfish_scale:{name:'Moonfish Scale',icon:'🌙',val:15},
-  giant_clam:{name:'Giant Clam',icon:'🦪',val:14},sea_fan:{name:'Sea Fan',icon:'🌸',val:15},siren_tear:{name:'Siren Tear',icon:'💧',val:18},
-  tidal_diamond:{name:'Tidal Diamond',icon:'💎',val:20},rust_iron:{name:'Rust Iron',icon:'⚙️',val:14},waterlogged_timber:{name:'Waterlogged Timber',icon:'🪵',val:12},
-  ships_tar:{name:'Ship\'s Tar',icon:'⬛',val:10},cannon_bronze:{name:'Cannon Bronze',icon:'🔔',val:16},sharktooth:{name:'Sharktooth',icon:'🦈',val:14},
+  deep_coral:{name:'Deep Coral',icon:'🟣',val:16},abyssal_pearl:{name:'Abyssal Pearl',icon:'🕳️',val:18},moonfish_scale:{name:'Moonfish Scale',icon:'🌙',val:15},
+  giant_clam:{name:'Giant Clam',icon:'🦪',val:14},sea_fan:{name:'Sea Fan',icon:'🪭',val:15},siren_tear:{name:'Siren Tear',icon:'🩵',val:18},
+  tidal_diamond:{name:'Tidal Diamond',icon:'◆',val:20},rust_iron:{name:'Rust Iron',icon:'⚙️',val:14},waterlogged_timber:{name:'Waterlogged Timber',icon:'🪣',val:12},
+  ships_tar:{name:'Ship\'s Tar',icon:'🛢️',val:10},cannon_bronze:{name:'Cannon Bronze',icon:'💣',val:16},sharktooth:{name:'Sharktooth',icon:'🦈',val:14},
   ghost_lantern:{name:'Ghost Lantern',icon:'🏮',val:18},compass_needle:{name:'Compass Needle',icon:'🧭',val:16},storm_glass_tc:{name:'Storm Glass',icon:'⛈️',val:20},
-  kraken_ink:{name:'Kraken Ink',icon:'🖊️',val:20},leviathan_scale:{name:'Leviathan Scale',icon:'🐉',val:19},pressure_crystal:{name:'Pressure Crystal',icon:'💎',val:17},
-  abyssal_vent_mineral:{name:'Vent Mineral',icon:'♨️',val:15},deep_brine:{name:'Deep Brine',icon:'💧',val:14},
+  kraken_ink:{name:'Kraken Ink',icon:'🖊️',val:20},leviathan_scale:{name:'Leviathan Scale',icon:'🐉',val:19},pressure_crystal:{name:'Pressure Crystal',icon:'🏔️',val:17},
+  abyssal_vent_mineral:{name:'Vent Mineral',icon:'♨️',val:15},deep_brine:{name:'Deep Brine',icon:'🌡️',val:14},
   // Legendary (val 21+)
-  trident_shard:{name:'Trident Shard',icon:'🔱',val:22},harbor_seal:{name:'Harbor Seal',icon:'⚓',val:22},diver_token:{name:'Diver Token',icon:'🤿',val:22},
-  sea_crown_jewel:{name:'Sea Crown Jewel',icon:'👑',val:30},drowned_god_relic:{name:'Drowned Relic',icon:'🏺',val:28},leviathan_heart:{name:'Leviathan Heart',icon:'💜',val:32},
-  primordial_brine:{name:'Primordial Brine',icon:'🌀',val:26},tidekeeper_sigil:{name:'Tidekeeper Sigil',icon:'🌊',val:25},abyssal_diamond:{name:'Abyssal Diamond',icon:'💠',val:35},
+  trident_shard:{name:'Trident Shard',icon:'🔱',val:22},harbor_seal:{name:'Harbor Seal',icon:'🦭',val:22},diver_token:{name:'Diver Token',icon:'🤿',val:22},
+  sea_crown_jewel:{name:'Sea Crown Jewel',icon:'🏅',val:30},drowned_god_relic:{name:'Drowned Relic',icon:'🗝️',val:28},leviathan_heart:{name:'Leviathan Heart',icon:'💜',val:32},
+  primordial_brine:{name:'Primordial Brine',icon:'🌐',val:26},tidekeeper_sigil:{name:'Tidekeeper Sigil',icon:'🛡️',val:25},abyssal_diamond:{name:'Abyssal Diamond',icon:'🌌',val:35},
   trade_manifest:{name:'Trade Manifest',icon:'📜',val:22},
-  sponge_extract:{name:'Sponge Extract',icon:'🧽',val:9},anemone_gel:{name:'Anemone Gel',icon:'🪸',val:9},tidal_herb:{name:'Tidal Herb',icon:'🌱',val:8},
-  cave_coral:{name:'Cave Coral',icon:'🪸',val:12},phosphor_crystal:{name:'Phosphor Crystal',icon:'💡',val:14},echo_shell:{name:'Echo Shell',icon:'🐚',val:13},
-  reef_crystal:{name:'Reef Crystal',icon:'💎',val:15},giant_clam_pearl:{name:'Giant Clam Pearl',icon:'🦪',val:14},living_coral:{name:'Living Coral',icon:'🌺',val:15},
-  rusted_anchor:{name:'Rusted Anchor',icon:'⚓',val:14},barnacle_iron:{name:'Barnacle Iron',icon:'🔩',val:15},waterlogged_tome:{name:'Waterlogged Tome',icon:'📕',val:16},cursed_doubloon:{name:'Cursed Doubloon',icon:'🪙',val:17},
-  volcanic_vent_mineral:{name:'Vent Mineral',icon:'🌋',val:18},abyssal_algae:{name:'Abyssal Algae',icon:'🦠',val:16},trench_pearl:{name:'Trench Pearl',icon:'⚪',val:20},
-  sunken_gold:{name:'Sunken Gold',icon:'🥇',val:22},temple_coral:{name:'Temple Coral',icon:'🏛️',val:20},
+  sponge_extract:{name:'Sponge Extract',icon:'🫠',val:9},anemone_gel:{name:'Anemone Gel',icon:'🦑',val:9},tidal_herb:{name:'Tidal Herb',icon:'🎋',val:8},
+  cave_coral:{name:'Cave Coral',icon:'🧩',val:12},phosphor_crystal:{name:'Phosphor Crystal',icon:'💡',val:14},echo_shell:{name:'Echo Shell',icon:'📯',val:13},
+  reef_crystal:{name:'Reef Crystal',icon:'🪩',val:15},giant_clam_pearl:{name:'Giant Clam Pearl',icon:'💮',val:14},living_coral:{name:'Living Coral',icon:'🐡',val:15},
+  rusted_anchor:{name:'Rusted Anchor',icon:'⚓',val:14},barnacle_iron:{name:'Barnacle Iron',icon:'🔩',val:15},waterlogged_tome:{name:'Waterlogged Tome',icon:'📕',val:16},cursed_doubloon:{name:'Cursed Doubloon',icon:'💰',val:17},
+  volcanic_vent_mineral:{name:'Vent Mineral',icon:'🌋',val:18},abyssal_algae:{name:'Abyssal Algae',icon:'🦠',val:16},trench_pearl:{name:'Trench Pearl',icon:'🩶',val:20},
+  sunken_gold:{name:'Sunken Gold',icon:'💵',val:22},temple_coral:{name:'Temple Coral',icon:'🏛️',val:20},
 };
 
 // ═══ LOCATION INGREDIENT SUBSTITUTION MAP ═══
@@ -1535,14 +1535,14 @@ var SEASONS={
 };
 var getSeason=(day,loc)=>{const seasons=SEASONS[loc||'cindervale']||SEASONS.cindervale;var idx=Math.floor(((day-1)%28)/SEASON_LENGTH);return seasons[idx]||seasons[0];};
 // Seasonal ingredients
-INGR.frostbloom={id:'frostbloom',name:'Frostbloom',icon:'❄️',val:14,desc:'Delicate ice flower that only blooms in winter cold.'};
-INGR.ice_crystal={id:'ice_crystal',name:'Ice Crystal',icon:'🧊',val:16,desc:'Naturally formed crystal of pure frozen water with alchemical resonance.'};
+INGR.frostbloom={id:'frostbloom',name:'Frostbloom',icon:'🥶',val:14,desc:'Delicate ice flower that only blooms in winter cold.'};
+INGR.ice_crystal={id:'ice_crystal',name:'Ice Crystal',icon:'❆',val:16,desc:'Naturally formed crystal of pure frozen water with alchemical resonance.'};
 INGR.amber_leaf={id:'amber_leaf',name:'Amber Leaf',icon:'🍂',val:12,desc:'Autumn leaf that crystallizes into an alchemically active amber.'};
 INGR.harvest_root={id:'harvest_root',name:'Harvest Root',icon:'🥕',val:10,desc:'Deep taproots exposed by autumn frost. Rich in concentrated nutrients.'};
-INGR.spring_dewdrop={id:'spring_dewdrop',name:'Spring Dewdrop',icon:'💧',val:11,desc:'Morning dew collected during the first spring rains. Magically potent.'};
-INGR.desert_rain_lily={id:'desert_rain_lily',name:'Desert Rain Lily',icon:'🌺',val:14,desc:'Extraordinarily rare lily that only blooms during desert rains.'};
-INGR.wet_sand_crystal={id:'wet_sand_crystal',name:'Wet Sand Crystal',icon:'💎',val:16,desc:'Sand crystal formed by rapid evaporation of rare desert rain.'};
-INGR.dust_amber={id:'dust_amber',name:'Dust Amber',icon:'💨',val:12,desc:'Amber-like resin formed from compressed dust during sandstorms.'};
+INGR.spring_dewdrop={id:'spring_dewdrop',name:'Spring Dewdrop',icon:'🌧️',val:11,desc:'Morning dew collected during the first spring rains. Magically potent.'};
+INGR.desert_rain_lily={id:'desert_rain_lily',name:'Desert Rain Lily',icon:'🌼',val:14,desc:'Extraordinarily rare lily that only blooms during desert rains.'};
+INGR.wet_sand_crystal={id:'wet_sand_crystal',name:'Wet Sand Crystal',icon:'⏳',val:16,desc:'Sand crystal formed by rapid evaporation of rare desert rain.'};
+INGR.dust_amber={id:'dust_amber',name:'Dust Amber',icon:'🍬',val:12,desc:'Amber-like resin formed from compressed dust during sandstorms.'};
 // Seasonal ingredient availability function
 var getSeasonalIngr=(season,loc,allSeason)=>{
   if(allSeason){
@@ -2529,67 +2529,67 @@ var HIDDEN_REGIONS=[
 // Register hidden ingredients
 var HIDDEN_INGR={
   // Cindervale
-  prismatic_ash:{id:'prismatic_ash',name:'Prismatic Ash',icon:'🌈',val:12,desc:'Rainbow-hued ash from thermal eruptions'},
-  thermal_bloom:{id:'thermal_bloom',name:'Thermal Bloom',icon:'🌺',val:10,desc:'Heat-loving flower that blooms in seconds'},
-  canopy_moss:{id:'canopy_moss',name:'Canopy Moss',icon:'🍃',val:12,desc:'Sky-high moss infused with pure sunlight'},
+  prismatic_ash:{id:'prismatic_ash',name:'Prismatic Ash',icon:'🎨',val:12,desc:'Rainbow-hued ash from thermal eruptions'},
+  thermal_bloom:{id:'thermal_bloom',name:'Thermal Bloom',icon:'🩷',val:10,desc:'Heat-loving flower that blooms in seconds'},
+  canopy_moss:{id:'canopy_moss',name:'Canopy Moss',icon:'☘️',val:12,desc:'Sky-high moss infused with pure sunlight'},
   sky_amber:{id:'sky_amber',name:'Sky Amber',icon:'☀️',val:14,desc:'Amber formed in the canopy, lighter than air'},
-  crystal_mycelium:{id:'crystal_mycelium',name:'Crystal Mycelium',icon:'💠',val:14,desc:'Crystallized fungal network'},
-  deep_pearl:{id:'deep_pearl',name:'Deep Pearl',icon:'🫧',val:16,desc:'Pearl grown in underground fungal lakes'},
-  harmonic_crystal:{id:'harmonic_crystal',name:'Harmonic Crystal',icon:'🔔',val:14,desc:'Vibrating crystal that hums with power'},
-  resonance_dust:{id:'resonance_dust',name:'Resonance Dust',icon:'✨',val:12,desc:'Powdered crystal attuned to magical frequencies'},
-  liquid_moonlight:{id:'liquid_moonlight',name:'Liquid Moonlight',icon:'🌙',val:16,desc:'Bottled moonbeam in liquid form'},
-  silver_lotus:{id:'silver_lotus',name:'Silver Lotus',icon:'🪷',val:14,desc:'Rare lotus that only grows in moon-fed pools'},
-  magma_diamond:{id:'magma_diamond',name:'Magma Diamond',icon:'💎',val:20,desc:'Diamond forged in living magma'},
-  living_ember:{id:'living_ember',name:'Living Ember',icon:'🔥',val:18,desc:'A flame that burns without fuel'},
-  deep_mithril:{id:'deep_mithril',name:'Deep Mithril',icon:'⚪',val:20,desc:'Ultra-rare metallic ore from below Shaft Nine'},
-  shadow_ore:{id:'shadow_ore',name:'Shadow Ore',icon:'⬛',val:18,desc:'Ore that absorbs light and radiates cold'},
-  primordial_spark:{id:'primordial_spark',name:'Primordial Spark',icon:'⚡',val:30,desc:'A shard of creation energy from the Heartforge'},
-  forge_heart_shard:{id:'forge_heart_shard',name:'Forge Heart Shard',icon:'💛',val:28,desc:'Fragment of the Heartforge core itself'},
+  crystal_mycelium:{id:'crystal_mycelium',name:'Crystal Mycelium',icon:'🧬',val:14,desc:'Crystallized fungal network'},
+  deep_pearl:{id:'deep_pearl',name:'Deep Pearl',icon:'🔘',val:16,desc:'Pearl grown in underground fungal lakes'},
+  harmonic_crystal:{id:'harmonic_crystal',name:'Harmonic Crystal',icon:'🎼',val:14,desc:'Vibrating crystal that hums with power'},
+  resonance_dust:{id:'resonance_dust',name:'Resonance Dust',icon:'🎇',val:12,desc:'Powdered crystal attuned to magical frequencies'},
+  liquid_moonlight:{id:'liquid_moonlight',name:'Liquid Moonlight',icon:'🌛',val:16,desc:'Bottled moonbeam in liquid form'},
+  silver_lotus:{id:'silver_lotus',name:'Silver Lotus',icon:'🏵️',val:14,desc:'Rare lotus that only grows in moon-fed pools'},
+  magma_diamond:{id:'magma_diamond',name:'Magma Diamond',icon:'♦️',val:20,desc:'Diamond forged in living magma'},
+  living_ember:{id:'living_ember',name:'Living Ember',icon:'☄️',val:18,desc:'A flame that burns without fuel'},
+  deep_mithril:{id:'deep_mithril',name:'Deep Mithril',icon:'⛓️',val:20,desc:'Ultra-rare metallic ore from below Shaft Nine'},
+  shadow_ore:{id:'shadow_ore',name:'Shadow Ore',icon:'🕋',val:18,desc:'Ore that absorbs light and radiates cold'},
+  primordial_spark:{id:'primordial_spark',name:'Primordial Spark',icon:'🌩️',val:30,desc:'A shard of creation energy from the Heartforge'},
+  forge_heart_shard:{id:'forge_heart_shard',name:'Forge Heart Shard',icon:'❤️‍🔥',val:28,desc:'Fragment of the Heartforge core itself'},
   // Ashfall
-  desert_bloom:{id:'desert_bloom',name:'Desert Bloom',icon:'🌵',val:12,desc:'Rare flower from a buried oasis, blooms only underground.'},
-  singing_salt:{id:'singing_salt',name:'Singing Salt',icon:'🎵',val:14,desc:'Salt crystals that hum with stored energy.'},
-  glass_bloom:{id:'glass_bloom',name:'Glass Bloom',icon:'🖤',val:14,desc:'Delicate obsidian glass in the shape of a flower.'},
-  queen_silk:{id:'queen_silk',name:'Queen Silk',icon:'👑',val:18,desc:'Silk from a sandworm queen — strongest natural fiber known.'},
-  moonwell_water:{id:'moonwell_water',name:'Moonwell Water',icon:'🌙',val:16,desc:'Water that glows with captured starlight.'},
-  dragon_ash:{id:'dragon_ash',name:'Dragon Ash',icon:'🐉',val:20,desc:'Ash from an ancient dragon nest, infused with primordial fire.'},
-  spirit_essence:{id:'spirit_essence',name:'Spirit Essence',icon:'👻',val:18,desc:'Concentrated mirage energy in liquid form.'},
-  vault_gold:{id:'vault_gold',name:'Vault Gold',icon:'🏆',val:30,desc:'Alchemically perfect gold from the Buried Temple vault.'},
+  desert_bloom:{id:'desert_bloom',name:'Desert Bloom',icon:'🌷',val:12,desc:'Rare flower from a buried oasis, blooms only underground.'},
+  singing_salt:{id:'singing_salt',name:'Singing Salt',icon:'🎹',val:14,desc:'Salt crystals that hum with stored energy.'},
+  glass_bloom:{id:'glass_bloom',name:'Glass Bloom',icon:'💟',val:14,desc:'Delicate obsidian glass in the shape of a flower.'},
+  queen_silk:{id:'queen_silk',name:'Queen Silk',icon:'👘',val:18,desc:'Silk from a sandworm queen — strongest natural fiber known.'},
+  moonwell_water:{id:'moonwell_water',name:'Moonwell Water',icon:'🌜',val:16,desc:'Water that glows with captured starlight.'},
+  dragon_ash:{id:'dragon_ash',name:'Dragon Ash',icon:'🐲',val:20,desc:'Ash from an ancient dragon nest, infused with primordial fire.'},
+  spirit_essence:{id:'spirit_essence',name:'Spirit Essence',icon:'👁️',val:18,desc:'Concentrated mirage energy in liquid form.'},
+  vault_gold:{id:'vault_gold',name:'Vault Gold',icon:'🪤',val:30,desc:'Alchemically perfect gold from the Buried Temple vault.'},
   // Tidecrest
-  singing_salt_tc:{id:'singing_salt_tc',name:'Sea Singing Salt',icon:'🎵',val:11,desc:'Salt crystals from a hidden cave that resonate with the tide.'},
-  tide_pearl:{id:'tide_pearl',name:'Tide Pearl',icon:'🌊',val:10,desc:'A small pearl formed only in the lowest-tide cave. Pulses with tidal energy.'},
-  giant_anemone_gel:{id:'giant_anemone_gel',name:'Giant Anemone Gel',icon:'🪸',val:13,desc:'Sticky luminous gel from a giant anemone. Potent healing accelerant.'},
+  singing_salt_tc:{id:'singing_salt_tc',name:'Sea Singing Salt',icon:'🎸',val:11,desc:'Salt crystals from a hidden cave that resonate with the tide.'},
+  tide_pearl:{id:'tide_pearl',name:'Tide Pearl',icon:'🦞',val:10,desc:'A small pearl formed only in the lowest-tide cave. Pulses with tidal energy.'},
+  giant_anemone_gel:{id:'giant_anemone_gel',name:'Giant Anemone Gel',icon:'🟩',val:13,desc:'Sticky luminous gel from a giant anemone. Potent healing accelerant.'},
   prismatic_coral:{id:'prismatic_coral',name:'Prismatic Coral',icon:'🌈',val:14,desc:'Rainbow coral that shifts color with temperature. Highly reactive in alchemy.'},
   ambergris:{id:'ambergris',name:'Ambergris',icon:'🧈',val:16,desc:'Whale-produced substance of legendary alchemical value. Worth its weight in gold.'},
-  whale_bone_dust:{id:'whale_bone_dust',name:'Whale Bone Dust',icon:'🦴',val:14,desc:'Powdered whale bone from the migration corridor. Strengthens any potion.'},
-  liquid_phosphor:{id:'liquid_phosphor',name:'Liquid Phosphor',icon:'💡',val:15,desc:'Bottled bioluminescence in liquid form. Glows indefinitely.'},
-  glowworm_silk:{id:'glowworm_silk',name:'Glowworm Silk',icon:'🕸️',val:13,desc:'Luminous silk threads from cave-dwelling glowworms. Stronger than spider silk.'},
-  throne_pearl:{id:'throne_pearl',name:'Throne Pearl',icon:'👑',val:20,desc:'A massive pearl from the coral throne. Said to grant authority over sea creatures.'},
+  whale_bone_dust:{id:'whale_bone_dust',name:'Whale Bone Dust',icon:'🦷',val:14,desc:'Powdered whale bone from the migration corridor. Strengthens any potion.'},
+  liquid_phosphor:{id:'liquid_phosphor',name:'Liquid Phosphor',icon:'🔦',val:15,desc:'Bottled bioluminescence in liquid form. Glows indefinitely.'},
+  glowworm_silk:{id:'glowworm_silk',name:'Glowworm Silk',icon:'🐛',val:13,desc:'Luminous silk threads from cave-dwelling glowworms. Stronger than spider silk.'},
+  throne_pearl:{id:'throne_pearl',name:'Throne Pearl',icon:'🪽',val:20,desc:'A massive pearl from the coral throne. Said to grant authority over sea creatures.'},
   royal_coral:{id:'royal_coral',name:'Royal Coral',icon:'♛',val:18,desc:'Coral that has grown into crown-like formations over millennia. Magically active.'},
   pirate_gold:{id:'pirate_gold',name:'Pirate Gold',icon:'🏴',val:18,desc:'Cursed doubloons from a legendary pirate hoard. Still warm to the touch.'},
-  enchanted_compass:{id:'enchanted_compass',name:'Enchanted Compass',icon:'🧭',val:16,desc:'A compass that always points to what the holder desires most.'},
-  vent_bloom:{id:'vent_bloom',name:'Vent Bloom',icon:'🌺',val:18,desc:'A flower that grows on hydrothermal vents. Petals are living metal.'},
-  tube_worm_extract:{id:'tube_worm_extract',name:'Tube Worm Extract',icon:'🪱',val:16,desc:'Extract from deep-sea tube worms. Contains unique enzymes found nowhere else.'},
-  oracle_tear:{id:'oracle_tear',name:'Oracle Tear',icon:'🔮',val:28,desc:'A crystallized tear from the drowned oracle. Contains visions of past and future.'},
-  abyssal_rune_stone:{id:'abyssal_rune_stone',name:'Abyssal Rune Stone',icon:'🪨',val:30,desc:'A stone inscribed with runes from before the flood. The ultimate Tidecrest material.'},
+  enchanted_compass:{id:'enchanted_compass',name:'Enchanted Compass',icon:'🔬',val:16,desc:'A compass that always points to what the holder desires most.'},
+  vent_bloom:{id:'vent_bloom',name:'Vent Bloom',icon:'🧨',val:18,desc:'A flower that grows on hydrothermal vents. Petals are living metal.'},
+  tube_worm_extract:{id:'tube_worm_extract',name:'Tube Worm Extract',icon:'🪰',val:16,desc:'Extract from deep-sea tube worms. Contains unique enzymes found nowhere else.'},
+  oracle_tear:{id:'oracle_tear',name:'Oracle Tear',icon:'🧿',val:28,desc:'A crystallized tear from the drowned oracle. Contains visions of past and future.'},
+  abyssal_rune_stone:{id:'abyssal_rune_stone',name:'Abyssal Rune Stone',icon:'🗿',val:30,desc:'A stone inscribed with runes from before the flood. The ultimate Tidecrest material.'},
 };
 // Merge hidden ingredients into INGR at runtime
 Object.assign(INGR,HIDDEN_INGR);
 // ═══ ASHFALL CROSSING INGREDIENTS ═══
 INGR.sunpetal={id:'sunpetal',name:'Sunpetal',icon:'🌻',val:5,desc:'Hardy desert flower that blooms at high noon.'};
-INGR.dustite={id:'dustite',name:'Dustite',icon:'⏳',val:7,desc:'Compressed sandite with time-distortion properties.'};
-INGR.scorchroot={id:'scorchroot',name:'Scorchroot',icon:'🫚',val:6,desc:'Heat-resistant root that grows near volcanic vents.'};
-INGR.crystal_salt={id:'crystal_salt',name:'Crystal Salt',icon:'🧂',val:8,desc:'Salt crystals with preserved magical resonance.'};
-INGR.brine_moss={id:'brine_moss',name:'Brine Moss',icon:'🌊',val:10,desc:'Salt-saturated moss from underground caverns.'};
+INGR.dustite={id:'dustite',name:'Dustite',icon:'🌪️',val:7,desc:'Compressed sandite with time-distortion properties.'};
+INGR.scorchroot={id:'scorchroot',name:'Scorchroot',icon:'🫑',val:6,desc:'Heat-resistant root that grows near volcanic vents.'};
+INGR.crystal_salt={id:'crystal_salt',name:'Crystal Salt',icon:'🔳',val:8,desc:'Salt crystals with preserved magical resonance.'};
+INGR.brine_moss={id:'brine_moss',name:'Brine Moss',icon:'🪻',val:10,desc:'Salt-saturated moss from underground caverns.'};
 INGR.obsidian_shard={id:'obsidian_shard',name:'Obsidian Shard',icon:'🖤',val:12,desc:'Razor-sharp volcanic glass with alchemical potential.'};
-INGR.sandsilk={id:'sandsilk',name:'Sandsilk',icon:'🕸️',val:14,desc:'Incredibly strong threads spun by desert sandworms.'};
+INGR.sandsilk={id:'sandsilk',name:'Sandsilk',icon:'🧶',val:14,desc:'Incredibly strong threads spun by desert sandworms.'};
 INGR.venomgland={id:'venomgland',name:'Venomgland',icon:'🐍',val:16,desc:'Potent venom sac from desert predators.'};
-INGR.dewdrop_lily={id:'dewdrop_lily',name:'Dewdrop Lily',icon:'💧',val:15,desc:'Rare oasis flower that condenses water from air.'};
-INGR.mirage_dust={id:'mirage_dust',name:'Mirage Dust',icon:'✨',val:22,desc:'Shimmering particles from collapsed illusions.'};
-INGR.ancient_resin={id:'ancient_resin',name:'Ancient Resin',icon:'🪵',val:28,desc:'Fossilized tree sap from the Buried Temple era.'};
+INGR.dewdrop_lily={id:'dewdrop_lily',name:'Dewdrop Lily',icon:'🪷',val:15,desc:'Rare oasis flower that condenses water from air.'};
+INGR.mirage_dust={id:'mirage_dust',name:'Mirage Dust',icon:'🪄',val:22,desc:'Shimmering particles from collapsed illusions.'};
+INGR.ancient_resin={id:'ancient_resin',name:'Ancient Resin',icon:'📿',val:28,desc:'Fossilized tree sap from the Buried Temple era.'};
 INGR.temple_gold={id:'temple_gold',name:'Temple Gold',icon:'🏆',val:35,desc:'Alchemically pure gold from ancient ritual vessels.'};
-INGR.sand_merchant_seal={id:'sand_merchant_seal',name:'Merchant Seal',icon:'📜',val:22,desc:'Official seal of the Sand Merchants Guild.'};
-INGR.flamekeeper_ember={id:'flamekeeper_ember',name:'Sacred Flame',icon:'🕯️',val:25,desc:'Eternal flame fragment from the Flamekeeper shrine.'};
-INGR.dustwalker_compass={id:'dustwalker_compass',name:'Wayfinder',icon:'🧭',val:22,desc:'Enchanted compass crafted by Dustwalker navigators.'};
+INGR.sand_merchant_seal={id:'sand_merchant_seal',name:'Merchant Seal',icon:'📋',val:22,desc:'Official seal of the Sand Merchants Guild.'};
+INGR.flamekeeper_ember={id:'flamekeeper_ember',name:'Sacred Flame',icon:'🕎',val:25,desc:'Eternal flame fragment from the Flamekeeper shrine.'};
+INGR.dustwalker_compass={id:'dustwalker_compass',name:'Wayfinder',icon:'🪬',val:22,desc:'Enchanted compass crafted by Dustwalker navigators.'};
 
 INGR.alchemical_residue={id:'alchemical_residue',name:'Alchemical Residue',icon:'♻️',val:3,desc:'Salvaged essence from spoiled ingredients. Can substitute for common reagents.'};
 
