@@ -8194,18 +8194,26 @@ function CindervaleAlchemistInner(){
               </div>}
               {/* Solo Expedition button (Apex Predator) */}
               {c.active&&getFeatureVal('soloExpedition')&&!dayFlags.includes('solo_exp_used')&&(()=>{
-                const bestReg=locRegions.filter(r=>level>=regUnlock(r)).sort((a,b)=>b.diff-a.diff)[0];
-                if(!bestReg)return null;
-                return <button style={{marginTop:4,width:'100%',fontSize:12,padding:'4px 8px',background:'#40a06010',color:'#40a060',border:'1px solid #40a06044',borderRadius:4,cursor:'pointer',fontFamily:'inherit'}}
-                  onClick={()=>{snapshot();setDayFlags(f=>[...f,'solo_exp_used']);
-                    const yield_=Math.max(4,Math.floor(bestReg.diff*2+loy*2+Math.floor(level/3)));
-                    const items={};for(let i=0;i<yield_;i++){const id=bestReg.ingr[Math.floor(Math.random()*bestReg.ingr.length)];items[id]=(items[id]||0)+1;}
-                    setInv(p=>{const n={...p};Object.entries(items).forEach(([id,q])=>{n[id]=(n[id]||0)+q;});return n;});
-                    const soloXp=Math.floor(bestReg.diff*12);gainXP(soloXp);
-                    const valStr=Object.entries(items).map(([id,q])=>(INGR[id]?.icon||'')+INGR[id]?.name+' ×'+q).join(', ');
-                    addLog(`🐾 ${comp.icon} ${comp.name} forages ${bestReg.icon}${bestReg.name} alone! Brought back: ${valStr} (+${soloXp} XP)`,'craft');
-                    showResult(`🐾 ${comp.icon} ${comp.name} — Solo Expedition!`,'craft',`${bestReg.icon} ${bestReg.name}\nHaul: ${valStr}\n+${soloXp} XP\nNo player energy spent!`);
-                  }}>🐾 Send {comp.name} on Solo Expedition (1/day, 0⚡) → {bestReg.icon}{bestReg.name}</button>;
+                const availRegs=locRegions.filter(r=>level>=regUnlock(r)).sort((a,b)=>b.diff-a.diff);
+                if(availRegs.length===0)return null;
+                return <div style={{marginTop:4,display:'flex',gap:4,alignItems:'center'}}>
+                  <select id={'solo_reg_'+c.compId} style={{flex:1,padding:'4px 6px',fontSize:12,background:TH.panel,color:'#40a060',border:'1px solid #40a06044',borderRadius:4,fontFamily:'inherit'}}>
+                    {availRegs.map(r=><option key={r.id} value={r.id}>{r.icon} {r.name} (★{'★'.repeat(r.diff-1)}) — {r.ingr.length} ingredients</option>)}
+                  </select>
+                  <button style={{fontSize:12,padding:'4px 10px',background:'#40a06010',color:'#40a060',border:'1px solid #40a06044',borderRadius:4,cursor:'pointer',fontFamily:'inherit',whiteSpace:'nowrap'}}
+                    onClick={()=>{
+                      const selId=document.getElementById('solo_reg_'+c.compId)?.value;
+                      const reg=locRegions.find(r=>r.id===selId)||availRegs[0];
+                      snapshot();setDayFlags(f=>[...f,'solo_exp_used']);
+                      const yield_=Math.max(4,Math.floor(reg.diff*2+loy*2+Math.floor(level/3)));
+                      const items={};for(let i=0;i<yield_;i++){const id=reg.ingr[Math.floor(Math.random()*reg.ingr.length)];items[id]=(items[id]||0)+1;}
+                      setInv(p=>{const n={...p};Object.entries(items).forEach(([id,q])=>{n[id]=(n[id]||0)+q;});return n;});
+                      const soloXp=Math.floor(reg.diff*12);gainXP(soloXp);
+                      const valStr=Object.entries(items).map(([id,q])=>(INGR[id]?.icon||'')+INGR[id]?.name+' ×'+q).join(', ');
+                      addLog(`🐾 ${comp.icon} ${comp.name} forages ${reg.icon}${reg.name} alone! Brought back: ${valStr} (+${soloXp} XP)`,'craft');
+                      showResult(`🐾 ${comp.icon} ${comp.name} — Solo Expedition!`,'craft',`${reg.icon} ${reg.name}\nHaul: ${valStr}\n+${soloXp} XP\nNo player energy spent!`);
+                    }}>🐾 Send Solo (0⚡)</button>
+                </div>;
               })()}
             </div>;
           })}
