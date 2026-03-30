@@ -337,6 +337,9 @@ function CindervaleAlchemistInner(){
   const [museum,setMuseum]=useState({pottery:0,tablets:0,jewelry:0,mechanisms:0,weapons:0});
   const [threats,setThreats]=useState({});
   const [outposts,setOutposts]=useState([]); // [{id,regionId,built,daysLeft,recipe,storedIngr,fortress}]
+  const [ingredientContracts,setIngredientContracts]=useState([]); // [{id,ingrId,qty,dailyCost,setupDay}]
+  const [settlementProjects,setSettlementProjects]=useState([]); // completed project IDs
+  const [settlementConstruction,setSettlementConstruction]=useState(null); // {projectId,daysLeft,staffAssigned}
   const [defenseQuests,setDefenseQuests]=useState([]); // [{id,threatId,type,target,qty,reward,desc}] // [{id,name,icon,recipes:[recipeId,...],sold:0}]
   const [hollowMarch,setHollowMarch]=useState(DEF?.hollowMarch||{active:false,wave:0,nextWaveDay:0,demands:[],history:[],finalStandAvailable:false,finalStandComplete:false,marchRecipesUnlocked:[]});
   const [legacyFeature,setLegacyFeature]=useState(null); // {name,desc,icon,color,source,effects}
@@ -512,8 +515,10 @@ function CindervaleAlchemistInner(){
     }
     // Companion passive bonuses (always-on while companion is active)
     if(companions?.length>0&&typeof RANGER_COMPANIONS!=='undefined'){companions.filter(cc=>cc.active).forEach(cc=>{const comp=RANGER_COMPANIONS.find(r=>r.id===cc.compId);if(comp?.passive?.[effectKey]!=null){const v=comp.passive[effectKey];total+=typeof v==='number'?v:v===true?1:0;}});}
+    // Settlement project effects
+    if(settlementProjects?.length>0&&typeof SETTLEMENT_PROJECTS!=='undefined'){settlementProjects.forEach(pid=>{const proj=SETTLEMENT_PROJECTS.find(p=>p.id===pid);if(proj?.effect?.[effectKey]!=null){const v=proj.effect[effectKey];total+=typeof v==='number'?v:v===true?1:0;}});}
     return total;
-  },[classLevels,specs,playerFeats,fRep,factionAlign,loreFragments,activeBuffs,mentorBonuses,museumBonuses,legacyFeature,pubPapers,fieldJournal,companions]);
+  },[classLevels,specs,playerFeats,fRep,factionAlign,loreFragments,activeBuffs,mentorBonuses,museumBonuses,legacyFeature,pubPapers,fieldJournal,companions,settlementProjects]);
   const hasFeature=useCallback((effectKey)=>{
     for(const [cid,lv] of Object.entries(classLevels)){
       const cls=CLASSES[cid];if(!cls)continue;
@@ -534,8 +539,8 @@ function CindervaleAlchemistInner(){
     phase,charName,charRace,charGender,stats,ptsLeft,skRanks,skPts,skProgress,classLevels,specs,playerFeats,asiSpent,startingClass,
     screen,day,hours,gameLocation,xp,gold,inv,pots,known,aQ,doneQ,
     log:log.slice(-30),milestones,fRep,factionAlign,upgrades,hiredAppr,apprTasks,apprXP,enchQ,potCustQ,clinicPatients,venomContracts,forgedWeapons,shieldCommissions,planarFocus,gadgets,blueprints,fieldJournal,loreFragments,companions,caravans,supplyChains,caravanRuns,trainingSessions,factionHarmony,prestigeLevels,automata,customPatterns,mappedRegions,activeBuffs,debt,disabledUpgrades,shopLocked,injuryPenalty,staffInjuries,shelves,dailyReport,
-    boardQ,activeBQ,doneBQCount,dayFlags,knownEnch,brewCounts,procureItems,pubPapers,selectedSite,constructProgress,lineage,brands,brandOrders,relics,museum,threats,outposts,defenseQuests,hollowMarch,legacyFeature,
-  }),[phase,charName,charRace,charGender,stats,ptsLeft,skRanks,skPts,skProgress,classLevels,specs,playerFeats,asiSpent,startingClass,screen,day,hours,xp,gold,inv,pots,known,aQ,doneQ,log,milestones,fRep,factionAlign,upgrades,hiredAppr,apprTasks,apprXP,enchQ,potCustQ,clinicPatients,venomContracts,forgedWeapons,shieldCommissions,planarFocus,gadgets,blueprints,fieldJournal,loreFragments,companions,caravans,supplyChains,caravanRuns,trainingSessions,factionHarmony,prestigeLevels,automata,customPatterns,mappedRegions,activeBuffs,debt,disabledUpgrades,shopLocked,injuryPenalty,staffInjuries,shelves,dailyReport,boardQ,activeBQ,doneBQCount,dayFlags,knownEnch,brewCounts,procureItems,constructProgress,selectedSite,lineage,brands,brandOrders,relics,museum,threats,outposts,defenseQuests,hollowMarch,legacyFeature]);
+    boardQ,activeBQ,doneBQCount,dayFlags,knownEnch,brewCounts,procureItems,pubPapers,selectedSite,constructProgress,lineage,brands,brandOrders,relics,museum,threats,outposts,ingredientContracts,settlementProjects,settlementConstruction,defenseQuests,hollowMarch,legacyFeature,
+  }),[phase,charName,charRace,charGender,stats,ptsLeft,skRanks,skPts,skProgress,classLevels,specs,playerFeats,asiSpent,startingClass,screen,day,hours,xp,gold,inv,pots,known,aQ,doneQ,log,milestones,fRep,factionAlign,upgrades,hiredAppr,apprTasks,apprXP,enchQ,potCustQ,clinicPatients,venomContracts,forgedWeapons,shieldCommissions,planarFocus,gadgets,blueprints,fieldJournal,loreFragments,companions,caravans,supplyChains,caravanRuns,trainingSessions,factionHarmony,prestigeLevels,automata,customPatterns,mappedRegions,activeBuffs,debt,disabledUpgrades,shopLocked,injuryPenalty,staffInjuries,shelves,dailyReport,boardQ,activeBQ,doneBQCount,dayFlags,knownEnch,brewCounts,procureItems,constructProgress,selectedSite,lineage,brands,brandOrders,relics,museum,threats,outposts,ingredientContracts,settlementProjects,settlementConstruction,defenseQuests,hollowMarch,legacyFeature]);
 
   const restoreState=useCallback((s)=>{
     if(!s)return;
@@ -563,7 +568,7 @@ function CindervaleAlchemistInner(){
     setDailyReport(s.dailyReport||[]);setEnchQ(s.enchQ||[]);setPotCustQ(s.potCustQ||[]);setClinicPatients(s.clinicPatients||[]);setVenomContracts(s.venomContracts||[]);setForgedWeapons(s.forgedWeapons||[]);setShieldCommissions(s.shieldCommissions||[]);setPlanarFocus(s.planarFocus||null);setGadgets(s.gadgets||[]);setBlueprints(s.blueprints||[]);setFieldJournal(s.fieldJournal||[]);setLoreFragments(s.loreFragments||[]);setCompanions(s.companions||[]);setCaravans(s.caravans||[]);setSupplyChains(s.supplyChains||[]);setCaravanRuns(s.caravanRuns||{});setTrainingSessions(s.trainingSessions||{});setFactionHarmony(s.factionHarmony||{});setPrestigeLevels(s.prestigeLevels||{});setAutomata(s.automata||[]);setCustomPatterns(s.customPatterns||[]);setMappedRegions(s.mappedRegions||[]);setActiveBuffs(s.activeBuffs||{});setDebt(s.debt||0);setDisabledUpgrades(s.disabledUpgrades||[]);setShopLocked(s.shopLocked||false);setInjuryPenalty(s.injuryPenalty||0);setStaffInjuries(s.staffInjuries||{});setShelves(s.shelves||{});setLastCheck(null);setNews([]);setMorningReport(null);setCompanionReport(null);
     setBoardQ(s.boardQ||[]);setActiveBQ(s.activeBQ||[]);setDoneBQCount(s.doneBQCount||0);setDayFlags(s.dayFlags||[]);setKnownEnch(s.knownEnch&&s.knownEnch.length>0?s.knownEnch:(LOCATIONS[s.gameLocation||'cindervale']?.startEnch||['e_sharp','e_glow','e_ironbark','e_feather','e_windwalk','e_rootbind']));
     setBrewCounts(s.brewCounts||{});setProcureItems(s.procureItems||[]);setPubPapers(s.pubPapers||[]);setConstructProgress(s.constructProgress||{});
-    setSelHex(null);setVBuild('workshop');setDlgNpc(null);setShowShop(false);setQuestDlg(null);setPendingLevelUp(null);setSelectedSite(s.selectedSite||null);if(s.lineage)setLineage(s.lineage);setBrands(s.brands||[]);setBrandOrders(s.brandOrders||[]);setRelics(s.relics||[]);setMuseum(s.museum||{pottery:0,tablets:0,jewelry:0,mechanisms:0,weapons:0});setThreats(s.threats||Object.fromEntries(locThreatIds.map(t=>[t,0])));setOutposts(s.outposts||[]);setDefenseQuests(s.defenseQuests||[]);setHollowMarch(s.hollowMarch||DEF?.hollowMarch||{active:false,wave:0,nextWaveDay:0,demands:[],history:[],finalStandAvailable:false,finalStandComplete:false,marchRecipesUnlocked:[]});setLegacyFeature(s.legacyFeature||null);
+    setSelHex(null);setVBuild('workshop');setDlgNpc(null);setShowShop(false);setQuestDlg(null);setPendingLevelUp(null);setSelectedSite(s.selectedSite||null);if(s.lineage)setLineage(s.lineage);setBrands(s.brands||[]);setBrandOrders(s.brandOrders||[]);setRelics(s.relics||[]);setMuseum(s.museum||{pottery:0,tablets:0,jewelry:0,mechanisms:0,weapons:0});setThreats(s.threats||Object.fromEntries(locThreatIds.map(t=>[t,0])));setOutposts(s.outposts||[]);setIngredientContracts(s.ingredientContracts||[]);setSettlementProjects(s.settlementProjects||[]);setSettlementConstruction(s.settlementConstruction||null);setDefenseQuests(s.defenseQuests||[]);setHollowMarch(s.hollowMarch||DEF?.hollowMarch||{active:false,wave:0,nextWaveDay:0,demands:[],history:[],finalStandAvailable:false,finalStandComplete:false,marchRecipesUnlocked:[]});setLegacyFeature(s.legacyFeature||null);
   },[]);
 
   // ─── ALL EFFECTS (before any return!) ───
@@ -924,7 +929,7 @@ function CindervaleAlchemistInner(){
       })(),
       lineage:lineage||null,
       museum:inheritData?.museum||{pottery:0,tablets:0,jewelry:0,mechanisms:0,weapons:0},
-      threats:Object.fromEntries(locThreatIds.map(t=>[t,0])),outposts:[],defenseQuests:[],
+      threats:Object.fromEntries(locThreatIds.map(t=>[t,0])),outposts:[],ingredientContracts:[],settlementProjects:[],settlementConstruction:null,defenseQuests:[],
     };
     restoreState(defState);setLog([]);setGameStarted(true);
     if(inheritData?.legacyFeature)setLegacyFeature(inheritData.legacyFeature);
@@ -4773,6 +4778,75 @@ function CindervaleAlchemistInner(){
       });
       if(qmLines.length>0)mrSections.push({title:'🚚 Supply Network',lines:qmLines});
     }
+    // ═══ INGREDIENT CONTRACT DELIVERIES ═══
+    if(ingredientContracts.length>0){
+      const contractLines=[];
+      let totalContractCost=0;
+      ingredientContracts.forEach(c=>{
+        const ig=INGR[c.ingrId];if(!ig)return;
+        setInv(p=>({...p,[c.ingrId]:(p[c.ingrId]||0)+c.qty}));
+        totalContractCost+=c.dailyCost;
+        contractLines.push({icon:ig.icon,label:ig.name+' ×'+c.qty,val:'-'+c.dailyCost+'g/day',color:TH.green});
+      });
+      if(totalContractCost>0){
+        setGold(g=>g-totalContractCost);
+        contractLines.push({icon:'💰',label:'Contract costs',val:'-'+totalContractCost+'g total',color:TH.red});
+      }
+      if(contractLines.length>0)mrSections.push({title:'📦 Ingredient Contracts',lines:contractLines});
+    }
+    // ═══ SETTLEMENT INVESTMENT MORNING ═══
+    {
+      const settLines=[];
+      // Construction progress
+      if(settlementConstruction){
+        const proj=SETTLEMENT_PROJECTS.find(p=>p.id===settlementConstruction.projectId);
+        const staffBoost=settlementConstruction.staffAssigned||0;
+        const progressPerDay=1+staffBoost;
+        const newDaysLeft=Math.max(0,settlementConstruction.daysLeft-progressPerDay);
+        if(newDaysLeft<=0){
+          // Project completed!
+          setSettlementProjects(prev=>[...prev,settlementConstruction.projectId]);
+          setSettlementConstruction(null);
+          settLines.push({icon:proj?.icon||'🏗️',label:proj?.name+' COMPLETED!',val:proj?.effectDesc||'',color:TH.gold});
+          addLog(`🏗️ ${proj?.icon} ${proj?.name} is complete! ${proj?.effectDesc}`,'quest');
+        } else {
+          setSettlementConstruction(prev=>prev?{...prev,daysLeft:newDaysLeft}:null);
+          settLines.push({icon:'🏗️',label:proj?.name+' under construction',val:newDaysLeft+' days remaining',color:TH.textDim});
+        }
+      }
+      // Herbalist Garden: produce random ingredients
+      if(settlementProjects.includes('sp_garden')){
+        const gardenN=2;const gardenItems={};
+        const commonIngr=locRegions.filter(r=>r.diff<=2).flatMap(r=>r.ingr);
+        for(let i=0;i<gardenN;i++){const id=commonIngr[Math.floor(Math.random()*commonIngr.length)];if(id)gardenItems[id]=(gardenItems[id]||0)+1;}
+        setInv(p=>{const n={...p};Object.entries(gardenItems).forEach(([id,q])=>{n[id]=(n[id]||0)+q;});return n;});
+        const gStr=Object.entries(gardenItems).map(([id,q])=>(INGR[id]?.icon||id)+'×'+q).join(' ');
+        settLines.push({icon:'🌿',label:'Garden harvest',val:gStr,color:TH.green});
+      }
+      // Fortified Walls: trade confidence gold
+      if(settlementProjects.includes('sp_walls')){
+        const wallGold=50;setGold(g=>g+wallGold);
+        settLines.push({icon:'🏰',label:'Trade confidence',val:'+'+wallGold+'g',color:TH.gold});
+      }
+      // Monument: daily faction rep
+      if(settlementProjects.includes('sp_monument')){
+        const repPerFaction=5;
+        Object.keys(fRep).forEach(fid=>{if(FACTIONS[fid])addRep(fid,repPerFaction);});
+        settLines.push({icon:'🏆',label:'Monument renown',val:'+'+repPerFaction+' rep all factions',color:TH.gold});
+      }
+      // Market Square: weekly traveling merchant
+      if(settlementProjects.includes('sp_market')&&day%7===0){
+        settLines.push({icon:'🏪',label:'Traveling Merchant arrived!',val:'Check the shop for rare stock',color:TH.gold});
+        // Add 3 random rare items to procure list
+        const rarePool2=locRegions.filter(r=>r.diff>=3).flatMap(r=>r.ingr);
+        const merchItems=[];for(let i=0;i<3&&rarePool2.length>0;i++){
+          const idx=Math.floor(Math.random()*rarePool2.length);const id=rarePool2.splice(idx,1)[0];
+          const ig=INGR[id];if(ig)merchItems.push({id,price:Math.ceil((ig.val||10)*2),name:ig.name,icon:ig.icon});
+        }
+        if(merchItems.length>0)setProcureItems(prev=>[...prev,...merchItems]);
+      }
+      if(settLines.length>0)mrSections.push({title:'🏘️ Settlement',lines:settLines});
+    }
     // ═══ RANGER COMPANION MORNING EFFECTS ═══
     if(companions.length>0){
       const compLines=[];
@@ -7079,6 +7153,63 @@ function CindervaleAlchemistInner(){
             ):null;
           })()}
         </div>}
+
+        {/* ═══ INGREDIENT CONTRACTS ═══ */}
+        {level>=5&&<div style={{...S.card,borderColor:'#6080a0'}}>
+          <div style={{...S.cT}}>📦 Ingredient Contracts</div>
+          <div style={{fontSize:13,color:TH.textDim,marginBottom:8}}>Commission suppliers to deliver ingredients daily. Gold buys you time.</div>
+          {(()=>{
+            const tier=getContractTier(level,classLevels,fRep);const tierInfo=CONTRACT_TIERS[tier];
+            const maxSlots=getContractSlots(level,classLevels);
+            const usedSlots=ingredientContracts.length;
+            const allForaged=new Set();Object.keys(inv).forEach(id=>{if(INGR[id])allForaged.add(id);});
+            locRegions.filter(r=>level>=regUnlock(r)).forEach(r=>r.ingr.forEach(id=>allForaged.add(id)));
+            const availIngr=[...allForaged].filter(id=>{
+              const ig=INGR[id];if(!ig)return false;
+              if(ig.val>tierInfo.maxVal)return false;
+              if(ingredientContracts.find(c=>c.ingrId===id))return false;
+              return true;
+            }).sort((a,b)=>(INGR[a]?.val||0)-(INGR[b]?.val||0));
+            const totalDailyCost=ingredientContracts.reduce((s,c)=>s+c.dailyCost,0);
+            return <>
+              <div style={{fontSize:13,marginBottom:6}}>
+                <span style={{color:TH.textBright}}>Tier: <b style={{color:TH.gold}}>{tierInfo.label}</b></span>
+                <span style={{color:TH.textDim,marginLeft:8}}>Max value: {tierInfo.maxVal===999?'Any':tierInfo.maxVal+'g'}</span>
+                <span style={{color:TH.textDim,marginLeft:8}}>Max qty: {tierInfo.maxQty}/day</span>
+                <span style={{color:totalDailyCost>0?TH.red:TH.textDim,marginLeft:8}}>Daily cost: {totalDailyCost}g</span>
+              </div>
+              <div style={{fontSize:14,color:TH.gold,marginBottom:4}}>Active Contracts ({usedSlots}/{maxSlots})</div>
+              {ingredientContracts.length===0&&<div style={{fontSize:13,color:TH.textDim,fontStyle:'italic',padding:'4px 0'}}>No active contracts. Set one up below.</div>}
+              {ingredientContracts.map((c,i)=>{const ig=INGR[c.ingrId];return ig?<div key={i} style={{display:'flex',alignItems:'center',gap:8,padding:'4px 8px',background:TH.bg,borderRadius:4,marginBottom:3,border:'1px solid '+TH.border}}>
+                <span style={{fontSize:16}}>{ig.icon}</span>
+                <span style={{flex:1,color:TH.textBright}}>{ig.name} <span style={{color:TH.textDim}}>×{c.qty}/day</span></span>
+                <span style={{color:TH.red,fontSize:13}}>-{c.dailyCost}g/day</span>
+                <button style={{...S.btn('dim'),fontSize:12,padding:'2px 6px'}} onClick={()=>{
+                  setIngredientContracts(prev=>prev.filter((_,j)=>j!==i));
+                  addLog(`📦 Cancelled contract for ${ig.icon}${ig.name}.`,'info');
+                }}>✕ Cancel</button>
+              </div>:null;})}
+              {usedSlots<maxSlots&&<div style={{marginTop:8,padding:'8px',background:TH.panelAlt,borderRadius:4,border:'1px solid '+TH.border}}>
+                <div style={{fontSize:14,color:TH.gold,marginBottom:4}}>📋 New Contract</div>
+                <div style={{display:'flex',gap:4,flexWrap:'wrap',marginBottom:6}}>
+                  {availIngr.slice(0,24).map(id=>{const ig=INGR[id];const setupFee=Math.floor(ig.val*3);const dailyPer=Math.max(1,Math.floor(ig.val*0.4));
+                    return <button key={id} style={{...S.tag,cursor:'pointer',border:'1px solid '+TH.borderLight,background:TH.panelLight,fontSize:13}}
+                      onClick={()=>{
+                        const qty=Math.min(tierInfo.maxQty,3);const cost=qty*dailyPer;const fee=setupFee;
+                        if(gold<fee){addLog('Not enough gold for setup fee ('+fee+'g).','error');return;}
+                        setGold(g=>g-fee);
+                        setIngredientContracts(prev=>[...prev,{id:'ic_'+Date.now(),ingrId:id,qty,dailyCost:cost,setupDay:day}]);
+                        addLog(`📦 Contracted ${ig.icon}${ig.name}: ${qty}/day for ${cost}g/day (setup: ${fee}g).`,'info');
+                      }}>
+                      {ig.icon} {ig.name} <span style={{color:TH.textDim,fontSize:11}}>({setupFee}g setup · {dailyPer}g/ea/day)</span>
+                    </button>;})}
+                </div>
+                {availIngr.length===0&&<div style={{fontSize:13,color:TH.textDim}}>No eligible ingredients at your tier. Forage new regions or upgrade tier.</div>}
+                {availIngr.length>24&&<div style={{fontSize:12,color:TH.textDim}}>Showing first 24 — higher tiers unlock rarer ingredients.</div>}
+              </div>}
+            </>;
+          })()}
+        </div>}
       </>}
 
       {/* ═══════════ TAVERN ═══════════ */}
@@ -7249,6 +7380,89 @@ function CindervaleAlchemistInner(){
         {lastCheck&&<div style={{...S.card,borderColor:lastCheck.success?TH.green:TH.red}}>
           <div style={{fontSize:16,color:lastCheck.success?TH.green:TH.red,marginBottom:2}}>{lastCheck.success?'✅ Success!':'❌ Failed!'}</div>
           <div style={{fontSize:15,color:TH.text}}>Your {lastCheck.name} check: rolled {lastCheck.roll} + {lastCheck.mod} skill + {lastCheck.rb} rank = <b style={{color:lastCheck.success?TH.green:TH.red}}>{lastCheck.total}</b> vs DC{lastCheck.dc}</div>
+        </div>}
+
+        {/* ═══ SETTLEMENT INVESTMENT ═══ */}
+        {level>=4&&<div style={{...S.card,borderColor:'#80a060'}}>
+          <div style={{...S.cT}}>🏘️ Settlement Investment</div>
+          <div style={{fontSize:13,color:TH.textDim,marginBottom:8}}>Invest gold and materials to develop the settlement. Projects provide permanent bonuses.</div>
+          {(()=>{
+            const completed=settlementProjects||[];
+            const building=settlementConstruction;
+            const buildingProj=building?SETTLEMENT_PROJECTS.find(p=>p.id===building.projectId):null;
+            const totalInvested=SETTLEMENT_PROJECTS.filter(p=>completed.includes(p.id)).reduce((s,p)=>s+p.cost.gold,0);
+            return <>
+              {/* Completed projects */}
+              {completed.length>0&&<div style={{marginBottom:8}}>
+                <div style={{fontSize:14,color:TH.green,marginBottom:4}}>✅ Completed ({completed.length}/{SETTLEMENT_PROJECTS.length})</div>
+                <div style={{display:'flex',flexWrap:'wrap',gap:4}}>
+                  {completed.map(pid=>{const p=SETTLEMENT_PROJECTS.find(x=>x.id===pid);return p?
+                    <span key={pid} style={{...S.tag,borderColor:TH.green+'66',background:TH.green+'10',fontSize:13}} title={p.effectDesc}>
+                      {p.icon} {p.name}
+                    </span>:null;})}
+                </div>
+                <div style={{fontSize:12,color:TH.textDim,marginTop:2}}>Total invested: {totalInvested}g</div>
+              </div>}
+              {/* Under construction */}
+              {building&&buildingProj&&<div style={{padding:'8px',background:TH.gold+'08',borderRadius:4,border:'1px solid '+TH.gold+'33',marginBottom:8}}>
+                <div style={{fontSize:15,color:TH.gold,fontWeight:'bold'}}>🏗️ Under Construction: {buildingProj.icon} {buildingProj.name}</div>
+                <div style={{display:'flex',alignItems:'center',gap:6,margin:'4px 0'}}>
+                  <div style={{flex:1,height:8,background:TH.panel,borderRadius:4,overflow:'hidden'}}>
+                    <div style={{height:'100%',width:Math.floor((1-building.daysLeft/buildingProj.buildDays)*100)+'%',background:TH.gold,borderRadius:4,transition:'width 0.3s'}}/>
+                  </div>
+                  <span style={{fontSize:13,color:TH.gold}}>{building.daysLeft} days left</span>
+                </div>
+                <div style={{fontSize:13,color:TH.textDim}}>{buildingProj.effectDesc}</div>
+                <div style={{fontSize:12,color:TH.textDim,marginTop:2}}>
+                  Staff assigned: {building.staffAssigned||0} (each = -1 day/morning)
+                  {hiredAppr.filter(a=>!apprTasks[a.id]||apprTasks[a.id]==='idle').length>0&&(building.staffAssigned||0)<3&&
+                    <button style={{...S.btn('def'),fontSize:11,padding:'1px 6px',marginLeft:6}} onClick={()=>{
+                      setSettlementConstruction(prev=>prev?{...prev,staffAssigned:(prev.staffAssigned||0)+1}:null);
+                    }}>+ Assign Staff</button>}
+                  {(building.staffAssigned||0)>0&&
+                    <button style={{...S.btn('dim'),fontSize:11,padding:'1px 6px',marginLeft:4}} onClick={()=>{
+                      setSettlementConstruction(prev=>prev?{...prev,staffAssigned:Math.max(0,(prev.staffAssigned||0)-1)}:null);
+                    }}>- Remove</button>}
+                </div>
+              </div>}
+              {/* Available projects */}
+              {!building&&<div>
+                <div style={{fontSize:14,color:TH.gold,marginBottom:6}}>Available Projects</div>
+                {SETTLEMENT_PROJECTS.filter(p=>!completed.includes(p.id)).map(p=>{
+                  const meetsReq=!p.req||completed.includes(p.req);
+                  const reqProj=p.req?SETTLEMENT_PROJECTS.find(x=>x.id===p.req):null;
+                  const matCostObj=p.matCost?.[gameLocation]||{};
+                  const canAffordGold=gold>=p.cost.gold;
+                  const canAffordMats=Object.entries(matCostObj).every(([id,q])=>(inv[id]||0)>=q);
+                  const canBuild=meetsReq&&canAffordGold&&canAffordMats;
+                  return <div key={p.id} style={{padding:'8px 10px',background:meetsReq?TH.panelAlt:TH.panel,borderRadius:6,marginBottom:6,border:'1px solid '+(canBuild?TH.green+'44':meetsReq?TH.border:TH.border+'66'),opacity:meetsReq?1:0.5}}>
+                    <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                      <span style={{fontSize:16,color:TH.textBright,fontWeight:'bold'}}>{p.icon} {p.name}</span>
+                      <span style={{fontSize:13,color:canAffordGold?TH.gold:TH.red}}>{p.cost.gold}g · {p.buildDays} days</span>
+                    </div>
+                    <div style={{fontSize:13,color:TH.textDim,margin:'3px 0'}}>{p.desc}</div>
+                    <div style={{fontSize:13,color:TH.green,margin:'2px 0'}}>{p.effectDesc}</div>
+                    {!meetsReq&&<div style={{fontSize:12,color:TH.red}}>🔒 Requires: {reqProj?.icon} {reqProj?.name}</div>}
+                    {meetsReq&&<div style={{display:'flex',flexWrap:'wrap',gap:3,margin:'4px 0'}}>
+                      {Object.entries(matCostObj).map(([id,q])=>{const have=(inv[id]||0)>=q;
+                        return <span key={id} title={INGR[id]?.name||id} style={{fontSize:13,color:have?TH.green:TH.red,cursor:'help'}}>
+                          {INGR[id]?.icon||id} {inv[id]||0}/{q}
+                        </span>;})}
+                    </div>}
+                    {meetsReq&&<button style={{...S.btn(canBuild?'gold':'dim'),fontSize:14,padding:'4px 12px',marginTop:4,width:'100%'}}
+                      disabled={!canBuild}
+                      onClick={()=>{
+                        setGold(g=>g-p.cost.gold);
+                        Object.entries(matCostObj).forEach(([id,q])=>modInv(id,-q));
+                        setSettlementConstruction({projectId:p.id,daysLeft:p.buildDays,staffAssigned:0});
+                        addLog(`🏗️ Broke ground on ${p.icon} ${p.name}! ${p.buildDays} days to complete.`,'quest');
+                      }}>
+                      {canBuild?'🏗️ Begin Construction':'Gather Resources'}
+                    </button>}
+                  </div>;})}
+              </div>}
+            </>;
+          })()}
         </div>}
       </>}
 

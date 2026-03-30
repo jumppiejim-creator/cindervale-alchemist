@@ -3892,4 +3892,46 @@ var genBoardQuests=(level,day,bonusQuests=0,loc='cindervale',knownRecipes=[])=>{
   return quests;
 };
 
+// ═══ INGREDIENT CONTRACTS ═══
+var CONTRACT_TIERS={basic:{maxVal:15,maxQty:3,label:'Basic'},premium:{maxVal:25,maxQty:4,label:'Premium'},elite:{maxVal:999,maxQty:5,label:'Elite'}};
+function getContractTier(level,classLevels,fRep){
+  const mercLv=classLevels?.merchant||0;const maxRep=Math.max(...Object.values(fRep||{}).map(Number));
+  if(level>=12||maxRep>=400)return 'elite';if(level>=8||mercLv>=5)return 'premium';return 'basic';
+}
+function getContractSlots(level,classLevels){const mercLv=classLevels?.merchant||0;let slots=0;if(level>=5)slots=1;if(level>=8)slots=2;if(level>=12)slots=3;if(mercLv>=7)slots+=1;return slots;}
+
+// ═══ SETTLEMENT INVESTMENT ═══
+var SETTLEMENT_PROJECTS=[
+  {id:'sp_roads',name:'Paved Roads',icon:'🛤️',desc:'Smooth roads reduce travel time across all regions.',
+    cost:{gold:300},matCost:{cindervale:{ashite:5},ashfall:{sandstone_dust:5,obsidian_shard:3},tidecrest:{driftstone:5,coral_shard:3}},
+    buildDays:3,effect:{travelReduction:1},effectDesc:'-1 travel time to all regions',req:null,tier:1},
+  {id:'sp_market',name:'Market Square',icon:'🏪',desc:'A proper market attracts more customers and traveling merchants.',
+    cost:{gold:500},matCost:{cindervale:{ashite:5,ironroot_bark:3},ashfall:{sandstone_dust:5,dustite:3},tidecrest:{driftstone:5,waterlogged_timber:3}},
+    buildDays:5,effect:{premiumCustomers:2,shelfSaleBonus:0.10},effectDesc:'+2 customers/morning, +10% shelf sale, weekly Traveling Merchant',req:null,tier:1},
+  {id:'sp_watchtower',name:'Watchtower',icon:'🗼',desc:'A vantage point to spot incoming threats early.',
+    cost:{gold:400},matCost:{cindervale:{ashite:4,embervein:2},ashfall:{sandstone_dust:4,heatstone:2},tidecrest:{driftstone:4,barnacle_cluster:2}},
+    buildDays:4,effect:{threatGainReduction:0.15,threatWarning:60},effectDesc:'Threats grow 15% slower, warning at 60+',req:null,tier:1},
+  {id:'sp_garden',name:'Herbalist Garden',icon:'🌿',desc:'A cultivated garden produces common ingredients daily.',
+    cost:{gold:600},matCost:{cindervale:{ashite:5,moonpetal:3,ashbloom:5},ashfall:{sandstone_dust:5,sunpetal:3,dustite:5},tidecrest:{driftstone:5,kelp_frond:3,tide_moss:5}},
+    buildDays:5,effect:{gardenYield:2,spoilThreshold:1},effectDesc:'2 random ingredients/morning, +1 spoilage threshold',req:null,tier:2},
+  {id:'sp_guild',name:'Guild Hall',icon:'🏛️',desc:'A gathering place for skilled workers. Better hires and cheaper training.',
+    cost:{gold:800},matCost:{cindervale:{ashite:8,embervein:4},ashfall:{sandstone_dust:8,obsidian_shard:4},tidecrest:{driftstone:8,waterlogged_timber:4}},
+    buildDays:6,effect:{maxStaff:1,hireCandidates:2},effectDesc:'+1 staff slot, +2 hire candidates, training costs halved',req:null,tier:2},
+  {id:'sp_depot',name:'Trade Depot',icon:'🚢',desc:'A major trade hub connecting to other locations.',
+    cost:{gold:1000},matCost:{cindervale:{ashite:10,deep_crystal:2,embervein:5},ashfall:{sandstone_dust:10,temple_gold:1,obsidian_shard:5},tidecrest:{driftstone:10,tidal_diamond:1,waterlogged_timber:5}},
+    buildDays:7,effect:{crossLocationTrade:true},effectDesc:'Buy 1 ingredient/day from another location at 3× price',req:'sp_market',tier:3},
+  {id:'sp_academy',name:'Academy',icon:'🎓',desc:'A center of learning that accelerates all research and growth.',
+    cost:{gold:1200},matCost:{cindervale:{ashite:10,veil_shard:2,starwort:5},ashfall:{sandstone_dust:10,mirage_dust:2,ancient_resin:3},tidecrest:{driftstone:10,oracle_tear:2,nautilus_shell:5}},
+    buildDays:8,effect:{xpMultiplier:0.10,researchHourReduction:1},effectDesc:'+10% XP permanently, research -1 hour, staff specialization',req:null,tier:3},
+  {id:'sp_walls',name:'Fortified Walls',icon:'🏰',desc:'Massive walls that protect the settlement from the worst threats.',
+    cost:{gold:1500},matCost:{cindervale:{ashite:15,deep_iron:5,embervein:5},ashfall:{sandstone_dust:15,obsidian_shard:8,heatstone:3},tidecrest:{driftstone:15,barnacle_cluster:8,rusted_anchor:3}},
+    buildDays:10,effect:{threatCap:80,negativeEventReduction:0.50,tradeConfidenceGold:50},effectDesc:'Threats capped at 80, events halved, +50g/morning',req:'sp_watchtower',tier:4},
+  {id:'sp_library',name:'Grand Library',icon:'📚',desc:'A repository of all alchemical knowledge in the realm.',
+    cost:{gold:2000},matCost:{cindervale:{ashite:15,veil_shard:3,deep_crystal:3,sacred_ember:2},ashfall:{sandstone_dust:15,ancient_resin:5,mirage_dust:3,temple_gold:1},tidecrest:{driftstone:15,oracle_tear:3,nautilus_shell:5,tidekeeper_sigil:2}},
+    buildDays:12,effect:{discoveryChanceBonus:0.25,loreDropChance:0.15,paperGoldMult:2},effectDesc:'+25% discovery, +15% lore drops, 2× paper gold',req:'sp_academy',tier:4},
+  {id:'sp_monument',name:'Monument',icon:'🏆',desc:'A grand monument to your legacy. The ultimate investment in the settlement.',
+    cost:{gold:3000},matCost:{cindervale:{deep_crystal:5,sacred_ember:3,veil_shard:3,warden_sigil:3},ashfall:{temple_gold:3,ancient_resin:5,mirage_dust:3,dustwalker_compass:2},tidecrest:{tidal_diamond:3,oracle_tear:3,tidekeeper_sigil:3,harbor_seal:2}},
+    buildDays:15,effect:{allStatBonus:1,allSkillBonus:1,dailyRepAll:5},effectDesc:'+1 all stats, +1 all skills, +5 rep/day to all factions. Carries through Torch.',req:'sp_walls',tier:5},
+];
+
 var DEF={phase:'identity',charName:'',charRace:null,charGender:null,stats:{cre:10,inu:10,acu:10,tec:10,com:10,dis:10},ptsLeft:12,skRanks:{},skPts:0,classLevels:{},specs:{},playerFeats:[],asiSpent:[],startingClass:null,screen:'map',day:1,hours:4,gameLocation:'cindervale',xp:0,gold:15,inv:{ashbloom:3,hearthstone:1,embercap:1},pots:{},known:['healing_salve'],aQ:[],doneQ:[],log:[],milestones:[],fRep:{ashwardens:0,hearthkeepers:0,veilwalkers:0,cinderfolk:0},upgrades:[],hiredAppr:[],apprTasks:{},apprXP:{},boardQ:[],activeBQ:[],doneBQCount:0,dayFlags:[],knownEnch:['e_sharp','e_glow','e_ironbark','e_feather','e_windwalk','e_rootbind'],constructProgress:{},hollowMarch:{active:false,wave:0,nextWaveDay:0,demands:[],history:[],finalStandAvailable:false,finalStandComplete:false,marchRecipesUnlocked:[]}};
