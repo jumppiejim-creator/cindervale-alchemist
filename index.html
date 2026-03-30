@@ -7047,7 +7047,7 @@ function CindervaleAlchemistInner(){
               <div>
                 <div style={{fontSize:15,fontWeight:'bold',color:'#c060e0'}}>The Hollow March — Wave {hollowMarch.wave}</div>
                 <div style={{fontSize:12,color:TH.textDim}}>
-                  {hollowMarch.demands.filter(d=>d.met).length}/{hollowMarch.demands.length} demands met
+                  {hollowMarch.demands.filter(d=>d.resolved&&d.result?.success).length}/{hollowMarch.demands.length} demands met
                   {hollowMarch.nextWaveDay>day&&<span> · <b style={{color:hollowMarch.nextWaveDay-day<=2?'#cc2020':'#c060e0'}}>{hollowMarch.nextWaveDay-day}d</b> until next wave</span>}
                 </div>
               </div>
