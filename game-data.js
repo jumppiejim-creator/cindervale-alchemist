@@ -4768,4 +4768,15 @@ var SETTLEMENT_PROJECTS=[
     buildDays:15,effect:{allStatBonus:1,allSkillBonus:1,dailyRepAll:5},effectDesc:'+1 all stats, +1 all skills, +5 rep/day to all factions. Carries through Torch.',req:'sp_walls',tier:5},
 ];
 
+// ═══ SKYREACH ZONE IMAGES ═══
+if(typeof ZONE_IMGS==='undefined')var ZONE_IMGS={};
+ZONE_IMGS.alpine_meadows='https://jumppiejim-creator.github.io/cindervale-alchemist/skyreach-alpine-meadows.jpg';
+ZONE_IMGS.cloud_forest='https://jumppiejim-creator.github.io/cindervale-alchemist/skyreach-cloud-forest.jpg';
+ZONE_IMGS.windcarved_cliffs='https://jumppiejim-creator.github.io/cindervale-alchemist/skyreach-windcarved-cliffs.jpg';
+ZONE_IMGS.crystal_caverns_sr='https://jumppiejim-creator.github.io/cindervale-alchemist/skyreach-crystal-caverns.jpg';
+ZONE_IMGS.glacial_lake='https://jumppiejim-creator.github.io/cindervale-alchemist/skyreach-glacial-lake.jpg';
+ZONE_IMGS.stormspire_peaks='https://jumppiejim-creator.github.io/cindervale-alchemist/skyreach-stormspire-peaks.jpg';
+ZONE_IMGS.sky_ruins='https://jumppiejim-creator.github.io/cindervale-alchemist/skyreach-sky-ruins.jpg';
+ZONE_IMGS.observatory_summit='https://jumppiejim-creator.github.io/cindervale-alchemist/skyreach-observatory-summit.jpg';
+
 var DEF={phase:'identity',charName:'',charRace:null,charGender:null,stats:{cre:10,inu:10,acu:10,tec:10,com:10,dis:10},ptsLeft:12,skRanks:{},skPts:0,classLevels:{},specs:{},playerFeats:[],asiSpent:[],startingClass:null,screen:'map',day:1,hours:4,gameLocation:'cindervale',xp:0,gold:15,inv:{ashbloom:3,hearthstone:1,embercap:1},pots:{},known:['healing_salve'],aQ:[],doneQ:[],log:[],milestones:[],fRep:{ashwardens:0,hearthkeepers:0,veilwalkers:0,cinderfolk:0},upgrades:[],hiredAppr:[],apprTasks:{},apprXP:{},boardQ:[],activeBQ:[],doneBQCount:0,dayFlags:[],knownEnch:['e_sharp','e_glow','e_ironbark','e_feather','e_windwalk','e_rootbind'],constructProgress:{},hollowMarch:{active:false,wave:0,nextWaveDay:0,demands:[],history:[],finalStandAvailable:false,finalStandComplete:false,marchRecipesUnlocked:[]}};
