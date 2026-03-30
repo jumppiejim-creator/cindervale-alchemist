@@ -303,6 +303,7 @@ function CindervaleAlchemistInner(){
   const [skPts,setSkPts]=useState(0);
   const [skProgress,setSkProgress]=useState({});
   const [classLevels,setClassLevels]=useState({});       // { alchemist: 5, warden: 3 }
+  const [torchClassLevels,setTorchClassLevels]=useState({}); // Inherited from mentor via Pass the Torch — counts toward prestige prereqs
   const [specs,setSpecs]=useState({});                    // { alchemist: 'apothecary' }
   const [playerFeats,setPlayerFeats]=useState([]);        // ['careful_hands','early_riser']
   const [asiSpent,setAsiSpent]=useState([]);              // [{lv:4,choices:{inu:2}}]
@@ -536,11 +537,11 @@ function CindervaleAlchemistInner(){
   const showResult=useCallback((title,type='info',detail='',check=null)=>{addLog(title,type);setResultPopup({title,type,detail,check,t:Date.now()});},[addLog]);
 
   const gatherState=useCallback(()=>({
-    phase,charName,charRace,charGender,stats,ptsLeft,skRanks,skPts,skProgress,classLevels,specs,playerFeats,asiSpent,startingClass,
+    phase,charName,charRace,charGender,stats,ptsLeft,skRanks,skPts,skProgress,classLevels,torchClassLevels,specs,playerFeats,asiSpent,startingClass,
     screen,day,hours,gameLocation,xp,gold,inv,pots,known,aQ,doneQ,
     log:log.slice(-30),milestones,fRep,factionAlign,upgrades,hiredAppr,apprTasks,apprXP,enchQ,potCustQ,clinicPatients,venomContracts,forgedWeapons,shieldCommissions,planarFocus,gadgets,blueprints,fieldJournal,loreFragments,companions,caravans,supplyChains,caravanRuns,trainingSessions,factionHarmony,prestigeLevels,automata,customPatterns,mappedRegions,activeBuffs,debt,disabledUpgrades,shopLocked,injuryPenalty,staffInjuries,shelves,dailyReport,
     boardQ,activeBQ,doneBQCount,dayFlags,knownEnch,brewCounts,procureItems,pubPapers,selectedSite,constructProgress,lineage,brands,brandOrders,relics,museum,threats,outposts,ingredientContracts,settlementProjects,settlementConstruction,defenseQuests,hollowMarch,legacyFeature,
-  }),[phase,charName,charRace,charGender,stats,ptsLeft,skRanks,skPts,skProgress,classLevels,specs,playerFeats,asiSpent,startingClass,screen,day,hours,xp,gold,inv,pots,known,aQ,doneQ,log,milestones,fRep,factionAlign,upgrades,hiredAppr,apprTasks,apprXP,enchQ,potCustQ,clinicPatients,venomContracts,forgedWeapons,shieldCommissions,planarFocus,gadgets,blueprints,fieldJournal,loreFragments,companions,caravans,supplyChains,caravanRuns,trainingSessions,factionHarmony,prestigeLevels,automata,customPatterns,mappedRegions,activeBuffs,debt,disabledUpgrades,shopLocked,injuryPenalty,staffInjuries,shelves,dailyReport,boardQ,activeBQ,doneBQCount,dayFlags,knownEnch,brewCounts,procureItems,constructProgress,selectedSite,lineage,brands,brandOrders,relics,museum,threats,outposts,ingredientContracts,settlementProjects,settlementConstruction,defenseQuests,hollowMarch,legacyFeature]);
+  }),[phase,charName,charRace,charGender,stats,ptsLeft,skRanks,skPts,skProgress,classLevels,torchClassLevels,specs,playerFeats,asiSpent,startingClass,screen,day,hours,xp,gold,inv,pots,known,aQ,doneQ,log,milestones,fRep,factionAlign,upgrades,hiredAppr,apprTasks,apprXP,enchQ,potCustQ,clinicPatients,venomContracts,forgedWeapons,shieldCommissions,planarFocus,gadgets,blueprints,fieldJournal,loreFragments,companions,caravans,supplyChains,caravanRuns,trainingSessions,factionHarmony,prestigeLevels,automata,customPatterns,mappedRegions,activeBuffs,debt,disabledUpgrades,shopLocked,injuryPenalty,staffInjuries,shelves,dailyReport,boardQ,activeBQ,doneBQCount,dayFlags,knownEnch,brewCounts,procureItems,constructProgress,selectedSite,lineage,brands,brandOrders,relics,museum,threats,outposts,ingredientContracts,settlementProjects,settlementConstruction,defenseQuests,hollowMarch,legacyFeature]);
 
   const restoreState=useCallback((s)=>{
     if(!s)return;
@@ -557,7 +558,7 @@ function CindervaleAlchemistInner(){
     setPhase(s.phase||'identity');setCharName(s.charName||'');setCharRace(s.charRace||null);setCharGender(s.charGender||null);setStats(s.stats||DEF.stats);
     setPtsLeft(s.ptsLeft??12);setSkRanks(s.skRanks||{});setSkPts(s.skPts||0);setSkProgress(s.skProgress||{});
     const _cl=s.classLevels||{};const cleanCL={};Object.entries(_cl).forEach(([k,v])=>{if(CLASSES[k])cleanCL[k]=v;});
-    setClassLevels(cleanCL);setSpecs(s.specs||{});setPlayerFeats(s.playerFeats||[]);setAsiSpent(s.asiSpent||[]);setStartingClass(s.startingClass||null);
+    setClassLevels(cleanCL);setTorchClassLevels(s.torchClassLevels||{});setSpecs(s.specs||{});setPlayerFeats(s.playerFeats||[]);setAsiSpent(s.asiSpent||[]);setStartingClass(s.startingClass||null);
     setScreen(s.screen||'map');setDay(s.day||1);setHours(s.hours!=null?s.hours:4);setGameLocation(s.gameLocation||'cindervale');
     setXp(s.xp!=null?s.xp:0);setGold(s.gold!=null?s.gold:15);setInv(s.inv||{});setPots(s.pots||{});
     setKnown(s.known||['healing_salve']);setAQ(s.aQ||[]);setDoneQ(s.doneQ||[]);
@@ -925,15 +926,24 @@ function CindervaleAlchemistInner(){
       upgrades:inheritData?.heirloom?[inheritData.heirloom]:[],
       knownEnch:[...(locData.startEnch||['e_sharp','e_glow','e_ironbark','e_feather','e_windwalk','e_rootbind'])],
       fRep:(()=>{
-        const locFacs=loc==='ashfall'?{sand_merchants:0,flamekeepers:0,dustwalkers:0}:{ashwardens:0,hearthkeepers:0,veilwalkers:0,cinderfolk:0};
+        const locFacs=loc==='skyreach'?{skywardens:0,starcallers:0,cloud_traders:0,windrunners:0}
+          :loc==='tidecrest'?{harbormasters:0,pearl_divers:0,tidekeepers:0,merchant_marine:0}
+          :loc==='ashfall'?{sand_merchants:0,flamekeepers:0,dustwalkers:0}
+          :{ashwardens:0,hearthkeepers:0,veilwalkers:0,cinderfolk:0};
         if(inheritData?.fRep){Object.keys(locFacs).forEach(fid=>{if(inheritData.fRep[fid])locFacs[fid]=inheritData.fRep[fid];});}
         return locFacs;
       })(),
       lineage:lineage||null,
       museum:inheritData?.museum||{pottery:0,tablets:0,jewelry:0,mechanisms:0,weapons:0},
       threats:Object.fromEntries(locThreatIds.map(t=>[t,0])),outposts:[],ingredientContracts:[],settlementProjects:[],settlementConstruction:null,defenseQuests:[],
+      torchClassLevels:inheritData?.torchClassLevels||{},
     };
     restoreState(defState);setLog([]);setGameStarted(true);
+    if(inheritData?.torchClassLevels){
+      const tcl=inheritData.torchClassLevels;
+      const classNames=Object.entries(tcl).filter(([,v])=>v>0).map(([cid,lv])=>(CLASSES[cid]?.icon||'')+CLASSES[cid]?.name+' Lv'+lv).join(', ');
+      if(classNames)addLog(`🔥 Mentor's Training: ${classNames} — counts toward prestige class prerequisites.`,'story');
+    }
     if(inheritData?.legacyFeature)setLegacyFeature(inheritData.legacyFeature);
     else setLegacyFeature(null);
     if(inheritData?.intro)addLog(inheritData.intro,'story');
@@ -982,6 +992,7 @@ function CindervaleAlchemistInner(){
       intro:apprentice.name+' sets out from '+LOCATIONS[gameLocation]?.name+', carrying the lessons of '+charName+'. A new chapter begins.',
       legacyFeature:selectedLegacy||null,
       torchEnergyBonus:torchEnergyB,
+      torchClassLevels:{...classLevels},
     };
     // Start new game at selected location
     setShowTorch(false);setTorchApprentice(null);setTorchStep(0);setTorchHeirloom(null);setTorchLegacy(null);
@@ -4875,7 +4886,7 @@ function CindervaleAlchemistInner(){
         const loy=c.loyalty;
         const effMult=loy>=5?1.5:loy>=4?1.0:loy>=3?1.0:loy>=2?0.75:0.5;
         const compEffB=1+getFeatureVal('companionEffBonus');
-        const entry={id:comp.id,icon:comp.icon,name:comp.name,loyalty:loy,actions:[]};
+        const entry={id:comp.id,icon:comp.icon,img:comp.img,name:comp.name,loyalty:loy,actions:[]};
         // Primary abilities
         const lvBonus=Math.floor(level/3); // +1 yield/gold per 3 player levels
         if(comp.primary.type==='gather'){
@@ -6244,13 +6255,14 @@ function CindervaleAlchemistInner(){
             <div style={{fontSize:13,color:'#6a8a6a'}}>Your companions were busy overnight</div>
           </div>
           {companionReport.companions.map((c,ci)=>{
-            const imgSrc='companion_'+c.id+'.jpg';
+            const imgSrc=c.img||null;
             return <div key={c.id} style={{position:'relative',marginBottom:16,borderRadius:12,overflow:'hidden',border:'1px solid #4a8a4a44',background:'#0a150a'}}>
-              <img src={imgSrc} alt="" style={{position:'absolute',top:0,left:0,width:'100%',height:'100%',objectFit:'cover',opacity:0.2,pointerEvents:'none'}}
-                onError={e=>{e.target.style.display='none';}}/>
+              {imgSrc&&<img src={imgSrc} alt="" style={{position:'absolute',top:0,left:0,width:'100%',height:'100%',objectFit:'cover',opacity:0.2,pointerEvents:'none'}}
+                onError={e=>{e.target.style.display='none';}}/>}
               <div style={{position:'relative',zIndex:1,padding:'16px 20px'}}>
                 <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:8}}>
-                  <div style={{fontSize:36,filter:'drop-shadow(0 2px 8px rgba(0,0,0,0.6))'}}>{c.icon}</div>
+                  {imgSrc?<img src={imgSrc} alt={c.name} style={{width:48,height:48,borderRadius:'50%',border:'2px solid #8ac08a',objectFit:'cover',filter:'drop-shadow(0 2px 8px rgba(0,0,0,0.6))'}}/>
+                    :<div style={{fontSize:36,filter:'drop-shadow(0 2px 8px rgba(0,0,0,0.6))'}}>{c.icon}</div>}
                   <div>
                     <div style={{fontSize:18,fontWeight:'bold',color:'#c0e0c0',textShadow:'0 1px 4px rgba(0,0,0,0.5)'}}>{c.name}</div>
                     <div style={{fontSize:12,color:'#8aaa8a'}}>{'★'.repeat(c.loyalty)}{'☆'.repeat(5-c.loyalty)} Loyalty {c.loyalty}</div>
@@ -6647,7 +6659,7 @@ function CindervaleAlchemistInner(){
             {(()=>{
               const available=Object.values(PRESTIGE_CLASSES).filter(pc=>{
                 const reqs=Object.entries(pc.req);
-                const meets=reqs.every(([cid,lv])=>(classLevels[cid]||0)>=lv);
+                const meets=reqs.every(([cid,lv])=>Math.max(classLevels[cid]||0,torchClassLevels[cid]||0)>=lv);
                 const curLv=prestigeLevels[pc.id]||0;
                 return meets&&curLv<pc.maxLv;
               });
@@ -6671,9 +6683,16 @@ function CindervaleAlchemistInner(){
                       <b>Lv{nextLv}: {nextFeature.name}</b> {'\u2014'} {nextFeature.desc}
                     </div>}
                     {selected&&<div style={{marginTop:6,padding:'6px 8px',background:TH.bg,borderRadius:4,border:'1px solid '+TH.gold+'44'}} onClick={e=>e.stopPropagation()}>
-                      <div style={{fontSize:13,color:TH.gold,marginBottom:4}}>Also advance one parent class:</div>
-                      <div style={{display:'flex',gap:6}}>
-                        {Object.keys(pc.req).map(cid=>{const c=CLASSES[cid];const cLv=classLevels[cid]||0;
+                      {(()=>{
+                        const parentOptions=Object.keys(pc.req).filter(cid=>(torchClassLevels[cid]||0)<=(classLevels[cid]||0));
+                        const torchBlocked=Object.keys(pc.req).filter(cid=>(torchClassLevels[cid]||0)>(classLevels[cid]||0));
+                        if(parentOptions.length===1&&!pendingLevelUp.prestigeParentClass){
+                          setTimeout(()=>setPendingLevelUp(p=>({...p,prestigeParentClass:parentOptions[0],needsSpec:(classLevels[parentOptions[0]]||0)+1===3&&!specs[parentOptions[0]]})),0);
+                        }
+                        return <>
+                        <div style={{fontSize:13,color:TH.gold,marginBottom:4}}>{parentOptions.length>1?'Also advance one parent class:':'Advancing parent class:'}</div>
+                        <div style={{display:'flex',gap:6}}>
+                        {parentOptions.map(cid=>{const c=CLASSES[cid];const cLv=classLevels[cid]||0;
                           const parentSel=pendingLevelUp.prestigeParentClass===cid;
                           const nextF=c.features.find(f=>f.classLv===cLv+1);
                           const needsNewSpec=cLv+1===3&&!specs[cid];
@@ -6685,7 +6704,12 @@ function CindervaleAlchemistInner(){
                             {needsNewSpec&&<div style={{fontSize:11,color:TH.purple}}>+ Spec choice!</div>}
                           </div>;
                         })}
-                      </div>
+                        </div>
+                        {torchBlocked.length>0&&<div style={{fontSize:11,color:TH.textDim,marginTop:4,fontStyle:'italic'}}>
+                          🔥 {torchBlocked.map(cid=>CLASSES[cid]?.name).join(', ')} covered by mentor's training (Lv{torchBlocked.map(cid=>torchClassLevels[cid]).join('/')})
+                        </div>}
+                        </>;
+                      })()}
                     </div>}
                     <button style={{background:'none',border:'none',color:pc.color,fontSize:12,cursor:'pointer',padding:0,fontFamily:'inherit',textDecoration:'underline',marginTop:3}}
                       onClick={e=>{e.stopPropagation();setPendingLevelUp(p=>({...p,_showProg:showProg?null:'prestige_'+pc.id}));}}>
@@ -6702,7 +6726,7 @@ function CindervaleAlchemistInner(){
             })()}
             {(()=>{
               const locked=Object.values(PRESTIGE_CLASSES).filter(pc=>{
-                const reqs=Object.entries(pc.req);return !reqs.every(([cid,lv])=>(classLevels[cid]||0)>=lv);
+                const reqs=Object.entries(pc.req);return !reqs.every(([cid,lv])=>Math.max(classLevels[cid]||0,torchClassLevels[cid]||0)>=lv);
               });
               if(locked.length===0)return null;
               return <div style={{marginTop:8}}>
@@ -8165,9 +8189,10 @@ function CindervaleAlchemistInner(){
             const legUnlocked=loy>=5;
             return <div key={c.compId} style={{padding:'8px 10px',background:c.active?comp.color+'10':TH.bg,borderRadius:6,marginBottom:5,border:'2px solid '+(c.active?comp.color+'66':TH.border)}}>
               <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-                <div>
-                  <span style={{fontSize:18}}>{comp.icon}</span>
-                  <span style={{fontSize:16,color:comp.color,fontWeight:'bold',marginLeft:4}}>{comp.name}</span>
+                <div style={{display:'flex',alignItems:'center'}}>
+                  {comp.img?<img src={comp.img} alt={comp.name} style={{width:36,height:36,borderRadius:'50%',border:'2px solid '+comp.color,objectFit:'cover',marginRight:6}}/>
+                    :<span style={{fontSize:18,marginRight:4}}>{comp.icon}</span>}
+                  <span style={{fontSize:16,color:comp.color,fontWeight:'bold'}}>{comp.name}</span>
                   <span style={{color:TH.gold,marginLeft:6}}>{'★'.repeat(loy)}{'☆'.repeat(5-loy)}</span>
                   <span style={{fontSize:12,color:TH.textDim,marginLeft:4}}>({['Bonded','Trusted','Devoted','Inseparable','Soulbound'][loy-1]})</span>
                 </div>
@@ -11258,7 +11283,7 @@ function CompanionDecisionPopup({comps,companions,maxSlots,RANGER_COMPANIONS,TH,
       <div style={{background:TH.panel,border:'2px solid #60a060',borderRadius:12,padding:'20px 24px',maxWidth:420,width:'100%',boxShadow:'0 4px 30px rgba(0,0,0,0.6)'}}>
         <div style={{fontSize:13,color:TH.textDim,marginBottom:6,textAlign:'center'}}>Companion Encounter {comps.length>1?'('+comps.length+' remaining)':''}</div>
         <div style={{textAlign:'center',marginBottom:8}}>
-          <div style={{fontSize:48,marginBottom:4}}>{compData.icon}</div>
+          <div style={{fontSize:48,marginBottom:4}}>{compData.img?<img src={compData.img} alt={compData.name} style={{width:80,height:80,borderRadius:'50%',border:'3px solid #60a060',objectFit:'cover'}}/>:compData.icon}</div>
           <div style={{fontSize:22,color:'#60a060',fontWeight:'bold'}}>{compData.name}</div>
           <div style={{fontSize:14,color:TH.textDim,fontStyle:'italic',margin:'4px 0'}}>{compData.desc||'A wild creature approaches cautiously.'}</div>
           <div style={{fontSize:14,color:TH.textDim}}>Role: <b style={{color:TH.textBright}}>{compData.primary?.type||'companion'}</b></div>
@@ -11446,7 +11471,7 @@ function ExpeditionHourPopup({hr,TH,S,LC,INGR,FACTIONS,onOk,onSkipAll,remaining,
           <div style={{fontSize:14,color:hr.companionEnc.approachable?'#60a060':'#a06060',fontWeight:'bold',marginBottom:3}}>
             {hr.companionEnc.approachable?'🐾 Creature Approached!':'🐾 Creature Spotted!'}
           </div>
-          <div style={{fontSize:18,textAlign:'center',margin:'6px 0'}}>{hr.companionEnc.icon}</div>
+          <div style={{fontSize:18,textAlign:'center',margin:'6px 0'}}>{hr.companionEnc.img?<img src={hr.companionEnc.img} alt={hr.companionEnc.name} style={{width:48,height:48,borderRadius:'50%',border:'2px solid '+(hr.companionEnc.approachable?'#60a060':'#a06060'),objectFit:'cover'}}/>:hr.companionEnc.icon}</div>
           <div style={{fontSize:16,color:TH.textBright,textAlign:'center',marginBottom:2}}>{hr.companionEnc.name}</div>
           <div style={{fontSize:13,color:TH.textDim,textAlign:'center',fontStyle:'italic'}}>{hr.companionEnc.desc||''}</div>
           {hr.companionEnc.check&&<div style={{textAlign:'center',marginTop:6}}>
