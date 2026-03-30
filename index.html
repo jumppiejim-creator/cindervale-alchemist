@@ -686,11 +686,13 @@ function CindervaleAlchemistInner(){
     if(wsb>0){const sids=Object.keys(STATS);const baseVals=sids.map(s=>{let bv=stats[s]||10;for(const [cid2,sp2] of Object.entries(specs)){const spc=CLASSES[cid2]?.specs?.[sp2];if(spc?.bStat===s)bv+=2;}for(const asi2 of asiSpent){bv+=(asi2.choices[s]||0);}bv+=getFeatureVal(s+'Bonus');return{s,v:bv};});baseVals.sort((a,b)=>a.v-b.v);if(baseVals[0]?.s===sid)v+=wsb;}
     // loreStatBonus: completed lore chains grant +1 permanent stat (cycles through stats)
     if(typeof LORE_CHAINS!=='undefined'&&getFeatureVal('loreStatBonus')){const sids=Object.keys(STATS);let ci=0;for(const [,chain] of Object.entries(LORE_CHAINS)){if(chain.fragments.every(f=>loreFragments.includes(f.id))){if(sids[ci%sids.length]===sid)v+=1;ci++;}}}
+    // allStatBonus: flat bonus to all stats (Monument)
+    v+=getFeatureVal('allStatBonus');
     return v;
   };
   const getRaceSkBonus=skId=>{const r=RACES[charRace];if(!r||!r.skillBonus)return 0;return r.skillBonus[skId]||0;};
   const getSkMod=skId=>{const sk=SKILLS[skId];if(!sk)return 0;return getMod(eStat(sk.stat))+rankB(skRanks[skId]||0,pb)+getRaceSkBonus(skId);};
-  const doCheck=(skId,dc)=>{const sk=SKILLS[skId];if(!sk)return{success:false,total:0,roll:0,name:'?',mod:0,rb:0,dc,statName:'',extras:[]};const roll=d20();const mod=getMod(eStat(sk.stat));const rb=rankB(skRanks[skId]||0,pb);let total=roll+mod+rb;const utb=(skRanks[skId]||0)===0?getFeatureVal('untrainedBonus'):0;if(utb)total+=utb;const r={roll,mod,rb,total,dc,success:total>=dc,name:sk.name,icon:sk.icon,statName:STATS[sk.stat]?.name||'',extras:[]};if(utb)r.extras.push({label:'🃏 Untrained',val:utb});setLastCheck(r);return r;};
+  const doCheck=(skId,dc)=>{const sk=SKILLS[skId];if(!sk)return{success:false,total:0,roll:0,name:'?',mod:0,rb:0,dc,statName:'',extras:[]};const roll=d20();const mod=getMod(eStat(sk.stat));const rb=rankB(skRanks[skId]||0,pb);let total=roll+mod+rb;const utb=(skRanks[skId]||0)===0?getFeatureVal('untrainedBonus'):0;if(utb)total+=utb;const asb=getFeatureVal('allSkillBonus');if(asb)total+=asb;const r={roll,mod,rb,total,dc,success:total>=dc,name:sk.name,icon:sk.icon,statName:STATS[sk.stat]?.name||'',extras:[]};if(utb)r.extras.push({label:'🃏 Untrained',val:utb});if(asb)r.extras.push({label:'🏆 Monument',val:'+'+asb});setLastCheck(r);return r;};
   const hasUp=id=>upgrades.includes(id);
   const upEff=key=>{let v=0;upgrades.filter(uid=>!disabledUpgrades.includes(uid)).forEach(uid=>{const u=UPGRADES[uid];if(u?.effect?.[key])v+=typeof u.effect[key]==='number'?u.effect[key]:(u.effect[key]?1:0);});if(v>0&&getFeatureVal('upgradeDoubleBonus'))v*=2;return v;};
   const modInv=(id,a)=>setInv(p=>{const n={...p};n[id]=(n[id]||0)+a;if(n[id]<=0)delete n[id];return n;});
@@ -728,7 +730,7 @@ function CindervaleAlchemistInner(){
     return{mult:avg,label:parts.length>0?' | ✨ Quality bonus ('+parts.join(', ')+'): ×'+avg.toFixed(1):''};
   };
   const gainXP=(base)=>{const mult=1+getFeatureVal('xpMultiplier');setXp(x=>x+Math.floor(base*mult));};
-  const getBuyPrice=(basePrice)=>{const disc=getFeatureVal('buyDiscount');return Math.max(1,Math.floor(basePrice*(1-disc)));};
+  const getBuyPrice=(basePrice)=>{const disc=getFeatureVal('buyDiscount')+getFeatureVal('shopDiscount');return Math.max(1,Math.floor(basePrice*(1-disc)));};
   const regUnlock=(reg)=>Math.max(0,reg.unlock-getFeatureVal('bonusRegionSlot'));
   const addRep=(fid,a)=>{const repB=1+getFeatureVal('repGainBonus');const dblRep=getFeatureVal('doubleRep')?2:1;const persRank=skRanks['persuasion']||0;const persMod=Math.min(0.30,persRank*0.06+getMod(eStat('com'))*0.01);const gain=Math.floor(a*repB*dblRep*(1+persMod));setFRep(p=>{const n={...p};const oldRep=n[fid]||0;const newRep=Math.max(0,oldRep+gain);const oldLvl=getRepLvl(oldRep);const newLvl=getRepLvl(newRep);if(newLvl>oldLvl){const f=FACTIONS[fid];const tb=f?.tierBonuses?.[newLvl-1];if(tb)addLog(`🏛️ ${f.icon} ${f.name}: ${REP_LVS[newLvl]} unlocked — ${tb.name}!`,'quest');}n[fid]=newRep;if(persRank>0&&Math.random()<Math.min(0.10,persRank*0.02+getMod(eStat('com'))*0.005)){const others=Object.keys(n).filter(f=>f!==fid&&FACTIONS[f]);if(others.length>0){const spillFid=others[Math.floor(Math.random()*others.length)];n[spillFid]=(n[spillFid]||0)+1;}}return n;});};
   const getRL=fid=>getRepLvl(fRep[fid]||0);
@@ -3828,8 +3830,10 @@ function CindervaleAlchemistInner(){
           const caravanSize=Math.min(5,2+prevGens.length); // 3-5 items scaling with generations
           const delivered={};
           for(let i=0;i<caravanSize;i++){
-            const id=allSrcIngr[Math.floor(Math.random()*allSrcIngr.length)];
-            delivered[id]=(delivered[id]||0)+1;
+            const rawId=allSrcIngr[Math.floor(Math.random()*allSrcIngr.length)];
+            // Convert to local equivalent — a Cindervale ashbloom becomes a Tidecrest kelp_frond
+            const localId=li(rawId);
+            delivered[localId]=(delivered[localId]||0)+1;
           }
           Object.entries(delivered).forEach(([id,q])=>modInv(id,q));
           const itemStr=Object.entries(delivered).map(([id,q])=>(INGR[id]?.icon||'')+INGR[id]?.name+'×'+q).join(', ');
@@ -3910,7 +3914,8 @@ function CindervaleAlchemistInner(){
     // ═══ EXTERNAL THREATS PROCESSING ═══
     const newThreats={...(threats||Object.fromEntries(locThreatIds.map(t=>[t,0])))};
     const tgrReduc=getFeatureVal('threatGainReduction');
-    const tGrow=(tid,amount)=>{const reduced=tgrReduc>0?Math.max(1,Math.floor(amount*(1-tgrReduc))):amount;newThreats[tid]=Math.min(100,(newThreats[tid]||0)+reduced);};
+    const settThreatCap=getFeatureVal('threatCap')||100;
+    const tGrow=(tid,amount)=>{const reduced=tgrReduc>0?Math.max(1,Math.floor(amount*(1-tgrReduc))):amount;newThreats[tid]=Math.min(settThreatCap,(newThreats[tid]||0)+reduced);};
     // Threat growth — position-based: [0]=bandit, [1]=corruption, [2]=magic
     if(curDay>3)tGrow(locThreatIds[0],3+(gold>200?1:0));
     if(curDay>5)tGrow(locThreatIds[1],2);
@@ -4782,11 +4787,13 @@ function CindervaleAlchemistInner(){
     if(ingredientContracts.length>0){
       const contractLines=[];
       let totalContractCost=0;
+      const costReduction=getFeatureVal('contractCostReduction');
       ingredientContracts.forEach(c=>{
         const ig=INGR[c.ingrId];if(!ig)return;
         setInv(p=>({...p,[c.ingrId]:(p[c.ingrId]||0)+c.qty}));
-        totalContractCost+=c.dailyCost;
-        contractLines.push({icon:ig.icon,label:ig.name+' ×'+c.qty,val:'-'+c.dailyCost+'g/day',color:TH.green});
+        const adjCost=Math.max(1,Math.floor(c.dailyCost*(1-costReduction)));
+        totalContractCost+=adjCost;
+        contractLines.push({icon:ig.icon,label:ig.name+' ×'+c.qty,val:'-'+adjCost+'g/day'+(costReduction>0?' ('+Math.round(costReduction*100)+'% off)':''),color:TH.green});
       });
       if(totalContractCost>0){
         setGold(g=>g-totalContractCost);
