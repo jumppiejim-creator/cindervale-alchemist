@@ -917,13 +917,13 @@ var REGIONS=[
     ],diff:3,unlock:4,time:2,yield:[2,4],dc:15,faction:'pearl_divers',fReq:1,
     flavor:['The reef twists and turns like a living maze. Without a diver\'s instinct, you\'d be lost in minutes.']},
   {id:'shipwreck_graveyard',loc:'tidecrest',name:'Shipwreck Graveyard',icon:'⚓',color:'#4a4a3a',
-    ingr:['rust_iron','waterlogged_timber','ships_tar','cannon_bronze','sharktooth','barnacle_cluster','ghost_lantern','compass_needle','whale_oil','storm_glass_tc'],pick:3,sites:[
+    ingr:['rust_iron','waterlogged_timber','ships_tar','cannon_bronze','sharktooth','barnacle_cluster','ghost_lantern','compass_needle','whale_oil','storm_glass_tc','rusted_anchor'],pick:3,sites:[
       {id:'tc_flagship',name:'The Flagship',icon:'🚢',desc:'A massive warship half-buried in sand. Its holds still contain treasures.',
-        weights:{cannon_bronze:24,compass_needle:22,ships_tar:14,rust_iron:12,waterlogged_timber:10,ghost_lantern:6,sharktooth:4,barnacle_cluster:4,whale_oil:3,storm_glass_tc:6}},
+        weights:{cannon_bronze:22,compass_needle:20,ships_tar:14,rust_iron:10,waterlogged_timber:8,ghost_lantern:6,sharktooth:4,barnacle_cluster:4,whale_oil:3,storm_glass_tc:5,rusted_anchor:4}},
       {id:'tc_debris_field',name:'Debris Field',icon:'🪵',desc:'Scattered wreckage from dozens of ships. A salvager\'s paradise.',
-        weights:{rust_iron:26,waterlogged_timber:24,ships_tar:16,barnacle_cluster:12,sharktooth:8,cannon_bronze:6,compass_needle:4,ghost_lantern:4,whale_oil:4,storm_glass_tc:3}},
+        weights:{rust_iron:22,waterlogged_timber:22,ships_tar:14,barnacle_cluster:10,sharktooth:8,cannon_bronze:6,compass_needle:4,ghost_lantern:3,whale_oil:3,storm_glass_tc:3,rusted_anchor:8}},
       {id:'tc_captains_quarters',name:'Captain\'s Quarters',icon:'🗝️',desc:'Sealed cabins where personal effects and alchemical stores survive.',
-        weights:{ghost_lantern:26,compass_needle:22,storm_glass_tc:18,cannon_bronze:10,ships_tar:8,rust_iron:6,waterlogged_timber:4,sharktooth:4,barnacle_cluster:3,whale_oil:4}},
+        weights:{ghost_lantern:24,compass_needle:20,storm_glass_tc:16,cannon_bronze:10,ships_tar:8,rust_iron:6,waterlogged_timber:4,sharktooth:4,barnacle_cluster:3,whale_oil:3,rusted_anchor:4}},
     ],diff:4,unlock:5,time:3,yield:[2,4],dc:16,
     flavor:['Broken masts jut from the water like the ribs of dead giants.','Every wreck holds a story — and usually something valuable.']},
   {id:'abyssal_trench',loc:'tidecrest',name:'Abyssal Trench',icon:'🦑',color:'#1a2a4a',
@@ -937,13 +937,13 @@ var REGIONS=[
     ],diff:4,unlock:6,time:3,yield:[2,4],dc:17,faction:'harbormasters',fReq:2,
     flavor:['The pressure is crushing. Only the most prepared divers venture this deep.','Light fades to nothing. Your alchemical lantern is the only star in this abyss.']},
   {id:'drowned_sanctum',loc:'tidecrest',name:'Drowned Sanctum',icon:'🏛️',color:'#2a3a5a',
-    ingr:['sea_crown_jewel','drowned_god_relic','leviathan_heart','primordial_brine','tidekeeper_sigil','trident_shard','abyssal_diamond','siren_tear','moonfish_scale','trade_manifest'],pick:3,sites:[
+    ingr:['sea_crown_jewel','drowned_god_relic','leviathan_heart','primordial_brine','tidekeeper_sigil','trident_shard','abyssal_diamond','siren_tear','moonfish_scale','trade_manifest','oracle_tear'],pick:3,sites:[
       {id:'tc_nave',name:'The Nave',icon:'⚱️',desc:'The central hall of the sunken temple. Pillars carved with tidal runes.',
-        weights:{drowned_god_relic:24,tidekeeper_sigil:22,sea_crown_jewel:14,primordial_brine:12,trident_shard:10,abyssal_diamond:6,leviathan_heart:4,siren_tear:4,moonfish_scale:4,trade_manifest:6}},
+        weights:{drowned_god_relic:22,tidekeeper_sigil:20,sea_crown_jewel:14,primordial_brine:10,trident_shard:10,abyssal_diamond:6,leviathan_heart:4,siren_tear:4,moonfish_scale:4,trade_manifest:4,oracle_tear:5}},
       {id:'tc_reliquary',name:'The Reliquary',icon:'🔱',desc:'Sealed vaults where the temple\'s holiest artifacts were stored.',
-        weights:{sea_crown_jewel:28,abyssal_diamond:22,leviathan_heart:14,drowned_god_relic:10,primordial_brine:8,tidekeeper_sigil:6,trident_shard:4,siren_tear:4,moonfish_scale:4,trade_manifest:6}},
+        weights:{sea_crown_jewel:26,abyssal_diamond:20,leviathan_heart:14,drowned_god_relic:10,primordial_brine:8,tidekeeper_sigil:6,trident_shard:4,siren_tear:4,moonfish_scale:4,trade_manifest:4,oracle_tear:4}},
       {id:'tc_oracle_pool',name:'Oracle Pool',icon:'🌀',desc:'A still pool where the ancients communed with the deep. It still whispers.',
-        weights:{primordial_brine:28,siren_tear:22,leviathan_heart:16,tidekeeper_sigil:10,drowned_god_relic:8,sea_crown_jewel:6,abyssal_diamond:4,trident_shard:4,moonfish_scale:4,trade_manifest:4}},
+        weights:{primordial_brine:24,siren_tear:18,oracle_tear:14,leviathan_heart:12,tidekeeper_sigil:10,drowned_god_relic:6,sea_crown_jewel:4,abyssal_diamond:4,trident_shard:4,moonfish_scale:4,trade_manifest:4}},
     ],diff:5,unlock:8,time:4,yield:[2,4],dc:18,
     flavor:['The temple breathes with the tide. Water flows through corridors like blood through veins.','Ancient murals depict a civilization that lived beneath the waves.']},
 ];
