@@ -725,7 +725,7 @@ function CindervaleAlchemistInner(){
   const gainXP=(base)=>{const mult=1+getFeatureVal('xpMultiplier');setXp(x=>x+Math.floor(base*mult));};
   const getBuyPrice=(basePrice)=>{const disc=getFeatureVal('buyDiscount');return Math.max(1,Math.floor(basePrice*(1-disc)));};
   const regUnlock=(reg)=>Math.max(0,reg.unlock-getFeatureVal('bonusRegionSlot'));
-  const addRep=(fid,a)=>{const repB=1+getFeatureVal('repGainBonus');const dblRep=getFeatureVal('doubleRep')?2:1;const persMod=getSkMod('persuasion');const gain=Math.floor(a*repB*dblRep*(1+persMod*0.06));setFRep(p=>{const n={...p};const oldRep=n[fid]||0;const newRep=Math.max(0,oldRep+gain);const oldLvl=getRepLvl(oldRep);const newLvl=getRepLvl(newRep);if(newLvl>oldLvl){const f=FACTIONS[fid];const tb=f?.tierBonuses?.[newLvl-1];if(tb)addLog(`🏛️ ${f.icon} ${f.name}: ${REP_LVS[newLvl]} unlocked — ${tb.name}!`,'quest');}n[fid]=newRep;if(persMod>0&&Math.random()<persMod*0.02){const others=Object.keys(n).filter(f=>f!==fid&&FACTIONS[f]);if(others.length>0){const spillFid=others[Math.floor(Math.random()*others.length)];n[spillFid]=(n[spillFid]||0)+1;}}return n;});};
+  const addRep=(fid,a)=>{const repB=1+getFeatureVal('repGainBonus');const dblRep=getFeatureVal('doubleRep')?2:1;const persRank=skRanks['persuasion']||0;const persMod=Math.min(0.30,persRank*0.06+getMod(eStat('com'))*0.01);const gain=Math.floor(a*repB*dblRep*(1+persMod));setFRep(p=>{const n={...p};const oldRep=n[fid]||0;const newRep=Math.max(0,oldRep+gain);const oldLvl=getRepLvl(oldRep);const newLvl=getRepLvl(newRep);if(newLvl>oldLvl){const f=FACTIONS[fid];const tb=f?.tierBonuses?.[newLvl-1];if(tb)addLog(`🏛️ ${f.icon} ${f.name}: ${REP_LVS[newLvl]} unlocked — ${tb.name}!`,'quest');}n[fid]=newRep;if(persRank>0&&Math.random()<Math.min(0.10,persRank*0.02+getMod(eStat('com'))*0.005)){const others=Object.keys(n).filter(f=>f!==fid&&FACTIONS[f]);if(others.length>0){const spillFid=others[Math.floor(Math.random()*others.length)];n[spillFid]=(n[spillFid]||0)+1;}}return n;});};
   const getRL=fid=>getRepLvl(fRep[fid]||0);
 
   const genCust=useCallback(()=>{
@@ -1211,14 +1211,14 @@ function CindervaleAlchemistInner(){
           hourG[d.bonus.ingredient]=(hourG[d.bonus.ingredient]||0)+d.bonus.extraYield;}});
       } else {
         // Failed extraction: base 35% chance for 1 ingredient + Efficiency bonus
-        const effSalvage=getSkMod('efficiency');
-        if(Math.random()<0.35||(effSalvage>0&&Math.random()<effSalvage*0.10)){const id=picked[Math.floor(Math.random()*picked.length)];hourG[id]=1;}
+        const effRank=skRanks['efficiency']||0;const effSalvage=Math.min(0.40,effRank*0.10+getMod(eStat('dis'))*0.02);
+        if(Math.random()<0.35||(effSalvage>0&&Math.random()<effSalvage)){const id=picked[Math.floor(Math.random()*picked.length)];hourG[id]=1;}
       }
       const hxpBase=ext.success?(reg.diff*18+level*2):Math.floor(reg.diff*5);const hxp=Math.floor(hxpBase*(1+getFeatureVal('forageXPBonus')));
       // Divination: bonus ingredient from full region list on success
-      const divMod=getSkMod('divination');
+      const divRank=skRanks['divination']||0;const divChance=Math.min(0.40,divRank*0.10+getMod(eStat('inu'))*0.02);
       let divBonus=null;
-      if(ext.success&&divMod>0&&Math.random()<divMod*0.10){
+      if(ext.success&&divChance>0&&Math.random()<divChance){
         const divId=reg.ingr[Math.floor(Math.random()*reg.ingr.length)];
         hourG[divId]=(hourG[divId]||0)+1;divBonus={id:divId,icon:INGR[divId]?.icon||'',name:INGR[divId]?.name||divId};
       }
@@ -1276,8 +1276,8 @@ function CindervaleAlchemistInner(){
           if(ev.faction)event.effectRep={faction:ev.faction,amount:15};
         }
         // Danger Sense: chance to negate bad effects
-        const dsMod=getSkMod('danger_sense');
-        if(dsMod>0&&(event.effect==='lose_some'||event.effect==='lose_time')&&Math.random()<dsMod*0.12){
+        const dsRank=skRanks['danger_sense']||0;const dsChance=Math.min(0.50,dsRank*0.12+getMod(eStat('inu'))*0.02);
+        if(dsChance>0&&(event.effect==='lose_some'||event.effect==='lose_time')&&Math.random()<dsChance){
           event.dangerSensed=true;event.effectDetail='⚠️ Danger Sense! You sensed the threat and avoided the worst.';event.effect='none';event.good=true;
         }
         // Warden: immune to time loss events
@@ -2053,7 +2053,7 @@ function CindervaleAlchemistInner(){
     const adjDC=Math.max(5,r.dc+qualDCMod+infDCMod-masteryDisc);
     const sk=r.stat==='inu'?'attunement':r.stat==='tec'?'precision':r.stat==='acu'?'research':'improvisation';
     // Analysis: auto-succeed chance
-    const analysisMod=getSkMod('analysis');const autoSucc=analysisMod>0&&Math.random()<analysisMod*0.05;
+    const analysisRank=skRanks['analysis']||0;const analysisChance=Math.min(0.25,analysisRank*0.05+getMod(eStat('acu'))*0.01);const autoSucc=analysisChance>0&&Math.random()<analysisChance;
     const ch=autoSucc?{roll:20,mod:0,rb:0,total:99,dc:adjDC,success:true,name:'Analysis',icon:'🧮',statName:'',extras:[{label:'🧮 Analysis',val:'Auto'}]}:doCheck(sk,adjDC);
     const csb=upEff('craftSkillBonus');if(csb){ch.total+=csb;ch.extras.push({label:'Upgrades',val:csb});}
     const cfb=getFeatureVal('craftBonus');if(cfb){ch.total+=cfb;ch.extras.push({label:'Class Mastery',val:cfb});}
@@ -2123,7 +2123,7 @@ function CindervaleAlchemistInner(){
     if(saveChance>0&&Math.random()<saveChance)modInv(li(r.ingr[0]),1);
     const dblChance=getFeatureVal('doubleBatchChance')+upEff('doubleBatch');
     let qty2=1;if(dblChance>0&&Math.random()<dblChance)qty2=2;
-    const refMod=getSkMod('refinement');const refBonus=refMod>0&&Math.random()<refMod*0.06;
+    const refRank=skRanks['refinement']||0;const refChance=Math.min(0.30,refRank*0.06+getMod(eStat('tec'))*0.01);const refBonus=refChance>0&&Math.random()<refChance;
     if(refBonus){qty2++;addLog('💎 Refinement: Masterful technique yielded a bonus potion!','craft');}
     let potId=qualPotId(r.id,quality);
     if(selInf){potId=potId+selInf.suffix;setInfusionsUsedToday(n=>n+1);}
@@ -2334,7 +2334,8 @@ function CindervaleAlchemistInner(){
   // ─── ENERGY COST HELPER ───
   const spendEnergy=(cost=1)=>{
     const earlyR=getFeatureVal('firstActionFree')&&!dayFlags.includes('first_action_used');
-    const endSave=getSkMod('endurance')>0&&Math.random()<getSkMod('endurance')*0.10;
+    const endRank=skRanks['endurance']||0;const endChance=Math.min(0.40,endRank*0.10+getMod(eStat('dis'))*0.02);
+    const endSave=endChance>0&&Math.random()<endChance;
     if(earlyR){setDayFlags(f=>[...f,'first_action_used']);addLog('🌅 Early Riser: First action free!','info');return true;}
     if(endSave){addLog('💪 Endurance: Energy preserved!','info');return true;}
     setHours(h=>h-cost);return false;
@@ -2415,7 +2416,8 @@ function CindervaleAlchemistInner(){
     const autoEnchDC=getFeatureVal('autoEnchantDC');
     const critRange=20-getFeatureVal('enchantCritRange');
     const isCrit=ch.roll>=critRange;
-    const focusMW=!isCrit&&getSkMod('focus')>0&&Math.random()<getSkMod('focus')*0.05;
+    const focusRank=skRanks['focus']||0;const focusChance=Math.min(0.25,focusRank*0.05+getMod(eStat('dis'))*0.01);
+    const focusMW=!isCrit&&focusChance>0&&Math.random()<focusChance;
     const isMW=isCrit||focusMW;
     const arcPatternB=isCustomEnch?getPatternInscBonus():0;
     if(arcPatternB){ch.total+=arcPatternB;ch.extras.push({label:'\u2728 Arcanist',val:arcPatternB});}
@@ -3530,8 +3532,8 @@ function CindervaleAlchemistInner(){
         }
       }
       // Divination bonus
-      const divMod=getSkMod('divination');let divBonus=null;
-      if(ext.success&&divMod>0&&Math.random()<divMod*0.10){
+      const divRank2=skRanks['divination']||0;const divChance2=Math.min(0.40,divRank2*0.10+getMod(eStat('inu'))*0.02);let divBonus=null;
+      if(ext.success&&divChance2>0&&Math.random()<divChance2){
         const divId=reg.ingr[Math.floor(Math.random()*reg.ingr.length)];
         hourG[divId]=(hourG[divId]||0)+1;divBonus={id:divId,icon:INGR[divId]?.icon||'',name:INGR[divId]?.name||divId};
       }
@@ -3883,7 +3885,7 @@ function CindervaleAlchemistInner(){
         const infCustBonus=infId&&(prestigeLevels.spellbrewer||0)>=5?0.15:0;
         // Each stocked potion has a 30-60% chance to sell overnight + class/feat bonuses
         let sold=0;
-        for(let i=0;i<qty;i++){if(Math.random()<0.3+level*0.02+getSkMod('haggling')*0.02+shelfSaleB+infCustBonus+brandShelfBonus)sold++;}
+        for(let i=0;i<qty;i++){if(Math.random()<0.3+level*0.02+(skRanks['haggling']||0)*0.02+shelfSaleB+infCustBonus+brandShelfBonus)sold++;}
         if(sold>0){
           const basePrice=r.xp+getSkMod('aesthetics')*2+getSkMod('haggling')+Math.floor(upEff('sellBonus')*r.xp);
           const price=Math.floor(basePrice*(1+sellB+custPayB+pvb)*qMult*infMult*freshMult*brandMult*GOLD_MULT);
@@ -4311,14 +4313,14 @@ function CindervaleAlchemistInner(){
       }
     }
     // Procurement: rare/mid-tier ingredients appear in shop
-    const procMod=getSkMod('procurement');const procList=[];
+    const procRank=skRanks['procurement']||0;const procChance=Math.min(0.40,procRank*0.08+getMod(eStat('com'))*0.02);const procList=[];
     const restockB=getFeatureVal('shopRestockBonus');
     const rareIngr=new Set();locRegions.filter(r=>r.diff>=2&&level>=regUnlock(r)).forEach(r=>r.ingr.forEach(id=>rareIngr.add(id)));
     const alreadyInShop=new Set(SHOP_I.filter(s=>!s.loc||s.loc===gameLocation).map(s=>s.id));
     const rarePool=[...rareIngr].filter(id=>!alreadyInShop.has(id));
-    if(procMod>0||restockB>0){
+    if(procChance>0||restockB>0){
       rarePool.forEach(id=>{
-        if(Math.random()<(procMod*0.08+restockB*0.1)){const ig=INGR[id];if(ig)procList.push({id,price:Math.ceil((ig.val||10)*1.5),name:ig.name,icon:ig.icon});}
+        if(Math.random()<(procChance+restockB*0.1)){const ig=INGR[id];if(ig)procList.push({id,price:Math.ceil((ig.val||10)*1.5),name:ig.name,icon:ig.icon});}
       });
       // Merchant guaranteed restock slots
       if(restockB>0&&procList.length<restockB){
