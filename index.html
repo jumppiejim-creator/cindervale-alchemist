@@ -5126,7 +5126,7 @@ function CindervaleAlchemistInner(){
   if(contractsWaiting>0)alerts.push({text:contractsWaiting+' venom contract'+(contractsWaiting!==1?'s':'')+' available.',to:'workshop',label:'☠️ Contracts'});
   const commissionsWaiting=shieldCommissions.filter(c=>!c.done).length;
   if(commissionsWaiting>0)alerts.push({text:commissionsWaiting+' shield commission'+(commissionsWaiting!==1?'s':'')+' waiting.',to:'workshop',label:'🛡️ Commissions'});
-  if(day===1&&aQ.length===0&&screen!=='quests')alerts.push(gameLocation==='tidecrest'?{text:'Finn at the Harbor Market is looking for an alchemist. Introduce yourself.',to:'market',label:'🛒 Visit Finn',npc:'finn'}:gameLocation==='ashfall'?{text:'Sola at the Bazaar needs an alchemist. Introduce yourself.',to:'market',label:'🛒 Visit Sola',npc:'sola'}:{text:'Brenna at the Market has work for a new alchemist. Introduce yourself.',to:'market',label:'🛒 Visit Brenna',npc:'brenna'});
+  if(day===1&&aQ.length===0&&screen!=='quests')alerts.push(gameLocation==='tidecrest'?{text:'Finn at the Harbor Market is looking for an alchemist. Introduce yourself.',to:'market',label:'🛒 Visit Finn',npc:'finn'}:gameLocation==='ashfall'?{text:'Sola at the Bazaar needs an alchemist. Introduce yourself.',to:'market',label:'🛒 Visit Sola',npc:'sola'}:gameLocation==='skyreach'?{text:'Kael Windforge at the Mountain Market has work for a new alchemist.',to:'market',label:'🛒 Visit Kael',npc:'sr_kael'}:{text:'Brenna at the Market has work for a new alchemist. Introduce yourself.',to:'market',label:'🛒 Visit Brenna',npc:'brenna'});
   if(hours<=0&&screen!=='map')alerts.push({text:'The day\'s hours are spent. Time to rest and let tomorrow bring new work.',to:'map',label:'🏘️ '+locName});
   const readyBQ=activeBQ.filter(bq=>{const p=bqProgress(bq);return p.c>=p.n;});
   if(readyBQ.length>0)alerts.push({text:readyBQ.length+' board request'+(readyBQ.length>1?'s':'')+' ready to turn in!',to:'quests',label:'📌 Notice Board'});
@@ -5537,6 +5537,7 @@ function CindervaleAlchemistInner(){
               const initCust=genCust();
               const firstNPC=isTc?{icon:'🛒',text:'Finn at the Harbor Market has work for you.',to:'market',label:'🛒 Meet Finn',color:TH.gold,npc:'finn'}
                 :isAsh?{icon:'🛒',text:'Sola at the Bazaar has work for you.',to:'market',label:'🛒 Meet Sola',color:TH.gold,npc:'sola'}
+                :gameLocation==='skyreach'?{icon:'🛒',text:'Kael Windforge at the Mountain Market has work for you.',to:'market',label:'🛒 Meet Kael',color:TH.gold,npc:'sr_kael'}
                 :{icon:'🛒',text:'Brenna at the Market has work for you.',to:'market',label:'🛒 Meet Brenna',color:TH.gold,npc:'brenna'};
               const firstRegion=isTc?{icon:'🗺️',text:'The Driftwood Shores are open for foraging.',to:'worldmap',label:'🗺️ Explore',color:TH.teal}
                 :isAsh?{icon:'🗺️',text:'The Sunscorch Flats are open for foraging.',to:'worldmap',label:'🗺️ Explore',color:TH.teal}
@@ -7271,6 +7272,7 @@ function CindervaleAlchemistInner(){
               <button style={S.btn(dlgNpc==='sola'?'gold':'def')} onClick={()=>openNpc('sola')}>💬 Sola</button>
               <button style={S.btn(dlgNpc==='razak'?'gold':'def')} onClick={()=>openNpc('razak')}>💬 Razak</button>
             </>:<button style={S.btn(dlgNpc==='brenna'?'gold':'def')} onClick={()=>openNpc('brenna')}>💬 Brenna</button>}
+            {gameLocation==='skyreach'&&<button style={S.btn(dlgNpc==='sr_kael'?'gold':'def')} onClick={()=>openNpc('sr_kael')}>💬 Kael</button>}
           </div>
           {showShop&&<div>
             <div style={{fontSize:16,color:TH.gold,marginBottom:4}}>Buy Ingredients{dayFlags.includes('bargain_day')?' — 🏷️ Half Price Today!':''}</div>
@@ -7312,7 +7314,7 @@ function CindervaleAlchemistInner(){
                 {qty>1&&<button style={S.btn()} onClick={()=>{modInv(id,-qty);setGold(g=>g+sp*qty);addLog(`Sold ${qty}× ${ig.icon}${ig.name}. (+${sp*qty}g)`,'info');}}>All ({sp*qty}g)</button>}
               </div>);})}
           </div>}
-          {(dlgNpc==='brenna'||dlgNpc==='sola'||dlgNpc==='razak'||dlgNpc==='mako'||dlgNpc==='finn')&&!showShop&&NPCS[dlgNpc]&&<NpcDlg npc={{...NPCS[dlgNpc],id:dlgNpc}} {...{dlgLine,setDlgLine,setDlgNpc,availQ,aQ,acceptQ,compQ,qP,qObj,S,questDlg,setQuestDlg,openNpc}}/>}
+          {(dlgNpc==='brenna'||dlgNpc==='sola'||dlgNpc==='razak'||dlgNpc==='mako'||dlgNpc==='finn'||dlgNpc==='sr_kael')&&!showShop&&NPCS[dlgNpc]&&<NpcDlg npc={{...NPCS[dlgNpc],id:dlgNpc}} {...{dlgLine,setDlgLine,setDlgNpc,availQ,aQ,acceptQ,compQ,qP,qObj,S,questDlg,setQuestDlg,openNpc}}/>}
         </div>
         {/* ── Black Market (Merchant Fence) ── */}
         {getFeatureVal('blackMarket')&&<div style={{...S.card,borderColor:'#800040',background:TH.panel+'cc'}}>
@@ -7429,6 +7431,7 @@ function CindervaleAlchemistInner(){
               :gameLocation==='ashfall'
               ?['amara','nahla','tarek'].map(n=>NPCS[n]?<button key={n} style={S.btn(dlgNpc===n?'gold':'def')} onClick={()=>openNpc(n)}>{NPCS[n]?.icon} {NPCS[n]?.name}</button>:null)
               :['tarn','holst','marta','gretta'].map(n=><button key={n} style={S.btn(dlgNpc===n?'gold':'def')} onClick={()=>openNpc(n)}>{NPCS[n]?.icon} {NPCS[n]?.name}</button>)}
+            {gameLocation==='skyreach'&&['sr_lira','sr_bron','sr_yuki','sr_mika'].map(n=>NPCS[n]?<button key={n} style={S.btn(dlgNpc===n?'gold':'def')} onClick={()=>openNpc(n)}>{NPCS[n]?.icon} {NPCS[n]?.name}</button>:null)}
           </div>
           {dlgNpc&&(NPCS[dlgNpc]?.loc==='chapel'||NPCS[dlgNpc]?.loc==='tavern')&&<NpcDlg npc={{...NPCS[dlgNpc],id:dlgNpc}} {...{dlgLine,setDlgLine,setDlgNpc,availQ,aQ,acceptQ,compQ,qP,qObj,S,questDlg,setQuestDlg,openNpc}}/>}
           {!dlgNpc&&<div style={{color:TH.textDim,fontSize:15,textAlign:'center',padding:12,fontStyle:'italic'}}>The warm hearth crackles softly. Choose someone to speak with.</div>}
