@@ -579,6 +579,26 @@ function CindervaleAlchemistInner(){
   // ─── ALL EFFECTS (before any return!) ───
   // (scroll removed — was jarring during multi-action sequences)
 
+  // Migration: reconstruct torch inheritance from lineage for saves that predate torchClassLevels
+  useEffect(()=>{
+    if(Object.keys(torchClassLevels).length>0)return; // already have torch data
+    if(!lineage?.generations?.length)return;
+    const lastGen=lineage.generations[lineage.generations.length-1];
+    if(!lastGen.classLevels||Object.keys(lastGen.classLevels).length===0)return;
+    setTorchClassLevels(lastGen.classLevels);
+    // Reconstruct specs: prefer allSpecs (new format), fall back to class+spec (legacy)
+    const tSpecs=lastGen.allSpecs?{...lastGen.allSpecs}:{};
+    if(Object.keys(tSpecs).length===0&&lastGen.class&&lastGen.spec)tSpecs[lastGen.class]=lastGen.spec;
+    // For multi-class mentors without allSpecs, guess specs from classLevels >= 3
+    if(!lastGen.allSpecs&&lastGen.classLevels){Object.entries(lastGen.classLevels).forEach(([cid,lv])=>{
+      if(lv>=3&&!tSpecs[cid]&&CLASSES[cid]?.specs){
+        const specIds=Object.keys(CLASSES[cid].specs);
+        if(specIds.length>0)tSpecs[cid]=specIds[0];
+      }
+    });}
+    if(Object.keys(tSpecs).length>0)setTorchSpecs(prev=>Object.keys(prev).length>0?prev:tSpecs);
+  },[lineage]);
+
   // Retroactive sync: ensure all mapped hidden areas have their recipes/enchantments in known lists
   useEffect(()=>{
     if(!mappedRegions||mappedRegions.length===0||typeof HIDDEN_REGIONS==='undefined')return;
@@ -970,7 +990,7 @@ function CindervaleAlchemistInner(){
     const mentorType=MENTOR_TYPES[mentorClassId]||MENTOR_TYPES[startingClass]||MENTOR_TYPES.alchemist;
     const gen={
       name:charName,race:charRace,gender:charGender,
-      class:startingClass,mentorClass:mentorClassId,spec:Object.values(specs).filter(Boolean)[0]||'',
+      class:startingClass,mentorClass:mentorClassId,spec:Object.values(specs).filter(Boolean)[0]||'',allSpecs:{...specs},
       classLevels:{...classLevels},prestigeLevels:{...(prestigeLevels||{})},
       level:getLvl(xp)+1,location:gameLocation,
       daysPlayed:day,goldEarned:gold,potionsBrewed:Object.values(brewCounts).reduce((s,v)=>s+v,0),
@@ -10527,6 +10547,23 @@ function CindervaleAlchemistInner(){
               <span style={{color:cat?.color}}>{f.icon}</span> <b>{f.name}</b> — {f.desc}
             </div>
           );})}
+        </div>}
+        {/* Torch Mentor Inheritance Display */}
+        {Object.keys(torchClassLevels).length>0&&<div style={{...S.card,borderColor:'#c050e044'}}>
+          <div style={S.cT}>🔥 Mentor's Training</div>
+          <div style={{fontSize:13,color:TH.textDim,marginBottom:6}}>Inherited from your mentor via Pass the Torch. These class features are active and count toward prestige prerequisites.</div>
+          {Object.entries(torchClassLevels).filter(([,lv])=>lv>0).map(([cid,lv])=>{
+            const cls=CLASSES[cid];if(!cls)return null;
+            const sp=torchSpecs[cid];const spec=sp&&cls.specs?.[sp];
+            const ownLv=classLevels[cid]||0;
+            return <div key={cid} style={{padding:'4px 8px',marginBottom:3,borderRadius:4,background:'#c050e008',border:'1px solid #c050e022'}}>
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                <span style={{fontSize:14,color:cls.color,fontWeight:'bold'}}>{cls.icon} {cls.name} Lv{lv}{spec?' — '+spec.icon+' '+spec.name:''}</span>
+                {ownLv>0&&<span style={{fontSize:11,color:TH.textDim}}>+{ownLv} own</span>}
+              </div>
+              {spec&&<div style={{fontSize:12,color:TH.textDim,marginTop:1}}>{spec.features?.filter(f=>f.classLv<=lv).map(f=>f.name).join(' → ')}</div>}
+            </div>;
+          })}
         </div>}
         {/* Active Effects Summary */}
         {Object.keys(classLevels).length>0&&<div style={S.card}><div style={S.cT}>⚡ Active Bonuses</div>
