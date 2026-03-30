@@ -3497,7 +3497,10 @@ function CindervaleAlchemistInner(){
   const abandonBQ=(bq)=>{setActiveBQ(p=>p.filter(q=>q.id!==bq.id));addLog(`📌 Abandoned: ${bq.name}`,'info');};
   // Open NPC with auto-quest detection
   const openNpc=(npcId)=>{
-    const npc=NPCS[npcId];if(!npc)return;
+    let npc=NPCS[npcId];
+    // If not found by ID, try matching by lowercase name (for giver name → NPC ID resolution)
+    if(!npc){const match=Object.entries(NPCS).find(([,n])=>n.name&&n.name.toLowerCase().replace(/\s+/g,'_')===npcId);if(match){npcId=match[0];npc=match[1];}}
+    if(!npc)return;
     setDlgNpc(npcId);setDlgLine(0);setShowShop(false);
     // Check for ready turn-ins first
     const turnIn=aQ.find(q=>q.giver===npc.name&&(q.loc===npc.loc||(npc.loc==='chapel'&&q.loc==='chapel'))&&(()=>{const p=qP(q);return p.c>=p.n;})());
@@ -10953,7 +10956,8 @@ const NPC_PORTRAITS=typeof NPC_PORTRAIT_IMGS!=='undefined'?{...NPC_PORTRAIT_IMGS
 // Leonardo JPG portraits (npc_ prefix) — Ashfall + Tidecrest customers
 ['kadir','yara','priestess_zara','haddad','old_nuri','harlan','pelara','brother_tide','sandrine','grizzle'].forEach(k=>{if(!NPC_PORTRAITS[k])NPC_PORTRAITS[k]='npc_'+k+'.jpg';});
 // Leonardo JPG portraits — Skyreach NPCs + customers
-['sr_kael','sr_lira','sr_bron','sr_yuki','sr_mika','reva','orin','sister_astral','finn_ridgerun','grandmother_peak'].forEach(k=>{if(!NPC_PORTRAITS[k])NPC_PORTRAITS[k]='npc_'+k+'.jpg';});
+['sr_kael','sr_lira','sr_bron','sr_yuki','sr_mika'].forEach(k=>{if(!NPC_PORTRAITS[k])NPC_PORTRAITS[k]='skyreach-npc-'+k.replace('sr_','')+'.jpg';});
+['reva','orin','sister_astral','finn_ridgerun','grandmother_peak'].forEach(k=>{if(!NPC_PORTRAITS[k])NPC_PORTRAITS[k]='npc_'+k+'.jpg';});
 function NpcPortrait({npc,size=80,customerData}){
   const p=npc?.portrait||customerData?.portrait||{bg:['#444','#2a2a2a'],ring:'#888'};
   const icon=npc?.icon||'🧑';
