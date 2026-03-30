@@ -303,7 +303,8 @@ function CindervaleAlchemistInner(){
   const [skPts,setSkPts]=useState(0);
   const [skProgress,setSkProgress]=useState({});
   const [classLevels,setClassLevels]=useState({});       // { alchemist: 5, warden: 3 }
-  const [torchClassLevels,setTorchClassLevels]=useState({}); // Inherited from mentor via Pass the Torch — counts toward prestige prereqs
+  const [torchClassLevels,setTorchClassLevels]=useState({}); // Inherited from mentor via Pass the Torch
+  const [torchSpecs,setTorchSpecs]=useState({}); // Inherited specs from mentor (e.g. {warden:'ranger'})
   const [specs,setSpecs]=useState({});                    // { alchemist: 'apothecary' }
   const [playerFeats,setPlayerFeats]=useState([]);        // ['careful_hands','early_riser']
   const [asiSpent,setAsiSpent]=useState([]);              // [{lv:4,choices:{inu:2}}]
@@ -361,6 +362,9 @@ function CindervaleAlchemistInner(){
   const locFactions=Object.fromEntries(Object.entries(FACTIONS).filter(([,f])=>!f.loc||f.loc===gameLocation));
   const locQuests=QUESTS.filter(q=>{if(q.id.startsWith('aq'))return gameLocation==='ashfall';if(q.id.startsWith('tq'))return gameLocation==='tidecrest';if(q.id.startsWith('sr_'))return gameLocation==='skyreach';if(q.id.startsWith('q')&&!q.id.startsWith('q '))return gameLocation==='cindervale';if(q.id.startsWith('fc_')){const ashChains=['fc_sm','fc_fk','fc_dw'];const tcChains=['fc_hg','fc_pd','fc_tk','fc_mm'];if(ashChains.some(p=>q.id.startsWith(p)))return gameLocation==='ashfall';if(tcChains.some(p=>q.id.startsWith(p)))return gameLocation==='tidecrest';return gameLocation==='cindervale';}return true;});
   const locApprentices=AP_POOL.filter(a=>!a.loc||a.loc===gameLocation);
+  // Effective class levels and specs: merge current + inherited from torch
+  const eCL=(cid)=>Math.max(classLevels[cid]||0,torchClassLevels[cid]||0);
+  const eSpec=(cid)=>specs[cid]||torchSpecs[cid]||null;
 
   // Ingredients available at current location (computed from locRegions + mapped hidden areas)
   const locIngredients=React.useMemo(()=>{
@@ -537,11 +541,11 @@ function CindervaleAlchemistInner(){
   const showResult=useCallback((title,type='info',detail='',check=null)=>{addLog(title,type);setResultPopup({title,type,detail,check,t:Date.now()});},[addLog]);
 
   const gatherState=useCallback(()=>({
-    phase,charName,charRace,charGender,stats,ptsLeft,skRanks,skPts,skProgress,classLevels,torchClassLevels,specs,playerFeats,asiSpent,startingClass,
+    phase,charName,charRace,charGender,stats,ptsLeft,skRanks,skPts,skProgress,classLevels,torchClassLevels,torchSpecs,specs,playerFeats,asiSpent,startingClass,
     screen,day,hours,gameLocation,xp,gold,inv,pots,known,aQ,doneQ,
     log:log.slice(-30),milestones,fRep,factionAlign,upgrades,hiredAppr,apprTasks,apprXP,enchQ,potCustQ,clinicPatients,venomContracts,forgedWeapons,shieldCommissions,planarFocus,gadgets,blueprints,fieldJournal,loreFragments,companions,caravans,supplyChains,caravanRuns,trainingSessions,factionHarmony,prestigeLevels,automata,customPatterns,mappedRegions,activeBuffs,debt,disabledUpgrades,shopLocked,injuryPenalty,staffInjuries,shelves,dailyReport,
     boardQ,activeBQ,doneBQCount,dayFlags,knownEnch,brewCounts,procureItems,pubPapers,selectedSite,constructProgress,lineage,brands,brandOrders,relics,museum,threats,outposts,ingredientContracts,settlementProjects,settlementConstruction,defenseQuests,hollowMarch,legacyFeature,
-  }),[phase,charName,charRace,charGender,stats,ptsLeft,skRanks,skPts,skProgress,classLevels,torchClassLevels,specs,playerFeats,asiSpent,startingClass,screen,day,hours,xp,gold,inv,pots,known,aQ,doneQ,log,milestones,fRep,factionAlign,upgrades,hiredAppr,apprTasks,apprXP,enchQ,potCustQ,clinicPatients,venomContracts,forgedWeapons,shieldCommissions,planarFocus,gadgets,blueprints,fieldJournal,loreFragments,companions,caravans,supplyChains,caravanRuns,trainingSessions,factionHarmony,prestigeLevels,automata,customPatterns,mappedRegions,activeBuffs,debt,disabledUpgrades,shopLocked,injuryPenalty,staffInjuries,shelves,dailyReport,boardQ,activeBQ,doneBQCount,dayFlags,knownEnch,brewCounts,procureItems,constructProgress,selectedSite,lineage,brands,brandOrders,relics,museum,threats,outposts,ingredientContracts,settlementProjects,settlementConstruction,defenseQuests,hollowMarch,legacyFeature]);
+  }),[phase,charName,charRace,charGender,stats,ptsLeft,skRanks,skPts,skProgress,classLevels,torchClassLevels,torchSpecs,specs,playerFeats,asiSpent,startingClass,screen,day,hours,xp,gold,inv,pots,known,aQ,doneQ,log,milestones,fRep,factionAlign,upgrades,hiredAppr,apprTasks,apprXP,enchQ,potCustQ,clinicPatients,venomContracts,forgedWeapons,shieldCommissions,planarFocus,gadgets,blueprints,fieldJournal,loreFragments,companions,caravans,supplyChains,caravanRuns,trainingSessions,factionHarmony,prestigeLevels,automata,customPatterns,mappedRegions,activeBuffs,debt,disabledUpgrades,shopLocked,injuryPenalty,staffInjuries,shelves,dailyReport,boardQ,activeBQ,doneBQCount,dayFlags,knownEnch,brewCounts,procureItems,constructProgress,selectedSite,lineage,brands,brandOrders,relics,museum,threats,outposts,ingredientContracts,settlementProjects,settlementConstruction,defenseQuests,hollowMarch,legacyFeature]);
 
   const restoreState=useCallback((s)=>{
     if(!s)return;
@@ -558,7 +562,7 @@ function CindervaleAlchemistInner(){
     setPhase(s.phase||'identity');setCharName(s.charName||'');setCharRace(s.charRace||null);setCharGender(s.charGender||null);setStats(s.stats||DEF.stats);
     setPtsLeft(s.ptsLeft??12);setSkRanks(s.skRanks||{});setSkPts(s.skPts||0);setSkProgress(s.skProgress||{});
     const _cl=s.classLevels||{};const cleanCL={};Object.entries(_cl).forEach(([k,v])=>{if(CLASSES[k])cleanCL[k]=v;});
-    setClassLevels(cleanCL);setTorchClassLevels(s.torchClassLevels||{});setSpecs(s.specs||{});setPlayerFeats(s.playerFeats||[]);setAsiSpent(s.asiSpent||[]);setStartingClass(s.startingClass||null);
+    setClassLevels(cleanCL);setTorchClassLevels(s.torchClassLevels||{});setTorchSpecs(s.torchSpecs||{});setSpecs(s.specs||{});setPlayerFeats(s.playerFeats||[]);setAsiSpent(s.asiSpent||[]);setStartingClass(s.startingClass||null);
     setScreen(s.screen||'map');setDay(s.day||1);setHours(s.hours!=null?s.hours:4);setGameLocation(s.gameLocation||'cindervale');
     setXp(s.xp!=null?s.xp:0);setGold(s.gold!=null?s.gold:15);setInv(s.inv||{});setPots(s.pots||{});
     setKnown(s.known||['healing_salve']);setAQ(s.aQ||[]);setDoneQ(s.doneQ||[]);
@@ -825,10 +829,10 @@ function CindervaleAlchemistInner(){
         id:Math.random().toString(36).slice(2)});}
     setEnchQ(q);
     // ═══ CLINIC PATIENTS (Apothecary spec) ═══
-    const isApoth=specs.alchemist==='apothecary';
+    const isApoth=eSpec('alchemist')==='apothecary';
     let clinicN=0;
     if(isApoth){
-      const apothLv=classLevels.alchemist||0;
+      const apothLv=eCL('alchemist');
       clinicN=apothLv>=10?3:apothLv>=6?2:1;
       const maxTier=apothLv>=10?3:apothLv>=6?2:1;
       const available=CLINIC_AILMENTS.filter(a=>a.tier<=maxTier&&(!a.loc||a.loc===gameLocation));
@@ -847,10 +851,10 @@ function CindervaleAlchemistInner(){
       setClinicPatients(patients);
     } else { setClinicPatients([]); }
     // ═══ VENOMIST CONTRACTS ═══
-    const isVenom=specs.alchemist==='venomist';
+    const isVenom=eSpec('alchemist')==='venomist';
     let contractN=0;
     if(isVenom){
-      const venLv=classLevels.alchemist||0;
+      const venLv=eCL('alchemist');
       contractN=venLv>=10?3:venLv>=6?2:1;
       const maxTier=venLv>=10?3:venLv>=6?2:1;
       const available=VENOM_CONTRACTS.filter(c=>c.tier<=maxTier);
@@ -863,10 +867,10 @@ function CindervaleAlchemistInner(){
       setVenomContracts(contracts);
     } else { setVenomContracts([]); }
     // ═══ WARDKEEPER SHIELD COMMISSIONS ═══
-    const isWardkeeper=specs.enchanter==='wardkeeper';
+    const isWardkeeper=eSpec('enchanter')==='wardkeeper';
     let commissionN=0;
     if(isWardkeeper){
-      const wkLv=classLevels.enchanter||0;
+      const wkLv=eCL('enchanter');
       commissionN=wkLv>=10?3:wkLv>=6?2:1;
       const maxTier=wkLv>=10?3:wkLv>=6?2:1;
       const maxLayers=wkLv>=6?3:2;
@@ -937,6 +941,7 @@ function CindervaleAlchemistInner(){
       museum:inheritData?.museum||{pottery:0,tablets:0,jewelry:0,mechanisms:0,weapons:0},
       threats:Object.fromEntries(locThreatIds.map(t=>[t,0])),outposts:[],ingredientContracts:[],settlementProjects:[],settlementConstruction:null,defenseQuests:[],
       torchClassLevels:inheritData?.torchClassLevels||{},
+      torchSpecs:inheritData?.torchSpecs||{},
     };
     restoreState(defState);setLog([]);setGameStarted(true);
     if(inheritData?.torchClassLevels){
@@ -993,6 +998,7 @@ function CindervaleAlchemistInner(){
       legacyFeature:selectedLegacy||null,
       torchEnergyBonus:torchEnergyB,
       torchClassLevels:{...classLevels},
+      torchSpecs:{...specs},
     };
     // Start new game at selected location
     setShowTorch(false);setTorchApprentice(null);setTorchStep(0);setTorchHeirloom(null);setTorchLegacy(null);
@@ -1379,9 +1385,9 @@ function CindervaleAlchemistInner(){
       let effBonus=false;
       // ═══ NATURALIST FIELD DISCOVERY ═══
       let discovery=null;
-      const isNaturalist=specs.scholar==='naturalist';
+      const isNaturalist=eSpec('scholar')==='naturalist';
       if(isNaturalist&&ext.success){
-        const natLv=classLevels.scholar||0;
+        const natLv=eCL('scholar');
         const discChance=natLv>=10?0.40:natLv>=6?0.30:0.20;
         const canGeo=natLv>=6;
         const regionDiscs=FIELD_DISCOVERIES[reg.id]||[];
@@ -1452,9 +1458,9 @@ function CindervaleAlchemistInner(){
       }
       // ═══ RANGER COMPANION ENCOUNTER ═══
       let companionEnc=null;
-      const isRanger=specs.warden==='ranger';
+      const isRanger=eSpec('warden')==='ranger';
       if(isRanger){
-        const rngLv=classLevels.warden||0;
+        const rngLv=eCL('warden');
         const encChance=(rngLv>=10?0.40:rngLv>=6?0.30:0.20)+getFeatureVal('companionEncounterBonus');
         const owned=[...companions.map(c=>c.compId),...localNewComps.map(c=>c.compId)];
         const regionComps=RANGER_COMPANIONS.filter(c=>c.region===reg.id&&!owned.includes(c.id)&&(!c.legendary_only||rngLv>=10));
@@ -2545,7 +2551,7 @@ function CindervaleAlchemistInner(){
     let diagLevel=0;
     if(ch.success)diagLevel=ch.total>=dc+5?2:1;
     // Apothecary level bonus — higher levels diagnose better
-    const apothLv=classLevels.alchemist||0;
+    const apothLv=eCL('alchemist');
     if(diagLevel<2&&apothLv>=6&&ch.total>=dc-2)diagLevel=Math.max(diagLevel,1);
     if(diagLevel<2&&apothLv>=10)diagLevel=2; // Lv10 always gets full diagnosis
     setClinicPatients(prev=>prev.map(p=>p.id===patientId?{...p,examined:true,diagLevel}:p));
@@ -2642,7 +2648,7 @@ function CindervaleAlchemistInner(){
   const forgeWeapon=(weaponId,enchantId)=>{
     const weapon=FORGE_WEAPONS.find(w=>w.id===weaponId);if(!weapon)return;
     const enchant=ENCHANTMENTS.find(e=>e.id===enchantId);if(!enchant)return;
-    const rsLv=classLevels.enchanter||0;
+    const rsLv=eCL('enchanter');
     // Check daily forge limit
     const forgesToday=dayFlags.filter(f=>f==='forge_used').length;
     const maxForges=rsLv>=10?3:rsLv>=6?2:1;
@@ -2732,7 +2738,7 @@ function CindervaleAlchemistInner(){
         // ── Wardkeeper threat reduction ──
         if(comm.wardTarget&&ratio>=0.66){
           const localThreat=lt(comm.wardTarget);
-          const enchLv=classLevels.enchanter||0;
+          const enchLv=eCL('enchanter');
           const baseReduc=comm.threatReduction||(enchLv>=8?5:enchLv>=5?4:3);
           const finalReduc=ratio>=1?baseReduc:Math.floor(baseReduc*0.6);
           setThreats(prev=>{const n={...prev};n[localThreat]=Math.max(0,(n[localThreat]||0)-finalReduc);return n;});
@@ -2756,7 +2762,7 @@ function CindervaleAlchemistInner(){
       }
     } else {
       // Layer failed
-      const wkLv=classLevels.enchanter||0;
+      const wkLv=eCL('enchanter');
       const canRetry=wkLv>=6&&!sc.retryUsed;
       const newFailed=sc.layersFailed+1;
       const totalLayers=comm.layers.length;
@@ -2788,7 +2794,7 @@ function CindervaleAlchemistInner(){
 
   // ═══ SPELLWEAVER PLANAR ATTUNEMENT ═══
   const attunePlane=(planeId)=>{
-    const swLv=classLevels.enchanter||0;
+    const swLv=eCL('enchanter');
     const canDual=swLv>=10;
     const duration=swLv>=6?2:1;
     // Check if already attuned to this plane
@@ -2922,8 +2928,8 @@ function CindervaleAlchemistInner(){
   };
 
   // ═══ DIPLOMAT EMBASSY ═══
-  const getMaxEnvoys=()=>{const dLv=classLevels.merchant||0;return dLv>=10?3:dLv>=6?2:1;};
-  const getHarmonyCap=()=>{const dLv=classLevels.merchant||0;return dLv>=10?3:dLv>=6?2:1;};
+  const getMaxEnvoys=()=>{const dLv=eCL('merchant');return dLv>=10?3:dLv>=6?2:1;};
+  const getHarmonyCap=()=>{const dLv=eCL('merchant');return dLv>=10?3:dLv>=6?2:1;};
   const dispatchEnvoy=(pairId)=>{
     const pair=FACTION_PAIRS.find(p=>p.id===pairId);if(!pair)return;
     const currentHarmony=factionHarmony[pairId]||0;
@@ -2940,7 +2946,7 @@ function CindervaleAlchemistInner(){
       const newHarmony=currentHarmony+1;
       setFactionHarmony(prev=>({...prev,[pairId]:newHarmony}));
       // Lv6+: envoys also grant personal rep
-      const dLv=classLevels.merchant||0;
+      const dLv=eCL('merchant');
       if(dLv>=6){pair.factions.forEach(fid=>addRep(fid,5));}
       gainXP(20+newHarmony*10);
       const SUCC=['The factions find common ground. A small step toward unity.','Your words bridge old grudges. Both sides leave with new respect.','"Perhaps we have more in common than we thought," they agree.'];
@@ -2986,7 +2992,7 @@ function CindervaleAlchemistInner(){
   const trainApprentice=(apprId,statId)=>{
     const ap=hiredAppr.find(a=>a.id===apprId);if(!ap)return;
     if(hours<1){addLog('Training takes ⚡1 Energy.','error');return;}
-    const gmLv=classLevels.merchant||0;
+    const gmLv=eCL('merchant');
     // Lv10: passive training costs 0 hours
     const hourCost=0; // Training: free (spec feature)
     if(hourCost>0&&hours<hourCost){addLog('Training takes ⚡1 Energy.','error');return;}
@@ -3022,7 +3028,7 @@ function CindervaleAlchemistInner(){
   };
   const teachTrait=(apprId,traitId)=>{
     const ap=hiredAppr.find(a=>a.id===apprId);if(!ap)return;
-    if((classLevels.merchant||0)<10){addLog('Teaching traits requires Guildmaster Lv10.','error');return;}
+    if(eCL('merchant')<10){addLog('Teaching traits requires Guildmaster Lv10.','error');return;}
     if((ap.traits||[]).includes(traitId)){addLog(ap.name+' already has this trait.','error');return;}
     if((ap.traits||[]).length>=4){addLog(ap.name+' has too many traits (max 4).','error');return;}
     // Teach trait: free (spec feature)
@@ -3042,7 +3048,7 @@ function CindervaleAlchemistInner(){
   };
   // Process curriculum (auto-training over multiple days)
   const processCurriculum=()=>{
-    const gmLv=classLevels.merchant||0;
+    const gmLv=eCL('merchant');
     if(gmLv<6)return[];
     const results=[];
     Object.entries(trainingSessions).forEach(([apId,session])=>{
@@ -3065,7 +3071,7 @@ function CindervaleAlchemistInner(){
     return results;
   };
   const startCurriculum=(apprId,statId)=>{
-    if((classLevels.merchant||0)<6){addLog('Curricula require Guildmaster Lv6.','error');return;}
+    if(eCL('merchant')<6){addLog('Curricula require Guildmaster Lv6.','error');return;}
     if(trainingSessions[apprId]){addLog('This apprentice is already in a curriculum.','error');return;}
     setTrainingSessions(prev=>({...prev,[apprId]:{stat:statId,daysLeft:3}}));
     const ap=hiredAppr.find(a=>a.id===apprId);
@@ -3075,9 +3081,9 @@ function CindervaleAlchemistInner(){
   };
 
   // ═══ QUARTERMASTER SUPPLY NETWORK ═══
-  const getMaxCaravans=()=>{const qLv=classLevels.warden||0;return qLv>=10?3:qLv>=6?2:1;};
-  const getMaxChains=()=>{const qLv=classLevels.warden||0;return qLv>=10?6:qLv>=6?4:2;};
-  const getMaxChainTier=()=>{const qLv=classLevels.warden||0;return qLv>=10?3:qLv>=6?2:1;};
+  const getMaxCaravans=()=>{const qLv=eCL('warden');return qLv>=10?3:qLv>=6?2:1;};
+  const getMaxChains=()=>{const qLv=eCL('warden');return qLv>=10?6:qLv>=6?4:2;};
+  const getMaxChainTier=()=>{const qLv=eCL('warden');return qLv>=10?3:qLv>=6?2:1;};
   const dispatchCaravan=(routeId,cargo)=>{
     const route=CARAVAN_ROUTES.find(r=>r.id===routeId);if(!route)return;
     const activeCaravans=caravans.filter(c=>c.returnDay>day);
@@ -3094,7 +3100,7 @@ function CindervaleAlchemistInner(){
     // Consume cargo
     if(isPotion)setPots(p=>{const n={...p};Object.entries(cargo).forEach(([id,q])=>{n[id]=Math.max(0,(n[id]||0)-q);});return n;});
     else setInv(p=>{const n={...p};Object.entries(cargo).forEach(([id,q])=>{n[id]=Math.max(0,(n[id]||0)-q);});return n;});
-    const qLv=classLevels.warden||0;
+    const qLv=eCL('warden');
     const tripDays=qLv>=6?Math.max(1,route.roundTrip-1):route.roundTrip;
     setCaravans(prev=>[...prev,{id:'cv_'+Math.random().toString(36).slice(2),routeId,sentDay:day,returnDay:day+tripDays,cargo:{...cargo},resolved:false}]);
     setCaravanRuns(prev=>({...prev,[routeId]:(prev[routeId]||0)+1}));
@@ -3106,7 +3112,7 @@ function CindervaleAlchemistInner(){
     const partner=SUPPLY_PARTNERS.find(p=>p.id===partnerId);if(!partner)return;
     if(supplyChains.find(sc=>sc.partnerId===partnerId)){addLog('Already established this supply chain.','error');return;}
     if(supplyChains.length>=getMaxChains()){addLog(`Maximum ${getMaxChains()} supply chains.`,'error');return;}
-    if(partner.legendary&&(classLevels.warden||0)<10){addLog('Legendary partners require Warden Lv10.','error');return;}
+    if(partner.legendary&&eCL('warden')<10){addLog('Legendary partners require Warden Lv10.','error');return;}
     const runs=caravanRuns[partner.route]||0;
     if(runs<partner.runsNeeded){addLog(`Need ${partner.runsNeeded} caravan runs on ${CARAVAN_ROUTES.find(r=>r.id===partner.route)?.name||'this route'} (${runs}/${partner.runsNeeded}).`,'error');return;}
     if(gold<partner.setupCost){addLog(`Need ${partner.setupCost}g to establish this supply chain.`,'error');return;}
@@ -3131,7 +3137,7 @@ function CindervaleAlchemistInner(){
   };
 
   // ═══ CONSTRUCTOR BLUEPRINTS ═══
-  const getBPSlots=()=>{const cLv=classLevels.artificer||0;return cLv>=10?6:cLv>=6?4:2;};
+  const getBPSlots=()=>{const cLv=eCL('artificer');return cLv>=10?6:cLv>=6?4:2;};
   const hasSanctum=()=>blueprints.some(b=>b.bpId==='bp_sanctum'&&b.complete);
   const getCompletedBPs=()=>blueprints.filter(b=>b.complete);
   const draftBlueprint=(bpId)=>{
@@ -3139,7 +3145,7 @@ function CindervaleAlchemistInner(){
     if(blueprints.find(b=>b.bpId===bpId)){addLog('You already have this blueprint.','error');return;}
     const activeCount=blueprints.length;
     if(activeCount>=getBPSlots()){addLog(`You can only have ${getBPSlots()} active blueprints.`,'error');return;}
-    if(bp.legendary&&(classLevels.artificer||0)<10){addLog('Legendary blueprints require Artificer Lv10.','error');return;}
+    if(bp.legendary&&eCL('artificer')<10){addLog('Legendary blueprints require Artificer Lv10.','error');return;}
     // Blueprint draft: free (spec feature)
     snapshot();
     // free
@@ -3158,7 +3164,7 @@ function CindervaleAlchemistInner(){
   const buildBlueprint=(blueprintId)=>{
     const entry=blueprints.find(b=>b.id===blueprintId);if(!entry||entry.complete)return;
     const bp=CONSTRUCTOR_BPS.find(b=>b.id===entry.bpId);if(!bp)return;
-    const cLv=classLevels.artificer||0;
+    const cLv=eCL('artificer');
     const hourCost=cLv>=6?0.5:1;const sanctumBonus=hasSanctum()&&entry.bpId!=='bp_sanctum';
     const sessionsNeeded=sanctumBonus?Math.ceil(bp.buildSessions/2):bp.buildSessions;
     if(hours<hourCost){addLog(`Building takes ${hourCost} hour${hourCost<1?'s':''}.`,'error');return;}
@@ -3198,7 +3204,7 @@ function CindervaleAlchemistInner(){
     if(hours<1){addLog('Breaking down a potion takes 1 hour.','error');return;}
     snapshot();spendEnergy(1);
     setPots(p=>({...p,[potionId]:Math.max(0,(p[potionId]||0)-1)}));
-    const rcLv=classLevels.artificer||0;
+    const rcLv=eCL('artificer');
     // Lv6+ = 100% recovery, else precision check determines yield
     let recoveryPct=1.0;
     if(rcLv<6){
@@ -3219,7 +3225,7 @@ function CindervaleAlchemistInner(){
       'Recovered: '+recStr+'\n+'+Math.floor(recipe.xp*0.3)+' XP');
   };
   const reclaimerTransmute=(srcId,tgtId)=>{
-    const rcLv=classLevels.artificer||0;
+    const rcLv=eCL('artificer');
     const ratio=rcLv>=6?2:3;
     if((inv[srcId]||0)<ratio){addLog(`Need ${ratio} of that ingredient to transmute.`,'error');return;}
     // Transmutation is free (spec feature)
@@ -3236,7 +3242,7 @@ function CindervaleAlchemistInner(){
     snapshot();
     setDayFlags(f=>[...f,'salvage_auction_used']);
     setInv(p=>{const n={...p};Object.entries(items).forEach(([id,q])=>{n[id]=Math.max(0,(n[id]||0)-q);});return n;});
-    const rcLv=classLevels.artificer||0;
+    const rcLv=eCL('artificer');
     // Gold based on ingredient rarity
     let goldTotal=0;let xpTotal=0;
     Object.entries(items).forEach(([id,q])=>{
@@ -3257,8 +3263,8 @@ function CindervaleAlchemistInner(){
   };
 
   // ═══ TINKERER GADGETS ═══
-  const getGadgetSlots=()=>{const tkLv=classLevels.artificer||0;const base=tkLv>=10?6:tkLv>=6?4:2;return base+(getFeatureVal('dualGadgets')?2:0);};
-  const getMaxMk=()=>{const tkLv=classLevels.artificer||0;return tkLv>=10?3:tkLv>=6?2:1;};
+  const getGadgetSlots=()=>{const tkLv=eCL('artificer');const base=tkLv>=10?6:tkLv>=6?4:2;return base+(getFeatureVal('dualGadgets')?2:0);};
+  const getMaxMk=()=>{const tkLv=eCL('artificer');return tkLv>=10?3:tkLv>=6?2:1;};
   const getGadgetEffect=(effectKey)=>{
     return gadgets.filter(g=>g.equipped).reduce((sum,g)=>{
       const bp=GADGET_BLUEPRINTS.find(b=>b.id===g.blueprintId);if(!bp||bp.effect!==effectKey)return sum;
@@ -3423,8 +3429,8 @@ function CindervaleAlchemistInner(){
     if(q.id==='fc_fk3')earnMilestone('fk_chain');
     if(q.id==='fc_dw3')earnMilestone('dw_chain');
     // ═══ ARCHIVIST LORE FRAGMENT DISCOVERY ═══
-    if(specs.scholar==='archivist'){
-      const arcLv=classLevels.scholar||0;
+    if(eSpec('scholar')==='archivist'){
+      const arcLv=eCL('scholar');
       const fragChance=(arcLv>=10?0.50:arcLv>=6?0.40:0.30)+getFeatureVal('loreDropChance');
       if(Math.random()<fragChance){
         const qFaction=q.faction?[q.faction]:[gameLocation==='tidecrest'?'tidekeepers':gameLocation==='ashfall'?'flamekeepers':'hearthkeepers'];
@@ -3480,8 +3486,8 @@ function CindervaleAlchemistInner(){
     addLog(`✅ Board request complete: ${bq.name} — +${bqGold}g, +${Math.floor((bq.xp+bqLoreXp)*bqXpB*bqQB.mult)}XP${bqQB.label}${bq.faction?' | '+FACTIONS[bq.faction]?.icon+'+'+Math.floor(bq.fRep*bqRepB)+' rep':''}`,'quest');
     if(doneBQCount+1>=20)earnMilestone('board_veteran');
     // Archivist lore fragment from board quests
-    if(specs.scholar==='archivist'){
-      const arcLv=classLevels.scholar||0;const fragChance=(arcLv>=10?0.50:arcLv>=6?0.40:0.30)+getFeatureVal('loreDropChance');
+    if(eSpec('scholar')==='archivist'){
+      const arcLv=eCL('scholar');const fragChance=(arcLv>=10?0.50:arcLv>=6?0.40:0.30)+getFeatureVal('loreDropChance');
       if(Math.random()<fragChance){
         const bqFaction=bq.faction?[bq.faction]:[gameLocation==='tidecrest'?'tidekeepers':gameLocation==='ashfall'?'flamekeepers':'hearthkeepers'];
         const undiscovered=ALL_LORE_FRAGMENTS.filter(f=>!loreFragments.includes(f.id)&&f.factions.some(ff=>bqFaction.includes(ff)));
@@ -3957,8 +3963,8 @@ function CindervaleAlchemistInner(){
     if(facMit1.some(f=>getRepLvl(fRep[f]||0)>=3))newThreats[locThreatIds[1]]=Math.max(0,(newThreats[locThreatIds[1]]||0)-1);
     if(facMit2.some(f=>getRepLvl(fRep[f]||0)>=3))newThreats[locThreatIds[2]]=Math.max(0,(newThreats[locThreatIds[2]]||0)-1);
     // Warden/Merchant class decay (-1 each)
-    if((classLevels.warden||0)>=4)newThreats[locThreatIds[1]]=Math.max(0,(newThreats[locThreatIds[1]]||0)-1);
-    if((classLevels.merchant||0)>=4)newThreats[locThreatIds[2]]=Math.max(0,(newThreats[locThreatIds[2]]||0)-1);
+    if(eCL('warden')>=4)newThreats[locThreatIds[1]]=Math.max(0,(newThreats[locThreatIds[1]]||0)-1);
+    if(eCL('merchant')>=4)newThreats[locThreatIds[2]]=Math.max(0,(newThreats[locThreatIds[2]]||0)-1);
     // Brand Master: famous brands reduce magic threat
     (brands||[]).forEach(b=>{if(b.sold>=80)newThreats[locThreatIds[2]]=Math.max(0,(newThreats[locThreatIds[2]]||0)-5);});
     // Staff patrol reductions (accumulated during staff loop)
@@ -4762,12 +4768,12 @@ function CindervaleAlchemistInner(){
       }
     }
     // ═══ GUILDMASTER ACADEMY MORNING ═══
-    if(specs.merchant==='guildmaster'){
+    if(eSpec('merchant')==='guildmaster'){
       const currResults=processCurriculum();
       if(currResults.length>0)mrSections.push({title:'🎓 Academy',lines:currResults});
     }
     // ═══ QUARTERMASTER SUPPLY NETWORK MORNING ═══
-    if(specs.warden==='quartermaster'){
+    if(eSpec('warden')==='quartermaster'){
       const qmLines=[];
       // Resolve returning caravans
       caravans.filter(c=>!c.resolved&&c.returnDay<=day+1).forEach(c=>{
@@ -7744,7 +7750,7 @@ function CindervaleAlchemistInner(){
           {venomContracts.map(vc=>{
             const contract=VENOM_CONTRACTS.find(c=>c.id===vc.contractId);if(!contract)return null;
             const done=vc.fulfilled;
-            const venLv=classLevels.alchemist||0;
+            const venLv=eCL('alchemist');
             const maxPotIdx=venLv>=10?3:venLv>=6?2:1;
             const hasIngr=lia(contract.ingredients).every((id,i)=>(inv[id]||0)>=(contract.ingredientQty[i]||0));
             return(<div key={vc.id} style={{padding:'8px 10px',background:done?(vc.success?TH.green+'08':TH.red+'08'):TH.panelLight,borderRadius:6,marginBottom:6,border:'1px solid '+(done?(vc.success?TH.green+'44':TH.red+'44'):TH.border),opacity:done?0.6:1}}>
@@ -7774,10 +7780,10 @@ function CindervaleAlchemistInner(){
         </div>}
 
         {/* ═══ RUNESMITH FORGE ═══ */}
-        {specs.enchanter==='runesmith'&&<div style={{...S.card,borderColor:'#d08040',background:'#d0804008'}} className={isWsOpen('ws10')?'':'ws-closed'}>
-          <div style={{...S.cT,cursor:'pointer',userSelect:'none'}} onClick={()=>toggleWs('ws10')}><span style={{display:'flex',justifyContent:'space-between',width:'100%'}}><span>🔨 Runesmith Forge — {(()=>{const used=dayFlags.filter(f=>f==='forge_used').length;const rsLv=classLevels.enchanter||0;const max=rsLv>=10?3:rsLv>=6?2:1;return `${max-used}/${max} forges remaining`;})()}</span><span style={{fontSize:13,color:TH.textDim}}>{isWsOpen('ws10')?'▲':'▼'}</span></span></div>
+        {eSpec('enchanter')==='runesmith'&&<div style={{...S.card,borderColor:'#d08040',background:'#d0804008'}} className={isWsOpen('ws10')?'':'ws-closed'}>
+          <div style={{...S.cT,cursor:'pointer',userSelect:'none'}} onClick={()=>toggleWs('ws10')}><span style={{display:'flex',justifyContent:'space-between',width:'100%'}}><span>🔨 Runesmith Forge — {(()=>{const used=dayFlags.filter(f=>f==='forge_used').length;const rsLv=eCL('enchanter');const max=rsLv>=10?3:rsLv>=6?2:1;return `${max-used}/${max} forges remaining`;})()}</span><span style={{fontSize:13,color:TH.textDim}}>{isWsOpen('ws10')?'▲':'▼'}</span></span></div>
           {(()=>{
-            const rsLv=classLevels.enchanter||0;
+            const rsLv=eCL('enchanter');
             const maxTier=rsLv>=10?3:rsLv>=6?2:1;
             const available=FORGE_WEAPONS.filter(w=>w.tier<=maxTier);
             const weaponEnchs=ENCHANTMENTS.filter(e=>e.cat==='weapon'&&knownEnch.includes(e.id));
@@ -7836,7 +7842,7 @@ function CindervaleAlchemistInner(){
               </div>
               <div style={{fontSize:14,fontStyle:'italic',color:TH.textDim,margin:'4px 0'}}>{comm.desc}</div>
               {lwt&&!sc.done&&<div style={{fontSize:12,color:getThreatColor(threats[lwt]||0),marginBottom:4}}>
-                {THREAT_FACTIONS[lwt]?.icon} Reduces {THREAT_FACTIONS[lwt]?.name} threat by {comm.threatReduction||(classLevels.enchanter>=8?5:classLevels.enchanter>=5?4:3)} on completion
+                {THREAT_FACTIONS[lwt]?.icon} Reduces {THREAT_FACTIONS[lwt]?.name} threat by {comm.threatReduction||(eCL('enchanter')>=8?5:eCL('enchanter')>=5?4:3)} on completion
               </div>}
               {/* Layer progress bar */}
               <div style={{display:'flex',gap:3,margin:'6px 0'}}>
@@ -7868,10 +7874,10 @@ function CindervaleAlchemistInner(){
         </div>}
 
         {/* ═══ SPELLWEAVER PLANAR ATTUNEMENT ═══ */}
-        {specs.enchanter==='spellweaver'&&<div style={{...S.card,borderColor:'#a060e0',background:'#a060e008'}} className={isWsOpen('ws12')?'':'ws-closed'}>
+        {eSpec('enchanter')==='spellweaver'&&<div style={{...S.card,borderColor:'#a060e0',background:'#a060e008'}} className={isWsOpen('ws12')?'':'ws-closed'}>
           <div style={{...S.cT,cursor:'pointer',userSelect:'none'}} onClick={()=>toggleWs('ws12')}><span style={{display:'flex',justifyContent:'space-between',width:'100%'}}><span>🌀 Planar Attunement</span><span style={{fontSize:13,color:TH.textDim}}>{isWsOpen('ws12')?'▲':'▼'}</span></span></div>
           {(()=>{
-            const swLv=classLevels.enchanter||0;
+            const swLv=eCL('enchanter');
             const activePlanes=getActivePlanes();
             const combo=getPlanarCombo();
             const maxPlanes=swLv>=10?2:1;
@@ -7913,10 +7919,10 @@ function CindervaleAlchemistInner(){
         </div>}
 
         {/* ═══ TINKERER GADGET BENCH ═══ */}
-        {specs.artificer==='tinkerer'&&<div style={{...S.card,borderColor:'#c0a040',background:'#c0a04008'}} className={isWsOpen('ws13')?'':'ws-closed'}>
+        {eSpec('artificer')==='tinkerer'&&<div style={{...S.card,borderColor:'#c0a040',background:'#c0a04008'}} className={isWsOpen('ws13')?'':'ws-closed'}>
           <div style={{...S.cT,cursor:'pointer',userSelect:'none'}} onClick={()=>toggleWs('ws13')}><span style={{display:'flex',justifyContent:'space-between',width:'100%'}}><span>⚙️ Gadget Bench — {gadgets.filter(g=>g.equipped).length}/{getGadgetSlots()} slots</span><span style={{fontSize:13,color:TH.textDim}}>{isWsOpen('ws13')?'▲':'▼'}</span></span></div>
           {(()=>{
-            const tkLv=classLevels.artificer||0;
+            const tkLv=eCL('artificer');
             const maxTier=tkLv>=10?3:tkLv>=6?2:1;
             const maxMk=getMaxMk();
             const available=GADGET_BLUEPRINTS.filter(b=>b.tier<=maxTier&&(!b.legendary||maxMk>=3));
@@ -7965,10 +7971,10 @@ function CindervaleAlchemistInner(){
         </div>}
 
         {/* ═══ CONSTRUCTOR BLUEPRINTS ═══ */}
-        {specs.artificer==='constructor'&&<div style={{...S.card,borderColor:'#8090a0',background:'#8090a008'}} className={isWsOpen('ws14')?'':'ws-closed'}>
+        {eSpec('artificer')==='constructor'&&<div style={{...S.card,borderColor:'#8090a0',background:'#8090a008'}} className={isWsOpen('ws14')?'':'ws-closed'}>
           <div style={{...S.cT,cursor:'pointer',userSelect:'none'}} onClick={()=>toggleWs('ws14')}><span style={{display:'flex',justifyContent:'space-between',width:'100%'}}><span>🏗️ Blueprint Workshop — {blueprints.length}/{getBPSlots()} projects</span><span style={{fontSize:13,color:TH.textDim}}>{isWsOpen('ws14')?'▲':'▼'}</span></span></div>
           {(()=>{
-            const cLv=classLevels.artificer||0;
+            const cLv=eCL('artificer');
             const maxTier=cLv>=10?3:cLv>=6?2:1;
             const available=CONSTRUCTOR_BPS.filter(b=>b.tier<=maxTier&&(!b.legendary||(cLv>=10)));
             const owned=blueprints.map(b=>b.bpId);
@@ -8026,10 +8032,10 @@ function CindervaleAlchemistInner(){
         </div>}
 
         {/* ═══ RECLAIMER DECONSTRUCTION LAB ═══ */}
-        {specs.artificer==='reclaimer'&&<div style={{...S.card,borderColor:'#60a080',background:'#60a00808'}} className={isWsOpen('ws15')?'':'ws-closed'}>
+        {eSpec('artificer')==='reclaimer'&&<div style={{...S.card,borderColor:'#60a080',background:'#60a00808'}} className={isWsOpen('ws15')?'':'ws-closed'}>
           <div style={{...S.cT,cursor:'pointer',userSelect:'none'}} onClick={()=>toggleWs('ws15')}><span style={{display:'flex',justifyContent:'space-between',width:'100%'}}><span>♻️ Deconstruction Lab</span><span style={{fontSize:13,color:TH.textDim}}>{isWsOpen('ws15')?'▲':'▼'}</span></span></div>
           {(()=>{
-            const rcLv=classLevels.artificer||0;
+            const rcLv=eCL('artificer');
             const auctionUsed=dayFlags.includes('salvage_auction_used');
             const freeCraftUsed=dayFlags.includes('free_craft_used');
             return <>
@@ -8095,10 +8101,10 @@ function CindervaleAlchemistInner(){
         </div>}
 
         {/* ═══ NATURALIST FIELD JOURNAL ═══ */}
-        {specs.scholar==='naturalist'&&<div style={{...S.card,borderColor:'#60b060',background:'#60b00808'}} className={isWsOpen('ws16')?'':'ws-closed'}>
+        {eSpec('scholar')==='naturalist'&&<div style={{...S.card,borderColor:'#60b060',background:'#60b00808'}} className={isWsOpen('ws16')?'':'ws-closed'}>
           <div style={{...S.cT,cursor:'pointer',userSelect:'none'}} onClick={()=>toggleWs('ws16')}><span style={{display:'flex',justifyContent:'space-between',width:'100%'}}><span>🌿 Field Journal — {fieldJournal.length} discoveries</span><span style={{fontSize:13,color:TH.textDim}}>{isWsOpen('ws16')?'▲':'▼'}</span></span></div>
           {(()=>{
-            const natLv=classLevels.scholar||0;
+            const natLv=eCL('scholar');
             const canGeo=natLv>=6;
             const totalPossible=Object.entries(FIELD_DISCOVERIES).reduce((s,[,discs])=>s+discs.filter(d=>d.type!=='geological'||canGeo).length,0);
             const regions=locRegions.filter(r=>level>=regUnlock(r));
@@ -8137,10 +8143,10 @@ function CindervaleAlchemistInner(){
         </div>}
 
         {/* ═══ ARCHIVIST LORE ARCHIVE ═══ */}
-        {specs.scholar==='archivist'&&<div style={{...S.card,borderColor:'#c0a060',background:'#c0a06008'}} className={isWsOpen('ws17')?'':'ws-closed'}>
+        {eSpec('scholar')==='archivist'&&<div style={{...S.card,borderColor:'#c0a060',background:'#c0a06008'}} className={isWsOpen('ws17')?'':'ws-closed'}>
           <div style={{...S.cT,cursor:'pointer',userSelect:'none'}} onClick={()=>toggleWs('ws17')}><span style={{display:'flex',justifyContent:'space-between',width:'100%'}}><span>📜 Lore Archive — {loreFragments.length}/{ALL_LORE_FRAGMENTS.length} fragments</span><span style={{fontSize:13,color:TH.textDim}}>{isWsOpen('ws17')?'▲':'▼'}</span></span></div>
           {(()=>{
-            const arcLv=classLevels.scholar||0;
+            const arcLv=eCL('scholar');
             const chainsAvail=arcLv>=6?4:2;
             const chains=Object.values(LORE_CHAINS).slice(0,chainsAvail);
             const allChainsComplete=chains.every(c=>c.fragments.every(f=>loreFragments.includes(f.id)));
@@ -8180,11 +8186,11 @@ function CindervaleAlchemistInner(){
         </div>}
 
         {/* ═══ RANGER COMPANIONS ═══ */}
-        {specs.warden==='ranger'&&<div style={{...S.card,borderColor:'#40a060',background:'#40a00808'}} className={isWsOpen('ws18')?'':'ws-closed'}>
-          <div style={{...S.cT,cursor:'pointer',userSelect:'none'}} onClick={()=>toggleWs('ws18')}><span style={{display:'flex',justifyContent:'space-between',width:'100%'}}><span>🦊 Companions — {companions.length}/{(classLevels.warden||0)>=10?3:(classLevels.warden||0)>=6?2:1} slots</span><span style={{fontSize:13,color:TH.textDim}}>{isWsOpen('ws18')?'▲':'▼'}</span></span></div>
+        {eSpec('warden')==='ranger'&&<div style={{...S.card,borderColor:'#40a060',background:'#40a00808'}} className={isWsOpen('ws18')?'':'ws-closed'}>
+          <div style={{...S.cT,cursor:'pointer',userSelect:'none'}} onClick={()=>toggleWs('ws18')}><span style={{display:'flex',justifyContent:'space-between',width:'100%'}}><span>🦊 Companions — {companions.length}/{eCL('warden')>=10?3:eCL('warden')>=6?2:1} slots</span><span style={{fontSize:13,color:TH.textDim}}>{isWsOpen('ws18')?'▲':'▼'}</span></span></div>
           {companions.length===0&&<div style={{fontSize:14,color:TH.textDim,marginBottom:6}}>
             No companions yet. Forage in the wilds — creatures may appear and can be tamed with an Attunement check.
-            <br/>Encounter chance: {(classLevels.warden||0)>=10?'35%':(classLevels.warden||0)>=6?'25%':'15%'} per forage hour.
+            <br/>Encounter chance: {eCL('warden')>=10?'35%':eCL('warden')>=6?'25%':'15%'} per forage hour.
           </div>}
           {companions.map(c=>{
             const comp=RANGER_COMPANIONS.find(r=>r.id===c.compId);if(!comp)return null;
@@ -8252,14 +8258,14 @@ function CindervaleAlchemistInner(){
               })()}
             </div>;
           })}
-          {(classLevels.warden||0)<6&&<div style={{fontSize:12,color:TH.textDim,marginTop:4}}>🔒 More slots at Warden Lv6</div>}
+          {eCL('warden')<6&&<div style={{fontSize:12,color:TH.textDim,marginTop:4}}>🔒 More slots at Warden Lv6</div>}
         </div>}
 
         {/* ═══ QUARTERMASTER SUPPLY NETWORK ═══ */}
-        {specs.warden==='quartermaster'&&<div style={{...S.card,borderColor:'#6080a0',background:'#6080a008'}} className={isWsOpen('ws19')?'':'ws-closed'}>
+        {eSpec('warden')==='quartermaster'&&<div style={{...S.card,borderColor:'#6080a0',background:'#6080a008'}} className={isWsOpen('ws19')?'':'ws-closed'}>
           <div style={{...S.cT,cursor:'pointer',userSelect:'none'}} onClick={()=>toggleWs('ws19')}><span style={{display:'flex',justifyContent:'space-between',width:'100%'}}><span>🚚 Supply Network</span><span style={{fontSize:13,color:TH.textDim}}>{isWsOpen('ws19')?'▲':'▼'}</span></span></div>
           {(()=>{
-            const qLv=classLevels.warden||0;
+            const qLv=eCL('warden');
             const maxTier=qLv>=10?3:qLv>=6?2:1;
             const maxRoutes=qLv>=10?6:qLv>=6?5:3;
             const activeCaravans=caravans.filter(c=>!c.resolved&&c.returnDay>day);
@@ -8333,10 +8339,10 @@ function CindervaleAlchemistInner(){
         </div>}
 
         {/* ═══ GUILDMASTER ACADEMY ═══ */}
-        {specs.merchant==='guildmaster'&&<div style={{...S.card,borderColor:'#d0a030',background:'#d0a03008'}} className={isWsOpen('ws20')?'':'ws-closed'}>
+        {eSpec('merchant')==='guildmaster'&&<div style={{...S.card,borderColor:'#d0a030',background:'#d0a03008'}} className={isWsOpen('ws20')?'':'ws-closed'}>
           <div style={{...S.cT,cursor:'pointer',userSelect:'none'}} onClick={()=>toggleWs('ws20')}><span style={{display:'flex',justifyContent:'space-between',width:'100%'}}><span>🎓 Staff Academy</span><span style={{fontSize:13,color:TH.textDim}}>{isWsOpen('ws20')?'▲':'▼'}</span></span></div>
           {(()=>{
-            const gmLv=classLevels.merchant||0;
+            const gmLv=eCL('merchant');
             const canCurriculum=gmLv>=6;
             const canTeachTraits=gmLv>=10;
             const passiveTraining=gmLv>=10;
@@ -8398,10 +8404,10 @@ function CindervaleAlchemistInner(){
         </div>}
 
         {/* ═══ DIPLOMAT EMBASSY ═══ */}
-        {specs.merchant==='diplomat'&&<div style={{...S.card,borderColor:'#4090c0',background:'#4090c008'}} className={isWsOpen('ws21')?'':'ws-closed'}>
+        {eSpec('merchant')==='diplomat'&&<div style={{...S.card,borderColor:'#4090c0',background:'#4090c008'}} className={isWsOpen('ws21')?'':'ws-closed'}>
           <div style={{...S.cT,cursor:'pointer',userSelect:'none'}} onClick={()=>toggleWs('ws21')}><span style={{display:'flex',justifyContent:'space-between',width:'100%'}}><span>🤝 Embassy — Faction Harmony</span><span style={{fontSize:13,color:TH.textDim}}>{isWsOpen('ws21')?'▲':'▼'}</span></span></div>
           {(()=>{
-            const dLv=classLevels.merchant||0;
+            const dLv=eCL('merchant');
             const maxHarmony=getHarmonyCap();
             const envoysToday=dayFlags.filter(f=>f==='envoy_sent').length;
             const maxEnvoys=getMaxEnvoys();
@@ -10142,7 +10148,7 @@ function CindervaleAlchemistInner(){
           const factionMitigators={reavers:['ashwardens'],blight:['cinderfolk'],veilbreakers:['veilwalkers'],sand_raiders:['dustwalkers'],the_scorch:['flamekeepers'],cult_of_buried:['sand_merchants']};
           const helpingFactions=(factionMitigators[tid]||[]).filter(fid=>getRepLvl(fRep[fid]||0)>=3);
           // Class mitigation
-          const classMit={};classMit[locThreatIds[1]]=(classLevels.warden||0)>=4;classMit[locThreatIds[2]]=(classLevels.merchant||0)>=4;
+          const classMit={};classMit[locThreatIds[1]]=eCL('warden')>=4;classMit[locThreatIds[2]]=eCL('merchant')>=4;
           // Defense quests for this threat
           const myDQ=defenseQuests.filter(dq=>dq.threatId===tid);
           // Daily growth info
@@ -10737,7 +10743,7 @@ function CindervaleAlchemistInner(){
       {pendingCompDec.length>0&&expQ.length===0&&<CompanionDecisionPopup
         comps={pendingCompDec}
         companions={companions}
-        maxSlots={(classLevels.warden||0)>=10?3:(classLevels.warden||0)>=6?2:1}
+        maxSlots={eCL('warden')>=10?3:eCL('warden')>=6?2:1}
         RANGER_COMPANIONS={RANGER_COMPANIONS}
         TH={TH} S={S}
         onDecide={(comp,accept,replaceIdx)=>{
