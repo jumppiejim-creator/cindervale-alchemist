@@ -358,7 +358,7 @@ function CindervaleAlchemistInner(){
   const lf=id=>locFaction(id,gameLocation);
   const lt=id=>locThreat(id,gameLocation);
   const locFactions=Object.fromEntries(Object.entries(FACTIONS).filter(([,f])=>!f.loc||f.loc===gameLocation));
-  const locQuests=QUESTS.filter(q=>{if(q.id.startsWith('aq'))return gameLocation==='ashfall';if(q.id.startsWith('tq'))return gameLocation==='tidecrest';if(q.id.startsWith('q')&&!q.id.startsWith('q '))return gameLocation==='cindervale';if(q.id.startsWith('fc_')){const ashChains=['fc_sm','fc_fk','fc_dw'];const tcChains=['fc_hg','fc_pd','fc_tk','fc_mm'];if(ashChains.some(p=>q.id.startsWith(p)))return gameLocation==='ashfall';if(tcChains.some(p=>q.id.startsWith(p)))return gameLocation==='tidecrest';return gameLocation==='cindervale';}return true;});
+  const locQuests=QUESTS.filter(q=>{if(q.id.startsWith('aq'))return gameLocation==='ashfall';if(q.id.startsWith('tq'))return gameLocation==='tidecrest';if(q.id.startsWith('sr_'))return gameLocation==='skyreach';if(q.id.startsWith('q')&&!q.id.startsWith('q '))return gameLocation==='cindervale';if(q.id.startsWith('fc_')){const ashChains=['fc_sm','fc_fk','fc_dw'];const tcChains=['fc_hg','fc_pd','fc_tk','fc_mm'];if(ashChains.some(p=>q.id.startsWith(p)))return gameLocation==='ashfall';if(tcChains.some(p=>q.id.startsWith(p)))return gameLocation==='tidecrest';return gameLocation==='cindervale';}return true;});
   const locApprentices=AP_POOL.filter(a=>!a.loc||a.loc===gameLocation);
 
   // Ingredients available at current location (computed from locRegions + mapped hidden areas)
@@ -966,7 +966,7 @@ function CindervaleAlchemistInner(){
     };
     // Build or extend lineage
     const newLineage=lineage?{...lineage,generations:[...lineage.generations,gen],totalGenerations:lineage.totalGenerations+1}
-      :{id:'lineage_'+Date.now(),name:charName+"'s Legacy",generations:[gen],totalGenerations:1,unlockedLocations:['cindervale','ashfall']};
+      :{id:'lineage_'+Date.now(),name:charName+"'s Legacy",generations:[gen],totalGenerations:1,unlockedLocations:['cindervale','ashfall','tidecrest','skyreach']};
     setLineage(newLineage);saveLineage(newLineage);
     // Compute inheritance
     const torchGoldPct=0.15+getFeatureVal('torchGoldBonus');
@@ -10924,6 +10924,8 @@ const NPC_PORTRAITS=typeof NPC_PORTRAIT_IMGS!=='undefined'?{...NPC_PORTRAIT_IMGS
 ['brenna','tarn','holst','marta','gretta','thorek','barret','sister_venna','gorrik','sera','anya','fiona','jax','mama_grinn','rorik'].forEach(k=>{if(!NPC_PORTRAITS[k])NPC_PORTRAITS[k]='npc_'+k+'.png';});
 // Leonardo JPG portraits (npc_ prefix) — Ashfall + Tidecrest customers
 ['kadir','yara','priestess_zara','haddad','old_nuri','harlan','pelara','brother_tide','sandrine','grizzle'].forEach(k=>{if(!NPC_PORTRAITS[k])NPC_PORTRAITS[k]='npc_'+k+'.jpg';});
+// Leonardo JPG portraits — Skyreach NPCs + customers
+['sr_kael','sr_lira','sr_bron','sr_yuki','sr_mika','reva','orin','sister_astral','finn_ridgerun','grandmother_peak'].forEach(k=>{if(!NPC_PORTRAITS[k])NPC_PORTRAITS[k]='npc_'+k+'.jpg';});
 function NpcPortrait({npc,size=80,customerData}){
   const p=npc?.portrait||customerData?.portrait||{bg:['#444','#2a2a2a'],ring:'#888'};
   const icon=npc?.icon||'🧑';

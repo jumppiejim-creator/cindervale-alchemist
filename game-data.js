@@ -113,19 +113,19 @@ var CLASSES={
       {classLv:10,name:'Magnum Opus',desc:'Your 3 most-brewed recipes auto-succeed at Masterwork quality. Once per day, brew any recipe mastered 20+ times with zero ingredients. Alchemy flows through you like breathing.',effects:{freeCraft:1,doubleBatchChance:0.50,masteryAutoMW:true,zeroIngrMastery:20}},
     ],
     specs:{
-      apothecary:{id:'apothecary',name:'Apothecary',desc:'Healers and clinicians. Cure ailments, brew restorative potions, and earn gold treating patients.',icon:'💊',color:'#50c070',bStat:'inu',bSkills:['attunement','divination'],
+      apothecary:{id:'apothecary',name:'Apothecary',desc:'Healers and clinicians. Cure ailments, brew restorative potions, and earn gold treating patients.',mechDesc:'Clinic. Patients arrive daily with ailments that must be diagnosed and treated with the right healing potion. Successful treatments earn XP, gold, and reputation. Higher Apothecary levels improve diagnosis accuracy. At Lv10, you brew one free Healing Salve each morning automatically.',icon:'💊',color:'#50c070',bStat:'inu',bSkills:['attunement','divination'],
         features:[
           {classLv:3,name:"Healer's Touch",desc:'Healing potions are 2× value/XP. Healing recipes -2 DC.',effects:{craftBonus:1,sellBonus:0.20}},
           {classLv:6,name:'Panacea',desc:'Unlock multi-cure recipes. Healing potions also restore morale to staff.',effects:{healMorale:true,customerBonus:1,freeHealBrew:1}},
           {classLv:10,name:'Miracle Worker',desc:'Clinic patients auto-diagnosed on arrival. Clinic treatments pay 3× gold and XP. Once per day, perform a Miracle Cure on any patient regardless of potion requirements (5× reward). All healing potions have 50% chance to produce a bonus Masterwork copy.',effects:{freeHealBrew:1,clinicAutoDiagnose:true,clinicPayMult:3,miracleCure:true,healingBonusMW:0.50}},
         ]},
-      transmuter:{id:'transmuter',name:'Transmuter',desc:'Masters of ingredient conversion. Transform materials at ever-better ratios and transmute across types.',icon:'🔄',color:'#d090e0',bStat:'cre',bSkills:['improvisation','innovation'],
+      transmuter:{id:'transmuter',name:'Transmuter',desc:'Masters of ingredient conversion. Transform materials at ever-better ratios and transmute across types.',mechDesc:'Transmutation Lab. Convert ingredients between types at a 2:1 ratio (improving to 1:1 at Lv10). Select a source ingredient and target, spending multiples of one to create another. At higher levels you can transmute faction-specific resources and convert potions between types.',icon:'🔄',color:'#d090e0',bStat:'cre',bSkills:['improvisation','innovation'],
         features:[
           {classLv:3,name:'Efficient Transmutation',desc:'Can convert ingredients at 2:1 ratio. Unlock transmutation recipes.',effects:{transmuteRatio:2,canTransmute:true}},
           {classLv:6,name:'Lead to Gold',desc:'Transmute faction-specific ingredients. Convert potions between types.',effects:{factionTransmute:true,ingredientEfficiency:0.25}},
           {classLv:10,name:"Philosopher's Stone",desc:'1:1 ingredient conversion. Transmutations cost 0 hours.',effects:{transmuteRatio:1,freeTransmute:true}},
         ]},
-      venomist:{id:'venomist',name:'Venomist',desc:'Brew volatile poisons and offensive concoctions. Sell deadly wares to guard factions for premium gold.',icon:'☠️',color:'#a0d040',bStat:'tec',bSkills:['precision','extraction'],
+      venomist:{id:'venomist',name:'Venomist',desc:'Brew volatile poisons and offensive concoctions. Sell deadly wares to guard factions for premium gold.',mechDesc:'Venom Contracts. Shady clients post poison contracts offering premium gold for specific volatile brews. The Venom Lab on your workshop screen shows available contracts with deadlines and rewards. Craft bonuses scale with level, and failures at Lv10 still produce lesser venoms.',icon:'☠️',color:'#a0d040',bStat:'tec',bSkills:['precision','extraction'],
         features:[
           {classLv:3,name:'Volatile Mixtures',desc:'Unlock offensive/volatile recipes. Poisons sell 2× to local guard factions. +2 craft bonus on volatile recipes.',effects:{sellBonus:0.30,craftBonus:2}},
           {classLv:6,name:'Concentrated Dose',desc:'Brew with deadly precision. +20% double batch chance. +2 craft bonus.',effects:{doubleBatchChance:0.20,craftBonus:2}},
@@ -149,19 +149,19 @@ var CLASSES={
       {classLv:10,name:'Reality Weaver',desc:'Inscription mastery: +12 flat bonus, +50% gold from enchanting. Crits on 17+.',effects:{enchantSuccessFlat:12,enchantGoldBonus:0.50,enchantCritRange:17}},
     ],
     specs:{
-      runesmith:{id:'runesmith',name:'Runesmith',desc:'Forge powerful weapon enchantments. Martial runes command top prices from warriors and adventurers.',icon:'⚔️',color:'#d08040',bStat:'tec',bSkills:['inscription','refinement'],
+      runesmith:{id:'runesmith',name:'Runesmith',desc:'Forge powerful weapon enchantments. Martial runes command top prices from warriors and adventurers.',mechDesc:'Runesmith Forge. A dedicated forging station appears in your workshop where you can craft magical weapons. Each day you get a limited number of forge uses (1 at Lv3, scaling to 3 at Lv10). Forged weapons sell at premium prices and weapon enchantments get bonus value.',icon:'⚔️',color:'#d08040',bStat:'tec',bSkills:['inscription','refinement'],
         features:[
           {classLv:3,name:'Battle Runes',desc:'Weapon/martial enchantments +25% value. -1 DC on weapon runes.',effects:{enchantBonus:1,enchantGoldBonus:0.15}},
           {classLv:6,name:'Runic Mastery',desc:'All enchantment material costs -1. Can re-enchant failed items same day.',effects:{enchantMatDiscount:1,enchantCritRange:19,craftReroll:1}},
           {classLv:10,name:'Legendary Arms',desc:'Artifact-grade weapon enchantments. Martial enchants worth 3× gold.',effects:{enchantGoldBonus:0.50,masterworkOnCrit:true,autoEnchantDC:14}},
         ]},
-      wardkeeper:{id:'wardkeeper',name:'Wardkeeper',desc:'Specialize in defensive enchantments. Layer protective wards for lucrative shield commissions.',icon:'🛡️',color:'#4080d0',bStat:'dis',bSkills:['focus','endurance'],
+      wardkeeper:{id:'wardkeeper',name:'Wardkeeper',desc:'Specialize in defensive enchantments. Layer protective wards for lucrative shield commissions.',mechDesc:'Shield Commissions. Defensive enchantment orders arrive from clients needing warded armor and shields. The commission system tracks your active orders with deadlines. Inscription bonuses stack for defensive work, and at Lv10 permanent wards auto-succeed at DC 15.',icon:'🛡️',color:'#4080d0',bStat:'dis',bSkills:['focus','endurance'],
         features:[
           {classLv:3,name:'Wards',desc:'Defensive enchantments +50% value. +2 to defensive inscription checks.',effects:{enchantBonus:1,failEnchantReturn:0.50}},
           {classLv:6,name:'Layered Wards',desc:'Can apply 3 enchantments to armor items. 40% chance to save materials on enchant success.',effects:{enchantMatSave:0.40,dualInscription:true}},
           {classLv:10,name:'Unbreakable',desc:'Permanent wards that never fade. Defensive enchants auto-succeed DC 15. Shield commissions pay 3× gold. Once per day, apply a Fortress Ward to the settlement — reduces all threats by 5 for 3 days.',effects:{autoEnchantDC:15,enchantSuccessFlat:10,enchantMatSave:0.60,shieldPayMult:3,fortressWard:true}},
         ]},
-      spellweaver:{id:'spellweaver',name:'Spellweaver',desc:'Craft exotic utility enchantments and tap into planar power sources. Attract rare, high-paying customers.',icon:'🌀',color:'#a060e0',bStat:'inu',bSkills:['arcane_sense','divination'],
+      spellweaver:{id:'spellweaver',name:'Spellweaver',desc:'Craft exotic utility enchantments and tap into planar power sources. Attract rare, high-paying customers.',mechDesc:'Planar Attunement. Attune to extraplanar power sources that modify your enchantments with exotic effects. The Planar Focus interface lets you select and channel different planar energies. At Lv10, Planar Convergence lets you combine two enchantment types into a single inscription.',icon:'🌀',color:'#a060e0',bStat:'inu',bSkills:['arcane_sense','divination'],
         features:[
           {classLv:3,name:'Exotic Inscriptions',desc:'Utility/exotic enchantments unlocked. +2 to exotic inscription checks.',effects:{discoveryChanceBonus:0.15,enchantBonus:1}},
           {classLv:6,name:'Planar Weave',desc:'Extraplanar power sources. Exotic enchants worth 2× and attract special customers.',effects:{enchantGoldBonus:0.35,customerBonus:1}},
@@ -185,19 +185,19 @@ var CLASSES={
       {classLv:10,name:'Masterwork Engine',desc:'Two free 0-hour crafting actions per day. Batch size +2. 100% salvage on failures. Workshop upgrades cost -30% and provide double their normal bonuses. Your workshop is a precision engine.',effects:{freeCraft:2,batchSizeBonus:2,salvagePercent:1.0,upgradeCostReduction:0.30,upgradeDoubleBonus:true}},
     ],
     specs:{
-      tinkerer:{id:'tinkerer',name:'Tinkerer',desc:'Build utility gadgets and experiment with unconventional techniques. Innovation over brute force.',icon:'🔩',color:'#c0a040',bStat:'acu',bSkills:['analysis','research'],
+      tinkerer:{id:'tinkerer',name:'Tinkerer',desc:'Build utility gadgets and experiment with unconventional techniques. Innovation over brute force.',mechDesc:'Gadget Workshop. Craft utility gadgets from blueprints that provide passive bonuses when equipped. Gadgets can be upgraded through marks (Mk I, Mk II, etc.) for stronger effects. The gadget panel shows your active devices and their bonuses to crafting, foraging, and research.',icon:'🔩',color:'#c0a040',bStat:'acu',bSkills:['analysis','research'],
         features:[
           {classLv:3,name:'Gadgeteer',desc:'Craft utility gadgets for passive bonuses. +1 craft bonus. +15% experiment discovery. 50% salvage on failures.',effects:{craftBonus:1,experimentBonus:0.15,salvagePercent:0.50}},
           {classLv:6,name:'Swiss Army',desc:'Gadgets provide multiple benefits. +15% batch brew success. Workshop upgrades cost -15%.',effects:{batchSuccessBonus:0.15,upgradeCostReduction:0.15}},
           {classLv:10,name:'Masterwork Tools',desc:'Legendary utility tools. All craft DCs -2 permanently. 90% salvage on failure. Gadgets can be upgraded indefinitely beyond mark caps (+1 power per extra mark). Equip 2 gadgets simultaneously.',effects:{craftBonus:3,salvagePercent:0.90,infiniteGadgetMarks:true,dualGadgets:true}},
         ]},
-      constructor:{id:'constructor',name:'Constructor',desc:'Master workshop builder. Upgrades cost less, staff work harder, and legendary blueprints reshape production.',icon:'🏗️',color:'#8090a0',bStat:'dis',bSkills:['stockpiling','endurance'],
+      constructor:{id:'constructor',name:'Constructor',desc:'Master workshop builder. Upgrades cost less, staff work harder, and legendary blueprints reshape production.',mechDesc:'Blueprint Drafting. Draft and build custom workshop structures from blueprints. Each blueprint requires a drafting phase (research) followed by a construction phase (staff assignment). Completed blueprints provide unique workshop bonuses not available through normal upgrades.',icon:'🏗️',color:'#8090a0',bStat:'dis',bSkills:['stockpiling','endurance'],
         features:[
           {classLv:3,name:'Workshop Pro',desc:'Workshop upgrades cost 50% less gold. +2 to DIS checks.',effects:{upgradeCostReduction:0.5,staffEfficiencyBonus:0.15}},
           {classLv:6,name:'Assembly Floor',desc:'Can batch craft 2 different recipes simultaneously. Staff efficiency +20%.',effects:{batchSizeBonus:2,staffEfficiencyBonus:0.20}},
           {classLv:10,name:'Master Builder',desc:'Unlock 3 legendary blueprints: Alchemical Forge (auto-brews your most profitable recipe each morning), Crystal Greenhouse (produces 1 random rare ingredient daily), Arcane Conduit (+2 Energy per day permanently). All construction completes in half time.',effects:{passiveIncomeMulti:3,overnightCraft:true,legendaryBlueprints:true,bonusEnergy:2,halfConstructTime:true}},
         ]},
-      reclaimer:{id:'reclaimer',name:'Reclaimer',desc:'Waste nothing. Salvage failed brews, break down items for materials, and turn spoilage into profit.',icon:'♻️',color:'#60a080',bStat:'com',bSkills:['procurement','haggling'],
+      reclaimer:{id:'reclaimer',name:'Reclaimer',desc:'Waste nothing. Salvage failed brews, break down items for materials, and turn spoilage into profit.',mechDesc:'Salvage System. Failed brews and enchantments return a percentage of ingredients instead of losing everything. The salvage rate increases with level (75% at Lv3, 100% at Lv10). At Lv6 you can deconstruct finished potions back into ingredients. Spoiled ingredients produce Alchemical Residue.',icon:'♻️',color:'#60a080',bStat:'com',bSkills:['procurement','haggling'],
         features:[
           {classLv:3,name:'Zero Waste',desc:'75% salvage on failure. Break down potions. 50% of spoiled ingredients become Alchemical Residue.',effects:{salvagePercent:0.75,ingredientEfficiency:0.25,spoilSalvage:0.50}},
           {classLv:6,name:'Deconstruct',desc:'Break any item into component ingredients. Failed enchants return all materials.',effects:{failEnchantReturn:1.0,saveIngredientChance:0.30}},
@@ -221,19 +221,19 @@ var CLASSES={
       {classLv:10,name:'Omniscience',desc:'Know all recipes. Experiment Bench shows exact results. +2 craft bonus from deep knowledge. +30% XP from all sources. Publish theoretical papers for passive gold.',effects:{xpMultiplier:0.30,discoveryChanceBonus:0.40,craftBonus:2,publishPapers:true}},
     ],
     specs:{
-      theorist:{id:'theorist',name:'Theorist',desc:'Publish academic papers for passive income and reputation. Research discovers more, faster, and better.',icon:'🧪',color:'#40c0c0',bStat:'acu',bSkills:['analysis','innovation'],
+      theorist:{id:'theorist',name:'Theorist',desc:'Publish academic papers for passive income and reputation. Research discovers more, faster, and better.',mechDesc:'Published Papers. Spend research hours writing academic papers that generate passive gold income over time. Papers earn more as they accumulate citations. Peer Review at Lv6 boosts research discovery rates. At Lv10, all research auto-discovers new recipes.',icon:'🧪',color:'#40c0c0',bStat:'acu',bSkills:['analysis','innovation'],
         features:[
           {classLv:3,name:'Published Research',desc:'2× XP from research and experiments. Can publish papers for passive gold.',effects:{researchXPMulti:2,publishPapers:true}},
           {classLv:6,name:'Peer Review',desc:'Research studies have +20% discovery chance. Papers earn more over time.',effects:{discoveryChanceBonus:0.20,paperScaling:true}},
           {classLv:10,name:'Grand Unified Theory',desc:'Research sessions produce 2 discoveries instead of 1. Papers earn faction reputation for the discovered recipe\'s faction. After 10 papers: permanent +1 craft. After 25: +2. After 50: +3. Your academic legacy compounds.',effects:{discoveryChanceBonus:0.35,grandPapers:true,doubleDiscovery:true,citationCraftBonus:true}},
         ]},
-      naturalist:{id:'naturalist',name:'Naturalist',desc:'Document flora and geology in a Field Journal. Unlock permanent yield bonuses and seasonal mastery.',icon:'🌿',color:'#60b060',bStat:'inu',bSkills:['divination','extraction'],
+      naturalist:{id:'naturalist',name:'Naturalist',desc:'Document flora and geology in a Field Journal. Unlock permanent yield bonuses and seasonal mastery.',mechDesc:'Field Journal. Document ecological observations during foraging expeditions. Journal entries accumulate as you explore different regions and discover ingredients. Completed journal sets unlock discovery bonuses and region-specific recipes. Foraging XP scales significantly with level.',icon:'🌿',color:'#60b060',bStat:'inu',bSkills:['divination','extraction'],
         features:[
           {classLv:3,name:'Field Guide',desc:'See full ingredient tables for explored regions. Experiments with foraged ingredients get +15% discovery.',effects:{showIngredients:true,experimentBonus:0.15}},
           {classLv:6,name:'Ecological Insight',desc:'Research discovers region-specific recipes. +20% XP from foraging and experiments.',effects:{xpMultiplier:0.20,discoveryChanceBonus:0.15}},
           {classLv:10,name:'Nature\'s Library',desc:'Every expedition yields 1 bonus hidden-area ingredient (even unmapped areas). Seasonal ingredients available in all seasons. Once per day, commune to reveal the highest-yield region. Field Journal entries grant permanent +2 craft bonus for documented ingredients.',effects:{forageDiscovery:0.30,forageXPBonus:0.25,hiddenForageBonus:true,allSeasonIngr:true,journalCraftBonus:2}},
         ]},
-      archivist:{id:'archivist',name:'Archivist',desc:'Pursue lore fragments and quest chains. Board quests refresh faster, and deep knowledge grants permanent stats.',icon:'📜',color:'#c0a060',bStat:'dis',bSkills:['lore','focus'],
+      archivist:{id:'archivist',name:'Archivist',desc:'Pursue lore fragments and quest chains. Board quests refresh faster, and deep knowledge grants permanent stats.',mechDesc:'Lore Fragments. Discover ancient lore fragments during quests and research. Fragments form chains that, when completed, grant permanent passive bonuses. The Lore Archive tracks your collection and shows incomplete chains. Board quests refresh more often and reward bonus reputation.',icon:'📜',color:'#c0a060',bStat:'dis',bSkills:['lore','focus'],
         features:[
           {classLv:3,name:'Deep Records',desc:'Quest log shows hidden objectives. +30% quest XP.',effects:{questRepBonus:5,questXPBonus:0.30}},
           {classLv:6,name:'Master Index',desc:'Board quests refresh twice daily. Quest chains unlock earlier.',effects:{doubleQuestRefresh:true,questGoldBonus:0.25}},
@@ -257,19 +257,19 @@ var CLASSES={
       {classLv:10,name:'Trade Empire',desc:'Staff perform 2 tasks simultaneously. All customers pay double. +2 premium customers each morning at 3× price. Once per day, conjure any ingredient into your shop at standard price — your network reaches everywhere.',effects:{goldIncomeBonus:1.0,dualStaffTasks:true,premiumCustomers:2,conjureIngredient:true}},
     ],
     specs:{
-      guildmaster:{id:'guildmaster',name:'Guildmaster',desc:'Build and manage a large staff. Train apprentices faster, hire from elite pools, and halve payroll costs.',icon:'👑',color:'#d0a030',bStat:'com',bSkills:['networking','persuasion'],
+      guildmaster:{id:'guildmaster',name:'Guildmaster',desc:'Build and manage a large staff. Train apprentices faster, hire from elite pools, and halve payroll costs.',mechDesc:'Staff Training. Assign apprentices to focused training sessions that boost their specific stats over multiple days. The training interface lets you pick which stat to develop. Staff gain XP 50% faster, and at higher levels you hire from an expanded pool with better base stats.',icon:'👑',color:'#d0a030',bStat:'com',bSkills:['networking','persuasion'],
         features:[
           {classLv:3,name:'Training Program',desc:'Staff gain XP 50% faster. Can assign staff to skill training.',effects:{staffXPBonus:0.50,staffEfficiencyBonus:0.15}},
           {classLv:6,name:'Guild Network',desc:'Hire from expanded pool. Staff have higher base stats.',effects:{expandedHirePool:true,betterStaffStats:true}},
           {classLv:10,name:'Grand Guildmaster',desc:'Hire up to 8 staff. Staff salary costs halved. Max-level staff gain a Mastery trait doubling their task efficiency. Once per week, a Legendary Apprentice applies (starts Lv3, 2 positive traits, no negatives).',effects:{staffForageBonus:0.30,halfPayroll:true,maxStaff:8,staffMastery:true,legendaryHire:true}},
         ]},
-      diplomat:{id:'diplomat',name:'Diplomat',desc:'Double faction reputation gains and forge cross-faction alliances. Unlock exclusive vendor stock.',icon:'🤝',color:'#4090c0',bStat:'inu',bSkills:['persuasion','lore'],
+      diplomat:{id:'diplomat',name:'Diplomat',desc:'Double faction reputation gains and forge cross-faction alliances. Unlock exclusive vendor stock.',mechDesc:'Faction Harmony. Build diplomatic bridges between faction pairs, creating harmony bonuses that benefit both sides. The harmony system tracks relationships you have brokered. Cross-faction quests become available, and faction rep gains are doubled across the board.',icon:'🤝',color:'#4090c0',bStat:'inu',bSkills:['persuasion','lore'],
         features:[
           {classLv:3,name:'Embassy',desc:'Double faction rep gains. Faction NPCs offer unique dialogue and quests.',effects:{doubleRep:true,questRepBonus:10}},
           {classLv:6,name:'Trade Agreements',desc:'Exclusive faction vendors with rare stock. Cross-faction quests.',effects:{shopRestockBonus:3,questGoldBonus:0.30}},
           {classLv:10,name:'Grand Alliance',desc:'Allied with all factions simultaneously. Faction vendors stock legendary items.',effects:{repGainBonus:0.50,buyDiscount:0.25,shopRestockBonus:5}},
         ]},
-      fence:{id:'fence',name:'Fence',desc:'Sell through black market channels at extreme markups. High reward, with risk of confiscation.',icon:'🗝️',color:'#808060',bStat:'cre',bSkills:['haggling','procurement'],
+      fence:{id:'fence',name:'Fence',desc:'Sell through black market channels at extreme markups. High reward, with risk of confiscation.',mechDesc:'Black Market. Sell potions through underground channels at 2x price (3x at Lv10), but with a risk of confiscation where you lose both goods and gold. Risk decreases with level until you become Untouchable at Lv10 with zero confiscation chance. Smuggling side-quests also become available.',icon:'🗝️',color:'#808060',bStat:'cre',bSkills:['haggling','procurement'],
         features:[
           {classLv:3,name:'Black Market',desc:'Sell potions/enchantments at 2× price with risk of confiscation.',effects:{blackMarket:true,blackMarketMulti:2}},
           {classLv:6,name:'Underground Network',desc:'Special black market customers. Reduced confiscation risk.',effects:{customerBonus:1,reducedRisk:true}},
@@ -293,19 +293,19 @@ var CLASSES={
       {classLv:10,name:'Legend of the Wild',desc:'All travel times become 0. +50% foraging yields. Overnight foraging.',effects:{travelReduction:3,yieldMultiplier:0.5,forageOnRest:true}},
     ],
     specs:{
-      ranger:{id:'ranger',name:'Ranger',desc:'Tame wild companions that gather, sell, scout, and fight alongside you. The signature beast-bond spec.',icon:'🏹',color:'#40a060',bStat:'inu',bSkills:['danger_sense','divination'],
+      ranger:{id:'ranger',name:'Ranger',desc:'Tame wild companions that gather, sell, scout, and fight alongside you. The signature beast-bond spec.',mechDesc:'Wild Companions. Befriend wild creatures during foraging expeditions. Companions perform daily actions: gathering ingredients, earning gold, scouting, greeting customers, guarding, or inspiring research. Loyalty grows over time, unlocking secondary abilities and legendary powers. At Lv10, companions perform all actions twice, gain type-specific legendary abilities, and can be sent on solo expeditions from their card.',icon:'🏹',color:'#40a060',bStat:'inu',bSkills:['danger_sense','divination'],
         features:[
           {classLv:3,name:'Tracker',desc:'Target ingredients without yield penalty. Befriend wild creatures.',effects:{luckyFindChance:0.20,extractionBonus:2,targetNoYieldPenalty:true}},
           {classLv:6,name:'Pathfinder',desc:'Discover hidden sub-regions with unique ingredients. Creature bonuses grow.',effects:{yieldMultiplier:0.50,critExtractionMulti:2}},
           {classLv:10,name:'Apex Predator',desc:'Companions perform all actions twice per day. Your highest-loyalty companion (★5) gains a Legendary ability unique to its role: Foragers find rare ingredients, Merchants attract VIPs, Greeters earn referral gold, Guardians heal staff injuries, Muses grant bonus Energy, Scouts negate all expedition danger. Send any companion on a solo expedition from their card (1/day, 0 Energy).',effects:{companionDualAction:true,guaranteedRare:true,legendaryCompanion:true,soloExpedition:true}},
         ]},
-      quartermaster:{id:'quartermaster',name:'Quartermaster',desc:'Master of logistics. Double storage, reduce spoilage, and squeeze maximum value from every ingredient.',icon:'📋',color:'#6080a0',bStat:'dis',bSkills:['stockpiling','efficiency'],
+      quartermaster:{id:'quartermaster',name:'Quartermaster',desc:'Master of logistics. Double storage, reduce spoilage, and squeeze maximum value from every ingredient.',mechDesc:'Supply Chains. Establish trade partnerships with ingredient suppliers who deliver goods automatically on a schedule. Manage caravan runs to different regions for bulk delivery. Partners level up through completed runs, improving quantity and adding rare ingredients.',icon:'📋',color:'#6080a0',bStat:'dis',bSkills:['stockpiling','efficiency'],
         features:[
           {classLv:3,name:'Supply Chain',desc:'Workshop storage doubled. Ingredient efficiency +25%. Spoilage threshold +4.',effects:{doubleStorage:true,ingredientEfficiency:0.25,spoilThreshold:4}},
           {classLv:6,name:'Logistics Master',desc:'Ingredient management mastery. Staff foraging +25%. +25% personal foraging yield. +4 spoilage threshold. Caravan deliveries are always fresh.',effects:{staffForageBonus:0.25,yieldMultiplier:0.25,spoilThreshold:4}},
           {classLv:10,name:'War Room',desc:'Fully automated ingredient management. Foraging yield +100%. Spoilage threshold +8.',effects:{staffEfficiencyBonus:0.30,yieldMultiplier:1,spoilThreshold:8}},
         ]},
-      sentinel:{id:'sentinel',name:'Sentinel',desc:'Night expeditions for bonus foraging after dark. Guard the settlement against rising threats.',icon:'🗼',color:'#a07040',bStat:'tec',bSkills:['extraction','precision'],
+      sentinel:{id:'sentinel',name:'Sentinel',desc:'Night expeditions for bonus foraging after dark. Guard the settlement against rising threats.',mechDesc:'Night Expeditions. After resting, send your character on a bonus night foraging run with extra gathering hours but increased danger. At Lv6, set traps for guaranteed rare finds. At Lv10, build permanent outposts for daily passive ingredient income and threat suppression.',icon:'🗼',color:'#a07040',bStat:'tec',bSkills:['extraction','precision'],
         features:[
           {classLv:3,name:'Night Watch',desc:'Night expeditions: 2 bonus gathering hours at +4 DC, increased danger.',effects:{nightExpeditions:true,nightBonusHours:2}},
           {classLv:6,name:'Trap Setter',desc:'Set traps for guaranteed rare ingredient finds. Night danger reduced.',effects:{guaranteedRare:true,nightDangerReduction:true}},
@@ -496,6 +496,18 @@ var AP_POOL=[
   {id:'ap_nell',name:'Nell Hawkeye',icon:'🧝‍♀️',personality:'Half-elf ranger who patrols the forest road.',baseStat:{dis:13,inu:12,tec:10},specialty:'patrolling',salary:7,traits:['Watchful','Fleet-Footed']},
   {id:'ap_soraya',name:'Soraya Dustblade',icon:'⚔️',personality:'Dustwalker veteran turned freelance guard.',loc:'ashfall',baseStat:{dis:14,tec:12,inu:10},specialty:'patrolling',salary:8,traits:['Vigilant','Experienced']},
   {id:'ap_malik',name:'Malik Ashwatch',icon:'🛡️',personality:'Night watchman from the Crossing, knows every shadow.',loc:'ashfall',baseStat:{dis:13,inu:13,com:9},specialty:'patrolling',salary:7,traits:['Night Owl','Keen Senses']},
+
+  // ═══ SKYREACH APPRENTICES ═══
+  {id:'ap_tarn',name:'Tarn Ridgewalker',icon:'🧑‍🦰',personality:'Windrunner dropout, knows every trail.',loc:'skyreach',baseStat:{dis:13,inu:12,tec:10},specialty:'foraging',salary:6,traits:['Fleet-Footed','Restless']},
+  {id:'ap_elsi',name:'Elsi Frostweave',icon:'👩‍🦱',personality:'Quiet herbalist, incredible with frost ingredients.',loc:'skyreach',baseStat:{inu:13,tec:12,dis:10},specialty:'brewing',salary:7,traits:['Keen Senses','Shy']},
+  {id:'ap_jek',name:'Jek Stormhand',icon:'🧑‍🎨',personality:'Former Starcaller student, arcane talent.',loc:'skyreach',baseStat:{inu:14,acu:12,tec:9},specialty:'enchanting',salary:8,traits:['Arcane Gifted','Eccentric']},
+  {id:'ap_mira_sr',name:'Mira Cloudstep',icon:'👩‍💼',personality:'Cloud Trader\'s daughter, born salesperson.',loc:'skyreach',baseStat:{com:14,dis:11,cre:10},specialty:'shopkeeping',salary:6,traits:['Silver Tongue','Impatient']},
+  {id:'ap_galt',name:'Galt Ironpeak',icon:'⛏️',personality:'Dwarf miner who followed altitude crystals up.',loc:'skyreach',baseStat:{tec:14,dis:12,inu:8},specialty:'foraging',salary:7,traits:['Tireless','Gruff']},
+  {id:'ap_sera_sr',name:'Sera Windchime',icon:'📝',personality:'Obsessive note-taker, discovers everything.',loc:'skyreach',baseStat:{acu:14,inu:12,cre:10},specialty:'research',salary:8,traits:['Insightful','Perfectionist']},
+  {id:'ap_kord',name:'Kord Avalanche',icon:'💂',personality:'Skywarden veteran, built like a mountain.',loc:'skyreach',baseStat:{dis:14,tec:12,com:9},specialty:'patrolling',salary:8,traits:['Vigilant','Experienced']},
+  {id:'ap_neve',name:'Neve Starling',icon:'🧙‍♀️',personality:'Starcaller herbalist, spiritual approach to alchemy.',loc:'skyreach',baseStat:{inu:14,acu:11,tec:10},specialty:'brewing',salary:7,traits:['Devout','Perfectionist']},
+  {id:'ap_brek',name:'Brek Cliffhammer',icon:'🧔‍♂️',personality:'Mountain rescue specialist.',loc:'skyreach',baseStat:{dis:13,tec:12,inu:11},specialty:'patrolling',salary:7,traits:['Watchful','Tireless']},
+  {id:'ap_wynn',name:'Wynn Thinair',icon:'👵',personality:'Former tavern keeper, knows everyone.',loc:'skyreach',baseStat:{com:13,dis:12,acu:10},specialty:'shopkeeping',salary:6,traits:['Experienced','Cautious']},
 ];
 var TASK_TYPES={
   forage:{name:'Forage',icon:'⛏️',stat:'tec',desc:'Sends staff to gather ingredients from a region overnight. Higher TEC = more items found.'},
@@ -507,19 +519,19 @@ var TASK_TYPES={
 };
 
 // ═══ GAME DATA ═══
-var INGR={ashbloom:{name:'Ashbloom',icon:'🌿',val:5},embercap:{name:'Embercap',icon:'🍄',val:8},hearthstone:{name:'Hearthstone',icon:'💎',val:14},volcanic_essence:{name:'Volcanic Ess.',icon:'🔥',val:20},moonpetal:{name:'Moonpetal',icon:'🌸',val:16},ironroot_bark:{name:'Ironroot',icon:'🪵',val:7},gloomcap:{name:'Gloomcap',icon:'🫧',val:12},embervein:{name:'Embervein',icon:'🔶',val:18},starwort:{name:'Starwort',icon:'⭐',val:15},ashite:{name:'Ashite',icon:'🪨',val:10},warden_sigil:{name:'Warden Sigil',icon:'🔰',val:22},sacred_ember:{name:'Sacred Ember',icon:'🕯️',val:25},veil_shard:{name:'Veil Shard',icon:'🔮',val:30},deep_crystal:{name:'Deep Crystal',icon:'💠',val:35},
+var INGR={ashbloom:{name:'Ashbloom',icon:'🌿',val:5,skyreach:'cloud_moss'},embercap:{name:'Embercap',icon:'🍄',val:8,skyreach:'hanging_lichen'},hearthstone:{name:'Hearthstone',icon:'💎',val:14,skyreach:'lake_crystal'},volcanic_essence:{name:'Volcanic Ess.',icon:'🔥',val:20,skyreach:'bolt_crystal'},moonpetal:{name:'Moonpetal',icon:'🌸',val:16,skyreach:'summit_coral'},ironroot_bark:{name:'Ironroot',icon:'🪵',val:7,skyreach:'thin_air_lichen'},gloomcap:{name:'Gloomcap',icon:'🫧',val:12,skyreach:'mist_silk'},embervein:{name:'Embervein',icon:'🔶',val:18,skyreach:'aurora_lichen'},starwort:{name:'Starwort',icon:'⭐',val:15,skyreach:'meltwater_pearl'},ashite:{name:'Ashite',icon:'🪨',val:10,skyreach:'rime_dust'},warden_sigil:{name:'Warden Sigil',icon:'🔰',val:22,skyreach:'skyward_seal'},sacred_ember:{name:'Sacred Ember',icon:'🕯️',val:25,skyreach:'starcaller_seal'},veil_shard:{name:'Veil Shard',icon:'🔮',val:30,skyreach:'celestial_essence'},deep_crystal:{name:'Deep Crystal',icon:'💠',val:35,skyreach:'zenith_stone'},
   // New region ingredients
-  ash_salt:{name:'Ash Salt',icon:'🧂',val:4},cinder_moss:{name:'Cinder Moss',icon:'🌱',val:5},
-  ironwood_sap:{name:'Ironwood Sap',icon:'🫗',val:7},thornvine:{name:'Thornvine',icon:'🌾',val:8},
-  spore_dust:{name:'Spore Dust',icon:'💨',val:10},cave_lichen:{name:'Cave Lichen',icon:'🟢',val:9},
-  crystal_shard:{name:'Crystal Shard',icon:'🔷',val:13},mineral_clay:{name:'Mineral Clay',icon:'🟤',val:11},
-  nightdew:{name:'Nightdew',icon:'💧',val:14},lunar_moss:{name:'Lunar Moss',icon:'🌑',val:15},
-  sulfur_bloom:{name:'Sulfur Bloom',icon:'💛',val:18},magma_salt:{name:'Magma Salt',icon:'🧡',val:19},
-  deep_iron:{name:'Deep Iron',icon:'⬛',val:20},shadow_quartz:{name:'Shadow Quartz',icon:'◼️',val:22},
+  ash_salt:{name:'Ash Salt',icon:'🧂',val:4,skyreach:'summit_grass'},cinder_moss:{name:'Cinder Moss',icon:'🌱',val:5,skyreach:'windstone'},
+  ironwood_sap:{name:'Ironwood Sap',icon:'🫗',val:7},thornvine:{name:'Thornvine',icon:'🌾',val:8,skyreach:'hanging_lichen'},
+  spore_dust:{name:'Spore Dust',icon:'💨',val:10,skyreach:'vapor_fern'},cave_lichen:{name:'Cave Lichen',icon:'🟢',val:9},
+  crystal_shard:{name:'Crystal Shard',icon:'🔷',val:13,skyreach:'skystone_chip'},mineral_clay:{name:'Mineral Clay',icon:'🟤',val:11,skyreach:'wind_iron'},
+  nightdew:{name:'Nightdew',icon:'💧',val:14,skyreach:'tempest_moss'},lunar_moss:{name:'Lunar Moss',icon:'🌑',val:15},
+  sulfur_bloom:{name:'Sulfur Bloom',icon:'💛',val:18,skyreach:'lightning_shard'},magma_salt:{name:'Magma Salt',icon:'🧡',val:19},
+  deep_iron:{name:'Deep Iron',icon:'⬛',val:20,skyreach:'thunder_iron'},shadow_quartz:{name:'Shadow Quartz',icon:'◼️',val:22,skyreach:'eclipse_shard'},
   forge_scale:{name:'Forge Scale',icon:'⚖️',val:28},primordial_ash:{name:'Primordial Ash',icon:'⚫',val:32},
   // New region-specific resources
-  char_root:{name:'Char Root',icon:'🫚',val:3},wind_dust:{name:'Wind Dust',icon:'🌬️',val:4},
-  bark_resin:{name:'Bark Resin',icon:'🪹',val:6},moss_amber:{name:'Moss Amber',icon:'🟡',val:7},
+  char_root:{name:'Char Root',icon:'🫚',val:3,skyreach:'eagle_down'},wind_dust:{name:'Wind Dust',icon:'🌬️',val:4,skyreach:'sky_clover'},
+  bark_resin:{name:'Bark Resin',icon:'🪹',val:6,skyreach:'alpine_mint'},moss_amber:{name:'Moss Amber',icon:'🟡',val:7},
   biolumen_gel:{name:'Biolumen Gel',icon:'💚',val:9},mycelium_thread:{name:'Mycelium Thread',icon:'🧵',val:10},
   geode_dust:{name:'Geode Dust',icon:'🔹',val:12},resonance_ore:{name:'Resonance Ore',icon:'🔔',val:13},
   dew_crystal:{name:'Dew Crystal',icon:'🌟',val:15},silver_lichen:{name:'Silver Lichen',icon:'🥈',val:14},
@@ -527,21 +539,21 @@ var INGR={ashbloom:{name:'Ashbloom',icon:'🌿',val:5},embercap:{name:'Embercap'
   echo_stone:{name:'Echo Stone',icon:'🔊',val:21},dark_amber:{name:'Dark Amber',icon:'🍫',val:20},
   phoenix_ash:{name:'Phoenix Ash',icon:'🐦',val:30},runespark:{name:'Runespark',icon:'✨',val:28},
   // Expansion wave 2 — 2 per region
-  ember_petal:{name:'Ember Petal',icon:'🌺',val:3},soot_crystal:{name:'Soot Crystal',icon:'🔸',val:4},
-  amber_sap:{name:'Amber Sap',icon:'🍯',val:6},beetle_shell:{name:'Beetle Shell',icon:'🐞',val:7},
-  echo_fungus:{name:'Echo Fungus',icon:'🔉',val:9},ghost_silk:{name:'Ghost Silk',icon:'🕸️',val:11},
+  ember_petal:{name:'Ember Petal',icon:'🌺',val:3,skyreach:'breeze_seed'},soot_crystal:{name:'Soot Crystal',icon:'🔸',val:4,skyreach:'frost_daisy'},
+  amber_sap:{name:'Amber Sap',icon:'🍯',val:6,skyreach:'alpine_mint'},beetle_shell:{name:'Beetle Shell',icon:'🐞',val:7,skyreach:'mistwood_bark'},
+  echo_fungus:{name:'Echo Fungus',icon:'🔉',val:9,skyreach:'fog_orchid'},ghost_silk:{name:'Ghost Silk',icon:'🕸️',val:11,skyreach:'canopy_dew'},
   singing_quartz:{name:'Singing Quartz',icon:'🎵',val:13},copper_vein:{name:'Copper Vein',icon:'🟫',val:12},
-  moth_scale:{name:'Moth Scale',icon:'🦋',val:15},dream_pollen:{name:'Dream Pollen',icon:'💤',val:16},
+  moth_scale:{name:'Moth Scale',icon:'🦋',val:15},dream_pollen:{name:'Dream Pollen',icon:'💤',val:16,skyreach:'sky_rune_fragment'},
   lava_pearl:{name:'Lava Pearl',icon:'🔴',val:19},pyrestone:{name:'Pyrestone',icon:'🟧',val:20},
   mithril_dust:{name:'Mithril Dust',icon:'⬜',val:22},void_salt:{name:'Void Salt',icon:'🟪',val:21},
   heartstone_sliver:{name:'Heartstone Sliver',icon:'❤️',val:32},titan_bone:{name:'Titan Bone',icon:'🦴',val:31},
   // ═══ ASHFALL EXPANSION INGREDIENTS ═══
   // Common (val 1-5)
-  dried_cactus:{name:'Dried Cactus',icon:'🌵',val:3},sand_glass:{name:'Sand Glass',icon:'⌛',val:4},salt_flake:{name:'Salt Flake',icon:'❇️',val:3},
+  dried_cactus:{name:'Dried Cactus',icon:'🌵',val:3,skyreach:'breeze_seed'},sand_glass:{name:'Sand Glass',icon:'⌛',val:4,skyreach:'frost_daisy'},salt_flake:{name:'Salt Flake',icon:'❇️',val:3,skyreach:'eagle_down'},
   // Uncommon (val 6-12)
-  fire_ant_chitin:{name:'Fire Ant Chitin',icon:'🐜',val:7},desert_iron:{name:'Desert Iron',icon:'⛏️',val:9},scarab_shell:{name:'Scarab Shell',icon:'🪲',val:8},
-  red_clay:{name:'Red Clay',icon:'🏺',val:6},heatstone:{name:'Heatstone',icon:'🔆',val:10},palm_resin:{name:'Palm Resin',icon:'🌴',val:7},
-  sandstone_dust:{name:'Sandstone Dust',icon:'🏜️',val:6},sulfur_crystal:{name:'Sulfur Crystal',icon:'⚗️',val:11},
+  fire_ant_chitin:{name:'Fire Ant Chitin',icon:'🐜',val:7,skyreach:'mistwood_bark'},desert_iron:{name:'Desert Iron',icon:'⛏️',val:9,skyreach:'cliff_quartz'},scarab_shell:{name:'Scarab Shell',icon:'🪲',val:8,skyreach:'glacial_silt'},
+  red_clay:{name:'Red Clay',icon:'🏺',val:6,skyreach:'cloud_berry'},heatstone:{name:'Heatstone',icon:'🔆',val:10,skyreach:'rime_dust'},palm_resin:{name:'Palm Resin',icon:'🌴',val:7,skyreach:'thin_air_lichen'},
+  sandstone_dust:{name:'Sandstone Dust',icon:'🏜️',val:6,skyreach:'cloud_berry'},sulfur_crystal:{name:'Sulfur Crystal',icon:'⚗️',val:11},
   // Rare (val 13-20)
   sun_diamond:{name:'Sun Diamond',icon:'🌞',val:18},venom_silk:{name:'Venom Silk',icon:'🕷️',val:14},storm_glass:{name:'Storm Glass',icon:'⚡',val:16},
   molten_pearl:{name:'Molten Pearl',icon:'🫨',val:19},fire_opal:{name:'Fire Opal',icon:'🪔',val:17},desert_rose:{name:'Desert Rose',icon:'🌹',val:13},
@@ -592,77 +604,77 @@ var INGR={ashbloom:{name:'Ashbloom',icon:'🌿',val:5},embercap:{name:'Embercap'
 // Keys are base (Cindervale) ingredient IDs; values map location → replacement
 var INGR_SUBS={
   // === COMMON TIER (val 3-7) ===
-  ashbloom:{ashfall:'sunpetal',tidecrest:'kelp_frond'},        // val 5→5
-  char_root:{ashfall:'dried_cactus',tidecrest:'sea_salt'},     // val 3→3
-  wind_dust:{ashfall:'salt_flake',tidecrest:'tide_moss'},      // val 4→4
-  cinder_moss:{ashfall:'sand_glass',tidecrest:'foam_bloom'},   // val 5→5
-  ember_petal:{ashfall:'salt_flake',tidecrest:'dried_seaweed'},// val 3→3
-  soot_crystal:{ashfall:'sand_glass',tidecrest:'barnacle'},    // val 4→4
-  ash_salt:{ashfall:'salt_flake',tidecrest:'driftwood'},       // val 4→4
-  amber_sap:{ashfall:'red_clay',tidecrest:'sea_glass'},        // val 6→6
-  beetle_shell:{ashfall:'fire_ant_chitin',tidecrest:'crab_shell'},// val 7→6
-  thornvine:{ashfall:'scorchroot',tidecrest:'starfish_arm'},   // val 8→7
+  ashbloom:{ashfall:'sunpetal',tidecrest:'kelp_frond',skyreach:'cloud_moss'},        // val 5→5
+  char_root:{ashfall:'dried_cactus',tidecrest:'sea_salt',skyreach:'eagle_down'},     // val 3→3
+  wind_dust:{ashfall:'salt_flake',tidecrest:'tide_moss',skyreach:'sky_clover'},      // val 4→4
+  cinder_moss:{ashfall:'sand_glass',tidecrest:'foam_bloom',skyreach:'windstone'},   // val 5→5
+  ember_petal:{ashfall:'salt_flake',tidecrest:'dried_seaweed',skyreach:'breeze_seed'},// val 3→3
+  soot_crystal:{ashfall:'sand_glass',tidecrest:'barnacle',skyreach:'frost_daisy'},    // val 4→4
+  ash_salt:{ashfall:'salt_flake',tidecrest:'driftwood',skyreach:'summit_grass'},       // val 4→4
+  amber_sap:{ashfall:'red_clay',tidecrest:'sea_glass',skyreach:'alpine_mint'},        // val 6→6
+  beetle_shell:{ashfall:'fire_ant_chitin',tidecrest:'crab_shell',skyreach:'mistwood_bark'},// val 7→6
+  thornvine:{ashfall:'scorchroot',tidecrest:'starfish_arm',skyreach:'hanging_lichen'},   // val 8→7
   // === ASHFALL COMMON ===
-  sunpetal:{tidecrest:'sand_dollar'},                          // val 5→5
-  dustite:{tidecrest:'sea_snail'},                             // val 7→7
-  scorchroot:{tidecrest:'crab_shell'},                         // val 6→6
-  crystal_salt:{tidecrest:'coral_shard'},                      // val 8→8
-  dried_cactus:{tidecrest:'dried_seaweed'},                    // val 3→3
-  sand_glass:{tidecrest:'barnacle'},                           // val 4→4
-  salt_flake:{tidecrest:'sea_salt'},                           // val 3→3
-  red_clay:{tidecrest:'sea_glass'},                            // val 6→6
-  palm_resin:{tidecrest:'sponge_pulp'},                        // val 7→8
-  scarab_shell:{tidecrest:'bat_guano'},                        // val 8→8
-  fire_ant_chitin:{tidecrest:'cave_lichen_tc'},                // val 7→7
-  desert_iron:{tidecrest:'salt_crystal'},                      // val 9→9
+  sunpetal:{tidecrest:'sand_dollar',skyreach:'storm_petal'},                          // val 5→5
+  dustite:{tidecrest:'sea_snail',skyreach:'thin_air_lichen'},                             // val 7→7
+  scorchroot:{tidecrest:'crab_shell',skyreach:'cloud_berry'},                         // val 6→6
+  crystal_salt:{tidecrest:'coral_shard',skyreach:'gale_salt'},                      // val 8→8
+  dried_cactus:{tidecrest:'dried_seaweed',skyreach:'breeze_seed'},                    // val 3→3
+  sand_glass:{tidecrest:'barnacle',skyreach:'frost_daisy'},                           // val 4→4
+  salt_flake:{tidecrest:'sea_salt',skyreach:'eagle_down'},                           // val 3→3
+  red_clay:{tidecrest:'sea_glass',skyreach:'cloud_berry'},                            // val 6→6
+  palm_resin:{tidecrest:'sponge_pulp',skyreach:'thin_air_lichen'},                        // val 7→8
+  scarab_shell:{tidecrest:'bat_guano',skyreach:'glacial_silt'},                        // val 8→8
+  fire_ant_chitin:{tidecrest:'cave_lichen_tc',skyreach:'mistwood_bark'},                // val 7→7
+  desert_iron:{tidecrest:'salt_crystal',skyreach:'cliff_quartz'},                      // val 9→9
   // === MID TIER (val 8-16) ===
-  ironroot_bark:{ashfall:'desert_iron',tidecrest:'driftstone'},// val 7→9
-  embercap:{ashfall:'scorchroot',tidecrest:'phosphor_moss'},   // val 8→10
-  bark_resin:{ashfall:'palm_resin',tidecrest:'ships_tar'},     // val 6→10
-  hearthstone:{ashfall:'heatstone',tidecrest:'brine_crystal'}, // val 14→10
-  moonpetal:{ashfall:'dewdrop_lily',tidecrest:'deep_coral'},   // val 16→16
-  gloomcap:{ashfall:'obsidian_shard',tidecrest:'stormkelp'},   // val 12→12
-  echo_fungus:{ashfall:'scarab_shell',tidecrest:'urchin_spine'},// val 9→9
-  ghost_silk:{ashfall:'sandsilk',tidecrest:'jellyfish_essence'},// val 11→11
-  spore_dust:{ashfall:'sandstone_dust',tidecrest:'anemone_extract'},// val 10→10
-  mineral_clay:{ashfall:'red_clay',tidecrest:'pearl_dust'},    // val 11→11
-  crystal_shard:{ashfall:'crystal_salt',tidecrest:'nautilus_shell'},// val 13→13
-  nightdew:{ashfall:'dewdrop_lily',tidecrest:'whale_oil'},     // val 14→14
-  ashite:{ashfall:'heatstone',tidecrest:'barnacle_cluster'},   // val 10→10
-  brine_moss:{tidecrest:'barnacle_cluster'},                   // val 10→10
-  obsidian_shard:{tidecrest:'anglerfish_lure'},                // val 12→12
-  sandsilk:{tidecrest:'sharktooth'},                           // val 14→14
+  ironroot_bark:{ashfall:'desert_iron',tidecrest:'driftstone',skyreach:'thin_air_lichen'},// val 7→9
+  embercap:{ashfall:'scorchroot',tidecrest:'phosphor_moss',skyreach:'hanging_lichen'},   // val 8→10
+  bark_resin:{ashfall:'palm_resin',tidecrest:'ships_tar',skyreach:'alpine_mint'},     // val 6→10
+  hearthstone:{ashfall:'heatstone',tidecrest:'brine_crystal',skyreach:'lake_crystal'}, // val 14→10
+  moonpetal:{ashfall:'dewdrop_lily',tidecrest:'deep_coral',skyreach:'summit_coral'},   // val 16→16
+  gloomcap:{ashfall:'obsidian_shard',tidecrest:'stormkelp',skyreach:'mist_silk'},   // val 12→12
+  echo_fungus:{ashfall:'scarab_shell',tidecrest:'urchin_spine',skyreach:'fog_orchid'},// val 9→9
+  ghost_silk:{ashfall:'sandsilk',tidecrest:'jellyfish_essence',skyreach:'canopy_dew'},// val 11→11
+  spore_dust:{ashfall:'sandstone_dust',tidecrest:'anemone_extract',skyreach:'vapor_fern'},// val 10→10
+  mineral_clay:{ashfall:'red_clay',tidecrest:'pearl_dust',skyreach:'wind_iron'},    // val 11→11
+  crystal_shard:{ashfall:'crystal_salt',tidecrest:'nautilus_shell',skyreach:'skystone_chip'},// val 13→13
+  nightdew:{ashfall:'dewdrop_lily',tidecrest:'whale_oil',skyreach:'tempest_moss'},     // val 14→14
+  ashite:{ashfall:'heatstone',tidecrest:'barnacle_cluster',skyreach:'rime_dust'},   // val 10→10
+  brine_moss:{tidecrest:'barnacle_cluster',skyreach:'crystal_moss_sr'},                   // val 10→10
+  obsidian_shard:{tidecrest:'anglerfish_lure',skyreach:'frozen_bloom'},                // val 12→12
+  sandsilk:{tidecrest:'sharktooth',skyreach:'lake_crystal'},                           // val 14→14
   // === HIGH TIER (val 15-22) ===
-  volcanic_essence:{ashfall:'heatstone',tidecrest:'tidal_diamond'},// val 20→20
-  starwort:{ashfall:'desert_rose',tidecrest:'moonfish_scale'}, // val 15→15
-  embervein:{ashfall:'sulfur_crystal',tidecrest:'siren_tear'}, // val 18→18
-  dewdrop_lily:{tidecrest:'sea_fan'},                          // val 15→15
-  venomgland:{tidecrest:'cannon_bronze'},                      // val 16→16
-  dream_pollen:{tidecrest:'compass_needle'},                   // val 16→16
-  mirage_dust:{tidecrest:'trident_shard'},                     // val 22→22
-  sulfur_bloom:{ashfall:'heatstone',tidecrest:'abyssal_pearl'},// val 18→18
-  shadow_quartz:{ashfall:'obsidian_shard',tidecrest:'ghost_lantern'},// val 22→18
-  deep_iron:{ashfall:'desert_iron',tidecrest:'rust_iron'},     // val 20→14
+  volcanic_essence:{ashfall:'heatstone',tidecrest:'tidal_diamond',skyreach:'bolt_crystal'},// val 20→20
+  starwort:{ashfall:'desert_rose',tidecrest:'moonfish_scale',skyreach:'meltwater_pearl'}, // val 15→15
+  embervein:{ashfall:'sulfur_crystal',tidecrest:'siren_tear',skyreach:'aurora_lichen'}, // val 18→18
+  dewdrop_lily:{tidecrest:'sea_fan',skyreach:'coldsnap_root'},                          // val 15→15
+  venomgland:{tidecrest:'cannon_bronze',skyreach:'stormglass'},                      // val 16→16
+  dream_pollen:{tidecrest:'compass_needle',skyreach:'sky_rune_fragment'},                   // val 16→16
+  mirage_dust:{tidecrest:'trident_shard',skyreach:'celestial_mortar'},                     // val 22→22
+  sulfur_bloom:{ashfall:'heatstone',tidecrest:'abyssal_pearl',skyreach:'lightning_shard'},// val 18→18
+  shadow_quartz:{ashfall:'obsidian_shard',tidecrest:'ghost_lantern',skyreach:'eclipse_shard'},// val 22→18
+  deep_iron:{ashfall:'desert_iron',tidecrest:'rust_iron',skyreach:'thunder_iron'},     // val 20→14
   // === FACTION RESOURCES ===
-  sacred_ember:{ashfall:'flamekeeper_ember',tidecrest:'tidekeeper_sigil'},
-  deep_crystal:{ashfall:'temple_gold',tidecrest:'abyssal_diamond'},
-  veil_shard:{ashfall:'pharaoh_dust',tidecrest:'sea_crown_jewel'},
-  warden_sigil:{ashfall:'dustwalker_compass',tidecrest:'harbor_seal'},
-  flamekeeper_ember:{tidecrest:'tidekeeper_sigil'},
+  sacred_ember:{ashfall:'flamekeeper_ember',tidecrest:'tidekeeper_sigil',skyreach:'starcaller_seal'},
+  deep_crystal:{ashfall:'temple_gold',tidecrest:'abyssal_diamond',skyreach:'zenith_stone'},
+  veil_shard:{ashfall:'pharaoh_dust',tidecrest:'sea_crown_jewel',skyreach:'celestial_essence'},
+  warden_sigil:{ashfall:'dustwalker_compass',tidecrest:'harbor_seal',skyreach:'skyward_seal'},
+  flamekeeper_ember:{tidecrest:'tidekeeper_sigil',skyreach:'starcaller_seal'},
   // === ASHFALL HIGH ===
-  heatstone:{tidecrest:'salt_crystal'},                        // val 9→9
-  sandstone_dust:{tidecrest:'sponge_pulp'},                    // val 8→8
+  heatstone:{tidecrest:'salt_crystal',skyreach:'rime_dust'},                        // val 9→9
+  sandstone_dust:{tidecrest:'sponge_pulp',skyreach:'cloud_berry'},                    // val 8→8
 };
 var FACTION_SUBS={
-  ashwardens:{ashfall:'dustwalkers',tidecrest:'harbormasters'},
-  hearthkeepers:{ashfall:'flamekeepers',tidecrest:'tidekeepers'},
-  veilwalkers:{ashfall:'flamekeepers',tidecrest:'tidekeepers'},
-  cinderfolk:{ashfall:'sand_merchants',tidecrest:'merchant_marine'},
+  ashwardens:{ashfall:'dustwalkers',tidecrest:'harbormasters',skyreach:'skywardens'},
+  hearthkeepers:{ashfall:'flamekeepers',tidecrest:'tidekeepers',skyreach:'starcallers'},
+  veilwalkers:{ashfall:'flamekeepers',tidecrest:'tidekeepers',skyreach:'windrunners'},
+  cinderfolk:{ashfall:'sand_merchants',tidecrest:'merchant_marine',skyreach:'cloud_traders'},
 };
 var THREAT_SUBS={
-  reavers:{ashfall:'sand_raiders',tidecrest:'corsairs'},
-  blight:{ashfall:'the_scorch',tidecrest:'the_murk'},
-  veilbreakers:{ashfall:'cult_of_buried',tidecrest:'drowned_cult'},
+  reavers:{ashfall:'sand_raiders',tidecrest:'corsairs',skyreach:'sky_raiders'},
+  blight:{ashfall:'the_scorch',tidecrest:'the_murk',skyreach:'the_gale'},
+  veilbreakers:{ashfall:'cult_of_buried',tidecrest:'drowned_cult',skyreach:'eclipse_covenant'},
 };
 // Returns the local equivalent of an ingredient for the given location
 var locIngr=function(id,loc){
@@ -946,6 +958,88 @@ var REGIONS=[
         weights:{primordial_brine:24,siren_tear:18,oracle_tear:14,leviathan_heart:12,tidekeeper_sigil:10,drowned_god_relic:6,sea_crown_jewel:4,abyssal_diamond:4,trident_shard:4,moonfish_scale:4,trade_manifest:4}},
     ],diff:5,unlock:8,time:4,yield:[2,4],dc:18,
     flavor:['The temple breathes with the tide. Water flows through corridors like blood through veins.','Ancient murals depict a civilization that lived beneath the waves.']},
+
+  // ═══ SKYREACH REGIONS ═══
+  {id:'alpine_meadows',loc:'skyreach',name:'Alpine Meadows',icon:'🌷',color:'#4a6a5a',
+    ingr:['cloud_moss','alpine_mint','windstone','sky_clover','eagle_down','frost_daisy','breeze_seed','storm_petal','summit_grass','skyward_seal','drip_fungus'],pick:3,sites:[
+      {id:'sr_wildflower_field',name:'Wildflower Field',icon:'🌷',desc:'Rolling meadow carpeted in silver-blue blooms trembling in the constant wind.',
+        weights:{cloud_moss:24,alpine_mint:22,windstone:8,sky_clover:9,eagle_down:7,frost_daisy:8,breeze_seed:7,storm_petal:5,summit_grass:6,skyward_seal:4,drip_fungus:6}},
+      {id:'sr_snowmelt_brook',name:'Snowmelt Brook',icon:'💧',desc:'Icy brook cutting through the meadow. Mineral-rich plants line its banks.',
+        weights:{cloud_moss:8,alpine_mint:7,windstone:22,sky_clover:7,eagle_down:8,frost_daisy:25,breeze_seed:8,storm_petal:7,summit_grass:8,skyward_seal:5,drip_fungus:9}},
+      {id:'sr_eagle_roost',name:'Eagle Roost',icon:'🦅',desc:'Wind-battered rocks where mountain eagles nest. Feathers and storm petals everywhere.',
+        weights:{cloud_moss:7,alpine_mint:7,windstone:7,sky_clover:8,eagle_down:27,frost_daisy:7,breeze_seed:9,storm_petal:23,summit_grass:5,skyward_seal:6,drip_fungus:8}},
+    ],diff:1,unlock:0,time:1,yield:[2,4],dc:8,
+    flavor:['Wildflowers carpet the meadow in blues and silvers, trembling in the constant wind.','The air is so thin and clean it almost hurts to breathe.','A familiar path — cloud moss grows thick along the snowmelt channels.']},
+  {id:'cloud_forest',loc:'skyreach',name:'Cloud Forest',icon:'🌁',color:'#3a5a4a',
+    ingr:['cloud_moss','mistwood_bark','fog_orchid','drip_fungus','vapor_fern','canopy_dew','hanging_lichen','alpine_mint','sky_clover','cloud_berry','mist_silk'],pick:3,sites:[
+      {id:'sr_fog_trail',name:'Fog Trail',icon:'🌫️',desc:'Visibility drops to arm\'s length. Ancient trees are shapes in the mist.',
+        weights:{cloud_moss:7,mistwood_bark:24,fog_orchid:8,drip_fungus:22,vapor_fern:9,canopy_dew:7,hanging_lichen:8,alpine_mint:5,sky_clover:4,cloud_berry:6,mist_silk:5}},
+      {id:'sr_canopy_pools',name:'Canopy Pools',icon:'💧',desc:'Water collects in massive tree hollows above. Rare orchids drink from these pools.',
+        weights:{cloud_moss:8,mistwood_bark:7,fog_orchid:25,drip_fungus:7,vapor_fern:22,canopy_dew:24,hanging_lichen:7,alpine_mint:6,sky_clover:5,cloud_berry:4,mist_silk:3}},
+      {id:'sr_silk_grove',name:'Silk Grove',icon:'🕸️',desc:'Gossamer webs span between ancient trunks. The spiders here spin silk stronger than steel.',
+        weights:{cloud_moss:6,mistwood_bark:8,fog_orchid:7,drip_fungus:8,vapor_fern:7,canopy_dew:6,hanging_lichen:24,alpine_mint:7,sky_clover:7,cloud_berry:8,mist_silk:26}},
+    ],diff:2,unlock:1,time:1,yield:[2,4],dc:10,
+    flavor:['Water condenses on every surface — the forest drinks the clouds.','Visibility drops to arm\'s length. The trees are shapes in the mist.','Something skitters through the canopy above. Probably harmless.']},
+  {id:'windcarved_cliffs',loc:'skyreach',name:'Wind-Carved Cliffs',icon:'🪨',color:'#5a5a6a',
+    ingr:['windstone','cliff_quartz','raptor_plume','gale_salt','wind_iron','skystone_chip','rime_dust','eagle_down','breeze_seed','skyward_seal'],pick:3,sites:[
+      {id:'sr_gale_face',name:'Gale Face',icon:'🌬️',desc:'The wind never stops here. It has carved the stone into shapes like frozen waves.',
+        weights:{windstone:22,cliff_quartz:8,raptor_plume:7,gale_salt:26,wind_iron:8,skystone_chip:7,rime_dust:9,eagle_down:5,breeze_seed:8,skyward_seal:5}},
+      {id:'sr_quartz_shelf',name:'Quartz Shelf',icon:'🔷',desc:'A broad cliff shelf where wind-polished quartz veins glitter in the stone.',
+        weights:{windstone:7,cliff_quartz:28,raptor_plume:7,gale_salt:7,wind_iron:22,skystone_chip:9,rime_dust:8,eagle_down:6,breeze_seed:6,skyward_seal:6}},
+      {id:'sr_raptor_crags',name:'Raptor Crags',icon:'🦅',desc:'Jagged outcrops where raptors circle. Plumes and nesting material everywhere.',
+        weights:{windstone:8,cliff_quartz:7,raptor_plume:28,gale_salt:7,wind_iron:7,skystone_chip:8,rime_dust:22,eagle_down:9,breeze_seed:4,skyward_seal:4}},
+    ],diff:2,unlock:2,time:2,yield:[2,4],dc:11,
+    flavor:['The wind never stops here. It has carved the stone into shapes like frozen waves.','Crystal veins catch the light, making the cliff face shimmer.','Raptors circle above. Their cries echo off the stone.']},
+  {id:'crystal_caverns_sr',loc:'skyreach',name:'Crystal Caverns',icon:'💠',color:'#3a4a6a',
+    ingr:['altitude_crystal','pressure_quartz','cave_frost_sr','echo_mineral','skystone_chip','crystal_moss_sr','mist_silk','cliff_quartz','starcaller_seal','fog_orchid'],pick:3,sites:[
+      {id:'sr_geode_hall',name:'Geode Hall',icon:'💎',desc:'A vast chamber where split geodes reveal sparkling crystal interiors.',
+        weights:{altitude_crystal:26,pressure_quartz:24,cave_frost_sr:8,echo_mineral:7,skystone_chip:9,crystal_moss_sr:8,mist_silk:6,cliff_quartz:7,starcaller_seal:5,fog_orchid:6}},
+      {id:'sr_echo_chamber',name:'Echo Chamber',icon:'🔔',desc:'A natural amphitheater where crystals hum with resonant energy.',
+        weights:{altitude_crystal:8,pressure_quartz:7,cave_frost_sr:9,echo_mineral:28,skystone_chip:7,crystal_moss_sr:24,mist_silk:7,cliff_quartz:6,starcaller_seal:4,fog_orchid:7}},
+      {id:'sr_frost_grotto',name:'Frost Grotto',icon:'🧊',desc:'An ice-crusted cavern where permanent frost formations grow like crystal trees.',
+        weights:{altitude_crystal:7,pressure_quartz:8,cave_frost_sr:28,echo_mineral:7,skystone_chip:6,crystal_moss_sr:7,mist_silk:8,cliff_quartz:24,starcaller_seal:5,fog_orchid:8}},
+    ],diff:3,unlock:3,time:2,yield:[2,4],dc:13,
+    flavor:['Every surface refracts light into spectral rainbows. You feel the hum in your teeth.','The crystals grow like trees here — some taller than you.','Echoes bounce endlessly between the crystal walls.']},
+  {id:'glacial_lake',loc:'skyreach',name:'Glacial Lake',icon:'🧊',color:'#3a5a6a',
+    ingr:['glacial_silt','frozen_bloom','meltwater_pearl','ice_moss','summit_coral','aurora_lichen','lake_crystal','coldsnap_root','cloud_trader_token','frost_amber'],pick:3,sites:[
+      {id:'sr_moraine_shore',name:'Moraine Shore',icon:'🏔️',desc:'Rocky shore of glacial debris. Fine silt and ancient fossils everywhere.',
+        weights:{glacial_silt:26,frozen_bloom:7,meltwater_pearl:7,ice_moss:22,summit_coral:8,aurora_lichen:6,lake_crystal:8,coldsnap_root:7,cloud_trader_token:5,frost_amber:8}},
+      {id:'sr_crystal_shallows',name:'Crystal Shallows',icon:'💧',desc:'Impossibly clear shallows where crystals grow in the glacial silt.',
+        weights:{glacial_silt:8,frozen_bloom:8,meltwater_pearl:24,ice_moss:7,summit_coral:7,aurora_lichen:7,lake_crystal:26,coldsnap_root:7,cloud_trader_token:6,frost_amber:5}},
+      {id:'sr_aurora_bank',name:'Aurora Bank',icon:'🌈',desc:'Northern shore where the aurora reflects off the lake. Rare lichens glow in response.',
+        weights:{glacial_silt:7,frozen_bloom:22,meltwater_pearl:8,ice_moss:8,summit_coral:7,aurora_lichen:26,lake_crystal:7,coldsnap_root:9,cloud_trader_token:6,frost_amber:5}},
+    ],diff:3,unlock:4,time:2,yield:[2,4],dc:14,
+    flavor:['The lake is so clear you can see the bottom fifty feet down.','Ice clings to the shore even in summer. Your fingers go numb fast.','Aurora light dances across the water surface.']},
+  {id:'stormspire_peaks',loc:'skyreach',name:'Stormspire Peaks',icon:'⛈️',color:'#4a4a6a',
+    ingr:['stormglass','lightning_shard','thunder_iron','charged_quartz','storm_pearl_sr','tempest_moss','bolt_crystal','gale_salt','windrunner_compass','frost_amber'],pick:3,sites:[
+      {id:'sr_lightning_field',name:'Lightning Field',icon:'⚡',desc:'The tallest rocks attract constant strikes. The ground is warm from yesterday\'s lightning.',
+        weights:{stormglass:24,lightning_shard:26,thunder_iron:8,charged_quartz:9,storm_pearl_sr:7,tempest_moss:8,bolt_crystal:4,gale_salt:7,windrunner_compass:5,frost_amber:7}},
+      {id:'sr_thunder_ridge',name:'Thunder Ridge',icon:'🌩️',desc:'A razor-thin ridge where storms split around you. Iron ore hums with charge.',
+        weights:{stormglass:8,lightning_shard:7,thunder_iron:26,charged_quartz:24,storm_pearl_sr:8,tempest_moss:9,bolt_crystal:5,gale_salt:6,windrunner_compass:4,frost_amber:6}},
+      {id:'sr_tempest_hollow',name:'Tempest Hollow',icon:'🌊',desc:'A sheltered depression where storm-charged moss and pearls accumulate.',
+        weights:{stormglass:7,lightning_shard:8,thunder_iron:7,charged_quartz:7,storm_pearl_sr:26,tempest_moss:24,bolt_crystal:6,gale_salt:8,windrunner_compass:5,frost_amber:8}},
+    ],diff:4,unlock:5,time:3,yield:[2,4],dc:15,
+    flavor:['Thunder rolls across the peaks like a living thing.','Static prickles your skin. The storm is always coming.','Lightning leaves glass in the stone. Beautiful and deadly.']},
+  {id:'sky_ruins',loc:'skyreach',name:'Sky Ruins',icon:'🏯',color:'#5a4a6a',
+    ingr:['star_metal','sky_rune_fragment','levitation_dust','celestial_mortar','ruin_crystal','ancient_windstone','void_feather','eclipse_shard','starcaller_seal','aurora_lichen'],pick:3,sites:[
+      {id:'sr_fallen_tower',name:'Fallen Tower',icon:'🏚️',desc:'A once-floating tower now embedded in the mountainside. Star metal glints in the rubble.',
+        weights:{star_metal:26,sky_rune_fragment:22,levitation_dust:8,celestial_mortar:9,ruin_crystal:7,ancient_windstone:7,void_feather:5,eclipse_shard:8,starcaller_seal:5,aurora_lichen:7}},
+      {id:'sr_gravity_well',name:'Gravity Well',icon:'🌀',desc:'An area where gravity fluctuates. Dust floats and stones hover.',
+        weights:{star_metal:7,sky_rune_fragment:8,levitation_dust:28,celestial_mortar:7,ruin_crystal:24,ancient_windstone:8,void_feather:7,eclipse_shard:6,starcaller_seal:5,aurora_lichen:6}},
+      {id:'sr_eclipse_vault',name:'Eclipse Vault',icon:'🌑',desc:'A sealed chamber that only opens during eclipses. Shadow energy pools here.',
+        weights:{star_metal:8,sky_rune_fragment:7,levitation_dust:7,celestial_mortar:8,ruin_crystal:7,ancient_windstone:22,void_feather:9,eclipse_shard:26,starcaller_seal:6,aurora_lichen:5}},
+    ],diff:4,unlock:6,time:3,yield:[2,4],dc:16,faction:'starcallers',fReq:2,
+    flavor:['The architecture defies logic — arches that support nothing, stairs that lead into open sky.','Star metal glints in the rubble. Whatever lived here understood forces we\'ve forgotten.','Dust floats upward here. Gravity is only a suggestion.']},
+  {id:'observatory_summit',loc:'skyreach',name:'Observatory Summit',icon:'🔭',color:'#3a3a5a',
+    ingr:['celestial_essence','starfire_dust','void_crystal','primordial_wind','zenith_stone','void_feather','ruin_crystal','eclipse_shard','ancient_windstone','celestial_mortar'],pick:3,sites:[
+      {id:'sr_star_plates',name:'Star Collection Plates',icon:'⭐',desc:'Ancient lenses focus starlight onto collection plates. The essence still accumulates.',
+        weights:{celestial_essence:28,starfire_dust:24,void_crystal:7,primordial_wind:7,zenith_stone:4,void_feather:6,ruin_crystal:8,eclipse_shard:7,ancient_windstone:7,celestial_mortar:6}},
+      {id:'sr_void_chamber',name:'Void Chamber',icon:'🌌',desc:'A chamber open to the sky where the atmosphere is nearly absent. Void crystals grow here.',
+        weights:{celestial_essence:7,starfire_dust:7,void_crystal:28,primordial_wind:24,zenith_stone:6,void_feather:8,ruin_crystal:7,eclipse_shard:8,ancient_windstone:6,celestial_mortar:5}},
+      {id:'sr_zenith_peak',name:'Zenith Peak',icon:'💫',desc:'The absolute apex. The rarest materials form where earth meets the infinite sky.',
+        weights:{celestial_essence:8,starfire_dust:7,void_crystal:7,primordial_wind:7,zenith_stone:26,void_feather:24,ruin_crystal:6,eclipse_shard:5,ancient_windstone:8,celestial_mortar:8}},
+    ],diff:5,unlock:8,time:4,yield:[2,4],dc:18,
+    flavor:['The air is so thin you breathe in gasps. The stars are visible even at noon.','Ancient lenses focus starlight onto collection plates. Whatever they were gathering, it\'s still accumulating.','The summit is treacherous — but the rarest materials gather here.']},
 ];
 var RECIPES=[
   {id:'healing_salve',name:'Healing Salve',icon:'🧴',ingr:['ashbloom','hearthstone'],xp:30,unlock:0,dc:8,stat:'inu',desc:'A soothing balm that knits flesh and eases pain — the backbone of any apothecary.'},
@@ -1179,6 +1273,114 @@ var RECIPES=[
     desc:'Volcanic minerals from ocean floor vents, stabilized in storm glass. Explosive potential.'},
   {id:'harbor_alliance_brew',name:'Harbor Alliance Brew',icon:'🤝',ingr:['harbor_seal','trade_manifest','diver_token'],xp:140,unlock:8,dc:19,stat:'com',
     desc:'A ceremonial brew binding all harbor factions in alliance. Only brewed in times of great need.'},
+
+  // ═══ SKYREACH RECIPES ═══
+  // Intro (DC 7-8)
+  {id:'altitude_tonic',name:'Altitude Tonic',icon:'🫁',ingr:['cloud_moss','windstone'],xp:25,unlock:0,dc:7,stat:'inu',
+    desc:'A simple tonic that eases altitude sickness and steadies the breath. Every Skyreach alchemist\'s first recipe.'},
+  {id:'frost_poultice',name:'Frost Poultice',icon:'🩹',ingr:['frost_daisy','summit_grass'],xp:22,unlock:0,dc:7,stat:'inu',
+    desc:'Frost daisy crushed with summit grass. A rough field dressing that numbs pain on contact.'},
+  {id:'breeze_balm',name:'Breeze Balm',icon:'🧴',ingr:['breeze_seed','sky_clover'],xp:28,unlock:0,dc:8,stat:'tec',
+    desc:'Windborne seeds ground into a cooling salve. Applied to sore muscles after a day\'s climb.'},
+  {id:'cloud_berry_tonic',name:'Cloud Berry Tonic',icon:'🫐',ingr:['cloud_berry','eagle_down'],xp:30,unlock:0,dc:8,stat:'com',
+    desc:'Tart cloud berry juice softened with eagle down fiber. Visitors from below can\'t get enough.'},
+  {id:'mountain_tea',name:'Mountain Tea',icon:'☕',ingr:['alpine_mint','cloud_moss'],xp:20,unlock:0,dc:7,stat:'com',
+    desc:'Hot mint tea brewed from alpine herbs. The whole settlement drinks it. Surprisingly lucrative.'},
+  {id:'summit_paste',name:'Summit Paste',icon:'🏔️',ingr:['thin_air_lichen','frost_daisy'],xp:30,unlock:0,dc:8,stat:'tec',
+    desc:'Lichen scraped from exposed peaks mixed into a thick paste. Hardens skin against wind and cold.'},
+  // Early (DC 9-10)
+  {id:'fog_tincture',name:'Fog Tincture',icon:'🌫️',ingr:['drip_fungus','hanging_lichen'],xp:35,unlock:1,dc:9,stat:'inu',
+    desc:'Distilled cloud forest moisture. Clears the lungs and sharpens sight in poor visibility.'},
+  {id:'mistwood_tonic',name:'Mistwood Tonic',icon:'🌲',ingr:['mistwood_bark','cloud_berry'],xp:38,unlock:1,dc:9,stat:'tec',
+    desc:'Aromatic bark steeped with cloud berry. Strengthens the body against altitude fatigue.'},
+  {id:'gale_powder',name:'Gale Powder',icon:'💨',ingr:['gale_salt','storm_petal'],xp:42,unlock:1,dc:10,stat:'cre',
+    desc:'Volatile powder that erupts into a blinding wind gust when thrown. Scouts swear by it.'},
+  {id:'cliff_salve',name:'Cliff Salve',icon:'🪨',ingr:['cliff_quartz','ice_moss'],xp:40,unlock:1,dc:10,stat:'tec',
+    desc:'Powdered cliff quartz suspended in ice moss gel. Treats fractures and deep bruises from falls.'},
+  {id:'raptor_eye_brew',name:'Raptor Eye Brew',icon:'🦅',ingr:['raptor_plume','fog_orchid'],xp:45,unlock:1,dc:10,stat:'acu',
+    desc:'Raptor plume infused with fog orchid nectar. Grants preternaturally sharp vision for hours.'},
+  {id:'cloud_wine',name:'Cloud Wine',icon:'🍷',ingr:['cloud_berry','alpine_mint','drip_fungus'],xp:35,unlock:1,dc:9,stat:'com',
+    desc:'Skyreach\'s famous local vintage. Fermented cloud berry with mint and fungal cultures.'},
+  // Mid (DC 11-12)
+  {id:'canopy_elixir',name:'Canopy Elixir',icon:'🌿',ingr:['canopy_dew','vapor_fern'],xp:50,unlock:2,dc:11,stat:'inu',
+    desc:'Concentrated cloud forest dew. A powerful healing draught.'},
+  {id:'mist_silk_wrap',name:'Mist Silk Bandage',icon:'🕸️',ingr:['mist_silk','fog_orchid'],xp:48,unlock:2,dc:11,stat:'inu',
+    desc:'Living spider silk soaked in fog orchid extract. The bandage bonds with flesh.'},
+  {id:'wind_iron_oil',name:'Wind Iron Oil',icon:'⚒️',ingr:['wind_iron','rime_dust'],xp:55,unlock:2,dc:12,stat:'tec',
+    desc:'Wind-hardened iron dissolved in rime powder. Makes blades cut through armor.'},
+  {id:'echo_draught',name:'Echo Draught',icon:'🔔',ingr:['echo_mineral','crystal_moss_sr'],xp:55,unlock:3,dc:12,stat:'acu',
+    desc:'A resonant liquid that amplifies perception. You hear heartbeats through stone walls.'},
+  {id:'rime_bomb',name:'Rime Bomb',icon:'💣',ingr:['rime_dust','cave_frost_sr'],xp:50,unlock:2,dc:11,stat:'cre',
+    desc:'A brittle sphere that shatters into a flash-freeze blast. Everything in range is coated in ice.'},
+  {id:'skystone_draught',name:'Skystone Draught',icon:'🏗️',ingr:['skystone_chip','pressure_quartz'],xp:58,unlock:3,dc:12,stat:'dis',
+    desc:'Pulverized Skyreach stone in quartz suspension. The drinker becomes unyielding as the mountain.'},
+  {id:'thin_air_elixir',name:'Thin Air Elixir',icon:'💨',ingr:['thin_air_lichen','alpine_mint','windstone'],xp:52,unlock:2,dc:11,stat:'dis',
+    desc:'Teaches the lungs to drink thin air. Endurance at altitude doubles for a full day.'},
+  // Advanced (DC 13-14)
+  {id:'altitude_lens',name:'Crystal Lens Brew',icon:'🔎',ingr:['altitude_crystal','echo_mineral'],xp:65,unlock:3,dc:13,stat:'acu',
+    desc:'Altitude crystals ground to clarity. The drinker perceives the structure of magic itself.'},
+  {id:'glacier_salve',name:'Glacier Salve',icon:'🧊',ingr:['glacial_silt','frozen_bloom'],xp:60,unlock:4,dc:13,stat:'inu',
+    desc:'Millennial glacial sediment with a flower preserved in ice. Heals wounds that refuse to close.'},
+  {id:'meltwater_draught',name:'Meltwater Draught',icon:'💧',ingr:['meltwater_pearl','ice_moss','glacial_silt'],xp:68,unlock:4,dc:14,stat:'inu',
+    desc:'Glacial pearl dissolved in meltwater. The purest healing draught in Skyreach.'},
+  {id:'aurora_lamp',name:'Aurora Lamp Oil',icon:'🌈',ingr:['aurora_lichen','lake_crystal'],xp:70,unlock:4,dc:14,stat:'acu',
+    desc:'Aurora lichen extract suspended in lake crystal. Burns with colors that reveal enchantment auras.'},
+  {id:'coldsnap_bomb',name:'Coldsnap Bomb',icon:'❄️',ingr:['coldsnap_root','cave_frost_sr','rime_dust'],xp:65,unlock:4,dc:14,stat:'cre',
+    desc:'Triple-cold reagents compressed into an unstable mass. Detonates into a localized blizzard.'},
+  {id:'summit_fortitude',name:'Summit Fortitude',icon:'🗿',ingr:['summit_coral','frozen_bloom'],xp:62,unlock:3,dc:13,stat:'dis',
+    desc:'Ancient coral from when the peaks were sea floor. The drinker gains the patience of stone.'},
+  {id:'frost_amber_polish',name:'Frost Amber Polish',icon:'🟡',ingr:['frost_amber','wind_iron'],xp:68,unlock:4,dc:14,stat:'tec',
+    desc:'Frozen tree resin alloyed with wind iron. Weapons treated with this never dull or corrode.'},
+  // High (DC 15-16)
+  {id:'stormglass_oil',name:'Stormglass Blade Oil',icon:'⚡',ingr:['stormglass','lightning_shard'],xp:80,unlock:5,dc:15,stat:'tec',
+    desc:'Natural glass fused by lightning, ground and suspended in oil. Each blow crackles with discharge.'},
+  {id:'lightning_flask',name:'Lightning Flask',icon:'🧨',ingr:['lightning_shard','charged_quartz','gale_salt'],xp:85,unlock:5,dc:16,stat:'cre',
+    desc:'Captured lightning compressed into a flask. Handle with extreme care.'},
+  {id:'storm_pearl_elixir',name:'Storm Pearl Elixir',icon:'🔮',ingr:['storm_pearl_sr','tempest_moss'],xp:82,unlock:5,dc:15,stat:'acu',
+    desc:'A pearl forged by storms dissolved in living moss. Grants danger sense.'},
+  {id:'thunder_draught',name:'Thunder Draught',icon:'🌩️',ingr:['thunder_iron','stormglass'],xp:78,unlock:5,dc:15,stat:'dis',
+    desc:'Iron charged by a thousand storms. The drinker becomes immune to fear.'},
+  {id:'windrunner_speed',name:'Windrunner Draught',icon:'🏃',ingr:['charged_quartz','raptor_plume','mist_silk'],xp:88,unlock:6,dc:16,stat:'dis',
+    desc:'The Windrunners\' secret formula. The drinker moves with impossible speed.'},
+  {id:'star_metal_flux',name:'Star Metal Flux',icon:'☄️',ingr:['star_metal','sky_rune_fragment'],xp:90,unlock:6,dc:16,stat:'tec',
+    desc:'Meteoric iron dissolved in ancient rune-water. Makes any material light as air, hard as diamond.'},
+  // Expert (DC 17-18) + faction
+  {id:'skyward_ward',name:'Skywarden\'s Ward',icon:'🛡️',ingr:['skyward_seal','windstone','altitude_crystal'],xp:100,unlock:6,dc:15,stat:'dis',faction:'skywardens',fReq:2,
+    desc:'Official Skywarden protection ward. Planted along mountain passes to repel threats.'},
+  {id:'celestial_ink',name:'Celestial Ink',icon:'✒️',ingr:['starcaller_seal','aurora_lichen','meltwater_pearl'],xp:100,unlock:6,dc:15,stat:'acu',faction:'starcallers',fReq:3,
+    desc:'Ink that shimmers with starlight. Enchantments inscribed with this are permanently more powerful.'},
+  {id:'cloud_trader_blend',name:'Cloud Trader\'s Blend',icon:'📦',ingr:['cloud_trader_token','frost_amber','mist_silk'],xp:100,unlock:6,dc:15,stat:'com',faction:'cloud_traders',fReq:2,
+    desc:'The Cloud Traders\' exclusive blend. One sip and any merchant treats you like family.'},
+  {id:'void_edge_oil',name:'Void Edge Oil',icon:'🗡️',ingr:['levitation_dust','star_metal','thunder_iron'],xp:105,unlock:7,dc:17,stat:'tec',
+    desc:'Gravity-defying dust mixed with alien iron. A treated blade cuts through magical barriers.'},
+  {id:'bolt_crystal_bomb',name:'Bolt Crystal Bomb',icon:'💥',ingr:['bolt_crystal','lightning_shard','stormglass'],xp:110,unlock:7,dc:17,stat:'cre',
+    desc:'A captured lightning bolt crystallized around volatile storm reagents.'},
+  {id:'stargazer_draught',name:'Stargazer\'s Draught',icon:'🔭',ingr:['celestial_mortar','eclipse_shard','aurora_lichen'],xp:108,unlock:7,dc:17,stat:'acu',
+    desc:'Sky civilization materials dissolved into shimmering tonic. See the stars in daylight.'},
+  // Endgame (DC 19-20)
+  {id:'primordial_gale',name:'Primordial Gale',icon:'🌪️',ingr:['primordial_wind','void_feather','ancient_windstone'],xp:150,unlock:8,dc:19,stat:'inu',
+    desc:'Wind from the world\'s birth. Drinking it is like swallowing a hurricane. You survive. Barely.'},
+  {id:'zenith_elixir',name:'Zenith Elixir',icon:'⭐',ingr:['zenith_stone','celestial_essence','void_crystal'],xp:170,unlock:8,dc:20,stat:'acu',
+    desc:'The pinnacle of Skyreach alchemy. Three impossible ingredients fused into transcendence.'},
+  {id:'skyreach_alliance',name:'Skyreach Alliance Brew',icon:'🤝',ingr:['skyward_seal','starcaller_seal','cloud_trader_token'],xp:140,unlock:8,dc:19,stat:'com',
+    desc:'A ceremonial brew binding all Skyreach factions. Only brewed when the peaks are threatened.'},
+  // ═══ SKYREACH CARTOGRAPHER ELIXIRS ═══
+  {id:'spring_mineral_tonic',name:'Spring Mineral Tonic',icon:'♨️',ingr:['spring_mineral','cloud_moss','windstone'],xp:80,unlock:5,dc:14,stat:'inu',
+    desc:'Mineral water from the hidden hot spring. Warms the body and sharpens commerce for 3 days.',buff:'spring_mineral_tonic'},
+  {id:'crown_pollen_brew',name:'Crown Pollen Brew',icon:'🌻',ingr:['crown_epiphyte','sky_pollen','canopy_dew'],xp:85,unlock:5,dc:14,stat:'acu',
+    desc:'Canopy-top pollen distilled into a mind-sharpening brew. +2 research, +1 craft for 3 days.',buff:'crown_pollen_brew'},
+  {id:'vault_quartz_elixir',name:'Vault Quartz Elixir',icon:'🔶',ingr:['petrified_plume','vault_quartz','cliff_quartz'],xp:90,unlock:6,dc:15,stat:'tec',
+    desc:'Ancient eagle feathers crystallized into a foraging elixir. +3 extraction, +25% yield for 3 days.',buff:'vault_quartz_elixir'},
+  {id:'harmonic_draught',name:'Harmonic Draught',icon:'🎵',ingr:['harmonic_shard','resonance_bloom','altitude_crystal'],xp:95,unlock:6,dc:16,stat:'acu',
+    desc:'Crystal harmonics tuned to perfection. +3 inscription, +8 enchant bonus for 3 days.',buff:'harmonic_draught'},
+  {id:'frozen_garden_philter',name:'Frozen Garden Philter',icon:'🥀',ingr:['frozen_fern','ice_pearl','glacial_silt'],xp:95,unlock:6,dc:16,stat:'inu',
+    desc:'Plants preserved in ice for millennia, essence still vital. +25% discovery, +20% XP for 4 days.',buff:'frozen_garden_philter'},
+  {id:'lightning_throne_flask',name:'Lightning Throne Flask',icon:'👑',ingr:['throne_crystal','fused_iron','lightning_shard'],xp:110,unlock:7,dc:18,stat:'tec',
+    desc:'Crystallized lightning from the Throne. +5 craft, +30% double batch for 2 days.',buff:'lightning_throne_flask'},
+  {id:'starfall_draught',name:'Starfall Draught',icon:'🌠',ingr:['starfall_fragment','celestial_gear','star_metal'],xp:100,unlock:7,dc:17,stat:'acu',
+    desc:'Sky civilization machinery still hums with power. Grants broad enhancement for 3 days.',buff:'starfall_draught'},
+  {id:'lens_elixir',name:'Focused Starlight Elixir',icon:'🔍',ingr:['lens_crystal','focused_starlight','celestial_essence'],xp:160,unlock:8,dc:20,stat:'acu',
+    desc:'Pure starlight focused through the Great Lens. The Skyreach equivalent of the Primordial Elixir.',buff:'lens_elixir'},
 ];
 // Enchantment categories: weapon, armor, other (jewelry/clothing/accessories)
 var ENCHANTMENTS=[
@@ -1320,6 +1522,54 @@ var ENCHANTMENTS=[
   {id:'e_vent_forge',name:'Vent Forge',icon:'🌋',cat:'weapon',ingr:['abyssal_vent_mineral','storm_glass_tc'],xp:110,dc:18,desc:'Volcanic minerals from the ocean floor. The weapon burns with deep-earth heat.'},
   {id:'e_harbor_compact',name:'Harbor Compact',icon:'📜',cat:'other',ingr:['harbor_seal','trade_manifest'],xp:120,dc:18,desc:'The combined authority of harbor and fleet. The wearer is recognized as a true citizen of Tidecrest.'},
   {id:'e_diver_blessing',name:'Diver\'s Blessing',icon:'🤿',cat:'other',ingr:['diver_token','deep_brine'],xp:90,dc:16,desc:'The Pearl Divers\' deepest blessing. The wearer can hold their breath for impossible durations.'},
+
+  // ═══ SKYREACH ENCHANTMENTS ═══
+  // WEAPON
+  {id:'e_frost_edge',name:'Frost Edge',icon:'❄️',cat:'weapon',ingr:['frost_daisy','cliff_quartz'],xp:45,dc:9,desc:'Frost-hardened quartz bonded to the blade. Strikes numb and slow the target.'},
+  {id:'e_gale_strike',name:'Gale Strike',icon:'🌬️',cat:'weapon',ingr:['gale_salt','storm_petal'],xp:50,dc:10,desc:'Wind-deposited salt crystals that shatter on impact, releasing a concussive gust.'},
+  {id:'e_wind_iron_edge',name:'Wind Iron Edge',icon:'⛏️',cat:'weapon',ingr:['wind_iron','rime_dust'],xp:60,dc:12,desc:'Wind-tempered iron fused to the blade. Holds an edge in any conditions.'},
+  {id:'e_raptor_strike',name:'Raptor Strike',icon:'🦅',cat:'weapon',ingr:['raptor_plume','cliff_quartz'],xp:55,dc:11,desc:'A raptor feather bound to the weapon. Strikes with the precision of a diving falcon.'},
+  {id:'e_storm_channel_sr',name:'Storm Channel',icon:'⚡',cat:'weapon',ingr:['stormglass','charged_quartz'],xp:85,dc:15,desc:'Natural storm glass channels lightning through every blow.'},
+  {id:'e_thunder_brand',name:'Thunder Brand',icon:'🌩️',cat:'weapon',ingr:['thunder_iron','lightning_shard'],xp:100,dc:17,desc:'Iron charged by a thousand storms. Each strike rolls like thunder.'},
+  {id:'e_star_metal_edge',name:'Star Metal Edge',icon:'☄️',cat:'weapon',ingr:['star_metal','sky_rune_fragment'],xp:95,dc:16,desc:'Meteoric iron etched with sky runes. Cuts through enchantments and wards.'},
+  {id:'e_bolt_rune',name:'Bolt Rune',icon:'💥',cat:'weapon',ingr:['bolt_crystal','tempest_moss'],xp:88,dc:15,desc:'A captured lightning bolt inscribed as a rune. Periodic discharges stun targets.'},
+  {id:'e_void_edge_sr',name:'Void Edge',icon:'🕊️',cat:'weapon',ingr:['void_feather','levitation_dust'],xp:120,dc:18,desc:'A feather from beyond the sky. The weapon phases through armor.'},
+  {id:'e_celestial_brand',name:'Celestial Brand',icon:'⭐',cat:'weapon',ingr:['celestial_essence','starfire_dust'],xp:140,dc:18,desc:'Pure starlight fused into the blade. Burns with cold radiance.'},
+  {id:'e_zenith_edge',name:'Zenith Edge',icon:'💫',cat:'weapon',ingr:['zenith_stone','void_crystal','celestial_essence'],xp:160,dc:20,desc:'The ultimate Skyreach weapon enchantment. The blade shimmers with summit light.'},
+  // ARMOR
+  {id:'e_cloud_weave',name:'Cloud Weave',icon:'☁️',cat:'armor',ingr:['cloud_moss','breeze_seed'],xp:40,dc:9,desc:'Cloud moss fibers woven into armor padding. Light as air, warm as hearth-fire.'},
+  {id:'e_mistwood_shell',name:'Mistwood Shell',icon:'🪵',cat:'armor',ingr:['mistwood_bark','hanging_lichen'],xp:50,dc:10,desc:'Perpetually damp bark that hardens on impact.'},
+  {id:'e_rime_guard',name:'Rime Guard',icon:'🥶',cat:'armor',ingr:['rime_dust','ice_moss'],xp:55,dc:11,desc:'A layer of permanent frost coats the armor. Attackers\' weapons stick and slow.'},
+  {id:'e_mist_silk_lining',name:'Mist Silk Lining',icon:'🕸️',cat:'armor',ingr:['mist_silk','fog_orchid'],xp:70,dc:13,desc:'Cloud forest spider silk as inner lining. Absorbs shock and mends overnight.'},
+  {id:'e_skystone_plate',name:'Skystone Plating',icon:'🪨',cat:'armor',ingr:['skystone_chip','pressure_quartz'],xp:60,dc:12,desc:'Skyreach\'s signature blue-grey stone laminated onto armor.'},
+  {id:'e_crystal_shell_sr',name:'Crystal Shell',icon:'💎',cat:'armor',ingr:['altitude_crystal','crystal_moss_sr'],xp:78,dc:14,desc:'High-altitude crystals form a translucent outer shell. Refracts strikes into light.'},
+  {id:'e_glacier_ward',name:'Glacier Ward',icon:'🧊',cat:'armor',ingr:['glacial_silt','frozen_bloom'],xp:72,dc:13,desc:'Glacial sediment bonded with frozen petals. The wearer endures killing cold.'},
+  {id:'e_stormward_sr',name:'Storm Ward',icon:'🌊',cat:'armor',ingr:['storm_pearl_sr','tempest_moss'],xp:85,dc:15,desc:'Storm-forged pearl with lightning moss. Electrical attacks are grounded harmlessly.'},
+  {id:'e_summit_bulwark',name:'Summit Bulwark',icon:'🗿',cat:'armor',ingr:['summit_coral','frost_amber','windstone'],xp:95,dc:16,desc:'Fossilized coral and amber from the highest peaks. Armor becomes nearly immovable.'},
+  {id:'e_ruin_plate',name:'Sky Ruin Plating',icon:'🏛️',cat:'armor',ingr:['celestial_mortar','ruin_crystal'],xp:110,dc:17,desc:'Self-repairing sky civilization material. Armor slowly mends after damage.'},
+  {id:'e_void_barrier_sr',name:'Void Barrier',icon:'🌌',cat:'armor',ingr:['void_crystal','primordial_wind'],xp:135,dc:18,desc:'A barrier of nothingness surrounds the wearer. Attacks phase through.'},
+  {id:'e_starfire_aegis',name:'Starfire Aegis',icon:'🔆',cat:'armor',ingr:['starfire_dust','celestial_essence','void_crystal'],xp:155,dc:20,desc:'The ultimate Skyreach armor enchantment. Starlight crystallizes into radiant defense.'},
+  // OTHER
+  {id:'e_skythread',name:'Skythread',icon:'🍀',cat:'other',ingr:['sky_clover','eagle_down'],xp:40,dc:9,desc:'Woven sky clover and eagle down. Grants sure-footedness on mountain terrain.'},
+  {id:'e_fog_step',name:'Fog Step',icon:'🌫️',cat:'other',ingr:['drip_fungus','vapor_fern'],xp:48,dc:10,desc:'Cloud forest essence lets the wearer move silently through mist and fog.'},
+  {id:'e_echo_sense',name:'Echo Sense',icon:'🔔',cat:'other',ingr:['echo_mineral','cave_frost_sr'],xp:60,dc:12,desc:'Resonant minerals that vibrate in response to nearby movement.'},
+  {id:'e_aurora_charm',name:'Aurora Charm',icon:'🌈',cat:'other',ingr:['aurora_lichen','lake_crystal'],xp:78,dc:14,desc:'Jewelry that shifts colors with the aurora. Inspires trust and awe.'},
+  {id:'e_cloudstep',name:'Cloudstep',icon:'💧',cat:'other',ingr:['canopy_dew','mist_silk'],xp:68,dc:13,desc:'Walk across unstable surfaces as if they were solid ground.'},
+  {id:'e_summit_sight',name:'Summit Sight',icon:'🤍',cat:'other',ingr:['meltwater_pearl','altitude_crystal'],xp:75,dc:14,desc:'See through weather, darkness, and magical concealment.'},
+  {id:'e_windrunner_mark',name:'Windrunner\'s Mark',icon:'🧭',cat:'other',ingr:['windrunner_compass','charged_quartz'],xp:90,dc:15,faction:'windrunners',fReq:3,desc:'The Windrunners\' compass bound to jewelry. Always finds the safest path.'},
+  {id:'e_starcaller_lens',name:'Starcaller\'s Lens',icon:'🔭',cat:'other',ingr:['starcaller_seal','eclipse_shard'],xp:100,dc:16,faction:'starcallers',fReq:3,desc:'A celestial lens revealing invisible enchantments. Starcaller-exclusive.'},
+  {id:'e_star_map',name:'Star Map Inscription',icon:'🌠',cat:'other',ingr:['ruin_crystal','ancient_windstone','star_metal'],xp:110,dc:17,desc:'A constellation map etched into jewelry. Grants flashes of cosmic insight.'},
+  {id:'e_levitation_charm',name:'Levitation Charm',icon:'🪄',cat:'other',ingr:['levitation_dust','void_feather'],xp:98,dc:16,desc:'The wearer drifts gently when falling.'},
+  {id:'e_zenith_crown',name:'Zenith Crown',icon:'💫',cat:'other',ingr:['zenith_stone','celestial_essence','primordial_wind'],xp:160,dc:20,desc:'The ultimate Skyreach accessory enchantment. Radiates summit authority.'},
+  // ═══ SKYREACH CARTOGRAPHER ENCHANTMENTS ═══
+  {id:'e_spring_ward_sr',name:'Spring Ward',icon:'♨️',cat:'armor',ingr:['spring_mineral','thermal_herb'],xp:85,dc:14,desc:'Hot spring minerals bonded to armor. Resists cold. Cartographer-exclusive.'},
+  {id:'e_crown_bloom',name:'Crown Bloom',icon:'🌻',cat:'other',ingr:['crown_epiphyte','sky_pollen'],xp:88,dc:14,desc:'Living sky-flowers grant heightened intuition. Cartographer-exclusive.'},
+  {id:'e_petrified_edge',name:'Petrified Edge',icon:'🦴',cat:'weapon',ingr:['petrified_plume','vault_quartz'],xp:92,dc:15,desc:'Eagle feather turned to stone. Strikes with primordial force. Cartographer-exclusive.'},
+  {id:'e_harmonic_rune_sr',name:'Harmonic Rune',icon:'🎵',cat:'weapon',ingr:['harmonic_shard','resonance_bloom'],xp:98,dc:16,desc:'Crystal harmonics shatter wards. Cartographer-exclusive.'},
+  {id:'e_frozen_garden',name:'Frozen Garden Ward',icon:'🥀',cat:'armor',ingr:['frozen_fern','ice_pearl'],xp:100,dc:16,desc:'Armor radiates a field of bitter cold. Cartographer-exclusive.'},
+  {id:'e_throne_brand',name:'Lightning Throne Brand',icon:'👑',cat:'weapon',ingr:['throne_crystal','fused_iron'],xp:115,dc:18,desc:'Permanently arcs with electrical discharge. Cartographer-exclusive.'},
+  {id:'e_starfall_weave',name:'Starfall Weave',icon:'⚙️',cat:'armor',ingr:['starfall_fragment','celestial_gear'],xp:105,dc:17,desc:'Sky civ gears shift and realign to deflect strikes. Cartographer-exclusive.'},
+  {id:'e_great_lens',name:'Great Lens Focus',icon:'🔍',cat:'other',ingr:['lens_crystal','focused_starlight'],xp:155,dc:20,desc:'A fragment of the Great Lens. The ultimate Skyreach cartographer enchantment.'},
 ];
 // ═══ LOCATIONS ═══
 var LOCATIONS={
@@ -1338,6 +1588,11 @@ var LOCATIONS={
     startEnch:['e_sharp','e_glow','e_salt_ward','e_tide_step','e_coral_edge','e_barnacle_grip'],
     bgColor:'#0a1a2a',themeAccent:'#40a0d0',
     intro:'The harbor greets you with the cry of gulls and the creak of rigging. Salt air fills your lungs as you haul your pack up the cliff steps to a workshop overlooking the docks. Below, pearl divers surface with the morning catch. Time to make your mark.'},
+  skyreach:{id:'skyreach',name:'Skyreach',icon:'🗻',desc:'A high-altitude settlement above the clouds. Ancient observatories, glacial peaks, and ruins of a lost sky civilization await.',
+    startGold:20,startInv:{cloud_moss:3,windstone:2,alpine_mint:1},startRecipes:['altitude_tonic'],
+    startEnch:['e_sharp','e_glow','e_stormward_sr','e_skythread','e_windwalk','e_feather'],
+    bgColor:'#0a1a2a',themeAccent:'#6080c0',
+    intro:"The climb nearly killed you. Three days up the Stairway — a thousand steps carved into the mountainside by hands that vanished centuries ago. But when you step above the cloud line and see Skyreach for the first time — the stone towers catching starlight, the wind carrying the scent of glacier flowers — you understand why alchemists make the journey. Up here, the ingredients are unlike anything found below."}
 };
 
 // ═══ RELICS (Antiquarian) ═══
@@ -1444,11 +1699,22 @@ var THREAT_FACTIONS={
       dangerous:{enchDCBonus:2,discoveryMult:0.85,enchPayMult:0.85},
       critical:{enchDCBonus:3,discoveryMult:0.75,enchPayMult:0.75,custDropChance:0.10},
     }},
+
+  // ═══ SKYREACH THREAT FACTIONS ═══
+  sky_raiders:{id:'sky_raiders',loc:'skyreach',name:'Sky Raiders',icon:'🦅',color:'#8a4040',
+    desc:'Renegade climbers and exiled Windrunners who prey on supply caravans and isolated workshops.',
+    start:5,growth:0.8,penalty:{travelTime:1,desc:'+1 travel time to all regions'}},
+  the_gale:{id:'the_gale',loc:'skyreach',name:'The Gale',icon:'🌪️',color:'#5a6a8a',
+    desc:'An unnatural perpetual storm that creeps across the peaks, warping stone and corrupting ingredients.',
+    start:8,growth:0.6,penalty:{spoilRate:0.15,desc:'+15% ingredient spoilage rate'}},
+  eclipse_covenant:{id:'eclipse_covenant',loc:'skyreach',name:'Eclipse Covenant',icon:'🌑',color:'#3a2a4a',
+    desc:'A secretive cult that worships the dark between stars. They seek to reactivate the observatory.',
+    start:12,growth:0.5,penalty:{enchantPenalty:2,desc:'-2 to enchanting checks'}},
 };
 var getThreatTier=(val)=>val>=75?'critical':val>=50?'dangerous':val>=25?'rising':'calm';
 var getThreatColor=(val)=>val>=75?'#cc2020':val>=50?'#d08020':val>=25?'#c0c020':'#40a040';
 var getThreatLabel=(val)=>val>=75?'Critical':val>=50?'Dangerous':val>=25?'Rising':'Calm';
-var THREAT_IDS_BY_LOC={cindervale:['reavers','blight','veilbreakers'],ashfall:['sand_raiders','the_scorch','cult_of_buried'],tidecrest:['corsairs','the_murk','drowned_cult']};
+var THREAT_IDS_BY_LOC={cindervale:['reavers','blight','veilbreakers'],ashfall:['sand_raiders','the_scorch','cult_of_buried'],tidecrest:['corsairs','the_murk','drowned_cult'],skyreach:['sky_raiders','the_gale','eclipse_covenant']};
 var THREAT_IDS=['reavers','blight','veilbreakers']; // default, overridden at runtime
 var FORTRESS_TYPES={
   reaver_watchtower:{id:'reaver_watchtower',name:'Reaver Watchtower',icon:'🏰',threat:'reavers',cap:50,cost:200,loc:'cindervale',desc:'Permanently caps Reaver threat at 50.'},
@@ -1532,6 +1798,28 @@ var SEASONS={
       threatMod:{drowned_cult:1},moraleMod:0,
       flavor:['Ice crusts the tidal pools at dawn. Strange crystals form in the brine.','The harbor freezes at the edges. Ships creak against their moorings.','Fog rolls in from the frozen sea, thick enough to taste.']},
   ],
+  skyreach:[
+    {id:'thaw',name:'Thaw Season',img:'https://jumppiejim-creator.github.io/cindervale-alchemist/skyreach-season-thaw.jpg',icon:'💧',color:'#60a0c0',
+      desc:'Glaciers retreat, revealing preserved specimens. Alpine meadows bloom.',
+      yieldMod:1,floraYieldBonus:1,travelMod:0,customerMod:0,spoilMod:0,dangerMod:0,
+      threatMod:{the_gale:-1},moraleMod:0,
+      flavor:['Meltwater cascades down every cliff face. The meadows explode with color.','Glacial flowers surface for the first time in centuries.','The air smells of wet stone and alpine mint.']},
+    {id:'clear_sky',name:'Clear Sky',img:'https://jumppiejim-creator.github.io/cindervale-alchemist/skyreach-season-clear-sky.jpg',icon:'☀️',color:'#d0a030',
+      desc:'Rare cloudless days. Observatory at peak performance. Visitors flock to the summit.',
+      yieldMod:0,floraYieldBonus:0,travelMod:0,customerMod:1,spoilMod:0,dangerMod:0,
+      threatMod:{sky_raiders:1},moraleMod:0,
+      flavor:['The sky is impossibly blue. You can see for a hundred miles.','Starcallers celebrate — the stars are visible even at dusk.','Climbers pour up the Stairway. Business is booming.']},
+    {id:'storm_front',name:'Storm Front',img:'https://jumppiejim-creator.github.io/cindervale-alchemist/skyreach-season-storm-front.jpg',icon:'⛈️',color:'#5060a0',
+      desc:'Constant storms. Lightning ingredients abundant but expeditions dangerous.',
+      yieldMod:0,floraYieldBonus:0,travelMod:1,travelMinDiff:3,customerMod:0,spoilMod:0,dangerMod:10,
+      threatMod:{eclipse_covenant:1},moraleMod:-3,
+      flavor:['Thunder never stops. The peaks are wrapped in perpetual storm.','Lightning dances from spire to spire.','The Skywardens double their patrols.']},
+    {id:'deep_freeze',name:'Deep Freeze',img:'https://jumppiejim-creator.github.io/cindervale-alchemist/skyreach-season-deep-freeze.jpg',icon:'❄️',color:'#8090b0',
+      desc:'Bitter cold. High regions cost more Energy. Unique frozen ingredients. The Gale advances.',
+      yieldMod:-1,floraYieldBonus:0,travelMod:1,travelMinDiff:4,customerMod:0,spoilMod:-2,dangerMod:5,
+      threatMod:{the_gale:1},moraleMod:-5,
+      flavor:['The cold is absolute. Breath freezes before it leaves your lips.','Ice encases everything. Even the Cloud Traders slow their runs.','The settlement draws together around the hearths. Skyreach endures.']},
+  ],
 };
 var getSeason=(day,loc)=>{const seasons=SEASONS[loc||'cindervale']||SEASONS.cindervale;var idx=Math.floor(((day-1)%28)/SEASON_LENGTH);return seasons[idx]||seasons[0];};
 // Seasonal ingredients
@@ -1543,12 +1831,17 @@ INGR.spring_dewdrop={id:'spring_dewdrop',name:'Spring Dewdrop',icon:'🌧️',va
 INGR.desert_rain_lily={id:'desert_rain_lily',name:'Desert Rain Lily',icon:'🌼',val:14,desc:'Extraordinarily rare lily that only blooms during desert rains.'};
 INGR.wet_sand_crystal={id:'wet_sand_crystal',name:'Wet Sand Crystal',icon:'⏳',val:16,desc:'Sand crystal formed by rapid evaporation of rare desert rain.'};
 INGR.dust_amber={id:'dust_amber',name:'Dust Amber',icon:'🍬',val:12,desc:'Amber-like resin formed from compressed dust during sandstorms.'};
+// Skyreach seasonal ingredients
+INGR.thaw_blossom={id:'thaw_blossom',name:'Thaw Blossom',icon:'🌷',val:14,desc:'Flower that only blooms when glacial ice retreats. Incredibly short season.'};
+INGR.icefall_crystal={id:'icefall_crystal',name:'Icefall Crystal',icon:'❆',val:16,desc:'Crystal formed during the deep freeze, shattered loose during the thaw.'};
+INGR.storm_bloom={id:'storm_bloom',name:'Storm Bloom',icon:'🌩️',val:12,desc:'Flower that opens only during lightning storms. Electrically charged petals.'};
 // Seasonal ingredient availability function
 var getSeasonalIngr=(season,loc,allSeason)=>{
   if(allSeason){
     if(loc==='cindervale')return['frostbloom','ice_crystal','amber_leaf','harvest_root','spring_dewdrop'];
     if(loc==='ashfall')return['desert_rain_lily','wet_sand_crystal','dust_amber'];
     if(loc==='tidecrest')return['storm_glass_tc','stormkelp','moonfish_scale','whale_oil','pressure_crystal','deep_brine'];
+    if(loc==='skyreach')return['thaw_blossom','icefall_crystal','storm_bloom'];
     return[];
   }
   if(loc==='cindervale'){
@@ -1564,6 +1857,10 @@ var getSeasonalIngr=(season,loc,allSeason)=>{
     if(season.id==='storm_season')return['storm_glass_tc','stormkelp'];
     if(season.id==='migration')return['moonfish_scale','whale_oil'];
     if(season.id==='frozen_tides')return['pressure_crystal','deep_brine'];
+  }
+  if(loc==='skyreach'){
+    if(season.id==='thaw')return['thaw_blossom','icefall_crystal'];
+    if(season.id==='storm_front')return['storm_bloom'];
   }
   return[];
 };
@@ -1643,6 +1940,13 @@ var CUST_DATA={
   'Brother Tide':{loc:'tidecrest',title:'Tidekeeper Acolyte',portrait:{bg:['#2a3a5a','#1a2040'],ring:'#5070a0'},lines:['"The sacred waters demand consecrated tools."','"Sister Coral sends me with the temple\'s blessing — and its coin."','"The Drowned Cult grows bolder. Our wards need strengthening."']},
   'Sandrine':{loc:'tidecrest',title:'Merchant Marine Officer',portrait:{bg:['#3a5040','#2a3a30'],ring:'#70a080'},lines:['"The fleet needs enchanted navigation tools. Can you deliver?"','"My compass spins near the Trench. I need something that fights the pull."','"Finn vouches for you. Don\'t make him a liar."']},
   'Grizzle':{loc:'tidecrest',title:'Shipwreck Salvager',portrait:{bg:['#4a3a2a','#2e2418'],ring:'#a08060'},lines:['"Found this in a wreck. It\'s old — older than the harbor. Can you wake it up?"','"The ghosts don\'t like me poking around their ships. I need protection."','"Old Anchor says you\'re the real deal. That\'s high praise from a smuggler."']},
+  
+  // ═══ SKYREACH CUSTOMERS ═══
+  'Reva':{loc:'skyreach',title:'Skywarden Captain',portrait:{bg:['#3a4a60','#1e2a3a'],ring:'#6080a0'},lines:['"The patrols are hard on equipment. Can you reinforce this?"','"My sword has seen three storm seasons. It needs new life."','"The sky raiders are getting bolder. Every edge counts."']},
+  'Orin':{loc:'skyreach',title:'Cloud Trader',portrait:{bg:['#4a5040','#2a3020'],ring:'#808a60'},lines:['"I carry goods up and down the Stairway. My gear takes a beating."','"Something that resists wind and cold. I\'ll pay well."','"The Cloud Traders remember craftsmen who do good work."']},
+  'Sister Astral':{loc:'skyreach',title:'Starcaller Priestess',portrait:{bg:['#3a3a5a','#1e1e3a'],ring:'#6060a0'},lines:['"The observatory instruments need consecrated tools."','"This lens must focus starlight precisely. Can you enchant it?"','"The Starcallers trust you. Do not betray that."']},
+  'Finn Ridgerun':{loc:'skyreach',title:'Windrunner Scout',portrait:{bg:['#3a5050','#1e3030'],ring:'#50808a'},lines:['"Seven days above the cloud line. My blade has to last all seven."','"Light and sharp. I need to move fast."','"The peaks don\'t forgive dull steel."']},
+  'Grandmother Peak':{loc:'skyreach',title:'Elder Herbalist',portrait:{bg:['#4a4050','#2a2030'],ring:'#907090'},lines:['"I\'ve been enchanting since before your parents were born."','"Something subtle. Power doesn\'t need to announce itself."','"The mountain respects quiet strength."']},
   // ═══ SHARED CUSTOMERS (both locations) ═══
   'Fiona':{title:'Traveling Merchant',portrait:{bg:['#4a3060','#2a1840'],ring:'#c090e0'},lines:['"I\'ve heard your enchantments fetch top coin in the capital."','"Something eye-catching, if you please — my customers love a good glow."','"Make it memorable. I have a reputation to uphold."']},
   'Mama Grinn':{title:'Tavern Keeper',portrait:{bg:['#704020','#4a2a15'],ring:'#e88840',accent:'#e88840'},
@@ -1737,6 +2041,18 @@ var CLINIC_AILMENTS=[
   {id:'tc_abyssal_madness',loc:'tidecrest',name:'Abyssal Madness',icon:'🧠',desc:'"I looked into the Trench and something looked back. Now it lives behind my eyes."',
     category:'arcane',tier:3,great:['pearl_elixir'],good:['siren_draught','cave_coral_paste'],
     hints:{fail:'The patient\'s eyes have changed color. This is deeply wrong.',partial:'Abyssal psychic contamination — needs the most potent mental restoration available.',full:'Abyssal Madness — contact with a deep intelligence. Pearl Clarity Elixir can sever the connection.'}},
+
+  // ═══ SKYREACH AILMENTS ═══
+  {id:'altitude_sickness',loc:'skyreach',name:'Altitude Sickness',icon:'🫁',desc:'"Everything\'s spinning and I can\'t catch my breath. The air is too thin."',
+    treatments:[{potion:'altitude_tonic',effectiveness:0.9,response:'"The tonic steadied me immediately. I can breathe again."'}],difficulty:1},
+  {id:'frostbite_sr',loc:'skyreach',name:'Frostbite',icon:'🥶',desc:'"My fingers went white on the glacier. They\'re turning black now."',
+    treatments:[{potion:'glacier_salve',effectiveness:0.95,response:'"The warmth is spreading back. I can feel my fingers again."'}],difficulty:2},
+  {id:'wind_burn',loc:'skyreach',name:'Wind Burn',icon:'🌬️',desc:'"The gale stripped the skin right off my face. Everything stings."',
+    treatments:[{potion:'breeze_balm',effectiveness:0.85,response:'"The balm took the sting out immediately. Thank the peaks."'}],difficulty:1},
+  {id:'storm_shock',loc:'skyreach',name:'Storm Shock',icon:'⚡',desc:'"Lightning hit a rock near me. My hands won\'t stop shaking."',
+    treatments:[{potion:'thunder_draught',effectiveness:0.9,response:'"The shaking stopped. I feel... calm. Grounded."'}],difficulty:3},
+  {id:'vertigo_sr',loc:'skyreach',name:'Mountain Vertigo',icon:'🌀',desc:'"I looked down from the cliffs and the world tilted. Can\'t walk straight."',
+    treatments:[{potion:'fog_tincture',effectiveness:0.85,response:'"My vision cleared and the ground steadied. Thank you."'}],difficulty:1},
 ];
 
 // ═══ VENOMIST CONTRACTS SYSTEM ═══
@@ -2006,6 +2322,40 @@ var FIELD_DISCOVERIES={
     {id:'fd_af_temple_guardian',name:'Stone Guardian Traces',icon:'🗿',type:'fauna',desc:'Remnants of animated stone guardians. Their dormant energy calms the temple\'s volatile magical traps.',bonus:{dangerReduce:0.25}},
     {id:'fd_af_gold_vein',name:'Ritual Gold Veins',icon:'🏆',type:'geological',desc:'Veins of alchemically pure gold woven into the temple walls by ancient priests. Impossibly refined.',bonus:{ingredient:'temple_gold',extraYield:2}},
   ],
+
+  // ═══ SKYREACH FIELD DISCOVERIES ═══
+  alpine_meadows:[
+    {id:'fd_sr_1',name:'Silver Edelweiss',icon:'🌸',desc:'A rare silver-petalled flower growing in a sheltered hollow.',bonus:{yieldMultiplier:0.10},bonusDesc:'+10% foraging yield in Alpine Meadows'},
+    {id:'fd_sr_2',name:'Mountain Pika Colony',icon:'🐹',desc:'A colony of pikas that cache rare herbs in their burrows.',bonus:{reducedRisk:0.15},bonusDesc:'+15% danger reduction in Alpine Meadows'},
+  ],
+  cloud_forest:[
+    {id:'fd_sr_3',name:'Fog Spider Nursery',icon:'🕷️',desc:'A vast web network where fog spiders raise their young. Silk everywhere.',bonus:{yieldMultiplier:0.10},bonusDesc:'+10% foraging yield in Cloud Forest'},
+    {id:'fd_sr_4',name:'Moss Cathedral',icon:'🌿',desc:'An ancient tree hollow carpeted in crystal moss. The air itself feels alive.',bonus:{discoveryChanceBonus:0.10},bonusDesc:'+10% discovery chance in Cloud Forest'},
+  ],
+  windcarved_cliffs:[
+    {id:'fd_sr_5',name:'Raptor Graveyard',icon:'🦴',desc:'Where old raptors come to die. Ancient plumes and bones everywhere.',bonus:{yieldMultiplier:0.10},bonusDesc:'+10% foraging yield in Wind-Carved Cliffs'},
+    {id:'fd_sr_6',name:'Wind Harp Formation',icon:'🎶',desc:'Natural stone formation that sings when the wind blows through it.',bonus:{xpMultiplier:0.10},bonusDesc:'+10% XP in Wind-Carved Cliffs'},
+  ],
+  crystal_caverns_sr:[
+    {id:'fd_sr_7',name:'Crystal Garden',icon:'💎',desc:'A hidden alcove where crystals grow in shapes resembling flowers.',bonus:{yieldMultiplier:0.10},bonusDesc:'+10% foraging yield in Crystal Caverns'},
+    {id:'fd_sr_8',name:'Resonance Pool',icon:'💧',desc:'A still pool that amplifies any sound. Crystal formations crowd its edges.',bonus:{enchantBonus:1},bonusDesc:'+1 enchant bonus in Crystal Caverns'},
+  ],
+  glacial_lake:[
+    {id:'fd_sr_9',name:'Aurora Moss Bed',icon:'🌈',desc:'A shore where aurora lichen carpets every surface in shifting color.',bonus:{yieldMultiplier:0.10},bonusDesc:'+10% foraging yield in Glacial Lake'},
+    {id:'fd_sr_10',name:'Fossil Shore',icon:'🪸',desc:'Ancient marine fossils exposed by glacial erosion. Summit coral in abundance.',bonus:{rareForageBonus:0.15},bonusDesc:'+15% rare find chance in Glacial Lake'},
+  ],
+  stormspire_peaks:[
+    {id:'fd_sr_11',name:'Lightning Glass Field',icon:'⚡',desc:'A field of natural glass formed by countless lightning strikes.',bonus:{yieldMultiplier:0.10},bonusDesc:'+10% foraging yield in Stormspire Peaks'},
+    {id:'fd_sr_12',name:'Storm Nest',icon:'🌩️',desc:'Where lightning seems to be born. The stone is permanently warm.',bonus:{craftBonus:1},bonusDesc:'+1 craft bonus from Stormspire discoveries'},
+  ],
+  sky_ruins:[
+    {id:'fd_sr_13',name:'Gravity Garden',icon:'🌀',desc:'An area where plants grow sideways, following gravity that points wrong.',bonus:{yieldMultiplier:0.10},bonusDesc:'+10% foraging yield in Sky Ruins'},
+    {id:'fd_sr_14',name:'Star Metal Deposit',icon:'☄️',desc:'A vein of meteoric iron embedded in ruin masonry.',bonus:{extractionBonus:1},bonusDesc:'+1 extraction in Sky Ruins'},
+  ],
+  observatory_summit:[
+    {id:'fd_sr_15',name:'Starlight Pool',icon:'⭐',desc:'A pool that collects focused starlight. It glows even at noon.',bonus:{yieldMultiplier:0.15},bonusDesc:'+15% foraging yield at Observatory Summit'},
+    {id:'fd_sr_16',name:'Celestial Instrument',icon:'🔭',desc:'An ancient instrument still tracking the stars after millennia.',bonus:{discoveryChanceBonus:0.15},bonusDesc:'+15% discovery at Observatory Summit'},
+  ],
 };
 
 // ═══ ARCHIVIST LORE ARCHIVE ═══
@@ -2185,6 +2535,43 @@ var RANGER_COMPANIONS=[
     primary:{type:'gather',ingr:['abyssal_pearl','leviathan_scale','tidal_diamond','primordial_brine'],baseYield:[5,8,12,16,20]},
     secondary:{type:'resurrect',desc:'Once/day: retry a failed craft check',unlockLv:3},
     legendary:'Passively generates 1 Drowned Sanctum ingredient every morning',passive:{craftBonus:1,extractionBonus:2,xpMultiplier:0.10}},
+
+  // ═══ SKYREACH COMPANIONS ═══
+  {id:'rc_hare',name:'Snow Hare',icon:'🐇',region:'alpine_meadows',role:'gatherer',color:'#c0d0e0',loc:'skyreach',
+    desc:'A pure-white mountain hare with silver-tipped ears. Impossibly fast and knows every herb patch.',
+    primary:{type:'gather',ingr:['cloud_moss','alpine_mint','sky_clover','frost_daisy'],baseYield:[5,8,12,16,20]},
+    secondary:{type:'scout_gather',desc:'Also gathers from adjacent alpine regions',unlockLv:3},
+    legendary:'Once/day: bring back a rare ingredient from any Skyreach region',passive:{extractionBonus:1,forageYieldBonus:0.10}},
+  {id:'rc_lynx',name:'Cloud Lynx',icon:'🐈‍⬛',region:'cloud_forest',role:'shopkeeper',color:'#8090a0',loc:'skyreach',
+    desc:'A grey-furred wildcat that appears and disappears in the fog. Keeps the shop spotless.',
+    primary:{type:'shop',baseGold:[10,18,28,40,55]},
+    secondary:{type:'organize',desc:'+1 potion shelf capacity per loyalty level',unlockLv:3},
+    legendary:'Automatically stocks shelves from your potion supply each morning',passive:{sellBonus:0.05,customerPayBonus:0.05}},
+  {id:'rc_falcon',name:'Cliff Falcon',icon:'🐦‍⬛',region:'windcarved_cliffs',role:'scout',color:'#6080a0',loc:'skyreach',
+    desc:'A fearless raptor that dives through gale-force winds. Spots danger from miles away.',
+    primary:{type:'danger_reduce',values:[0.25,0.40,0.50,0.60,0.75]},
+    secondary:{type:'travel_reduce',desc:'-1 travel time to scouted region',unlockLv:3},
+    legendary:'Once/day: instant travel (0 Energy) to any Skyreach region',passive:{reducedRisk:0.15,travelReduction:1}},
+  {id:'rc_goat',name:'Mountain Goat',icon:'🐐',region:'crystal_caverns_sr',role:'greeter',color:'#a09070',loc:'skyreach',
+    desc:'A sure-footed mountain goat with crystalline horns. Customers find it irresistible.',
+    primary:{type:'customers',values:[1,2,2,3,4]},
+    secondary:{type:'morale_aura',desc:'+5 staff morale per morning',unlockLv:3},
+    legendary:'Premium customers pay 15% more (charmed by the goat)',passive:{customerBonus:1,repGainBonus:0.10}},
+  {id:'rc_wyvern',name:'Frost Wyvern',icon:'🐲',region:'glacial_lake',role:'guardian',color:'#4060a0',loc:'skyreach',
+    desc:'A small ice-blue wyvern that bonds fiercely with its keeper. Calms everyone.',
+    primary:{type:'staff_morale',values:[8,12,16,20,25]},
+    secondary:{type:'guard',desc:'Prevents negative morning events that cost gold',unlockLv:3},
+    legendary:'Staff never drop below 50% morale while guardian is active',passive:{healMorale:3,staffEfficiencyBonus:0.10}},
+  {id:'rc_owl',name:'Storm Owl',icon:'🦉',region:'stormspire_peaks',role:'muse',color:'#7070a0',loc:'skyreach',
+    desc:'An owl wreathed in static discharge. Its hoots predict weather and inspire breakthroughs.',
+    primary:{type:'research',values:[0.08,0.12,0.16,0.20,0.25]},
+    secondary:{type:'xp_aura',desc:'+5% XP from all sources',unlockLv:3},
+    legendary:'Research auto-discovers on first attempt each day',passive:{xpMultiplier:0.05,discoveryChanceBonus:0.05}},
+  {id:'rc_serpent',name:'Sky Serpent',icon:'🐍',region:'observatory_summit',role:'legendary',color:'#d0c060',loc:'skyreach',legendary_only:true,
+    desc:'A translucent serpent that swims through the air. Born from starlight and wind.',
+    primary:{type:'gather',ingr:['celestial_essence','starfire_dust','void_crystal','primordial_wind'],baseYield:[5,8,12,16,20]},
+    secondary:{type:'resurrect',desc:'Once/day: retry a failed craft check',unlockLv:3},
+    legendary:'Passively generates 1 Observatory Summit ingredient every morning',passive:{craftBonus:1,xpMultiplier:0.10}},
 ];
 
 // ═══ QUARTERMASTER SUPPLY CHAIN NETWORK ═══
@@ -2242,6 +2629,26 @@ var CARAVAN_ROUTES=[
   {id:'cr_tc_trench',name:'Trench Expedition',icon:'🦑',region:'abyssal_trench',loc:'tidecrest',tier:3,roundTrip:2,dc:17,
     desc:'The deepest dive. Crushing pressure, total darkness, and unimaginable rewards.',
     tradeIngr:['kraken_ink','leviathan_scale','pressure_crystal'],tradeGold:50},
+
+  // ═══ SKYREACH CARAVAN (MOUNTAIN) ROUTES ═══
+  {id:'cr_sr_meadow',loc:'skyreach',name:'Meadow Trail',icon:'🌷',tier:1,region:'alpine_meadows',
+    ingr:['cloud_moss','alpine_mint','windstone','frost_daisy','sky_clover'],
+    desc:'A gentle trail through the alpine meadows. The safest route up the mountain.'},
+  {id:'cr_sr_fog',loc:'skyreach',name:'Fog Path',icon:'🌁',tier:1,region:'cloud_forest',
+    ingr:['fog_orchid','mist_silk','cloud_berry','drip_fungus','mistwood_bark'],
+    desc:'A winding path through the cloud forest. Visibility is poor but the route is well-marked.'},
+  {id:'cr_sr_cliff',loc:'skyreach',name:'Cliff Run',icon:'🪨',tier:2,region:'windcarved_cliffs',
+    ingr:['cliff_quartz','wind_iron','raptor_plume','gale_salt','skystone_chip'],
+    desc:'A treacherous route along the wind-carved cliffs. Only experienced carriers attempt it.'},
+  {id:'cr_sr_glacier',loc:'skyreach',name:'Glacier Route',icon:'🧊',tier:2,region:'glacial_lake',
+    ingr:['glacial_silt','frozen_bloom','meltwater_pearl','ice_moss','lake_crystal'],
+    desc:'Across the glacial moraine to the lake. Cold and slippery but rich with rare minerals.'},
+  {id:'cr_sr_storm',loc:'skyreach',name:'Storm Road',icon:'⛈️',tier:3,region:'stormspire_peaks',
+    ingr:['stormglass','lightning_shard','charged_quartz','tempest_moss','thunder_iron'],
+    desc:'The most dangerous supply route in Skyreach. Lightning strikes are a constant hazard.'},
+  {id:'cr_sr_ruin',loc:'skyreach',name:'Ruin Path',icon:'🏯',tier:3,region:'sky_ruins',
+    ingr:['star_metal','sky_rune_fragment','ruin_crystal','celestial_mortar','levitation_dust'],
+    desc:'Through the Sky Ruins to the observatory. Gravity anomalies make every step uncertain.'},
 ];
 var SUPPLY_PARTNERS=[
   {id:'sp_hunters',name:'Boarback Hunters',icon:'🐗',color:'#8a6040',loc:'cindervale',
@@ -2525,6 +2932,32 @@ var HIDDEN_REGIONS=[
   {id:'hr_tc_inner_sanctum',region:'drowned_sanctum',name:'Oracle\'s Chamber',icon:'🔮',dc:18,legendary:true,
     desc:'The innermost chamber of the Drowned Sanctum where the sea oracle once communed with the deep.',
     ingr:['oracle_tear','abyssal_rune_stone'],yieldRange:[1,2]},
+
+  // ═══ SKYREACH HIDDEN REGIONS ═══
+  {id:'hr_sr_secret_spring',region:'alpine_meadows',name:'Secret Spring',icon:'♨️',dc:10,
+    desc:'A hidden geothermal spring where mineral-rich water feeds unique alpine herbs.',
+    ingr:['spring_mineral','thermal_herb'],yieldRange:[2,4]},
+  {id:'hr_sr_crown_hollow',region:'cloud_forest',name:'Crown Hollow',icon:'🌳',dc:11,
+    desc:'Above the canopy, a hollow where sky-facing epiphytes bloom in impossibly pure air.',
+    ingr:['crown_epiphyte','sky_pollen'],yieldRange:[2,4]},
+  {id:'hr_sr_eagles_vault',region:'windcarved_cliffs',name:'Eagle\'s Vault',icon:'🦅',dc:13,
+    desc:'An ancient eagle nesting cave high in the cliffs. Petrified feathers line the walls.',
+    ingr:['petrified_plume','vault_quartz'],yieldRange:[2,3]},
+  {id:'hr_sr_harmonic_chamber',region:'crystal_caverns_sr',name:'Harmonic Chamber',icon:'🎵',dc:13,
+    desc:'A natural cathedral where crystal formations vibrate in perfect harmony.',
+    ingr:['harmonic_shard','resonance_bloom'],yieldRange:[2,3]},
+  {id:'hr_sr_frozen_garden',region:'glacial_lake',name:'Frozen Garden',icon:'🧊',dc:13,
+    desc:'An underwater garden preserved in ice for millennia. Plants still retain their essence.',
+    ingr:['frozen_fern','ice_pearl'],yieldRange:[1,3]},
+  {id:'hr_sr_lightning_throne',region:'stormspire_peaks',name:'Lightning Throne',icon:'⚡',dc:16,
+    desc:'A constant lightning strike point. The stone itself has fused into charged crystal.',
+    ingr:['throne_crystal','fused_iron'],yieldRange:[1,3]},
+  {id:'hr_sr_starfall_chamber',region:'sky_ruins',name:'Starfall Chamber',icon:'🏯',dc:15,
+    desc:'An intact sky civilization room. Active celestial machinery still hums.',
+    ingr:['starfall_fragment','celestial_gear'],yieldRange:[2,3]},
+  {id:'hr_sr_the_lens',region:'observatory_summit',name:'The Lens',icon:'🔭',dc:18,legendary:true,
+    desc:'The great observatory lens. Focuses pure starlight into liquid form.',
+    ingr:['lens_crystal','focused_starlight'],yieldRange:[1,2]},
 ];
 // Register hidden ingredients
 var HIDDEN_INGR={
@@ -2594,6 +3027,93 @@ INGR.dustwalker_compass={id:'dustwalker_compass',name:'Wayfinder',icon:'🪬',va
 INGR.alchemical_residue={id:'alchemical_residue',name:'Alchemical Residue',icon:'♻️',val:3,desc:'Salvaged essence from spoiled ingredients. Can substitute for common reagents.'};
 
 // ═══ CARTOGRAPHER ELIXIRS — Multi-day buff potions ═══
+
+// ═══ SKYREACH INGREDIENTS ═══
+// Common (val 3-8)
+INGR.cloud_moss={id:'cloud_moss',name:'Cloud Moss',icon:'☁️',val:5,desc:'Soft moss that absorbs moisture directly from passing clouds.'};
+INGR.alpine_mint={id:'alpine_mint',name:'Alpine Mint',icon:'🫐',val:6,desc:'Intensely aromatic herb that only grows above the cloud line.'};
+INGR.windstone={id:'windstone',name:'Windstone',icon:'🎐',val:5,desc:'Porous stone polished smooth by centuries of wind. Hums faintly.'};
+INGR.sky_clover={id:'sky_clover',name:'Sky Clover',icon:'🍀',val:4,desc:'Silvery-blue clover that only opens its petals at high altitude.'};
+INGR.eagle_down={id:'eagle_down',name:'Eagle Down',icon:'🪶',val:3,desc:'Soft underfeathers shed by mountain eagles at nesting sites.'};
+INGR.frost_daisy={id:'frost_daisy',name:'Frost Daisy',icon:'❄️',val:4,desc:'Hardy white flower that blooms in snowmelt. Mildly analgesic.'};
+INGR.breeze_seed={id:'breeze_seed',name:'Breeze Seed',icon:'🌬️',val:3,desc:'Windborne seeds that never touch the ground until collected.'};
+INGR.thin_air_lichen={id:'thin_air_lichen',name:'Thin Air Lichen',icon:'🌿',val:7,desc:'Crusty lichen that thrives where oxygen is scarce.'};
+INGR.summit_grass={id:'summit_grass',name:'Summit Grass',icon:'🌾',val:4,desc:'Wiry grass that grows in stone cracks at extreme altitude.'};
+INGR.cloud_berry={id:'cloud_berry',name:'Cloud Berry',icon:'🍇',val:6,desc:'Tart blue berry found only in cloud forests. Prized by herbalists.'};
+INGR.storm_petal={id:'storm_petal',name:'Storm Petal',icon:'🌸',val:5,desc:'Flower petal charged with static from passing thunderheads.'};
+INGR.mistwood_bark={id:'mistwood_bark',name:'Mistwood Bark',icon:'🪵',val:7,desc:'Bark from cloud forest trees, perpetually damp and aromatic.'};
+INGR.drip_fungus={id:'drip_fungus',name:'Drip Fungus',icon:'🍄',val:5,desc:'Translucent mushroom that grows where fog condenses and drips.'};
+INGR.hanging_lichen={id:'hanging_lichen',name:'Hanging Lichen',icon:'🌱',val:8,desc:'Long strands of lichen that dangle from cloud forest branches.'};
+// Uncommon (val 8-14)
+INGR.fog_orchid={id:'fog_orchid',name:'Fog Orchid',icon:'🌺',val:9,desc:'Rare orchid that feeds on fog rather than soil. Delicate.'};
+INGR.vapor_fern={id:'vapor_fern',name:'Vapor Fern',icon:'🥬',val:10,desc:'Fern whose fronds are perpetually wreathed in self-generated mist.'};
+INGR.canopy_dew={id:'canopy_dew',name:'Canopy Dew',icon:'💧',val:11,desc:'Concentrated dew collected from cloud forest canopy.'};
+INGR.mist_silk={id:'mist_silk',name:'Mist Silk',icon:'🕸️',val:12,desc:'Spider silk from cloud forest spiders, incredibly strong and light.'};
+INGR.cliff_quartz={id:'cliff_quartz',name:'Cliff Quartz',icon:'🔷',val:9,desc:'Wind-polished quartz from exposed cliff faces.'};
+INGR.raptor_plume={id:'raptor_plume',name:'Raptor Plume',icon:'🦚',val:10,desc:'Flight feather from a high-altitude raptor. Channels wind magic.'};
+INGR.gale_salt={id:'gale_salt',name:'Gale Salt',icon:'🧂',val:8,desc:'Mineral salt deposited by extreme winds on exposed rock faces.'};
+INGR.wind_iron={id:'wind_iron',name:'Wind Iron',icon:'⛏️',val:11,desc:'Iron ore that has been wind-tempered to unusual hardness.'};
+INGR.skystone_chip={id:'skystone_chip',name:'Skystone Chip',icon:'🪨',val:13,desc:'Fragment of the distinctive blue-grey stone Skyreach is built from.'};
+INGR.rime_dust={id:'rime_dust',name:'Rime Dust',icon:'🌀',val:10,desc:'Powdered rime ice with preservative properties.'};
+INGR.altitude_crystal={id:'altitude_crystal',name:'Altitude Crystal',icon:'💎',val:13,desc:'Crystal formed under low-pressure conditions unique to high peaks.'};
+INGR.pressure_quartz={id:'pressure_quartz',name:'Pressure Quartz',icon:'🔹',val:12,desc:'Quartz with unusual internal stress patterns from altitude.'};
+INGR.cave_frost_sr={id:'cave_frost_sr',name:'Cave Frost',icon:'🧊',val:9,desc:'Permanent frost formations from high-altitude caverns.'};
+INGR.echo_mineral={id:'echo_mineral',name:'Echo Mineral',icon:'🔔',val:11,desc:'Mineral that resonates and amplifies sound.'};
+INGR.crystal_moss_sr={id:'crystal_moss_sr',name:'Crystal Moss',icon:'🟢',val:10,desc:'Moss that has partially crystallized from mineral-rich seepage.'};
+INGR.glacial_silt={id:'glacial_silt',name:'Glacial Silt',icon:'🏜️',val:8,desc:'Extremely fine sediment from glacial grinding. Rich in minerals.'};
+INGR.frozen_bloom={id:'frozen_bloom',name:'Frozen Bloom',icon:'🌼',val:12,desc:'Flower preserved in glacial ice — retains potency for centuries.'};
+INGR.ice_moss={id:'ice_moss',name:'Ice Moss',icon:'🥶',val:9,desc:'Tough moss that grows on glacial moraines in bitter cold.'};
+// Rare (val 14-20)
+INGR.meltwater_pearl={id:'meltwater_pearl',name:'Meltwater Pearl',icon:'🤍',val:15,desc:'Pearl-like mineral nodule found only in glacial melt pools.'};
+INGR.summit_coral={id:'summit_coral',name:'Summit Coral',icon:'🪸',val:16,desc:'Fossilized coral from when the peaks were sea floor. Incredibly ancient.'};
+INGR.aurora_lichen={id:'aurora_lichen',name:'Aurora Lichen',icon:'🌈',val:18,desc:'Lichen that glows with colors matching the aurora borealis.'};
+INGR.lake_crystal={id:'lake_crystal',name:'Lake Crystal',icon:'💠',val:14,desc:'Clear crystal grown in glacial lake shallows over millennia.'};
+INGR.coldsnap_root={id:'coldsnap_root',name:'Coldsnap Root',icon:'🫚',val:15,desc:'Root that only surfaces during sudden freezes. Extremely potent.'};
+INGR.frost_amber={id:'frost_amber',name:'Frost Amber',icon:'🟡',val:17,desc:'Amber-like substance formed from frozen tree resin at altitude.'};
+INGR.stormglass={id:'stormglass',name:'Stormglass',icon:'⚡',val:16,desc:'Natural glass formed by lightning strikes on summit stone.'};
+INGR.lightning_shard={id:'lightning_shard',name:'Lightning Shard',icon:'🔥',val:18,desc:'Fragment of stone fused by direct lightning impact.'};
+INGR.thunder_iron={id:'thunder_iron',name:'Thunder Iron',icon:'⬛',val:19,desc:'Iron ore electromagnetically charged by repeated storm exposure.'};
+INGR.charged_quartz={id:'charged_quartz',name:'Charged Quartz',icon:'🔮',val:15,desc:'Quartz crystal that holds an electrical charge indefinitely.'};
+INGR.storm_pearl_sr={id:'storm_pearl_sr',name:'Storm Pearl',icon:'🟣',val:17,desc:'Mineral pearl formed in storm-battered rock pools.'};
+INGR.tempest_moss={id:'tempest_moss',name:'Tempest Moss',icon:'🌊',val:14,desc:'Moss that thrives on electrical discharge, crackling faintly.'};
+INGR.bolt_crystal={id:'bolt_crystal',name:'Bolt Crystal',icon:'💥',val:20,desc:'Crystal structure grown around a captured lightning bolt.'};
+INGR.star_metal={id:'star_metal',name:'Star Metal',icon:'☄️',val:18,desc:'Meteoric iron that fell from space. Alchemically unique.'};
+INGR.sky_rune_fragment={id:'sky_rune_fragment',name:'Sky Rune Fragment',icon:'📜',val:16,desc:'Broken piece of a sky civilization rune stone.'};
+INGR.levitation_dust={id:'levitation_dust',name:'Levitation Dust',icon:'🪄',val:19,desc:'Powder from sky ruin architecture that defied gravity.'};
+// Legendary (val 21-35)
+INGR.celestial_mortar={id:'celestial_mortar',name:'Celestial Mortar',icon:'🏛️',val:22,desc:'Building material of the sky civilization. Self-repairing.'};
+INGR.ruin_crystal={id:'ruin_crystal',name:'Ruin Crystal',icon:'💜',val:24,desc:'Power crystal from sky ruin machinery. Still charged after millennia.'};
+INGR.ancient_windstone={id:'ancient_windstone',name:'Ancient Windstone',icon:'🎏',val:26,desc:'Windstone of extraordinary age and power from deep in the ruins.'};
+INGR.void_feather={id:'void_feather',name:'Void Feather',icon:'🕊️',val:28,desc:'Feather from a creature that flies above the atmosphere.'};
+INGR.eclipse_shard={id:'eclipse_shard',name:'Eclipse Shard',icon:'🌑',val:22,desc:'Crystal that darkens during eclipses and stores shadow energy.'};
+INGR.celestial_essence={id:'celestial_essence',name:'Celestial Essence',icon:'⭐',val:30,desc:'Pure distilled starlight collected by observatory instruments.'};
+INGR.starfire_dust={id:'starfire_dust',name:'Starfire Dust',icon:'🔆',val:28,desc:'Dust from a burned-out star, collected at the observatory summit.'};
+INGR.void_crystal={id:'void_crystal',name:'Void Crystal',icon:'🌌',val:32,desc:'Crystal grown in near-vacuum conditions at extreme altitude.'};
+INGR.primordial_wind={id:'primordial_wind',name:'Primordial Wind',icon:'🌪️',val:26,desc:'Bottled wind from the world\'s creation, trapped in ancient vessels.'};
+INGR.zenith_stone={id:'zenith_stone',name:'Zenith Stone',icon:'💫',val:35,desc:'The rarest stone in Skyreach — forms only at the absolute peak.'};
+// Faction resources
+INGR.skyward_seal={id:'skyward_seal',name:'Skyward Seal',icon:'🛡️',val:22,desc:'Official seal of the Skywardens mountain patrol.'};
+INGR.starcaller_seal={id:'starcaller_seal',name:'Starcaller Seal',icon:'🔭',val:25,desc:'Sacred instrument of the Starcaller astronomers.'};
+INGR.cloud_trader_token={id:'cloud_trader_token',name:'Cloud Token',icon:'📋',val:22,desc:'Merchant token of the Cloud Traders guild.'};
+INGR.windrunner_compass={id:'windrunner_compass',name:'Windrunner Compass',icon:'🧭',val:22,desc:'Enchanted compass crafted by Windrunner scouts.'};
+// Hidden region ingredients (Cartographer)
+INGR.spring_mineral={id:'spring_mineral',name:'Spring Mineral',icon:'♨️',val:18,desc:'Hot mineral deposit from a hidden alpine spring.'};
+INGR.thermal_herb={id:'thermal_herb',name:'Thermal Herb',icon:'🌡️',val:16,desc:'Herb that grows only in geothermally heated alpine soil.'};
+INGR.crown_epiphyte={id:'crown_epiphyte',name:'Crown Epiphyte',icon:'🎋',val:17,desc:'Sky-facing plant that grows above the cloud forest canopy.'};
+INGR.sky_pollen={id:'sky_pollen',name:'Sky Pollen',icon:'🌻',val:16,desc:'Pollen from flowers that bloom only above the clouds.'};
+INGR.petrified_plume={id:'petrified_plume',name:'Petrified Plume',icon:'🦴',val:18,desc:'Eagle feather turned to stone over millennia. Dense with power.'};
+INGR.vault_quartz={id:'vault_quartz',name:'Vault Quartz',icon:'🔶',val:17,desc:'Ancient quartz from eagle nesting caves high in the cliffs.'};
+INGR.harmonic_shard={id:'harmonic_shard',name:'Harmonic Shard',icon:'🎵',val:19,desc:'Crystal shard that vibrates at frequencies only alchemists can hear.'};
+INGR.resonance_bloom={id:'resonance_bloom',name:'Resonance Bloom',icon:'🔊',val:18,desc:'Crystalline flower that grows only in harmonic cavern chambers.'};
+INGR.frozen_fern={id:'frozen_fern',name:'Frozen Fern',icon:'🥀',val:19,desc:'Fern preserved in glacial ice for millennia, essence still vital.'};
+INGR.ice_pearl={id:'ice_pearl',name:'Ice Pearl',icon:'⚪',val:18,desc:'Pearl formed in the depths of a frozen underwater garden.'};
+INGR.throne_crystal={id:'throne_crystal',name:'Throne Crystal',icon:'👑',val:22,desc:'Crystal from a constant lightning strike point. Dangerously charged.'};
+INGR.fused_iron={id:'fused_iron',name:'Fused Iron',icon:'🔩',val:20,desc:'Iron fused by repeated lightning strikes into an ultra-dense mass.'};
+INGR.starfall_fragment={id:'starfall_fragment',name:'Starfall Fragment',icon:'🌠',val:24,desc:'Fragment of active sky civilization machinery. Still hums with power.'};
+INGR.celestial_gear={id:'celestial_gear',name:'Celestial Gear',icon:'⚙️',val:22,desc:'Precision gear from an ancient celestial tracking instrument.'};
+INGR.lens_crystal={id:'lens_crystal',name:'Lens Crystal',icon:'🔍',val:28,desc:'Fragment of the Great Lens that focuses pure starlight.'};
+INGR.focused_starlight={id:'focused_starlight',name:'Focused Starlight',icon:'✨',val:30,desc:'Starlight concentrated through the Great Lens into liquid form.'};
+
 var ELIXIR_BUFFS={
   prismatic_elixir:{id:'prismatic_elixir',name:'Prismatic Elixir',icon:'🌈',duration:3,
     desc:'Shimmering liquid refracts inner light. All craft checks enhanced.',
@@ -2650,6 +3170,32 @@ var ELIXIR_BUFFS={
   vault_elixir:{id:'vault_elixir',name:'Vault Gold Elixir',icon:'🏆',duration:5,legendary:true,
     desc:'Temple gold in liquid form. The ultimate Ashfall consumable.',
     effects:{craftBonus:4,xpMultiplier:0.30,sellBonus:0.30,customerPayBonus:0.25,enchantBonus:3},buffDesc:'+4 craft, +30% XP, +30% sell, +25% pay, +3 enchant for 5 days'},
+
+  // ═══ SKYREACH CARTOGRAPHER ELIXIR BUFFS ═══
+  spring_mineral_tonic:{id:'spring_mineral_tonic',name:'Spring Mineral Tonic',icon:'♨️',duration:3,
+    desc:'Hot spring minerals warm the body and sharpen commerce instincts.',
+    effects:{customerPayBonus:0.20,customerBonus:1,sellBonus:0.10},buffDesc:'+20% customer pay, +1 customer, +10% sell for 3 days'},
+  crown_pollen_brew:{id:'crown_pollen_brew',name:'Crown Pollen Brew',icon:'🌻',duration:3,
+    desc:'Canopy-top pollen sharpens the mind to a razor edge.',
+    effects:{researchBonus:2,craftBonus:1},buffDesc:'+2 research, +1 craft for 3 days'},
+  vault_quartz_elixir:{id:'vault_quartz_elixir',name:'Vault Quartz Elixir',icon:'🔶',duration:3,
+    desc:'Petrified eagle essence channels foraging mastery.',
+    effects:{extractionBonus:3,yieldMultiplier:0.25},buffDesc:'+3 extraction, +25% yield for 3 days'},
+  harmonic_draught:{id:'harmonic_draught',name:'Harmonic Draught',icon:'🎵',duration:3,
+    desc:'Crystal harmonics attune your hands to magical frequencies.',
+    effects:{enchantBonus:3,enchantSuccessFlat:8},buffDesc:'+3 inscription, +8 enchant bonus for 3 days'},
+  frozen_garden_philter:{id:'frozen_garden_philter',name:'Frozen Garden Philter',icon:'🥀',duration:4,
+    desc:'Ice-preserved plant essence clarifies the mind beyond mortal limits.',
+    effects:{discoveryChanceBonus:0.25,xpMultiplier:0.20},buffDesc:'+25% discovery, +20% XP for 4 days'},
+  lightning_throne_flask:{id:'lightning_throne_flask',name:'Lightning Throne Flask',icon:'👑',duration:2,
+    desc:'Crystallized lightning. Dangerous, unstoppable, magnificent.',
+    effects:{craftBonus:5,doubleBatchChance:0.30},buffDesc:'+5 craft, +30% double batch for 2 days'},
+  starfall_draught:{id:'starfall_draught',name:'Starfall Draught',icon:'🌠',duration:3,
+    desc:'Sky civilization power courses through you. Everything sharpens.',
+    effects:{extractionBonus:2,craftBonus:2,enchantBonus:2,discoveryChanceBonus:0.10},buffDesc:'+2 extraction/craft/enchant, +10% discovery for 3 days'},
+  lens_elixir:{id:'lens_elixir',name:'Focused Starlight Elixir',icon:'🔍',duration:5,legendary:true,
+    desc:'Pure starlight in liquid form. The ultimate Skyreach consumable.',
+    effects:{craftBonus:4,xpMultiplier:0.30,sellBonus:0.25,discoveryChanceBonus:0.20,enchantBonus:3},buffDesc:'+4 craft, +30% XP, +25% sell, +20% discovery, +3 enchant for 5 days'},
 };
 
 var POT_LINES={
@@ -2663,6 +3209,12 @@ var POT_LINES={
   'Anya':['"I handle herbs but brewing isn\'t my skill. What have you got?"','"The glade folk could use Ashveil Tonics for the pollen season."'],
   'Gorrik':['"Regulation orders: three potions per shift team. Fill the order."','"Safety first in the mines. The guild pays fair."'],
   'Sera':['"Celestial Balm, if you have it. The Veilwalkers pay generously."','"Mundane remedies have their place. I\'ll take what you can spare."'],
+
+  'Reva':['"The patrol medics need salves. What have you got?"','"Altitude tonics sell themselves up here."'],
+  'Orin':['"Cloud wine! I\'ll take everything you have."','"Travelers need altitude remedies. Stock me up."'],
+  'Sister Astral':['"The observatory infirmary runs through supplies."','"Celestial Ink if you have it. The Starcallers pay well."'],
+  'Finn Ridgerun':['"Field supplies for the expedition. Whatever\'s ready."','"Something for the cold. We\'re going high."'],
+  'Grandmother Peak':['"Fog tinctures for the children. Their lungs struggle up here."','"A good healing salve never goes out of style."'],
 };
 var REP_LVS=['Stranger','Neutral','Friendly','Trusted','Honored','Revered'];
 var REP_TH=[0,50,150,350,650,1100];
@@ -2758,6 +3310,44 @@ var FACTIONS={ashwardens:{id:'ashwardens',loc:'cindervale',name:'Ashwardens',ico
       {name:'Trade Manifests',desc:'Quests occasionally reward Trade Manifests.',effects:{factionBonusDrop_trade_manifest:0.25}},
       {name:'Trade Fleet',desc:'Foraging expeditions yield +1 extra item.',effects:{forageYieldBonus:1}},
       {name:'Fleet Master',desc:'+25% rare find chance on expeditions.',effects:{rareForageBonus:0.25}},
+    ]},
+
+  // ═══ SKYREACH FACTIONS ═══
+  skywardens:{id:'skywardens',loc:'skyreach',name:'Skywardens',icon:'🦅',color:'#4a6080',res:'skyward_seal',
+    alignBonus:{name:'Skywarden Defender',desc:'+20% forage yield, +1 craft bonus.',effects:{yieldMultiplier:0.20,craftBonus:1}},
+    tierBonuses:[
+      {name:'Mountain Guard',desc:'Unlock Skywarden-patrolled foraging zones.',effects:{}},
+      {name:'Alpine Tactics',desc:'Unlock Skywarden protection recipes.',effects:{}},
+      {name:'Skyward Seals',desc:'Quests occasionally reward bonus Skyward Seals.',effects:{factionBonusDrop_skyward_seal:0.25}},
+      {name:'Elite Contracts',desc:'+20% gold from all quest rewards.',effects:{questGoldBonus:0.20}},
+      {name:'Sentinel',desc:'+1 to all craft checks. Protection enchants cost -1 ingredient.',effects:{craftBonus:1}},
+    ]},
+  starcallers:{id:'starcallers',loc:'skyreach',name:'Starcallers',icon:'🌠',color:'#6060a0',res:'starcaller_seal',
+    alignBonus:{name:'Starcaller Adept',desc:'+15% potion value, +15% XP, +15% staff efficiency.',effects:{potionValueBonus:0.15,xpMultiplier:0.15,staffEfficiencyBonus:0.15}},
+    tierBonuses:[
+      {name:'Star Charts',desc:'+10% potion sale value.',effects:{potionValueBonus:0.10}},
+      {name:'Celestial Formulas',desc:'Unlock Starcaller celestial recipes.',effects:{}},
+      {name:'Sacred Instruments',desc:'Quests occasionally reward bonus Starcaller Seals.',effects:{factionBonusDrop_starcaller_seal:0.25}},
+      {name:'Observatory Access',desc:'Restore 1 Energy when completing a quest.',effects:{questEnergyRestore:1}},
+      {name:'Stargazer',desc:'+10% XP from all sources.',effects:{xpMultiplier:0.10}},
+    ]},
+  cloud_traders:{id:'cloud_traders',loc:'skyreach',name:'Cloud Traders',icon:'🪁',color:'#808a60',res:'cloud_trader_token',
+    alignBonus:{name:'Cloud Broker',desc:'-20% shop prices, +2 forage yield, +40% rare find.',effects:{buyDiscount:0.20,forageYieldBonus:2,rareForageBonus:0.40}},
+    tierBonuses:[
+      {name:'Altitude Discount',desc:'-10% on all shop purchases.',effects:{buyDiscount:0.10}},
+      {name:'Summit Supply',desc:'Unlock Cloud Trader rare mineral recipes.',effects:{}},
+      {name:'Trade Tokens',desc:'Quests occasionally reward bonus Cloud Trader Tokens.',effects:{factionBonusDrop_cloud_trader_token:0.25}},
+      {name:'Pack Train',desc:'Foraging expeditions yield +1 extra item.',effects:{forageYieldBonus:1}},
+      {name:'Summit Broker',desc:'+25% rare find chance on expeditions.',effects:{rareForageBonus:0.25}},
+    ]},
+  windrunners:{id:'windrunners',loc:'skyreach',name:'Windrunners',icon:'🌪️',color:'#50808a',res:'windrunner_compass',
+    alignBonus:{name:'Wind Adept',desc:'+25% enchant success, +20% discovery, research -1h.',effects:{enchantSuccessFlat:25,discoveryChanceBonus:0.20,researchCostReduction:1}},
+    tierBonuses:[
+      {name:'Trail Sense',desc:'+5% enchantment success chance.',effects:{enchantSuccessFlat:5}},
+      {name:'Wind Reading',desc:'Unlock Windrunner rare formulas.',effects:{}},
+      {name:'Wayfinder Compasses',desc:'Quests occasionally reward bonus Windrunner Compasses.',effects:{factionBonusDrop_windrunner_compass:0.25}},
+      {name:'High Routes',desc:'+15% recipe & enchantment discovery chance.',effects:{discoveryChanceBonus:0.15}},
+      {name:'Pathfinder',desc:'Research studies cost 1 fewer hour. See enchant success %.',effects:{researchCostReduction:1}},
     ]},
 };
 var getFactionEffects=(fRepState,alignment,alignBoostMult)=>{const abm=1+(alignBoostMult||0);const effs={};for(const [fid,f] of Object.entries(FACTIONS)){const rl=getRepLvl(fRepState[fid]||0);for(let i=0;i<Math.min(rl,f.tierBonuses.length);i++){const tb=f.tierBonuses[i];for(const [k,v] of Object.entries(tb.effects)){effs[k]=(effs[k]||0)+(typeof v==='number'?v:v===true?1:0);}}if(alignment===fid&&f.alignBonus){for(const [k,v] of Object.entries(f.alignBonus.effects)){effs[k]=(effs[k]||0)+(typeof v==='number'?v*abm:v===true?1:0);}}}return effs;};
@@ -3283,7 +3873,166 @@ var QUESTS=[
   {id:'fc_mm3',name:'The Grand Fleet',giver:'Finn',loc:'market',type:'multi',targets:['harbor_alliance_brew','tidal_surge','pressure_flask','leviathan_draught'],xp:500,gold:180,items:['trade_manifest','trade_manifest','trade_manifest'],unlock:8,faction:'merchant_marine',fRep:100,chain:'merchant_marine',fReq:4,reqQuest:'fc_mm2',
     desc:'The entire merchant fleet is commissioning a grand expedition. Supply the flagship potions.',hint:'Brew a Harbor Alliance Brew, Tidal Surge, Pressure Flask, and Leviathan Draught.',
     offer:['"Every ship in the fleet. Sailing together for the first time in a generation."','"The Grand Fleet needs the best alchemist alive. That\'s you."'],
-    turnIn:['"*the entire harbor erupts in cheers as the fleet sets sail* You armed the greatest expedition in Tidecrest history."']}];
+    turnIn:['"*the entire harbor erupts in cheers as the fleet sets sail* You armed the greatest expedition in Tidecrest history."']},
+  // ═══ SKYREACH NPC QUESTS ═══
+  // Kael Windforge (8 quests)
+  {id:'sr_q1',name:'First Brew',giver:'sr_kael',loc:'skyreach',type:'deliver',target:'altitude_tonic',count:1,xp:80,gold:15,items:['fog_orchid','fog_orchid'],unlock:0,faction:null,fRep:0,
+    desc:'Kael needs an Altitude Tonic for a climber with altitude sickness.',hint:'Brew an Altitude Tonic (Cloud Moss + Windstone).',
+    offer:['"You\'re the new alchemist? Good. There\'s a climber in the back room turning blue."','"Altitude sickness. Can you brew a tonic?"'],
+    onAccept:'"Don\'t dawdle. Blue lips means hours, not days. Take these orchids."',
+    turnIn:['"Quick work. The color\'s coming back already."','"You\'ll do fine up here."']},
+  {id:'sr_q1b',name:'Stocking Up',giver:'sr_kael',loc:'skyreach',type:'gather',target:'cloud_moss',count:8,xp:60,gold:12,items:[],unlock:1,faction:'skywardens',fRep:15,
+    desc:'Kael needs cloud moss for the shop.',hint:'Gather 8 Cloud Moss.',
+    offer:['"Shop\'s running low on cloud moss."'],onAccept:'"The meadows are your best bet."',
+    turnIn:['"Good quality. You have a gatherer\'s eye."']},
+  {id:'sr_q2',name:'Tea Order',giver:'sr_kael',loc:'skyreach',type:'deliver',target:'mountain_tea',count:3,xp:100,gold:25,items:['raptor_plume'],unlock:2,faction:'cloud_traders',fRep:15,
+    desc:'Standing tea order from the Cloud Traders.',hint:'Brew 3 Mountain Tea.',
+    offer:['"The Cloud Traders want their weekly tea. Three cups."'],onAccept:'"Alpine mint and cloud moss. Simple recipe, high standards."',
+    turnIn:['"Perfect. The traders will be pleased."']},
+  {id:'sr_q3',name:'Storm Supplies',giver:'sr_kael',loc:'skyreach',type:'deliver',target:'summit_paste',count:5,xp:180,gold:40,items:['stormglass'],unlock:4,faction:'skywardens',fRep:25,
+    desc:'Skywardens need Summit Paste before storm season.',hint:'Brew 5 Summit Paste.',
+    offer:['"Storm season\'s coming. The wardens need paste for exposed patrols."'],onAccept:'"Five batches. Lives depend on this."',
+    turnIn:['"The wardens won\'t freeze this season."']},
+  {id:'sr_q3b',name:'Cloud Wine Season',giver:'sr_kael',loc:'skyreach',type:'deliver',target:'cloud_wine',count:4,xp:150,gold:35,items:['cloud_berry','cloud_berry','cloud_berry'],unlock:3,faction:'cloud_traders',fRep:20,
+    desc:'Cloud wine season is here. Kael needs stock.',hint:'Brew 4 Cloud Wine.',
+    offer:['"Every visitor wants cloud wine. I need four bottles yesterday."'],onAccept:'"Cloud berry, alpine mint, drip fungus. Don\'t let it over-ferment."',
+    turnIn:['"This vintage might be the best yet. Well done."']},
+  {id:'sr_q4',name:'Windforge Legacy',giver:'sr_kael',loc:'skyreach',type:'deliver',target:'stormglass_oil',count:2,xp:300,gold:60,items:['thunder_iron','thunder_iron'],unlock:6,faction:'skywardens',fRep:30,
+    desc:'Kael has a special commission for Stormglass Blade Oil.',hint:'Brew 2 Stormglass Blade Oil.',
+    offer:['"Commission from the Skywarden captain herself."'],onAccept:'"Master-level work. Don\'t let me down."',
+    turnIn:['"Magnificent. My grandmother would have been proud."']},
+  {id:'sr_q4b',name:'Observatory Ink',giver:'sr_kael',loc:'skyreach',type:'deliver',target:'celestial_ink',count:1,xp:350,gold:70,items:['eclipse_shard'],unlock:7,faction:'starcallers',fRep:30,
+    desc:'The Starcallers commissioned Celestial Ink through Kael.',hint:'Brew 1 Celestial Ink (requires Starcaller faction rep).',
+    offer:['"The Starcallers want ink that can capture starlight. Only one alchemist in Skyreach can do it."'],onAccept:'"Don\'t waste the materials. These are irreplaceable."',
+    turnIn:['"The Starcallers will write their star charts with this. History, in your bottle."']},
+  {id:'sr_q5_k',name:'Zenith Commission',giver:'sr_kael',loc:'skyreach',type:'deliver',target:'zenith_elixir',count:1,xp:500,gold:100,items:['zenith_stone'],unlock:8,faction:'starcallers',fRep:40,
+    desc:'The ultimate commission: a Zenith Elixir.',hint:'Brew 1 Zenith Elixir (DC 20).',
+    offer:['"In thirty years, I\'ve asked one alchemist for this. She couldn\'t do it."','"A Zenith Elixir. The pinnacle. Can you?"'],onAccept:'"Three impossible ingredients. If you pull this off, you\'ll be a legend."',
+    turnIn:['"I never thought I\'d hold one."','"You\'ve done what no one else could. Skyreach will remember your name."']},
+  // Lira Cloudwhisper (7 quests)
+  {id:'sr_q5',name:'Weather Samples',giver:'sr_lira',loc:'skyreach',type:'gather',target:'storm_petal',count:6,xp:90,gold:18,items:['canopy_dew'],unlock:1,faction:'starcallers',fRep:10,
+    desc:'Lira needs storm petals for weather research.',hint:'Gather 6 Storm Petals.',
+    offer:['"Storm petals correlate with weather patterns. I need samples."'],onAccept:'"Handle carefully — static charge degrades with rough treatment."',
+    turnIn:['"Excellent charge retention. Weeks of data here."']},
+  {id:'sr_q6',name:'Cloud Survey',giver:'sr_lira',loc:'skyreach',type:'gather',target:'fog_orchid',count:5,xp:120,gold:22,items:['mist_silk'],unlock:2,faction:'windrunners',fRep:15,
+    desc:'Lira maps fog patterns using orchid growth.',hint:'Gather 5 Fog Orchids.',
+    offer:['"Fog orchids are living weather stations."'],onAccept:'"Note where you find them — location matters."',
+    turnIn:['"The fog is shifting. I need to update my models."']},
+  {id:'sr_q6b',name:'Rime Analysis',giver:'sr_lira',loc:'skyreach',type:'gather',target:'rime_dust',count:8,xp:140,gold:28,items:['cave_frost_sr','cave_frost_sr'],unlock:3,faction:'starcallers',fRep:15,
+    desc:'Lira needs rime dust to study frost formation patterns.',hint:'Gather 8 Rime Dust.',
+    offer:['"Frost formation tells us about wind currents. I need rime samples."'],onAccept:'"The cliffs and caverns have the best rime deposits."',
+    turnIn:['"These crystallization patterns are extraordinary. Thank you."']},
+  {id:'sr_q7',name:'Lightning Analysis',giver:'sr_lira',loc:'skyreach',type:'gather',target:'lightning_shard',count:3,xp:220,gold:45,items:['charged_quartz','charged_quartz'],unlock:5,faction:'starcallers',fRep:25,
+    desc:'Lira needs lightning shards for storm frequency analysis.',hint:'Gather 3 Lightning Shards from Stormspire Peaks.',
+    offer:['"Storm cycles are accelerating. I need physical evidence."'],onAccept:'"Be careful up there."',
+    turnIn:['"The crystalline structure confirms it — storms are increasing."']},
+  {id:'sr_q8',name:'Aurora Prediction',giver:'sr_lira',loc:'skyreach',type:'deliver',target:'aurora_lamp',count:2,xp:280,gold:55,items:['aurora_lichen','aurora_lichen'],unlock:6,faction:'starcallers',fRep:30,
+    desc:'Lira needs Aurora Lamp Oil to calibrate instruments.',hint:'Brew 2 Aurora Lamp Oil.',
+    offer:['"My models need calibration against actual aurora emissions."'],onAccept:'"The spectral properties should match the aurora exactly."',
+    turnIn:['"Perfect spectral match! Predictions accurate to the hour now."']},
+  {id:'sr_q8b',name:'Storm Model',giver:'sr_lira',loc:'skyreach',type:'deliver',target:'storm_pearl_elixir',count:1,xp:320,gold:65,items:['bolt_crystal'],unlock:7,faction:'windrunners',fRep:30,
+    desc:'Lira needs a Storm Pearl Elixir for her predictive model.',hint:'Brew 1 Storm Pearl Elixir.',
+    offer:['"If I can sense storm patterns through this elixir, I can build a model that predicts a week out."'],onAccept:'"The storm pearl is the key — it formed under the exact conditions I need to study."',
+    turnIn:['"Remarkable. I can feel the pressure systems. The model will be revolutionary."']},
+  {id:'sr_q8c',name:'Gale Thesis',giver:'sr_lira',loc:'skyreach',type:'deliver',target:'primordial_gale',count:1,xp:450,gold:90,items:['primordial_wind'],unlock:8,faction:'starcallers',fRep:40,
+    desc:'Lira\'s life work: proving the Gale is connected to the primordial wind.',hint:'Brew 1 Primordial Gale.',
+    offer:['"I\'ve spent forty years on this theory. The Gale isn\'t natural — it\'s primordial."','"I need you to brew a Primordial Gale. If my theory is right, it will resonate with the storm."'],
+    onAccept:'"This is my life\'s work. Don\'t take it lightly."',
+    turnIn:['"It resonates. By the stars, it resonates."','"The Gale IS primordial wind. We finally understand what we\'re fighting."']},
+  // Old Bron Stonefoot (6 quests)
+  {id:'sr_q9',name:'Old Trails',giver:'sr_bron',loc:'skyreach',type:'gather',target:'windstone',count:10,xp:80,gold:15,items:['cliff_quartz'],unlock:1,faction:'windrunners',fRep:10,
+    desc:'Bron needs windstones to mark old trails.',hint:'Gather 10 Windstones.',
+    offer:['"The old trails are disappearing. I need windstones for markers."'],onAccept:'"The smooth ones last longest in the wind."',
+    turnIn:['"These trails saved my life more times than I can count."']},
+  {id:'sr_q10',name:'Crystal Mapping',giver:'sr_bron',loc:'skyreach',type:'gather',target:'altitude_crystal',count:4,xp:160,gold:35,items:['pressure_quartz','pressure_quartz'],unlock:3,faction:'windrunners',fRep:20,
+    desc:'Bron is mapping crystal deposits in the caverns.',hint:'Gather 4 Altitude Crystals.',
+    offer:['"A vein I found forty years ago. Need to verify it\'s still there."'],onAccept:'"The Windrunners keep records. This data matters."',
+    turnIn:['"Right where I left it. The mountain keeps its secrets well."']},
+  {id:'sr_q10b',name:'Glacier Survey',giver:'sr_bron',loc:'skyreach',type:'gather',target:'frozen_bloom',count:4,xp:180,gold:38,items:['summit_coral'],unlock:4,faction:'cloud_traders',fRep:20,
+    desc:'Bron wants frozen blooms to study glacial retreat.',hint:'Gather 4 Frozen Blooms from Glacial Lake.',
+    offer:['"The glacier is retreating. These flowers are surfacing for the first time in millennia."'],onAccept:'"Handle them gently — they\'re older than civilization."',
+    turnIn:['"Beautiful and sad. The ice is giving up its secrets."']},
+  {id:'sr_q11',name:'Summit Stories',giver:'sr_bron',loc:'skyreach',type:'gather',target:'star_metal',count:2,xp:260,gold:50,items:['sky_rune_fragment','sky_rune_fragment'],unlock:6,faction:'windrunners',fRep:25,
+    desc:'Bron wants star metal for a memorial.',hint:'Gather 2 Star Metal from the Sky Ruins.',
+    offer:['"My old climbing partner died in those ruins. I want something to remember her."'],onAccept:'"Star metal never tarnishes. Just like memory."',
+    turnIn:['"Thank you. She\'d have liked you."']},
+  {id:'sr_q11b',name:'The Lost Route',giver:'sr_bron',loc:'skyreach',type:'gather',target:'levitation_dust',count:2,xp:300,gold:60,items:['ancient_windstone'],unlock:7,faction:'windrunners',fRep:30,
+    desc:'Bron believes there\'s a lost path through the Sky Ruins.',hint:'Gather 2 Levitation Dust from the Sky Ruins.',
+    offer:['"There\'s a path through the ruins the sky people used. I need levitation dust to prove it."'],onAccept:'"The dust floats where the paths were. Follow the dust."',
+    turnIn:['"I knew it. The path is real. The Windrunners will map it."']},
+  {id:'sr_q11c',name:'One Last Climb',giver:'sr_bron',loc:'skyreach',type:'gather',target:'void_crystal',count:1,xp:400,gold:80,items:['zenith_stone'],unlock:8,faction:'windrunners',fRep:40,
+    desc:'Bron\'s final request: a void crystal from the Observatory Summit.',hint:'Gather 1 Void Crystal from the Observatory Summit.',
+    offer:['"I climbed every peak in Skyreach. Except one."','"I\'m too old now. But if you bring me a void crystal from the summit... I\'ll know it\'s been done."'],
+    onAccept:'"The summit doesn\'t forgive. But it rewards the worthy."',
+    turnIn:['"You did it."','"*He holds the crystal to the light, tears in his eyes.*"','"Thank you. The mountain is complete."']},
+  // Yuki Starsight (6 quests)
+  {id:'sr_q12',name:'Rune Translation',giver:'sr_yuki',loc:'skyreach',type:'gather',target:'sky_rune_fragment',count:3,xp:130,gold:25,items:['echo_mineral','echo_mineral'],unlock:2,faction:'starcallers',fRep:15,
+    desc:'Yuki needs rune fragments for translation work.',hint:'Gather 3 Sky Rune Fragments.',
+    offer:['"I\'m building a rune dictionary. Every fragment is another word decoded."'],onAccept:'"The fragments are scattered through the ruins. Look near the walls."',
+    turnIn:['"Three new glyphs! One seems to mean \'wind\' and another... \'home.\'  They called it home."']},
+  {id:'sr_q12b',name:'Celestial Samples',giver:'sr_yuki',loc:'skyreach',type:'gather',target:'eclipse_shard',count:2,xp:170,gold:35,items:['altitude_crystal','altitude_crystal'],unlock:4,faction:'starcallers',fRep:20,
+    desc:'Yuki needs eclipse shards for her research.',hint:'Gather 2 Eclipse Shards from the Sky Ruins.',
+    offer:['"Eclipse shards store shadow energy. The sky people used them for something — I need to find out what."'],onAccept:'"Handle them in cloth — sunlight degrades the stored shadow."',
+    turnIn:['"The energy signature matches the observatory instruments. They\'re connected!"']},
+  {id:'sr_q13',name:'Observatory Study',giver:'sr_yuki',loc:'skyreach',type:'deliver',target:'echo_draught',count:2,xp:200,gold:42,items:['celestial_mortar'],unlock:5,faction:'starcallers',fRep:25,
+    desc:'Yuki needs Echo Draughts to study observatory acoustics.',hint:'Brew 2 Echo Draughts.',
+    offer:['"The observatory has acoustic properties I can\'t explain. Echo Draughts might reveal the pattern."'],onAccept:'"The resonance minerals should amplify whatever the builders encoded in the stone."',
+    turnIn:['"I can hear it! The walls are singing coordinates!"']},
+  {id:'sr_q13b',name:'Stargazer\'s Tools',giver:'sr_yuki',loc:'skyreach',type:'deliver',target:'stargazer_draught',count:1,xp:320,gold:65,items:['ruin_crystal'],unlock:7,faction:'starcallers',fRep:30,
+    desc:'Yuki needs a Stargazer\'s Draught for the observatory.',hint:'Brew 1 Stargazer\'s Draught.',
+    offer:['"The instruments respond to the draught. I think it\'s a key — the sky people used it to activate the observatory."'],onAccept:'"Sky civilization materials in liquid form. This could change everything."',
+    turnIn:['"The stars... I can see them all. Every one the sky people tracked. This is extraordinary."']},
+  {id:'sr_q14',name:'The Sky People',giver:'sr_yuki',loc:'skyreach',type:'gather',target:'celestial_essence',count:2,xp:400,gold:80,items:['starfire_dust','starfire_dust'],unlock:8,faction:'starcallers',fRep:40,
+    desc:'Yuki\'s thesis: who were the sky people?',hint:'Gather 2 Celestial Essence from the Observatory Summit.',
+    offer:['"I\'ve spent my whole life studying them. Now I need the essence they gathered."','"The celestial essence is their legacy — concentrated starlight they collected for centuries."'],
+    onAccept:'"The summit is dangerous. But the answers are there."',
+    turnIn:['"The essence contains memories."','"They weren\'t just observers. They were listeners. The stars were talking to them."','"I need to write this down. All of it. Before I forget what the starlight showed me."']},
+  {id:'sr_q14b',name:'Star Map',giver:'sr_yuki',loc:'skyreach',type:'deliver',target:'zenith_elixir',count:1,xp:500,gold:100,items:['void_crystal'],unlock:8,faction:'starcallers',fRep:50,
+    desc:'Yuki believes a Zenith Elixir will reveal the sky people\'s final star map.',hint:'Brew 1 Zenith Elixir.',
+    offer:['"The ultimate experiment. A Zenith Elixir consumed at the observatory should activate the Great Lens."','"We\'ll see what they saw. The complete star map. Every star they tracked."'],
+    onAccept:'"This is either the greatest discovery in history or the biggest waste of ingredients. I\'m betting on discovery."',
+    turnIn:['"*The Great Lens activates, flooding the chamber with starlight.*"','"It\'s beautiful. Every star, every constellation, every world they watched."','"They\'re still out there. The sky people didn\'t die — they went home. To the stars."']},
+  // ═══ SKYREACH FACTION CHAIN QUESTS ═══
+  // Skywarden chain (3)
+  {id:'sr_fc1',name:'Skywarden Trial',giver:'sr_kael',loc:'skyreach',type:'deliver',target:'frost_poultice',count:5,xp:120,gold:25,items:['gale_salt','gale_salt'],unlock:2,chain:'skywardens',chainStep:1,faction:'skywardens',fRep:25,
+    desc:'Prove your worth to the Skywardens by supplying field medicine.',hint:'Brew 5 Frost Poultices.',
+    offer:['"The Skywardens don\'t trust outsiders. Prove yourself with supplies."'],onAccept:'"Five frost poultices for the mountain patrol."',
+    turnIn:['"Not bad. The wardens noticed. Keep going."']},
+  {id:'sr_fc2',name:'Patrol Support',giver:'sr_kael',loc:'skyreach',type:'deliver',target:'thin_air_elixir',count:3,xp:200,gold:45,items:['skyward_seal'],unlock:4,chain:'skywardens',chainStep:2,faction:'skywardens',fRep:35,
+    desc:'Supply Thin Air Elixirs for extended patrols.',hint:'Brew 3 Thin Air Elixirs.',
+    offer:['"Extended patrol into the high passes. They need endurance elixirs."'],onAccept:'"Three batches, field-grade. Don\'t cut corners."',
+    turnIn:['"The patrol made it back with zero altitude casualties. Your elixirs did that."']},
+  {id:'sr_fc3',name:'Skywarden Alliance',giver:'sr_kael',loc:'skyreach',type:'deliver',target:'skyward_ward',count:2,xp:350,gold:70,items:['skyward_seal','skyward_seal'],unlock:6,chain:'skywardens',chainStep:3,faction:'skywardens',fRep:50,
+    desc:'Craft Skywarden Wards for the mountain passes.',hint:'Brew 2 Skywarden Wards (requires Skywarden rep).',
+    offer:['"The passes need warding. Only a trusted alchemist can craft these."'],onAccept:'"This is the final test. After this, you\'re one of us."',
+    turnIn:['"The passes are warded. You\'ve earned the Skywarden\'s trust — permanently."']},
+  // Starcaller chain (3)
+  {id:'sr_fc4',name:'Star Reading',giver:'sr_yuki',loc:'skyreach',type:'gather',target:'aurora_lichen',count:5,xp:150,gold:30,items:['starcaller_seal'],unlock:3,chain:'starcallers',chainStep:1,faction:'starcallers',fRep:25,
+    desc:'The Starcallers need aurora lichen for star-reading ceremonies.',hint:'Gather 5 Aurora Lichen.',
+    offer:['"The ceremonies require aurora lichen. It resonates with starlight."'],onAccept:'"The glacial lake shore has the best specimens."',
+    turnIn:['"The aurora tonight will be magnificent. Thank you."']},
+  {id:'sr_fc5',name:'Lens Repair',giver:'sr_yuki',loc:'skyreach',type:'deliver',target:'altitude_lens',count:3,xp:250,gold:55,items:['starcaller_seal','starcaller_seal'],unlock:5,chain:'starcallers',chainStep:2,faction:'starcallers',fRep:35,
+    desc:'The observatory lenses need alchemical repair.',hint:'Brew 3 Crystal Lens Brew.',
+    offer:['"The secondary lenses are degrading. Your crystal brew can restore them."'],onAccept:'"Careful with the formulation — the lenses are sensitive to impurities."',
+    turnIn:['"The lenses are clear again! Stars we haven\'t seen in decades!"']},
+  {id:'sr_fc6',name:'Starcaller Communion',giver:'sr_yuki',loc:'skyreach',type:'deliver',target:'celestial_ink',count:2,xp:400,gold:80,items:['starcaller_seal','starcaller_seal','starcaller_seal'],unlock:7,chain:'starcallers',chainStep:3,faction:'starcallers',fRep:50,
+    desc:'Create the ink for the Starcaller\'s Great Star Chart.',hint:'Brew 2 Celestial Ink (requires Starcaller rep).',
+    offer:['"The Great Star Chart hasn\'t been updated in a century. Your celestial ink will change that."'],onAccept:'"Two bottles. Every drop must be perfect."',
+    turnIn:['"The new star chart is complete. The Starcallers are in your debt — forever."']},
+  // Windrunner chain (3)
+  {id:'sr_fc7',name:'Trail Blazing',giver:'sr_bron',loc:'skyreach',type:'gather',target:'cliff_quartz',count:8,xp:130,gold:28,items:['windrunner_compass'],unlock:2,chain:'windrunners',chainStep:1,faction:'windrunners',fRep:25,
+    desc:'The Windrunners need cliff quartz for trail markers.',hint:'Gather 8 Cliff Quartz.',
+    offer:['"New trails need marking. Cliff quartz catches the light — perfect markers."'],onAccept:'"The wind-carved cliffs have the best specimens."',
+    turnIn:['"Good eyes. These will shine for decades."']},
+  {id:'sr_fc8',name:'Expedition Supply',giver:'sr_bron',loc:'skyreach',type:'deliver',target:'windrunner_speed',count:2,xp:280,gold:58,items:['windrunner_compass','windrunner_compass'],unlock:5,chain:'windrunners',chainStep:2,faction:'windrunners',fRep:35,
+    desc:'Supply Windrunner Draughts for an expedition.',hint:'Brew 2 Windrunner Draughts.',
+    offer:['"Major expedition to map the high passes. They need speed draughts."'],onAccept:'"The Windrunners move fast. These draughts make them faster."',
+    turnIn:['"The expedition mapped three new passes. Your draughts saved two lives."']},
+  {id:'sr_fc9',name:'Windrunner Alliance',giver:'sr_bron',loc:'skyreach',type:'deliver',target:'void_edge_oil',count:1,xp:400,gold:80,items:['windrunner_compass','windrunner_compass','windrunner_compass'],unlock:7,chain:'windrunners',chainStep:3,faction:'windrunners',fRep:50,
+    desc:'The Windrunners need Void Edge Oil for their ceremonial blade.',hint:'Brew 1 Void Edge Oil.',
+    offer:['"The Windrunner ceremonial blade needs re-enchanting. Only the best oil will do."'],onAccept:'"This blade has been carried to every peak in Skyreach. Treat it with respect."',
+    turnIn:['"The blade sings again. You\'re Windrunner now — in spirit if not in name."']},
+];
 var NPCS={
   brenna:{name:'Brenna',loc:'market',icon:'🧑‍🌾',title:'Market Keeper',
     portrait:{bg:['#5a7247','#3d5230'],ring:'#8aaa70',accent:'#c4956a'},
@@ -3331,7 +4080,31 @@ var NPCS={
   old_anchor:{name:'Old Anchor',loc:'tavern',icon:'🏴',title:'Retired Smuggler & Barkeep',
     portrait:{bg:['#4a3a2a','#2e2418'],ring:'#a08060',accent:'#c0a080'},
     lines:['"Everyone who passes through Tidecrest ends up at my bar eventually. That\'s how I know everything."','"I smuggled for twenty years. Gems, potions, the occasional fugitive. Now I just serve drinks."','"The Corsairs used to leave the harbor alone. Something changed. Something down in the deep."','"Need a contact? A rumor? A very strong drink? I can help with all three."']},
-};var SHOP_I=[
+
+  // ═══ SKYREACH NPCs ═══
+  sr_kael:{id:'sr_kael',name:'Kael Windforge',icon:'👨‍🦳',loc:'skyreach',role:'market',
+    personality:'Gruff but fair mountain trader. Former Skywarden. Lost three fingers to frostbite.',
+    dialogue:['"The wind doesn\'t care about your plans. Neither do I. What do you need?"','"Everything costs more up here. That\'s the price of altitude."','"I\'ve been trading on this peak for thirty years. I know every herb and every trail."'],
+    gossip:false},
+  sr_lira:{id:'sr_lira',name:'Lira Cloudwhisper',icon:'🧝‍♂️',loc:'skyreach',role:'tavern',
+    personality:'Elven meteorologist who came to study the storms and never left.',
+    dialogue:['"The barometric pressure suggests... ah, never mind. How can I help?"','"Storm\'s coming in from the west. Three hours, maybe four."','"The weather up here tells stories, if you know how to listen."'],
+    gossip:false},
+  sr_bron:{id:'sr_bron',name:'Old Bron Stonefoot',icon:'👴',loc:'skyreach',role:'tavern',
+    personality:'Retired Windrunner scout. Has climbed every peak. Tells long stories.',
+    dialogue:['"Did I ever tell you about the time I climbed the Zenith in a blizzard?"','"Sit down, sit down. Let me tell you about the Sky Ruins."','"The mountain teaches patience. Also frostbite. Mostly frostbite."'],
+    gossip:false},
+  sr_yuki:{id:'sr_yuki',name:'Yuki Starsight',icon:'🧑‍🏫',loc:'skyreach',role:'tavern',
+    personality:'Young Starcaller initiate, brilliant and nervous. Obsessed with the sky civilization.',
+    dialogue:['"I\'ve been translating the runes and... sorry, you probably don\'t care."','"The observatory instruments still work! After all this time!"','"Do you ever wonder who built the Sky Ruins? I think about it constantly."'],
+    gossip:false},
+  sr_mika:{id:'sr_mika',name:'Mika the Wind',icon:'🧒',loc:'skyreach',role:'gossip',
+    personality:'A sharp-eared child who knows everyone\'s business in Skyreach.',
+    dialogue:['"I heard something! Want to know?"'],
+    gossip:true,
+    flavor:['"They say the Starcallers found a new star — one that wasn\'t there last month."','"A Windrunner came back from the Observatory missing two days of memory."','"The Cloud Traders are charging triple for rope. Something about the Stairway shifting."','"Old Bron claims he saw lights in the Sky Ruins at midnight. Moving lights."','"The Gale took another hundred feet of the western pass last night."','"Eclipse Covenant markings on the Stormspire. Fresh ones."','"There\'s a glacier flower that blooms only when the aurora is green."','"Kael keeps a locked chest under the counter. Nobody knows what\'s in it."']},
+};
+var SHOP_I=[
   // Tidecrest ingredients (common + mid-tier for recipe completion)
   {id:'driftwood',price:4,loc:'tidecrest'},{id:'sea_salt',price:3,loc:'tidecrest'},{id:'kelp_frond',price:5,loc:'tidecrest'},{id:'sand_dollar',price:6,loc:'tidecrest'},
   {id:'tide_moss',price:5,loc:'tidecrest'},{id:'barnacle',price:4,loc:'tidecrest'},{id:'crab_shell',price:5,loc:'tidecrest'},{id:'sea_glass',price:6,loc:'tidecrest'},
@@ -3349,7 +4122,17 @@ var NPCS={
   {id:'moonpetal',price:16,loc:'cindervale'},{id:'gloomcap',price:12,loc:'cindervale'},{id:'volcanic_essence',price:20,loc:'cindervale'},
   {id:'char_root',price:3,loc:'cindervale'},{id:'wind_dust',price:4,loc:'cindervale'},{id:'bark_resin',price:6,loc:'cindervale'},{id:'ash_salt',price:4,loc:'cindervale'},
   {id:'cinder_moss',price:5,loc:'cindervale'},{id:'ember_petal',price:3,loc:'cindervale'},{id:'soot_crystal',price:4,loc:'cindervale'},
-  {id:'amber_sap',price:6,loc:'cindervale'},{id:'beetle_shell',price:7,loc:'cindervale'},{id:'echo_fungus',price:9,loc:'cindervale'},{id:'ghost_silk',price:11,loc:'cindervale'}];
+  {id:'amber_sap',price:6,loc:'cindervale'},{id:'beetle_shell',price:7,loc:'cindervale'},{id:'echo_fungus',price:9,loc:'cindervale'},{id:'ghost_silk',price:11,loc:'cindervale'},
+  // Skyreach ingredients
+  {id:'cloud_moss',price:5,loc:'skyreach'},{id:'alpine_mint',price:6,loc:'skyreach'},{id:'windstone',price:5,loc:'skyreach'},{id:'sky_clover',price:4,loc:'skyreach'},
+  {id:'eagle_down',price:3,loc:'skyreach'},{id:'frost_daisy',price:4,loc:'skyreach'},{id:'breeze_seed',price:3,loc:'skyreach'},{id:'summit_grass',price:4,loc:'skyreach'},
+  {id:'thin_air_lichen',price:7,loc:'skyreach'},{id:'cloud_berry',price:6,loc:'skyreach'},{id:'storm_petal',price:5,loc:'skyreach'},{id:'mistwood_bark',price:7,loc:'skyreach'},
+  {id:'drip_fungus',price:5,loc:'skyreach'},{id:'hanging_lichen',price:8,loc:'skyreach'},
+  {id:'fog_orchid',price:9,loc:'skyreach'},{id:'vapor_fern',price:10,loc:'skyreach'},{id:'cliff_quartz',price:9,loc:'skyreach'},{id:'raptor_plume',price:10,loc:'skyreach'},
+  {id:'gale_salt',price:8,loc:'skyreach'},{id:'wind_iron',price:11,loc:'skyreach'},{id:'rime_dust',price:10,loc:'skyreach'},
+  {id:'canopy_dew',price:11,loc:'skyreach'},{id:'mist_silk',price:12,loc:'skyreach'},{id:'skystone_chip',price:13,loc:'skyreach'},
+  {id:'pressure_quartz',price:12,loc:'skyreach'},{id:'echo_mineral',price:11,loc:'skyreach'},{id:'glacial_silt',price:8,loc:'skyreach'},{id:'ice_moss',price:9,loc:'skyreach'},
+  {id:'frozen_bloom',price:15,loc:'skyreach'},{id:'lake_crystal',price:17,loc:'skyreach'}];
 var H_EVENTS=[
   // Simple events (no check) — generic
   {prob:0.025,text:'You stumble upon a hidden cache beneath a fallen log — someone\'s forgotten stash!',effect:'bonus',good:true},
@@ -3367,6 +4150,13 @@ var H_EVENTS=[
   {prob:0.01,text:'A Sand Merchant drops a pouch of rare samples as thanks for your trade reputation.',effect:'rep',good:true,faction:'sand_merchants',loc:'ashfall'},
   {prob:0.01,text:'Dustwalker trail signs lead you to a hidden spring. Their wayfinding saves you hours.',effect:'rep',good:true,faction:'dustwalkers',loc:'ashfall'},
   {prob:0.008,text:'A golden desert scarab scurries past — the Flamekeepers say it\'s a sign of blessing.',effect:'bonus_xp',good:true,loc:'ashfall'},
+  // Skyreach faction events
+  {prob:0.012,text:'A Cloud Trader shares warm tea and points out a sheltered gathering spot nearby.',effect:'bonus',good:true,loc:'skyreach'},
+  {prob:0.01,text:'Windrunner trail markers guide you to an efficient path through the peaks.',effect:'bonus',good:true,loc:'skyreach'},
+  {prob:0.01,text:'You find a Starcaller prayer stone humming with celestial energy. You pause to listen.',effect:'rep',good:true,faction:'starcallers',loc:'skyreach'},
+  {prob:0.01,text:'A Skywarden patrol nods in approval as you pass. "Good to see civilians contributing up here."',effect:'rep',good:true,faction:'skywardens',loc:'skyreach'},
+  {prob:0.01,text:'Windrunner cairns mark a hidden cache of ingredients left for fellow explorers.',effect:'rep',good:true,faction:'windrunners',loc:'skyreach'},
+  {prob:0.008,text:'A snow hare crosses your path — the Starcallers say it means clear skies ahead.',effect:'bonus_xp',good:true,loc:'skyreach'},
   // Skill check events
   {prob:0.025,text:'An ash drake bursts from the undergrowth!',check:{skill:'endurance',dc:10},
     successText:'You hold your ground and the creature retreats, scattering ingredients in its wake.',successEffect:'bonus',
@@ -3562,6 +4352,49 @@ var TOWN_EVENTS=[
     effect:()=>({items:{phosphor_moss:2,anglerfish_lure:1},msg:'Bioluminescent harvest: 2× 💡Phosphor Moss + 1× 🔦Anglerfish Lure'})},
   {id:'te_tc_apprentice',vibe:'trade',loc:'tidecrest',prob:.04,minLv:3,text:'A young alchemist from the mainland arrives by ship, eager to trade techniques.',
     effect:(s)=>{return{xp:40+s.level*5,msg:`+${40+s.level*5} XP from the exchange of maritime alchemy secrets.`};}},
+
+  // ═══ SKYREACH TOWN EVENTS ═══
+  {id:'sr_ev1',loc:'skyreach',vibe:'nature',prob:0.08,minLv:0,text:'Clear Skies — A rare cloudless day in Skyreach. The whole settlement celebrates.',
+    effect:()=>({gold:8,msg:'The festival attracts visitors. +8g in tips.'})},
+  {id:'sr_ev2',loc:'skyreach',vibe:'trade',prob:0.07,minLv:1,text:'Windrunner Return — Scouts bring back rare finds from the high passes.',
+    effect:()=>{const picks=['raptor_plume','cliff_quartz','mist_silk','fog_orchid'];var id=picks[Math.floor(Math.random()*picks.length)];return{items:{[id]:2},msg:'You barter for 2\u00d7 '+((INGR[id]||{}).icon||'')+((INGR[id]||{}).name||id)+'.'}}},
+  {id:'sr_ev3',loc:'skyreach',vibe:'mystical',prob:0.06,minLv:2,text:'Star Alignment — The Starcallers announce a rare celestial conjunction. Knowledge flows freely.',
+    effect:()=>({xp:40,msg:'+40 XP from the celestial alignment.'})},
+  {id:'sr_ev4',loc:'skyreach',vibe:'trade',prob:0.07,minLv:0,text:'Cloud Trader Caravan — Fresh supplies arrive from below.',
+    effect:()=>({gold:5,msg:'Trade goods arrive. +5g in discounted purchases.'})},
+  {id:'sr_ev5',loc:'skyreach',vibe:'nature',prob:0.06,minLv:1,text:'Eagle Nesting Season — Mountain eagles shed feathers across the meadows.',
+    effect:()=>({items:{eagle_down:3},msg:'3\u00d7 \ud83e\udeb6Eagle Down found in the nesting area.'})},
+  {id:'sr_ev6',loc:'skyreach',vibe:'mystical',prob:0.05,minLv:3,text:'Aurora Night — The aurora borealis blazes across the sky, inspiring everyone.',
+    effect:()=>({xp:30,msg:'+30 XP from the aurora\'s inspiration.'})},
+  {id:'sr_ev7',loc:'skyreach',vibe:'social',prob:0.06,minLv:2,text:'Mountain Goat Migration — Herders celebrate the annual migration with feasting.',
+    effect:()=>({gold:10,msg:'Visitors buy potions for the festival. +10g.'})},
+  {id:'sr_ev8',loc:'skyreach',vibe:'nature',prob:0.04,minLv:4,text:'Glacier Bloom — Rare flowers surface from the retreating glacier.',
+    effect:()=>{const picks=['frozen_bloom','aurora_lichen','coldsnap_root'];var id=picks[Math.floor(Math.random()*picks.length)];return{items:{[id]:1},msg:'Rare find: 1\u00d7 '+((INGR[id]||{}).icon||'')+((INGR[id]||{}).name||id)+'!'}}},
+  {id:'sr_ev9',loc:'skyreach',vibe:'trade',prob:0.06,minLv:0,text:'Windforge Market Day — Kael runs a special sale on mountain ingredients.',
+    effect:()=>({gold:6,msg:'Good deals at market. +6g saved on purchases.'})},
+  {id:'sr_ev10',loc:'skyreach',vibe:'social',prob:0.05,minLv:3,text:'Starcaller Lecture — Yuki shares her latest research with anyone who will listen.',
+    effect:()=>({xp:25,msg:'+25 XP from the lecture.'})},
+  {id:'sr_ev11',loc:'skyreach',vibe:'social',prob:0.05,minLv:1,text:'Bron\'s Tales — Old Bron tells a story that turns out to contain useful information.',
+    effect:()=>({xp:15,msg:'+15 XP from Bron\'s wisdom.'})},
+  {id:'sr_ev12',loc:'skyreach',vibe:'social',prob:0.04,minLv:3,text:'Summit Race — Climbers compete to reach the peak fastest. You place a bet.',
+    effect:()=>({gold:Math.random()>0.5?15:-5,msg:Math.random()>0.5?'Your climber wins! +15g.':'Your climber loses. -5g.'})},
+  {id:'sr_ev13',loc:'skyreach',vibe:'social',prob:0.05,minLv:2,text:'Cloud Wine Season — The local vintage is ready. Everyone is in high spirits.',
+    effect:()=>({gold:8,msg:'Cloud wine sales boost income. +8g.'})},
+  {id:'sr_ev14',loc:'skyreach',vibe:'military',prob:0.05,minLv:2,text:'Skywarden Patrol Bonus — The wardens share confiscated sky raider goods.',
+    effect:()=>{const picks=['gale_salt','wind_iron','skystone_chip','rime_dust'];var id=picks[Math.floor(Math.random()*picks.length)];return{items:{[id]:2},gold:5,msg:'Confiscated goods: 2\u00d7 '+((INGR[id]||{}).icon||'')+((INGR[id]||{}).name||id)+' + 5g.'}}},
+  {id:'sr_ev15',loc:'skyreach',vibe:'trade',prob:0.06,minLv:0,text:'Thin Air Tonic Sales — Visitors from below buy altitude remedies.',
+    effect:()=>({gold:12,msg:'Altitude tonic demand is high. +12g.'})},
+  {id:'sr_ev16',loc:'skyreach',vibe:'social',prob:0.04,minLv:2,text:'Wind Instrument Festival — Carved windstones create haunting music across the peaks.',
+    effect:()=>({xp:20,msg:'The music inspires. +20 XP.'})},
+  {id:'sr_ev17',loc:'skyreach',vibe:'mystical',prob:0.04,minLv:4,text:'Telescope Night — The observatory opens to the public. You glimpse distant wonders.',
+    effect:()=>({xp:35,msg:'Cosmic perspective grants +35 XP.'})},
+  {id:'sr_ev18',loc:'skyreach',vibe:'trade',prob:0.06,minLv:1,text:'Supply Surplus — Extra supplies arrive from the lowlands.',
+    effect:()=>{const picks=['cloud_moss','alpine_mint','windstone','frost_daisy'];var id=picks[Math.floor(Math.random()*picks.length)];return{items:{[id]:3},msg:'Surplus: 3\u00d7 '+((INGR[id]||{}).icon||'')+((INGR[id]||{}).name||id)+'.'}}},
+  // Negative events
+  {id:'sr_ev19',loc:'skyreach',vibe:'danger',prob:0.06,minLv:0,negative:true,text:'Mountain Storm — A violent storm slams into the peaks. Travel is treacherous.',
+    effect:()=>({travelPenalty:2,msg:'Storm adds +2 hours to all expeditions for 2 days.'})},
+  {id:'sr_ev20',loc:'skyreach',vibe:'danger',prob:0.05,minLv:2,negative:true,text:'Sky Raider Theft — Raiders hit your stores overnight.',
+    effect:(s)=>{const picks=Object.keys(s.inv).filter(k=>s.inv[k]>1);if(picks.length===0)return{msg:'Lucky \u2014 your stores are too bare to steal from.'};var id=picks[Math.floor(Math.random()*picks.length)];return{items:{[id]:-2},msg:'Lost 2\u00d7 '+((INGR[id]||{}).icon||'')+((INGR[id]||{}).name||id)+'! The raiders fled up the cliffs.'}}},
 ];
 
 // ═══ BOARD QUEST TEMPLATES — repeatable daily quests ═══
@@ -3739,6 +4572,7 @@ var BQ_GIVERS_BY_LOC={
   cindervale:['Farmer Aldric','Widow Maren','Trader Osric','Healer Senna','Guard Brennick','Smith Torva','Elder Yara','Prospector Jax','Herbalist Neve','Cook Brindle','Captain Voss','Pilgrim Elowen','Shepherd Grynn','Scribe Felton','Chandler Rue'],
   ashfall:['Cameleer Rashid','Spice Trader Yuna','Guard Massoud','Herbalist Dima','Cook Farida','Elder Khoury','Sand Runner Lev','Glassblower Taza','Weaver Basma','Prospector Gul','Scribe Hakim','Well Keeper Rima','Merchant Isra','Tanner Bahir','Bazaar Warden Nox'],
   tidecrest:['Deckhand Corwin','Net Mender Hale','Dock Warden Petra','Cook Marjorie','Fishmonger Otis','Diver Kael','Sail Mender Bryn','Crab Trapper Guss','Lighthouse Boy Tam','Elder Waverly','Rope Maker Fenn','Tide Watcher Lira','Ship Carpenter Dag','Harbor Clerk Ivy','Chandler Moss'],
+  skyreach:['Climber Tarn','Herbalist Elsi','Guide Bron Jr.','Cook Halla','Trader Orin','Warden Kev','Star Reader Nym','Wind Runner Paz','Rope Maker Sven','Crystal Cutter Vala','Goatherd Milo','Brewer Inga','Stairway Porter Dek','Scribe Lyra','Weather Watcher Cal'],
 };
 var BQ_GIVERS=BQ_GIVERS_BY_LOC.cindervale; // legacy fallback
 var BQ_TEMPLATES=[
@@ -3856,7 +4690,7 @@ var genBoardQuests=(level,day,bonusQuests=0,loc='cindervale',knownRecipes=[])=>{
   const locIngrSet=new Set();
   REGIONS.filter(r=>r.loc===loc).forEach(r=>r.ingr.forEach(i=>locIngrSet.add(i)));
   const canCraftHere=(recipeId)=>{const r=RECIPES.find(x=>x.id===recipeId);return r&&!r.buff&&r.ingr.every(id=>locIngrSet.has(id)||locIngrSet.has(locIngr(id,loc)));};
-  const isKnownHere=(recipeId)=>knownRecipes.includes(recipeId)&&canCraftHere(recipeId);  const locFactions=loc==='tidecrest'?['harbormasters','pearl_divers','tidekeepers','merchant_marine']:loc==='ashfall'?['sand_merchants','flamekeepers','dustwalkers']:['hearthkeepers','ashwardens','veilwalkers','cinderfolk'];
+  const isKnownHere=(recipeId)=>knownRecipes.includes(recipeId)&&canCraftHere(recipeId);  const locFactions=loc==='tidecrest'?['harbormasters','pearl_divers','tidekeepers','merchant_marine']:loc==='ashfall'?['sand_merchants','flamekeepers','dustwalkers']:loc==='skyreach'?['skywardens','starcallers','cloud_traders','windrunners']:['hearthkeepers','ashwardens','veilwalkers','cinderfolk'];
   const quests=[];var usedGivers=[];
   for(let i=0;i<n;i++){
     // For deliver templates, filter pool to locally craftable recipes
@@ -3903,34 +4737,34 @@ function getContractSlots(level,classLevels){const mercLv=classLevels?.merchant|
 // ═══ SETTLEMENT INVESTMENT ═══
 var SETTLEMENT_PROJECTS=[
   {id:'sp_roads',name:'Paved Roads',icon:'🛤️',desc:'Smooth roads reduce travel time across all regions.',
-    cost:{gold:300},matCost:{cindervale:{ashite:5},ashfall:{sandstone_dust:5,obsidian_shard:3},tidecrest:{driftstone:5,coral_shard:3}},
+    cost:{gold:300},matCost:{cindervale:{ashite:5},ashfall:{sandstone_dust:5,obsidian_shard:3},tidecrest:{driftstone:5,coral_shard:3},skyreach:{skystone_chip:5,cliff_quartz:3}},
     buildDays:3,effect:{travelReduction:1},effectDesc:'-1 travel time to all regions',req:null,tier:1},
   {id:'sp_market',name:'Market Square',icon:'🏪',desc:'A proper market attracts more customers and traveling merchants.',
-    cost:{gold:500},matCost:{cindervale:{ashite:5,ironroot_bark:3},ashfall:{sandstone_dust:5,dustite:3},tidecrest:{driftstone:5,waterlogged_timber:3}},
+    cost:{gold:500},matCost:{cindervale:{ashite:5,ironroot_bark:3},ashfall:{sandstone_dust:5,dustite:3},tidecrest:{driftstone:5,waterlogged_timber:3},skyreach:{skystone_chip:5,windstone:3}},
     buildDays:5,effect:{premiumCustomers:2,shelfSaleBonus:0.10},effectDesc:'+2 customers/morning, +10% shelf sale, weekly Traveling Merchant',req:null,tier:1},
   {id:'sp_watchtower',name:'Watchtower',icon:'🗼',desc:'A vantage point to spot incoming threats early.',
-    cost:{gold:400},matCost:{cindervale:{ashite:4,embervein:2},ashfall:{sandstone_dust:4,heatstone:2},tidecrest:{driftstone:4,barnacle_cluster:2}},
+    cost:{gold:400},matCost:{cindervale:{ashite:4,embervein:2},ashfall:{sandstone_dust:4,heatstone:2},tidecrest:{driftstone:4,barnacle_cluster:2},skyreach:{skystone_chip:4,wind_iron:2}},
     buildDays:4,effect:{threatGainReduction:0.15,threatWarning:60},effectDesc:'Threats grow 15% slower, warning at 60+',req:null,tier:1},
   {id:'sp_garden',name:'Herbalist Garden',icon:'🌿',desc:'A cultivated garden produces common ingredients daily.',
-    cost:{gold:600},matCost:{cindervale:{ashite:5,moonpetal:3,ashbloom:5},ashfall:{sandstone_dust:5,sunpetal:3,dustite:5},tidecrest:{driftstone:5,kelp_frond:3,tide_moss:5}},
+    cost:{gold:600},matCost:{cindervale:{ashite:5,moonpetal:3,ashbloom:5},ashfall:{sandstone_dust:5,sunpetal:3,dustite:5},tidecrest:{driftstone:5,kelp_frond:3,tide_moss:5},skyreach:{skystone_chip:5,summit_coral:3,cloud_moss:5}},
     buildDays:5,effect:{gardenYield:2,spoilThreshold:1},effectDesc:'2 random ingredients/morning, +1 spoilage threshold',req:null,tier:2},
   {id:'sp_guild',name:'Guild Hall',icon:'🏛️',desc:'A gathering place for skilled workers. Better hires and cheaper training.',
-    cost:{gold:800},matCost:{cindervale:{ashite:8,embervein:4},ashfall:{sandstone_dust:8,obsidian_shard:4},tidecrest:{driftstone:8,waterlogged_timber:4}},
+    cost:{gold:800},matCost:{cindervale:{ashite:8,embervein:4},ashfall:{sandstone_dust:8,obsidian_shard:4},tidecrest:{driftstone:8,waterlogged_timber:4},skyreach:{skystone_chip:8,wind_iron:4}},
     buildDays:6,effect:{maxStaff:1,hireCandidates:2},effectDesc:'+1 staff slot, +2 hire candidates, training costs halved',req:null,tier:2},
   {id:'sp_depot',name:'Trade Depot',icon:'🚢',desc:'A major trade hub that reduces supply costs and attracts better deals.',
-    cost:{gold:1000},matCost:{cindervale:{ashite:10,deep_crystal:2,embervein:5},ashfall:{sandstone_dust:10,temple_gold:1,obsidian_shard:5},tidecrest:{driftstone:10,tidal_diamond:1,waterlogged_timber:5}},
+    cost:{gold:1000},matCost:{cindervale:{ashite:10,deep_crystal:2,embervein:5},ashfall:{sandstone_dust:10,temple_gold:1,obsidian_shard:5},tidecrest:{driftstone:10,tidal_diamond:1,waterlogged_timber:5},skyreach:{skystone_chip:10,zenith_stone:1,wind_iron:5}},
     buildDays:7,effect:{contractCostReduction:0.40,shopDiscount:0.15,premiumCustomers:1},effectDesc:'Contract costs -40%, shop prices -15%, +1 customer/morning',req:'sp_market',tier:3},
   {id:'sp_academy',name:'Academy',icon:'🎓',desc:'A center of learning that accelerates all research and growth.',
-    cost:{gold:1200},matCost:{cindervale:{ashite:10,veil_shard:2,starwort:5},ashfall:{sandstone_dust:10,mirage_dust:2,ancient_resin:3},tidecrest:{driftstone:10,oracle_tear:2,nautilus_shell:5}},
+    cost:{gold:1200},matCost:{cindervale:{ashite:10,veil_shard:2,starwort:5},ashfall:{sandstone_dust:10,mirage_dust:2,ancient_resin:3},tidecrest:{driftstone:10,oracle_tear:2,nautilus_shell:5},skyreach:{skystone_chip:10,celestial_essence:2,meltwater_pearl:5}},
     buildDays:8,effect:{xpMultiplier:0.10,researchCostReduction:1},effectDesc:'+10% XP permanently, research -1 hour, staff specialization',req:null,tier:3},
   {id:'sp_walls',name:'Fortified Walls',icon:'🏰',desc:'Massive walls that protect the settlement from the worst threats.',
-    cost:{gold:1500},matCost:{cindervale:{ashite:15,deep_iron:5,embervein:5},ashfall:{sandstone_dust:15,obsidian_shard:8,heatstone:3},tidecrest:{driftstone:15,barnacle_cluster:8,rusted_anchor:3}},
+    cost:{gold:1500},matCost:{cindervale:{ashite:15,deep_iron:5,embervein:5},ashfall:{sandstone_dust:15,obsidian_shard:8,heatstone:3},tidecrest:{driftstone:15,barnacle_cluster:8,rusted_anchor:3},skyreach:{skystone_chip:15,thunder_iron:5,aurora_lichen:5}},
     buildDays:10,effect:{threatCap:80,negativeEventReduction:0.50,tradeConfidenceGold:50},effectDesc:'Threats capped at 80, events halved, +50g/morning',req:'sp_watchtower',tier:4},
   {id:'sp_library',name:'Grand Library',icon:'📚',desc:'A repository of all alchemical knowledge in the realm.',
-    cost:{gold:2000},matCost:{cindervale:{ashite:15,veil_shard:3,deep_crystal:3,sacred_ember:2},ashfall:{sandstone_dust:15,ancient_resin:5,mirage_dust:3,temple_gold:1},tidecrest:{driftstone:15,oracle_tear:3,nautilus_shell:5,tidekeeper_sigil:2}},
+    cost:{gold:2000},matCost:{cindervale:{ashite:15,veil_shard:3,deep_crystal:3,sacred_ember:2},ashfall:{sandstone_dust:15,ancient_resin:5,mirage_dust:3,temple_gold:1},tidecrest:{driftstone:15,oracle_tear:3,nautilus_shell:5,tidekeeper_sigil:2},skyreach:{skystone_chip:15,celestial_essence:3,ruin_crystal:3,starcaller_seal:2}},
     buildDays:12,effect:{discoveryChanceBonus:0.25,loreDropChance:0.15,paperGoldMult:2},effectDesc:'+25% discovery, +15% lore drops, 2× paper gold',req:'sp_academy',tier:4},
   {id:'sp_monument',name:'Monument',icon:'🏆',desc:'A grand monument to your legacy. The ultimate investment in the settlement.',
-    cost:{gold:3000},matCost:{cindervale:{deep_crystal:5,sacred_ember:3,veil_shard:3,warden_sigil:3},ashfall:{temple_gold:3,ancient_resin:5,mirage_dust:3,dustwalker_compass:2},tidecrest:{tidal_diamond:3,oracle_tear:3,tidekeeper_sigil:3,harbor_seal:2}},
+    cost:{gold:3000},matCost:{cindervale:{deep_crystal:5,sacred_ember:3,veil_shard:3,warden_sigil:3},ashfall:{temple_gold:3,ancient_resin:5,mirage_dust:3,dustwalker_compass:2},tidecrest:{tidal_diamond:3,oracle_tear:3,tidekeeper_sigil:3,harbor_seal:2},skyreach:{zenith_stone:3,celestial_essence:3,starcaller_seal:3,skyward_seal:2}},
     buildDays:15,effect:{allStatBonus:1,allSkillBonus:1,dailyRepAll:5},effectDesc:'+1 all stats, +1 all skills, +5 rep/day to all factions. Carries through Torch.',req:'sp_walls',tier:5},
 ];
 
