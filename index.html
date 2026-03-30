@@ -6566,7 +6566,7 @@ function CindervaleAlchemistInner(){
               <div style={{fontSize:15,color:TH.gold,padding:'4px 8px',background:TH.gold+'10',borderRadius:4,marginBottom:3}}>📋 Choose a class to advance</div>
               {pendingLevelUp.needsFeat&&<div style={{fontSize:15,color:TH.purple,padding:'4px 8px',background:TH.purple+'10',borderRadius:4,marginBottom:3}}>🌟 Select a feat</div>}
               {pendingLevelUp.needsASI&&<div style={{fontSize:15,color:TH.cyan,padding:'4px 8px',background:TH.cyan+'10',borderRadius:4,marginBottom:3}}>📊 Ability Score Increase (+2 to stats)</div>}
-              <div style={{fontSize:15,color:TH.green,padding:'4px 8px',background:TH.green+'10',borderRadius:4,marginBottom:3}}>🎓 Assign {pendingLevelUp.skillPointsAvailable} skill points</div>
+              <div style={{fontSize:15,color:TH.green,padding:'4px 8px',background:TH.green+'10',borderRadius:4,marginBottom:3}}>🎓 Assign {pendingLevelUp.skillPointsAvailable} skill points{pendingLevelUp.skillPointsAvailable>2?` (2 base + ${pendingLevelUp.skillPointsAvailable-2} 🧠 Focused Mind)`:''}</div>
             </div>
             <div style={{textAlign:'center'}}>
               <button style={{...S.btn('gold'),fontSize:17,padding:'8px 28px'}} onClick={()=>setPendingLevelUp(p=>({...p,step:'class'}))}>Begin Advancement →</button>
@@ -6822,7 +6822,8 @@ function CindervaleAlchemistInner(){
           {pendingLevelUp.step==='skills'&&<>
             <div style={{textAlign:'center',marginBottom:8}}>
               <div style={{fontSize:20,color:TH.gold}}>🎓 Assign Skill Points</div>
-              <div style={{fontSize:14,color:TH.textDim}}>Spend {pendingLevelUp.skillPointsAvailable} skill points to improve your abilities.</div>
+              <div style={{fontSize:14,color:TH.textDim}}>Spend {pendingLevelUp.skillPointsAvailable} skill points to improve your abilities.{pendingLevelUp.skillPointsAvailable>2&&<span style={{color:TH.gold}}> (2 base + {pendingLevelUp.skillPointsAvailable-2} from 🧠 Focused Mind)</span>}</div>
+              {getFeatureVal('bonusSkillEveryOther')>0&&<div style={{fontSize:12,color:TH.textDim}}>Focused Mind: +1 skill point every other level (Lv{pendingLevelUp.newCharLevel+1} {pendingLevelUp.newCharLevel%2===0?'→ bonus applies':'→ no bonus this level'})</div>}
             </div>
             {(()=>{
               const tempSpent=pendingLevelUp.skillPointsSpent||{};
