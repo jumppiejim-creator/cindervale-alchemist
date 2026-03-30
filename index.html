@@ -562,7 +562,24 @@ function CindervaleAlchemistInner(){
     setPhase(s.phase||'identity');setCharName(s.charName||'');setCharRace(s.charRace||null);setCharGender(s.charGender||null);setStats(s.stats||DEF.stats);
     setPtsLeft(s.ptsLeft??12);setSkRanks(s.skRanks||{});setSkPts(s.skPts||0);setSkProgress(s.skProgress||{});
     const _cl=s.classLevels||{};const cleanCL={};Object.entries(_cl).forEach(([k,v])=>{if(CLASSES[k])cleanCL[k]=v;});
-    setClassLevels(cleanCL);setTorchClassLevels(s.torchClassLevels||{});setTorchSpecs(s.torchSpecs||{});setSpecs(s.specs||{});setPlayerFeats(s.playerFeats||[]);setAsiSpent(s.asiSpent||[]);setStartingClass(s.startingClass||null);
+    setClassLevels(cleanCL);
+    // Torch migration: reconstruct from lineage if torchClassLevels missing
+    let tcl=s.torchClassLevels||{};let tsp=s.torchSpecs||{};
+    if(Object.keys(tcl).length===0){
+      const lin=s.lineage||lineage||loadLineage();
+      if(lin?.generations?.length>0){
+        const lg=lin.generations[lin.generations.length-1];
+        if(lg.classLevels&&Object.keys(lg.classLevels).length>0){
+          tcl=lg.classLevels;
+          tsp=lg.allSpecs?{...lg.allSpecs}:{};
+          if(Object.keys(tsp).length===0&&lg.class&&lg.spec)tsp[lg.class]=lg.spec;
+          if(!lg.allSpecs&&lg.classLevels){Object.entries(lg.classLevels).forEach(([cid,lv])=>{
+            if(lv>=3&&!tsp[cid]&&CLASSES[cid]?.specs){const sids=Object.keys(CLASSES[cid].specs);if(sids.length>0)tsp[cid]=sids[0];}
+          });}
+        }
+      }
+    }
+    setTorchClassLevels(tcl);setTorchSpecs(tsp);setSpecs(s.specs||{});setPlayerFeats(s.playerFeats||[]);setAsiSpent(s.asiSpent||[]);setStartingClass(s.startingClass||null);
     setScreen(s.screen||'map');setDay(s.day||1);setHours(s.hours!=null?s.hours:4);setGameLocation(s.gameLocation||'cindervale');
     setXp(s.xp!=null?s.xp:0);setGold(s.gold!=null?s.gold:15);setInv(s.inv||{});setPots(s.pots||{});
     setKnown(s.known||['healing_salve']);setAQ(s.aQ||[]);setDoneQ(s.doneQ||[]);
@@ -579,25 +596,6 @@ function CindervaleAlchemistInner(){
   // ─── ALL EFFECTS (before any return!) ───
   // (scroll removed — was jarring during multi-action sequences)
 
-  // Migration: reconstruct torch inheritance from lineage for saves that predate torchClassLevels
-  useEffect(()=>{
-    if(Object.keys(torchClassLevels).length>0)return; // already have torch data
-    if(!lineage?.generations?.length)return;
-    const lastGen=lineage.generations[lineage.generations.length-1];
-    if(!lastGen.classLevels||Object.keys(lastGen.classLevels).length===0)return;
-    setTorchClassLevels(lastGen.classLevels);
-    // Reconstruct specs: prefer allSpecs (new format), fall back to class+spec (legacy)
-    const tSpecs=lastGen.allSpecs?{...lastGen.allSpecs}:{};
-    if(Object.keys(tSpecs).length===0&&lastGen.class&&lastGen.spec)tSpecs[lastGen.class]=lastGen.spec;
-    // For multi-class mentors without allSpecs, guess specs from classLevels >= 3
-    if(!lastGen.allSpecs&&lastGen.classLevels){Object.entries(lastGen.classLevels).forEach(([cid,lv])=>{
-      if(lv>=3&&!tSpecs[cid]&&CLASSES[cid]?.specs){
-        const specIds=Object.keys(CLASSES[cid].specs);
-        if(specIds.length>0)tSpecs[cid]=specIds[0];
-      }
-    });}
-    if(Object.keys(tSpecs).length>0)setTorchSpecs(prev=>Object.keys(prev).length>0?prev:tSpecs);
-  },[lineage]);
 
   // Retroactive sync: ensure all mapped hidden areas have their recipes/enchantments in known lists
   useEffect(()=>{
