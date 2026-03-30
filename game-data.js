@@ -297,7 +297,7 @@ var CLASSES={
         features:[
           {classLv:3,name:'Tracker',desc:'Target ingredients without yield penalty. Befriend wild creatures.',effects:{luckyFindChance:0.20,extractionBonus:2,targetNoYieldPenalty:true}},
           {classLv:6,name:'Pathfinder',desc:'Discover hidden sub-regions with unique ingredients. Creature bonuses grow.',effects:{yieldMultiplier:0.50,critExtractionMulti:2}},
-          {classLv:10,name:'Apex Predator',desc:'Companions perform 2 actions per day. Your highest-loyalty companion gains a Legendary ability unique to its type. Once per day, send a companion on a solo expedition that returns ingredients without costing you Energy.',effects:{companionDualAction:true,guaranteedRare:true,legendaryCompanion:true,soloExpedition:true}},
+          {classLv:10,name:'Apex Predator',desc:'Companions perform all actions twice per day. Your highest-loyalty companion (★5) gains a Legendary ability unique to its role: Foragers find rare ingredients, Merchants attract VIPs, Greeters earn referral gold, Guardians heal staff injuries, Muses grant bonus Energy, Scouts negate all expedition danger. Send any companion on a solo expedition from their card (1/day, 0 Energy).',effects:{companionDualAction:true,guaranteedRare:true,legendaryCompanion:true,soloExpedition:true}},
         ]},
       quartermaster:{id:'quartermaster',name:'Quartermaster',desc:'Master of logistics. Double storage, reduce spoilage, and squeeze maximum value from every ingredient.',icon:'📋',color:'#6080a0',bStat:'dis',bSkills:['stockpiling','efficiency'],
         features:[

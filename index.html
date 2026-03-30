@@ -1287,6 +1287,10 @@ function CindervaleAlchemistInner(){
         if(dsChance>0&&(event.effect==='lose_some'||event.effect==='lose_time')&&Math.random()<dsChance){
           event.dangerSensed=true;event.effectDetail='⚠️ Danger Sense! You sensed the threat and avoided the worst.';event.effect='none';event.good=true;
         }
+        // Legendary Scout: auto-negate all danger events today
+        if(!event.good&&dayFlags.includes('legendary_scout')){
+          event.dangerSensed=true;event.effectDetail='👑 Legendary Scout negated the danger!';event.effect='none';event.good=true;
+        }
         // Warden: immune to time loss events
         if(event.effect==='lose_time'&&getFeatureVal('immuneTimeLossEvents')){
           event.dangerSensed=true;event.effectDetail='🛡️ Warden training: unshaken by delays.';event.effect='none';event.good=true;
@@ -4902,8 +4906,8 @@ function CindervaleAlchemistInner(){
           compLines.push({icon:comp.icon,label:comp.name+' scouting',val:'-'+(pct*100).toFixed(0)+'% danger',color:'#6090c0'});
           entry.actions.push({type:'scout',text:comp.name+' scouted the area',val:'-'+(pct*100).toFixed(0)+'% expedition danger',color:'#6090c0'});
         }
-        // companionDualAction: companions perform primary action a second time
-        if(getFeatureVal('companionDualAction')&&(comp.primary.type==='gather'||comp.primary.type==='shop')){
+        // companionDualAction: companions perform primary action a second time (all types)
+        if(getFeatureVal('companionDualAction')){
           if(comp.primary.type==='gather'){
             const yield2=Math.floor((comp.primary.baseYield[Math.min(loy-1,4)]+lvBonus)*compEffB);
             const items2={};for(let i=0;i<yield2;i++){const id=comp.primary.ingr[Math.floor(Math.random()*comp.primary.ingr.length)];items2[id]=(items2[id]||0)+1;}
@@ -4915,6 +4919,23 @@ function CindervaleAlchemistInner(){
             const g2=Math.floor((comp.primary.baseGold[Math.min(loy-1,4)]+lvBonus*3)*compEffB);setGold(gg=>gg+g2);
             compLines.push({icon:comp.icon,label:comp.name+' tended shop (2nd)',val:'+'+g2+'g',color:TH.gold});
             entry.actions.push({type:'shop',text:comp.name+' helped at the shop again',val:'+'+g2+'g',color:TH.gold});
+          } else if(comp.primary.type==='customers'){
+            const custB=comp.primary.values[Math.min(loy-1,4)]||1;
+            compLines.push({icon:comp.icon,label:comp.name+' greeted (2nd)',val:'+'+custB+' more customers',color:TH.gold});
+            entry.actions.push({type:'customers',text:comp.name+' attracted another round',val:'+'+custB+' customers',color:TH.gold});
+          } else if(comp.primary.type==='staff_morale'){
+            const morB2=comp.primary.values[Math.min(loy-1,4)]||5;
+            setHiredAppr(prev=>prev.map(a=>({...a,morale:Math.min(100,(a.morale||50)+morB2)})));
+            compLines.push({icon:comp.icon,label:comp.name+' rallied staff (2nd)',val:'+'+morB2+'% morale',color:TH.green});
+            entry.actions.push({type:'morale',text:comp.name+' boosted morale again',val:'+'+morB2+'% staff morale',color:TH.green});
+          } else if(comp.primary.type==='research'){
+            const discB2=comp.primary.values[Math.min(loy-1,4)]||0.05;
+            compLines.push({icon:comp.icon,label:comp.name+' inspired (2nd)',val:'+'+(discB2*100).toFixed(0)+'% discovery',color:'#9080c0'});
+            entry.actions.push({type:'research',text:comp.name+' found another clue',val:'+'+(discB2*100).toFixed(0)+'% discovery',color:'#9080c0'});
+          } else if(comp.primary.type==='danger_reduce'||comp.primary.type==='danger'){
+            const danB2=comp.primary.values[Math.min(loy-1,4)]||0.10;
+            compLines.push({icon:comp.icon,label:comp.name+' scouted (2nd)',val:'-'+(danB2*100).toFixed(0)+'% danger',color:'#6090c0'});
+            entry.actions.push({type:'scout',text:comp.name+' scouted the area again',val:'-'+(danB2*100).toFixed(0)+'% danger',color:'#6090c0'});
           }
         }
         // Secondary abilities (loyalty 3+ unless unlockLv is 2)
@@ -4970,13 +4991,48 @@ function CindervaleAlchemistInner(){
             entry.actions.push({type:'secondary',text:comp.name+' will help retry a failure',val:'1 free craft reroll',color:TH.gold});
           }
         }
-        // legendaryCompanion: highest-loyalty companion gains legendary ability
+        // legendaryCompanion: highest-loyalty companion gains a type-specific legendary ability
         if(getFeatureVal('legendaryCompanion')&&loy>=5){
           const isHighest=companions.filter(cc=>cc.active).every(cc=>cc.loyalty<=loy);
           if(isHighest){
-            const legGold=Math.floor(10+level*1.5);setGold(gg=>gg+legGold);setHours(h=>h+1);
-            compLines.push({icon:'👑',label:comp.name+' — Legendary Bond',val:'+'+legGold+'g, +1⚡',color:'#e0a030'});
-            entry.actions.push({type:'legendary',text:comp.name+'\'s legendary bond empowers you',val:'+'+legGold+'g, +1 Energy',color:'#e0a030'});
+            const pt=comp.primary.type;
+            if(pt==='gather'){
+              // Legendary Forager: 1 guaranteed rare ingredient from a high-diff region
+              const rareRegs=locRegions.filter(r=>r.diff>=3);
+              if(rareRegs.length>0){
+                const rReg=rareRegs[Math.floor(Math.random()*rareRegs.length)];
+                const rId=rReg.ingr[Math.floor(Math.random()*rReg.ingr.length)];
+                modInv(rId,1);
+                compLines.push({icon:'👑',label:comp.name+' — Legendary Forager',val:'+1 '+(INGR[rId]?.icon||'')+INGR[rId]?.name+' (rare)',color:'#e0a030'});
+                entry.actions.push({type:'legendary',text:comp.name+' found a rare ingredient',val:'+1 '+(INGR[rId]?.icon||'')+INGR[rId]?.name,color:'#e0a030'});
+              }
+            } else if(pt==='shop'){
+              // Legendary Merchant: premium customer at 3× price
+              const legGold=Math.floor(20+level*3);setGold(gg=>gg+legGold);
+              compLines.push({icon:'👑',label:comp.name+' — Legendary Merchant',val:'+'+legGold+'g (VIP customer)',color:'#e0a030'});
+              entry.actions.push({type:'legendary',text:comp.name+' attracted a VIP collector',val:'+'+legGold+'g premium sale',color:'#e0a030'});
+            } else if(pt==='customers'){
+              // Legendary Greeter: direct gold bonus (companion runs after customer gen)
+              const legGold=Math.floor(15+level*2.5);setGold(gg=>gg+legGold);
+              compLines.push({icon:'👑',label:comp.name+' — Legendary Greeter',val:'+'+legGold+'g (VIP referrals)',color:'#e0a030'});
+              entry.actions.push({type:'legendary',text:comp.name+'\'s legendary charm draws wealthy visitors',val:'+'+legGold+'g from VIP referrals',color:'#e0a030'});
+            } else if(pt==='staff_morale'){
+              // Legendary Guardian: heal all staff injuries, +1 Energy
+              setStaffInjuries(prev=>{const n={...prev};Object.keys(n).forEach(k=>{n[k]=0;});return n;});
+              setHours(h=>h+1);
+              compLines.push({icon:'👑',label:comp.name+' — Legendary Guardian',val:'All injuries healed, +1⚡',color:'#e0a030'});
+              entry.actions.push({type:'legendary',text:comp.name+'\'s protective aura heals the crew',val:'Staff injuries healed, +1 Energy',color:'#e0a030'});
+            } else if(pt==='research'){
+              // Legendary Muse: +1 Energy for a free research session
+              setHours(h=>h+1);
+              compLines.push({icon:'👑',label:comp.name+' — Legendary Muse',val:'+1⚡ (inspired insight)',color:'#e0a030'});
+              entry.actions.push({type:'legendary',text:comp.name+'\'s insight sparks a breakthrough',val:'+1 Energy for research',color:'#e0a030'});
+            } else if(pt==='danger_reduce'||pt==='danger'){
+              // Legendary Scout: auto-avoid all danger events today (via dayFlag)
+              setDayFlags(f=>[...f,'legendary_scout']);
+              compLines.push({icon:'👑',label:comp.name+' — Legendary Scout',val:'All danger auto-avoided today',color:'#e0a030'});
+              entry.actions.push({type:'legendary',text:comp.name+' mapped every threat in the area',val:'All expedition dangers negated today',color:'#e0a030'});
+            }
           }
         }
         if(entry.actions.length>0)compReportEntries.push(entry);
@@ -8216,6 +8272,21 @@ function CindervaleAlchemistInner(){
               {comp.passive&&c.active&&<div style={{fontSize:12,color:TH.green,marginTop:3,padding:'3px 6px',background:TH.green+'08',borderRadius:3,border:'1px solid '+TH.green+'22'}}>
                 🔋 Passive: {Object.entries(comp.passive).map(([k,v])=>k.replace(/([A-Z])/g,' $1').replace(/^./,s=>s.toUpperCase())+' +'+(typeof v==='number'&&v<1?(v*100).toFixed(0)+'%':v)).join(', ')}
               </div>}
+              {/* Solo Expedition button (Apex Predator) */}
+              {c.active&&getFeatureVal('soloExpedition')&&!dayFlags.includes('solo_exp_used')&&(()=>{
+                const bestReg=locRegions.filter(r=>level>=regUnlock(r)).sort((a,b)=>b.diff-a.diff)[0];
+                if(!bestReg)return null;
+                return <button style={{marginTop:4,width:'100%',fontSize:12,padding:'4px 8px',background:'#40a06010',color:'#40a060',border:'1px solid #40a06044',borderRadius:4,cursor:'pointer',fontFamily:'inherit'}}
+                  onClick={()=>{snapshot();setDayFlags(f=>[...f,'solo_exp_used']);
+                    const yield_=Math.max(4,Math.floor(bestReg.diff*2+loy*2+Math.floor(level/3)));
+                    const items={};for(let i=0;i<yield_;i++){const id=bestReg.ingr[Math.floor(Math.random()*bestReg.ingr.length)];items[id]=(items[id]||0)+1;}
+                    setInv(p=>{const n={...p};Object.entries(items).forEach(([id,q])=>{n[id]=(n[id]||0)+q;});return n;});
+                    const soloXp=Math.floor(bestReg.diff*12);gainXP(soloXp);
+                    const valStr=Object.entries(items).map(([id,q])=>(INGR[id]?.icon||'')+INGR[id]?.name+' ×'+q).join(', ');
+                    addLog(`🐾 ${comp.icon} ${comp.name} forages ${bestReg.icon}${bestReg.name} alone! Brought back: ${valStr} (+${soloXp} XP)`,'craft');
+                    showResult(`🐾 ${comp.icon} ${comp.name} — Solo Expedition!`,'craft',`${bestReg.icon} ${bestReg.name}\nHaul: ${valStr}\n+${soloXp} XP\nNo player energy spent!`);
+                  }}>🐾 Send {comp.name} on Solo Expedition (1/day, 0⚡) → {bestReg.icon}{bestReg.name}</button>;
+              })()}
             </div>;
           })}
           {(classLevels.warden||0)<6&&<div style={{fontSize:12,color:TH.textDim,marginTop:4}}>🔒 More slots at Warden Lv6</div>}
