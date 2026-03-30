@@ -342,7 +342,6 @@ function CindervaleAlchemistInner(){
   const [settlementConstruction,setSettlementConstruction]=useState(null); // {projectId,daysLeft,staffAssigned}
   const [defenseQuests,setDefenseQuests]=useState([]); // [{id,threatId,type,target,qty,reward,desc}] // [{id,name,icon,recipes:[recipeId,...],sold:0}]
   const [hollowMarch,setHollowMarch]=useState(DEF?.hollowMarch||{active:false,wave:0,nextWaveDay:0,demands:[],history:[],finalStandAvailable:false,finalStandComplete:false,marchRecipesUnlocked:[]});
-  const [finalStandState,setFinalStandState]=useState(null); // {crises,current,results,phase:'intro'|'crisis'|'result'|'summary'}
   const [legacyFeature,setLegacyFeature]=useState(null); // {name,desc,icon,color,source,effects}
   const [showBrandMgr,setShowBrandMgr]=useState(false);
   const [brandOrders,setBrandOrders]=useState([]); // [{brandId,recipeId,qty,price,expires}] // {haul:{ashbloom:3,...}, brewsLeft:2, regDiff:3}
@@ -1814,8 +1813,34 @@ function CindervaleAlchemistInner(){
     // Check if all crises resolved successfully
     const allResolved=updDemands.every(d=>d.resolved);
     const allSuccess=updDemands.every(d=>d.resolved&&d.result?.success);
+    const succCount=updDemands.filter(d=>d.resolved&&d.result?.success).length;
+    // Final Stand completion check
+    if(allResolved&&hm.finalStandInProgress){
+      const needed=Math.ceil(updDemands.length*0.67);
+      if(succCount>=needed){
+        const fs=HOLLOW_MARCH.finalStandRewards;
+        setXp(x=>x+fs.xp);setGold(g=>g+fs.gold);
+        setThreats(p=>{const n={...p};locThreatIds.forEach(tid=>{n[tid]=Math.min(fs.threatCap,n[tid]||0);});return n;});
+        const updMarch2={...hm,demands:updDemands,finalStandComplete:true,finalStandInProgress:false};
+        setHollowMarch(updMarch2);
+        const masteryCount=updDemands.filter(d=>d.result?.mastery).length;
+        addLog(`👑 THE FINAL STAND IS WON! ${charName} has broken the Hollow March! +${fs.xp} XP, +${fs.gold}g. Threats capped at ${fs.threatCap}.${masteryCount>0?' ★ '+masteryCount+' masterful victories!':''}`,'quest');
+        setEventPopup({events:[{
+          text:`👑 The Hollow March is Broken!\n\n${charName} stands atop the ward-stones as the last invaders dissolve into mist.\n\n${updDemands.map(d=>`${d.result?.success?'✅':'❌'} ${d.icon} ${d.name} — ${d.solutions.find(s=>s.id===d.chosenSolution)?.icon||''} ${d.solutions.find(s=>s.id===d.chosenSolution)?.label||''}\n   ${d.result?.roll?d.result.roll.skill+': '+d.result.roll.total+' vs DC'+d.result.roll.dc:'Auto-success'}${d.result?.mastery?' ★ MASTERY':''}`).join('\n')}\n\n${succCount}/${updDemands.length} crises overcome (needed ${needed}). Victory!\n\n+${fs.xp} XP, +${fs.gold}g\nAll threats capped at ${fs.threatCap}\nTitle: "Defender of ${locName}"`,
+          vibe:'hollow_final',result:{msg:'The March is over. You may Pass the Torch when ready.'},flavor:null}],idx:0});
+        return;
+      } else {
+        const updMarch2={...hm,demands:[],finalStandAvailable:false,finalStandInProgress:false};
+        setHollowMarch(updMarch2);
+        addLog(`💀 The Final Stand FAILED (${succCount}/${updDemands.length}, needed ${needed}). Threats spiked. Try again after the next wave.`,'error');
+        setEventPopup({events:[{
+          text:`💀 The Final Stand Failed\n\nThe wards crack. You are forced to retreat.\n\n${updDemands.map(d=>`${d.result?.success?'✅':'❌'} ${d.icon} ${d.name} — ${d.solutions.find(s=>s.id===d.chosenSolution)?.icon||''} ${d.solutions.find(s=>s.id===d.chosenSolution)?.label||''}`).join('\n')}\n\n${succCount}/${updDemands.length} passed (needed ${needed}).\nThe Final Stand returns after the next wave.`,
+          vibe:'hollow_march',result:{msg:'Regroup. Build your skills. Try again.'},flavor:null}],idx:0});
+        return;
+      }
+    }
     if(allResolved&&allSuccess)addLog('🏆 ALL Wave '+hm.wave+' crises resolved! The defenses hold!','quest');
-    else if(allResolved)addLog('⚠️ Wave '+hm.wave+' crises all attempted — '+updDemands.filter(d=>d.result?.success).length+'/'+updDemands.length+' succeeded.','quest');
+    else if(allResolved)addLog('⚠️ Wave '+hm.wave+' crises all attempted — '+succCount+'/'+updDemands.length+' succeeded.','quest');
   };
 
   const reinforceWards=()=>{
@@ -1848,7 +1873,7 @@ function CindervaleAlchemistInner(){
     const dc=HOLLOW_MARCH.baseDC(wave)+(HOLLOW_MARCH.finalStandDCBonus||4);
     const templates=[...(typeof CRISIS_TEMPLATES!=='undefined'?CRISIS_TEMPLATES:[])];
     const shuffled=templates.sort(()=>Math.random()-0.5).slice(0,HOLLOW_MARCH.finalStandCrises||6);
-    // Generate demands identical to wave crises but at Final Stand DC
+    // Generate demands using exact same format as regular wave crises — reuses existing UI
     const crises=shuffled.map((tmpl,i)=>{
       const solutions=tmpl.solutions.map(sol=>{
         const s={...sol,dc,reward:HOLLOW_MARCH.crisisReward(wave)};
@@ -1868,60 +1893,12 @@ function CindervaleAlchemistInner(){
         } else if(sol.costType==='staff'){s.dc=0;s.cost={type:'staff',qty:HOLLOW_MARCH.staffQty(wave)};}
         return s;
       });
-      return{id:'fs_'+i,templateId:tmpl.id,name:tmpl.name,icon:tmpl.icon,narrative:tmpl.narrative,solutions,resolved:false,chosenSolution:null,result:null};
+      return{id:'fs_'+day+'_'+i,templateId:tmpl.id,name:tmpl.name,icon:tmpl.icon,narrative:tmpl.narrative,solutions,resolved:false,chosenSolution:null,result:null};
     });
-    setFinalStandState({crises,current:0,results:[],phase:'intro',wave,dc,needed:Math.ceil(crises.length*0.67)});
-  };
-  const resolveFinalStandCrisis=(solId)=>{
-    if(!finalStandState||finalStandState.phase!=='crisis')return;
-    const fs=finalStandState;const crisis=fs.crises[fs.current];
-    const sol=crisis.solutions.find(s=>s.id===solId);if(!sol)return;
-    // Consume resources
-    const cost=sol.cost;
-    if(cost.type==='potion'){const base=cost.target;Object.entries(pots).forEach(([pid,qty])=>{if(getBaseRecipeId(pid)===base&&cost.qty>0){const take=Math.min(qty,cost.qty);modPot(pid,-take);cost.qty-=take;}});}
-    else if(cost.type==='ingredients'){modInv(cost.target,-cost.qty);}
-    else if(cost.type==='gold'){setGold(g=>g-cost.qty);}
-    else if(cost.type==='enchant'||cost.type==='combat'){setHours(h=>h-cost.qty);}
-    // Roll
-    let success=true,mastery=false,rollResult=null;
-    if(sol.dc>0&&sol.skill){
-      const sk=sol.skill;const mod=getSkMod(sk)+getFeatureVal('craftBonus')+upEff('craftSkillBonus');
-      const crisisRespBonus=getFeatureVal('crisisResponseBonus')||0;
-      const natural=d20();const total=natural+mod+crisisRespBonus;
-      success=total>=sol.dc;mastery=success&&total>=sol.dc+(HOLLOW_MARCH.masteryThreshold||5);
-      rollResult={natural,mod,total,dc:sol.dc,skill:SKILLS[sk]?.name||sk,skillId:sk};
-    }
-    // Apply consequences
-    if(!success){
-      locThreatIds.forEach(tid=>{setThreats(p=>({...p,[tid]:Math.min(100,(p[tid]||0)+8)}));});
-      if(hiredAppr.length>0){const victim=hiredAppr[Math.floor(Math.random()*hiredAppr.length)];setStaffInjuries(p=>({...p,[victim.id]:2}));}
-    }
-    if(mastery){const mr=HOLLOW_MARCH.masteryReward(fs.wave);gainXP(mr.xp);setGold(g=>g+mr.gold);}
-    const result={crisis:crisis.name,icon:crisis.icon,solution:sol.label,solIcon:sol.icon,skill:rollResult?.skill||'Auto',pass:success,mastery,roll:rollResult};
-    const newResults=[...fs.results,result];
-    setFinalStandState(prev=>({...prev,results:newResults,phase:'result',lastResult:result}));
-  };
-  const advanceFinalStand=()=>{
-    if(!finalStandState)return;
-    const fs=finalStandState;
-    if(fs.current+1>=fs.crises.length){
-      // All crises resolved — go to summary
-      const successes=fs.results.filter(r=>r.pass).length;
-      const victory=successes>=fs.needed;
-      if(victory){
-        const rew=HOLLOW_MARCH.finalStandRewards;
-        setXp(x=>x+rew.xp);setGold(g=>g+rew.gold);
-        setThreats(p=>{const n={...p};locThreatIds.forEach(tid=>{n[tid]=Math.min(rew.threatCap,n[tid]||0);});return n;});
-        setHollowMarch(prev=>({...prev,finalStandComplete:true,demands:[]}));
-        addLog(`👑 THE FINAL STAND IS WON! ${charName} has broken the Hollow March! +${rew.xp} XP, +${rew.gold}g. Threats capped at ${rew.threatCap}.`,'quest');
-      } else {
-        setHollowMarch(prev=>({...prev,finalStandAvailable:false}));
-        addLog(`💀 The Final Stand FAILED (${successes}/${fs.results.length}, needed ${fs.needed}). Try again after the next wave.`,'error');
-      }
-      setFinalStandState(prev=>({...prev,phase:'summary',victory,successes}));
-    } else {
-      setFinalStandState(prev=>({...prev,current:prev.current+1,phase:'crisis'}));
-    }
+    // Place them as demands — reuses the existing wave crisis UI on the Threats tab
+    setHollowMarch(prev=>({...prev,demands:crises,finalStandInProgress:true}));
+    addLog('👑 THE FINAL STAND BEGINS! 6 crises demand your attention. Prepare and resolve them on the Threats tab.','quest');
+    setScreen('threats');
   };
   const marchWavesCleared=(hollowMarch?.history||[]).filter(h=>h.met===h.total).length+((hollowMarch?.demands||[]).every(d=>d.resolved&&d.result?.success)&&hollowMarch?.wave>0&&(hollowMarch?.demands||[]).length>0?1:0);
   const canPassTorch=getLvl(xp)>=9&&(marchWavesCleared>=(typeof HOLLOW_MARCH!=='undefined'?HOLLOW_MARCH.wavesForTorch:5)||hollowMarch?.finalStandComplete);
@@ -6335,189 +6312,7 @@ function CindervaleAlchemistInner(){
         </div>;
       })()}
 
-      {/* ═══ FINAL STAND INTERACTIVE OVERLAY ═══ */}
-      {finalStandState&&(()=>{
-        const fs=finalStandState;
-        const crisis=fs.crises[fs.current];
-        const successes=fs.results.filter(r=>r.pass).length;
-        const failures=fs.results.filter(r=>!r.pass).length;
-        const remaining=fs.crises.length-fs.results.length;
-        const canStillWin=successes+remaining>=fs.needed;
-        return <div style={{position:'fixed',top:0,left:0,right:0,bottom:0,zIndex:9999,background:'rgba(5,2,10,0.95)',display:'flex',justifyContent:'center',alignItems:'flex-start',overflowY:'auto',padding:'20px 10px'}}>
-          <div style={{maxWidth:560,width:'100%',padding:'20px',background:'linear-gradient(160deg,#1a0e08,#0a0518)',borderRadius:12,border:'2px solid #ffd70044',boxShadow:'0 0 40px #ffd70010'}}>
-            {/* Score tracker */}
-            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:12,padding:'6px 10px',background:'#ffd70008',borderRadius:6,border:'1px solid #ffd70022'}}>
-              <span style={{fontSize:14,color:'#ffd700',fontWeight:'bold'}}>👑 The Final Stand</span>
-              <div style={{display:'flex',gap:8,fontSize:13}}>
-                <span style={{color:TH.green}}>✅ {successes}</span>
-                <span style={{color:TH.red}}>❌ {failures}</span>
-                <span style={{color:TH.textDim}}>Need {fs.needed}/{fs.crises.length}</span>
-              </div>
-            </div>
-            {/* Progress pips */}
-            <div style={{display:'flex',gap:4,marginBottom:16,justifyContent:'center'}}>
-              {fs.crises.map((_,i)=>{
-                const done=i<fs.results.length;const active=i===fs.current&&fs.phase==='crisis';
-                const passed=done&&fs.results[i]?.pass;const failed=done&&!fs.results[i]?.pass;
-                return <div key={i} style={{width:32,height:6,borderRadius:3,
-                  background:passed?TH.green:failed?TH.red:active?'#ffd700':'#ffffff15',
-                  border:active?'1px solid #ffd700':'none',
-                  boxShadow:active?'0 0 8px #ffd70040':'none',transition:'all 0.3s'}}/>;
-              })}
-            </div>
-
-            {/* ── INTRO PHASE ── */}
-            {fs.phase==='intro'&&<div style={{textAlign:'center',padding:'20px 10px'}}>
-              <div style={{fontSize:36,marginBottom:12}}>👑</div>
-              <div style={{fontSize:22,color:'#ffd700',fontWeight:'bold',marginBottom:10}}>The Final Stand</div>
-              <div style={{fontSize:14,color:TH.text,lineHeight:1.6,marginBottom:16}}>
-                The source of the Hollow March pulses beyond the Veil. {fs.crises.length} crises will strike in rapid succession.
-                You must overcome {fs.needed} of them to break the invasion forever.
-                <br/><br/>
-                Choose your approach for each crisis wisely. Your resources, skills, and preparations will all be tested.
-                <br/><br/>
-                <span style={{color:'#c06060'}}>DCs are elevated. Failures spike threats and injure staff. There is no rest between crises.</span>
-              </div>
-              <button style={{...S.btn('gold'),fontSize:18,padding:'10px 30px',background:'linear-gradient(90deg,#8a6a00,#d4a420)',boxShadow:'0 0 12px #d4a42040'}}
-                onClick={()=>setFinalStandState(p=>({...p,phase:'crisis'}))}>
-                ⚔️ Face the First Crisis
-              </button>
-              <div style={{marginTop:12}}>
-                <button style={{background:'none',border:'none',color:TH.textDim,fontSize:12,cursor:'pointer',textDecoration:'underline'}}
-                  onClick={()=>{setFinalStandState(null);setHollowMarch(prev=>({...prev}));}}>
-                  Retreat (cancel)
-                </button>
-              </div>
-            </div>}
-
-            {/* ── CRISIS PHASE ── */}
-            {fs.phase==='crisis'&&crisis&&<div>
-              <div style={{fontSize:12,color:'#ffd700',textAlign:'center',marginBottom:8}}>Crisis {fs.current+1} of {fs.crises.length}</div>
-              <div style={{padding:'14px',background:'#a040c010',borderRadius:8,border:'1px solid #a040c033',marginBottom:12}}>
-                <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:8}}>
-                  <span style={{fontSize:32}}>{crisis.icon}</span>
-                  <div>
-                    <div style={{fontSize:18,fontWeight:'bold',color:'#c060e0'}}>{crisis.name}</div>
-                    <div style={{fontSize:13,color:TH.textDim,fontStyle:'italic',lineHeight:1.4}}>{crisis.narrative}</div>
-                  </div>
-                </div>
-              </div>
-              {!canStillWin&&<div style={{fontSize:13,color:TH.red,textAlign:'center',marginBottom:8,padding:'4px 8px',background:TH.red+'10',borderRadius:4}}>
-                ⚠️ Too many failures — victory is no longer possible. Each remaining crisis still affects threats and staff.
-              </div>}
-              <div style={{display:'flex',flexDirection:'column',gap:8}}>
-                {crisis.solutions.map(sol=>{
-                  const cost=sol.cost;
-                  let have=0,canDo=false,costDesc='';
-                  if(cost.type==='potion'){
-                    have=Object.entries(pots).filter(([pid])=>getBaseRecipeId(pid)===cost.target).reduce((s,[,c])=>s+c,0);
-                    canDo=have>=cost.qty;costDesc=`${have}/${cost.qty} ${cost.targetIcon||''}${cost.targetName||cost.target}`;
-                  } else if(cost.type==='ingredients'){
-                    have=inv[cost.target]||0;canDo=have>=cost.qty;
-                    costDesc=`${have}/${cost.qty} ${cost.targetIcon||''}${cost.targetName||cost.target}`;
-                  } else if(cost.type==='gold'){
-                    have=gold;canDo=have>=cost.qty;costDesc=`${cost.qty}g (have ${gold}g)`;
-                  } else if(cost.type==='staff'){
-                    have=hiredAppr.filter(ap=>!apprTasks[ap.id]||apprTasks[ap.id]==='idle').length;
-                    canDo=have>=cost.qty;costDesc=`${have}/${cost.qty} idle staff`;
-                  } else if(cost.type==='enchant'||cost.type==='combat'){
-                    have=hours;canDo=have>=cost.qty;costDesc=`${cost.qty} Energy (have ${hours})`;
-                  }
-                  const successPct=sol.dc>0&&sol.skill?Math.min(95,Math.max(5,Math.floor((21-(sol.dc-(getSkMod(sol.skill)+getFeatureVal('craftBonus')+upEff('craftSkillBonus'))))/20*100))):100;
-                  return <div key={sol.id} style={{display:'flex',alignItems:'center',gap:8,padding:'10px 12px',
-                    background:canDo?sol.dc===0?'#ffd70008':'#c060e008':'#ffffff05',
-                    borderRadius:8,border:'1px solid '+(canDo?sol.dc===0?'#ffd70033':'#c060e033':'#ffffff15')}}>
-                    <span style={{fontSize:24}}>{sol.icon}</span>
-                    <div style={{flex:1}}>
-                      <div style={{fontSize:15,fontWeight:'bold',color:canDo?TH.textBright:TH.textDim}}>{sol.label}
-                        {sol.dc>0&&<span style={{fontSize:12,fontWeight:'normal',marginLeft:6,color:successPct>=60?TH.green:successPct>=35?'#ffd700':TH.red}}>DC{sol.dc} ({successPct}%)</span>}
-                        {sol.dc===0&&<span style={{fontSize:12,fontWeight:'normal',marginLeft:6,color:TH.green}}>Auto-success</span>}
-                      </div>
-                      <div style={{fontSize:12,color:TH.textDim}}>{sol.desc}</div>
-                      <div style={{fontSize:12,color:canDo?'#ffd700':TH.red,marginTop:2}}>Cost: {costDesc}</div>
-                    </div>
-                    <button style={{...S.btn(canDo?'gold':'dim'),fontSize:14,padding:'8px 16px',minWidth:60}} disabled={!canDo}
-                      onClick={()=>resolveFinalStandCrisis(sol.id)}>
-                      {canDo?'Go':'Need'}
-                    </button>
-                  </div>;
-                })}
-              </div>
-            </div>}
-
-            {/* ── RESULT PHASE ── */}
-            {fs.phase==='result'&&fs.lastResult&&(()=>{
-              const r=fs.lastResult;const isLast=fs.current+1>=fs.crises.length;
-              return <div style={{textAlign:'center',padding:'16px 10px'}}>
-                <div style={{fontSize:40,marginBottom:8}}>{r.pass?r.mastery?'⭐':'✅':'❌'}</div>
-                <div style={{fontSize:20,fontWeight:'bold',color:r.pass?r.mastery?'#ffd700':TH.green:TH.red,marginBottom:6}}>
-                  {r.pass?r.mastery?'★ MASTERY!':'Crisis Overcome!':'Crisis Failed!'}
-                </div>
-                <div style={{fontSize:16,color:'#c060e0',marginBottom:4}}>{r.icon} {r.crisis}</div>
-                <div style={{fontSize:14,color:TH.textDim,marginBottom:8}}>{r.solIcon} {r.solution}</div>
-                {r.roll&&<div style={{fontSize:15,color:r.pass?TH.green:TH.red,padding:'8px 12px',background:'#ffffff08',borderRadius:6,display:'inline-block',marginBottom:12}}>
-                  🎲 {r.roll.natural} + {r.roll.mod} = <b>{r.roll.total}</b> vs DC {r.roll.dc} ({r.roll.skill})
-                </div>}
-                {!r.roll&&<div style={{fontSize:14,color:TH.green,marginBottom:12}}>Auto-success — resources deployed.</div>}
-                {!r.pass&&<div style={{fontSize:13,color:TH.red,marginBottom:12,padding:'6px 10px',background:TH.red+'10',borderRadius:4}}>
-                  ⚠️ All threats +8, staff member injured for 2 days.
-                </div>}
-                {r.mastery&&<div style={{fontSize:13,color:'#ffd700',marginBottom:12,padding:'6px 10px',background:'#ffd70010',borderRadius:4}}>
-                  ★ Mastery bonus! Extra XP and gold earned.
-                </div>}
-                <div style={{fontSize:14,color:TH.textDim,marginBottom:16}}>
-                  Score: <b style={{color:TH.green}}>{successes}</b> / <b>{fs.results.length}</b> (need {fs.needed})
-                  {remaining>0&&<span> · {remaining} crisis{remaining>1?'es':''} remaining</span>}
-                </div>
-                <button style={{...S.btn('gold'),fontSize:16,padding:'8px 24px',background:isLast?'linear-gradient(90deg,#8a6a00,#d4a420)':undefined}}
-                  onClick={advanceFinalStand}>
-                  {isLast?'⚔️ See the Outcome':'Next Crisis →'}
-                </button>
-              </div>;
-            })()}
-
-            {/* ── SUMMARY PHASE ── */}
-            {fs.phase==='summary'&&<div style={{textAlign:'center',padding:'16px 10px'}}>
-              <div style={{fontSize:48,marginBottom:8}}>{fs.victory?'👑':'💀'}</div>
-              <div style={{fontSize:24,fontWeight:'bold',color:fs.victory?'#ffd700':TH.red,marginBottom:8}}>
-                {fs.victory?'The Hollow March is Broken!':'The Final Stand Failed'}
-              </div>
-              {fs.victory&&<div style={{fontSize:14,color:TH.text,marginBottom:12,lineHeight:1.5}}>
-                {charName} stands atop the ward-stones as the last invaders dissolve into mist.
-                <br/>The settlement is saved. Your legend will echo through the ages.
-              </div>}
-              {!fs.victory&&<div style={{fontSize:14,color:TH.textDim,marginBottom:12,lineHeight:1.5}}>
-                The wards crack. You are forced to retreat.
-                <br/>Regroup, build your strength, and try again after the next wave.
-              </div>}
-              {/* Results breakdown */}
-              <div style={{textAlign:'left',marginBottom:16}}>
-                {fs.results.map((r,i)=><div key={i} style={{display:'flex',alignItems:'center',gap:8,padding:'6px 10px',marginBottom:4,
-                  background:r.pass?TH.green+'08':TH.red+'08',borderRadius:4,border:'1px solid '+(r.pass?TH.green+'33':TH.red+'33')}}>
-                  <span style={{fontSize:16}}>{r.pass?r.mastery?'⭐':'✅':'❌'}</span>
-                  <span style={{fontSize:14,color:r.pass?TH.green:TH.red,flex:1}}>{r.icon} {r.crisis}</span>
-                  <span style={{fontSize:12,color:TH.textDim}}>{r.solIcon} {r.solution}</span>
-                  {r.roll&&<span style={{fontSize:12,color:r.pass?TH.green:TH.red}}>{r.roll.total} vs DC{r.roll.dc}</span>}
-                </div>)}
-              </div>
-              <div style={{fontSize:15,color:TH.textDim,marginBottom:12}}>
-                {fs.successes}/{fs.results.length} crises overcome (needed {fs.needed})
-              </div>
-              {fs.victory&&<div style={{fontSize:14,color:'#ffd700',marginBottom:12,padding:'8px',background:'#ffd70008',borderRadius:6,border:'1px solid #ffd70022'}}>
-                +{HOLLOW_MARCH.finalStandRewards.xp} XP, +{HOLLOW_MARCH.finalStandRewards.gold}g
-                <br/>All threats capped at {HOLLOW_MARCH.finalStandRewards.threatCap}
-                <br/>Title: "Defender of {locName}"
-              </div>}
-              <button style={{...S.btn(fs.victory?'gold':'def'),fontSize:16,padding:'8px 24px'}}
-                onClick={()=>setFinalStandState(null)}>
-                {fs.victory?'👑 Accept Your Legacy':'Return to Settlement'}
-              </button>
-            </div>}
-          </div>
-        </div>;
-      })()}
-
-      {nightExpPending&&!morningReport&&!eventPopup&&!finalStandState&&(()=>{
+      {nightExpPending&&!morningReport&&!eventPopup&&(()=>{
         const nightRegs=locRegions.filter(r=>level>=regUnlock(r)&&(!r.faction||getRL(r.faction)>=(r.fReq||0)));
         const nightH=getFeatureVal('nightBonusHours')||3;
         const nightDR=getFeatureVal('nightDangerReduction');
@@ -10441,7 +10236,7 @@ function CindervaleAlchemistInner(){
           </div>}
           {/* Current crises */}
           {hollowMarch.demands.length>0&&!hollowMarch.finalStandComplete&&<>
-            <div style={{fontSize:15,fontWeight:'bold',color:TH.gold,marginBottom:6}}>⚔️ Wave {hollowMarch.wave} Crises — Choose Your Approach</div>
+            <div style={{fontSize:15,fontWeight:'bold',color:TH.gold,marginBottom:6}}>{hollowMarch.finalStandInProgress?'👑 The Final Stand — Choose Your Approach':'⚔️ Wave '+hollowMarch.wave+' Crises — Choose Your Approach'}</div>
             {hollowMarch.demands.map(crisis=>{
               const resolved=crisis.resolved;
               const succeeded=resolved&&crisis.result?.success;
@@ -10527,20 +10322,23 @@ function CindervaleAlchemistInner(){
           </div>}
 
           {/* Final Stand button */}
-          {hollowMarch.finalStandAvailable&&!hollowMarch.finalStandComplete&&!finalStandState&&<div style={{marginTop:10,padding:'12px 14px',background:'linear-gradient(135deg,#2a1a0a,#1a0a2a)',borderRadius:8,border:'2px solid #ffd70066',boxShadow:'0 0 20px #ffd70020'}}>
+          {hollowMarch.finalStandAvailable&&!hollowMarch.finalStandComplete&&!hollowMarch.finalStandInProgress&&<div style={{marginTop:10,padding:'12px 14px',background:'linear-gradient(135deg,#2a1a0a,#1a0a2a)',borderRadius:8,border:'2px solid #ffd70066',boxShadow:'0 0 20px #ffd70020'}}>
             <div style={{fontSize:18,fontWeight:'bold',color:'#ffd700',marginBottom:4}}>👑 The Final Stand</div>
             <div style={{fontSize:13,color:TH.text,marginBottom:8,lineHeight:1.5}}>
-              Face {HOLLOW_MARCH.finalStandCrises||6} crises one by one. Choose your approach for each — brew, enchant, fight, or pay.
-              DCs are elevated (DC {HOLLOW_MARCH.baseDC(hollowMarch.wave)+(HOLLOW_MARCH.finalStandDCBonus||4)}).
-              Need {Math.ceil((HOLLOW_MARCH.finalStandCrises||6)*0.67)}/{HOLLOW_MARCH.finalStandCrises||6} successes. Failures spike threats and injure staff.
+              Face {HOLLOW_MARCH.finalStandCrises||6} crises at elevated DC ({HOLLOW_MARCH.baseDC(hollowMarch.wave)+(HOLLOW_MARCH.finalStandDCBonus||4)}).
+              Need {Math.ceil((HOLLOW_MARCH.finalStandCrises||6)*0.67)}/{HOLLOW_MARCH.finalStandCrises||6} successes.
+              You can freely brew, forage, and manage staff between crises.
             </div>
             <button style={{...S.btn('gold'),fontSize:16,padding:'8px 20px',width:'100%',background:'linear-gradient(90deg,#8a6a00,#d4a420)',boxShadow:'0 0 10px #d4a42040'}}
               onClick={startFinalStand}>👑 Begin the Final Stand</button>
           </div>}
-          {/* Final Stand in progress */}
-          {finalStandState&&!finalStandState.phase?.startsWith('summary')&&<div style={{marginTop:10,padding:'10px 14px',background:'linear-gradient(135deg,#2a1a0a,#1a0a2a)',borderRadius:8,border:'2px solid #ffd70066'}}>
+          {/* Final Stand in progress banner */}
+          {hollowMarch.finalStandInProgress&&<div style={{marginTop:10,padding:'10px 14px',background:'linear-gradient(135deg,#2a1a0a,#1a0a2a)',borderRadius:8,border:'2px solid #ffd70066'}}>
             <div style={{fontSize:16,fontWeight:'bold',color:'#ffd700'}}>👑 The Final Stand — In Progress</div>
-            <div style={{fontSize:13,color:TH.textDim}}>Crisis {finalStandState.current+1}/{finalStandState.crises.length} · {finalStandState.results.filter(r=>r.pass).length} succeeded so far</div>
+            <div style={{fontSize:13,color:TH.textDim}}>
+              {hollowMarch.demands.filter(d=>d.resolved&&d.result?.success).length} succeeded · {hollowMarch.demands.filter(d=>d.resolved&&!d.result?.success).length} failed · {hollowMarch.demands.filter(d=>!d.resolved).length} remaining · Need {Math.ceil(hollowMarch.demands.length*0.67)}/{hollowMarch.demands.length}
+            </div>
+            <div style={{fontSize:12,color:TH.textDim,marginTop:4}}>Resolve the crises above. You can leave this screen to brew, forage, or manage staff, then return.</div>
           </div>}
 
           {/* Final Stand complete */}
