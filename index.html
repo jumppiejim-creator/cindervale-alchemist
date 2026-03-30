@@ -7298,8 +7298,9 @@ function CindervaleAlchemistInner(){
             </>:gameLocation==='ashfall'?<>
               <button style={S.btn(dlgNpc==='sola'?'gold':'def')} onClick={()=>openNpc('sola')}>💬 Sola</button>
               <button style={S.btn(dlgNpc==='razak'?'gold':'def')} onClick={()=>openNpc('razak')}>💬 Razak</button>
+            </>:gameLocation==='skyreach'?<>
+              <button style={S.btn(dlgNpc==='sr_kael'?'gold':'def')} onClick={()=>openNpc('sr_kael')}>💬 Kael</button>
             </>:<button style={S.btn(dlgNpc==='brenna'?'gold':'def')} onClick={()=>openNpc('brenna')}>💬 Brenna</button>}
-            {gameLocation==='skyreach'&&<button style={S.btn(dlgNpc==='sr_kael'?'gold':'def')} onClick={()=>openNpc('sr_kael')}>💬 Kael</button>}
           </div>
           {showShop&&<div>
             <div style={{fontSize:16,color:TH.gold,marginBottom:4}}>Buy Ingredients{dayFlags.includes('bargain_day')?' — 🏷️ Half Price Today!':''}</div>
@@ -7457,8 +7458,9 @@ function CindervaleAlchemistInner(){
               ?['reva','sister_coral','old_anchor'].map(n=>NPCS[n]?<button key={n} style={S.btn(dlgNpc===n?'gold':'def')} onClick={()=>openNpc(n)}>{NPCS[n]?.icon} {NPCS[n]?.name}</button>:null)
               :gameLocation==='ashfall'
               ?['amara','nahla','tarek'].map(n=>NPCS[n]?<button key={n} style={S.btn(dlgNpc===n?'gold':'def')} onClick={()=>openNpc(n)}>{NPCS[n]?.icon} {NPCS[n]?.name}</button>:null)
+              :gameLocation==='skyreach'
+              ?['sr_lira','sr_bron','sr_yuki','sr_mika'].map(n=>NPCS[n]?<button key={n} style={S.btn(dlgNpc===n?'gold':'def')} onClick={()=>openNpc(n)}>{NPCS[n]?.icon} {NPCS[n]?.name}</button>:null)
               :['tarn','holst','marta','gretta'].map(n=><button key={n} style={S.btn(dlgNpc===n?'gold':'def')} onClick={()=>openNpc(n)}>{NPCS[n]?.icon} {NPCS[n]?.name}</button>)}
-            {gameLocation==='skyreach'&&['sr_lira','sr_bron','sr_yuki','sr_mika'].map(n=>NPCS[n]?<button key={n} style={S.btn(dlgNpc===n?'gold':'def')} onClick={()=>openNpc(n)}>{NPCS[n]?.icon} {NPCS[n]?.name}</button>:null)}
           </div>
           {dlgNpc&&(NPCS[dlgNpc]?.loc==='chapel'||NPCS[dlgNpc]?.loc==='tavern')&&<NpcDlg npc={{...NPCS[dlgNpc],id:dlgNpc}} {...{dlgLine,setDlgLine,setDlgNpc,availQ,aQ,acceptQ,compQ,qP,qObj,S,questDlg,setQuestDlg,openNpc}}/>}
           {!dlgNpc&&<div style={{color:TH.textDim,fontSize:15,textAlign:'center',padding:12,fontStyle:'italic'}}>The warm hearth crackles softly. Choose someone to speak with.</div>}
