@@ -981,13 +981,13 @@ var REGIONS=[
     ],diff:2,unlock:1,time:1,yield:[2,4],dc:10,
     flavor:['Water condenses on every surface — the forest drinks the clouds.','Visibility drops to arm\'s length. The trees are shapes in the mist.','Something skitters through the canopy above. Probably harmless.']},
   {id:'windcarved_cliffs',loc:'skyreach',name:'Wind-Carved Cliffs',icon:'🪨',color:'#5a5a6a',
-    ingr:['windstone','cliff_quartz','raptor_plume','gale_salt','wind_iron','skystone_chip','rime_dust','eagle_down','breeze_seed','skyward_seal'],pick:3,sites:[
+    ingr:['windstone','cliff_quartz','raptor_plume','gale_salt','wind_iron','skystone_chip','rime_dust','eagle_down','breeze_seed','skyward_seal','thin_air_lichen'],pick:3,sites:[
       {id:'sr_gale_face',name:'Gale Face',icon:'🌬️',desc:'The wind never stops here. It has carved the stone into shapes like frozen waves.',
-        weights:{windstone:22,cliff_quartz:8,raptor_plume:7,gale_salt:26,wind_iron:8,skystone_chip:7,rime_dust:9,eagle_down:5,breeze_seed:8,skyward_seal:5}},
+        weights:{windstone:22,cliff_quartz:8,raptor_plume:7,gale_salt:24,wind_iron:8,skystone_chip:7,rime_dust:8,eagle_down:5,breeze_seed:6,skyward_seal:5,thin_air_lichen:8}},
       {id:'sr_quartz_shelf',name:'Quartz Shelf',icon:'🔷',desc:'A broad cliff shelf where wind-polished quartz veins glitter in the stone.',
-        weights:{windstone:7,cliff_quartz:28,raptor_plume:7,gale_salt:7,wind_iron:22,skystone_chip:9,rime_dust:8,eagle_down:6,breeze_seed:6,skyward_seal:6}},
+        weights:{windstone:7,cliff_quartz:26,raptor_plume:7,gale_salt:7,wind_iron:20,skystone_chip:9,rime_dust:7,eagle_down:6,breeze_seed:5,skyward_seal:6,thin_air_lichen:7}},
       {id:'sr_raptor_crags',name:'Raptor Crags',icon:'🦅',desc:'Jagged outcrops where raptors circle. Plumes and nesting material everywhere.',
-        weights:{windstone:8,cliff_quartz:7,raptor_plume:28,gale_salt:7,wind_iron:7,skystone_chip:8,rime_dust:22,eagle_down:9,breeze_seed:4,skyward_seal:4}},
+        weights:{windstone:8,cliff_quartz:7,raptor_plume:26,gale_salt:7,wind_iron:7,skystone_chip:7,rime_dust:20,eagle_down:8,breeze_seed:4,skyward_seal:4,thin_air_lichen:9}},
     ],diff:2,unlock:2,time:2,yield:[2,4],dc:11,
     flavor:['The wind never stops here. It has carved the stone into shapes like frozen waves.','Crystal veins catch the light, making the cliff face shimmer.','Raptors circle above. Their cries echo off the stone.']},
   {id:'crystal_caverns_sr',loc:'skyreach',name:'Crystal Caverns',icon:'💠',color:'#3a4a6a',
