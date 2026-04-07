@@ -115,15 +115,15 @@ const fbDb=firebase.firestore();
 fbDb.enablePersistence({synchronizeTabs:true}).catch(()=>{});
 
 async function cloudSet(uid,key,data){
-  try{await fbDb.collection('saves').doc(uid).collection('slots').doc(key).set({data:JSON.stringify(data),_at:data._at||new Date().toISOString(),updatedAt:firebase.firestore.FieldValue.serverTimestamp()});return true;}
+  try{await fbDb.collection('users').doc(uid).collection('slots').doc(key).set({data:JSON.stringify(data),_at:data._at||new Date().toISOString(),updatedAt:firebase.firestore.FieldValue.serverTimestamp()});return true;}
   catch(e){console.warn('Cloud save err:',e);return false;}
 }
 async function cloudGet(uid,key){
-  try{const doc=await fbDb.collection('saves').doc(uid).collection('slots').doc(key).get();if(!doc.exists)return null;return JSON.parse(doc.data().data);}
+  try{const doc=await fbDb.collection('users').doc(uid).collection('slots').doc(key).get();if(!doc.exists)return null;return JSON.parse(doc.data().data);}
   catch(e){console.warn('Cloud load err:',e);return null;}
 }
 async function cloudDel(uid,key){
-  try{await fbDb.collection('saves').doc(uid).collection('slots').doc(key).delete();return true;}catch(e){return false;}
+  try{await fbDb.collection('users').doc(uid).collection('slots').doc(key).delete();return true;}catch(e){return false;}
 }
 
 // ═══ AUDIO ENGINE ═══
