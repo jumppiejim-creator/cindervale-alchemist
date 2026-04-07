@@ -25,6 +25,9 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <script src="portraits.js"></script>
 <script src="location-images.js"></script>
 <script src="game-data.js?v=20260319a"></script>
@@ -104,6 +107,24 @@ const hasStorage=()=>_useArtifactStorage||_useLocalStorage;
 async function sSet(k,d){if(!hasStorage())return false;const payload=JSON.stringify({...d,_v:SAVE_VERSION,_at:new Date().toISOString()});try{if(_useArtifactStorage){const r=await window.storage.set(k,payload);return !!r;}else{localStorage.setItem(k,payload);return true;}}catch(e){console.warn('Save err:',e);return false;}}
 async function sGet(k){if(!hasStorage())return null;try{if(_useArtifactStorage){const r=await window.storage.get(k);if(!r||!r.value)return null;return JSON.parse(r.value);}else{const v=localStorage.getItem(k);return v?JSON.parse(v):null;}}catch(e){console.warn('Load err:',e);return null;}}
 async function sDel(k){if(!hasStorage())return false;try{if(_useArtifactStorage){await window.storage.delete(k);return true;}else{localStorage.removeItem(k);return true;}}catch(e){return false;}}
+
+// ═══ FIREBASE CLOUD SAVES ═══
+const _fbApp=firebase.initializeApp({apiKey:"AIzaSyCZ0l8fTtSItJh0ebuD08b21PhVhS1gD1c",authDomain:"cindervale-alchemist.firebaseapp.com",projectId:"cindervale-alchemist",storageBucket:"cindervale-alchemist.firebasestorage.app",messagingSenderId:"105486053508",appId:"1:105486053508:web:5a0b420de6364221dc52d1",measurementId:"G-VGP6BM36NT"});
+const fbAuth=firebase.auth();
+const fbDb=firebase.firestore();
+fbDb.enablePersistence({synchronizeTabs:true}).catch(()=>{});
+
+async function cloudSet(uid,key,data){
+  try{await fbDb.collection('saves').doc(uid).collection('slots').doc(key).set({data:JSON.stringify(data),_at:data._at||new Date().toISOString(),updatedAt:firebase.firestore.FieldValue.serverTimestamp()});return true;}
+  catch(e){console.warn('Cloud save err:',e);return false;}
+}
+async function cloudGet(uid,key){
+  try{const doc=await fbDb.collection('saves').doc(uid).collection('slots').doc(key).get();if(!doc.exists)return null;return JSON.parse(doc.data().data);}
+  catch(e){console.warn('Cloud load err:',e);return null;}
+}
+async function cloudDel(uid,key){
+  try{await fbDb.collection('saves').doc(uid).collection('slots').doc(key).delete();return true;}catch(e){return false;}
+}
 
 // ═══ AUDIO ENGINE ═══
 let _toneStarted=false;
@@ -243,7 +264,7 @@ function CindervaleAlchemistInner(){
   // ═══ LINEAGE PERSISTENCE ═══
   const LINEAGE_KEY='cindervale_lineage';
   const loadLineage=()=>{try{const d=localStorage.getItem(LINEAGE_KEY);return d?JSON.parse(d):null;}catch(e){return null;}};
-  const saveLineage=(data)=>{try{localStorage.setItem(LINEAGE_KEY,JSON.stringify(data));}catch(e){}};
+  const saveLineage=(data)=>{try{localStorage.setItem(LINEAGE_KEY,JSON.stringify(data));}catch(e){}if(fbUserRef.current)cloudSet(fbUserRef.current.uid,'lineage',data);};
   // Lineage now loaded from save file, not standalone localStorage
 
   // Compute cumulative mentor bonuses from lineage
@@ -287,6 +308,9 @@ function CindervaleAlchemistInner(){
   const [showSaveMenu,setShowSaveMenu]=useState(false);
   const [showJournal,setShowJournal]=useState(false);
   const [confirmDelete,setConfirmDelete]=useState(null);
+  const [fbUser,setFbUser]=useState(null);
+  const fbUserRef=useRef(null);
+  const [fbSyncing,setFbSyncing]=useState(false);
   const [debugMode,setDebugMode]=useState(false);
   const [showDebug,setShowDebug]=useState(false);
   // Activate dev tools: tap the ⚗️ title 5 times rapidly
@@ -631,7 +655,8 @@ function CindervaleAlchemistInner(){
       autoSaveRef.current=setTimeout(async()=>{
         const state=gatherState();
         const ok=await sSet(AK,state);
-        if(ok)setSaveMsg('Auto-saved');
+        if(fbUserRef.current)cloudSet(fbUserRef.current.uid,'auto',state);
+        if(ok)setSaveMsg(fbUserRef.current?'☁️ Auto-saved':'Auto-saved');
         setTimeout(()=>setSaveMsg(null),2000);
       },500);
     }
@@ -934,10 +959,10 @@ function CindervaleAlchemistInner(){
   };
 
   // ─── SAVE/LOAD ───
-  const manualSave=async(slot)=>{const state=gatherState();const ok=await sSet(sK(slot),state);if(ok){setSaveSlots(p=>{const n=[...p];n[slot-1]=state;return n;});setSaveMsg(`Saved to Slot ${slot}!`);}else setSaveMsg('Save failed!');setTimeout(()=>setSaveMsg(null),2500);};
+  const manualSave=async(slot)=>{const state=gatherState();const ok=await sSet(sK(slot),state);if(fbUserRef.current)cloudSet(fbUserRef.current.uid,'slot-'+slot,state);if(ok){setSaveSlots(p=>{const n=[...p];n[slot-1]=state;return n;});setSaveMsg(fbUserRef.current?`☁️ Saved to Slot ${slot}!`:`Saved to Slot ${slot}!`);}else setSaveMsg('Save failed!');setTimeout(()=>setSaveMsg(null),2500);};
   const loadSave=(data)=>{if(data){restoreState(data);setGameStarted(true);}};
   const loadSlot=async(slot)=>{const d=saveSlots[slot-1]||await sGet(sK(slot));if(d){restoreState(d);setGameStarted(true);}};
-  const deleteSave=async(slot)=>{await sDel(sK(slot));setSaveSlots(p=>{const n=[...p];n[slot-1]=null;return n;});setConfirmDelete(null);};
+  const deleteSave=async(slot)=>{await sDel(sK(slot));if(fbUserRef.current)cloudDel(fbUserRef.current.uid,'slot-'+slot);setSaveSlots(p=>{const n=[...p];n[slot-1]=null;return n;});setConfirmDelete(null);};
   const newGame=(loc='cindervale',inheritData=null)=>{
     const locData=LOCATIONS[loc]||LOCATIONS.cindervale;
     const defState={...DEF,
@@ -1155,8 +1180,60 @@ function CindervaleAlchemistInner(){
     if(!confirm('Permanently delete your lineage? All generation history, mentor bonuses, and legacy features will be lost. This cannot be undone.'))return;
     setLineage(null);
     try{localStorage.removeItem(LINEAGE_KEY);}catch(e){}
+    if(fbUserRef.current)cloudDel(fbUserRef.current.uid,'lineage');
     setLineageMsg('Lineage deleted.');setTimeout(()=>setLineageMsg(null),3000);
   };
+
+  // ═══ FIREBASE AUTH & CLOUD SYNC ═══
+  const fbSignIn=async()=>{
+    try{const provider=new firebase.auth.GoogleAuthProvider();await fbAuth.signInWithPopup(provider);}
+    catch(e){if(e.code!=='auth/popup-closed-by-user')setSaveMsg('Sign-in failed: '+e.message);setTimeout(()=>setSaveMsg(null),4000);}
+  };
+  const fbSignOut=async()=>{await fbAuth.signOut();setSaveMsg('Signed out — using local saves');setTimeout(()=>setSaveMsg(null),3000);};
+
+  const syncFromCloud=async(uid)=>{
+    setFbSyncing(true);
+    try{
+      // Sync auto-save
+      const cloudAuto=await cloudGet(uid,'auto');
+      setAutoSaveData(prev=>{
+        if(cloudAuto&&(!prev||new Date(cloudAuto._at)>new Date(prev._at))){return cloudAuto;}
+        if(prev&&(!cloudAuto||new Date(prev._at)>new Date(cloudAuto._at))){cloudSet(uid,'auto',prev);}
+        return prev;
+      });
+      // Sync save slots
+      for(let i=1;i<=2;i++){
+        const cloudSlot=await cloudGet(uid,'slot-'+i);
+        setSaveSlots(prev=>{
+          const n=[...prev];const local=n[i-1];
+          if(cloudSlot&&(!local||new Date(cloudSlot._at)>new Date(local._at))){n[i-1]=cloudSlot;}
+          else if(local&&(!cloudSlot||new Date(local._at)>new Date(cloudSlot._at))){cloudSet(uid,'slot-'+i,local);}
+          return n;
+        });
+      }
+      // Sync lineage
+      const cloudLin=await cloudGet(uid,'lineage');
+      setLineage(prev=>{
+        if(cloudLin&&!prev)return cloudLin;
+        if(cloudLin&&prev){
+          if((cloudLin.totalGenerations||0)>(prev.totalGenerations||0))return cloudLin;
+          if((prev.totalGenerations||0)>(cloudLin.totalGenerations||0)){cloudSet(uid,'lineage',prev);return prev;}
+        }
+        if(prev&&!cloudLin){cloudSet(uid,'lineage',prev);}
+        return prev;
+      });
+      setSaveMsg('☁️ Cloud sync complete');setTimeout(()=>setSaveMsg(null),2500);
+    }catch(e){console.warn('Cloud sync err:',e);}
+    setFbSyncing(false);
+  };
+
+  useEffect(()=>{
+    const unsub=fbAuth.onAuthStateChanged(user=>{
+      setFbUser(user);fbUserRef.current=user;
+      if(user&&!loadingSlots)syncFromCloud(user.uid);
+    });
+    return()=>unsub();
+  },[loadingSlots]);
 
   // ─── HARVEST (Hour-by-Hour Expedition) ───
   const getExpeditionInfo=(reg)=>{
@@ -5176,14 +5253,27 @@ function CindervaleAlchemistInner(){
           <div style={{fontSize:32,color:TH.gold,letterSpacing:3,marginBottom:2}}>Cindervale Alchemist</div>
           <div style={{fontSize:14,color:'#d4a420',marginTop:4}}>Build {BUILD_VERSION}</div>
           <div style={{color:TH.textDim,fontSize:16,marginBottom:16}}>Crafting · Enchanting · Community</div>
-          <a href="cindervale_handbook.pdf" target="_blank" rel="noopener noreferrer" style={{display:'inline-block',padding:'6px 16px',background:TH.panel,color:TH.gold,border:'1px solid '+TH.borderGold,borderRadius:6,fontSize:14,textDecoration:'none',marginBottom:20,cursor:'pointer'}}>📖 Player's Handbook</a>
+          <a href="cindervale_handbook.pdf" target="_blank" rel="noopener noreferrer" style={{display:'inline-block',padding:'6px 16px',background:TH.panel,color:TH.gold,border:'1px solid '+TH.borderGold,borderRadius:6,fontSize:14,textDecoration:'none',marginBottom:12,cursor:'pointer'}}>📖 Player's Handbook</a>
+          {/* Firebase Sign-In */}
+          <div style={{marginBottom:16,textAlign:'center'}}>
+            {fbUser?<div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:8,padding:'6px 12px',background:'#1a2a1a',borderRadius:8,border:'1px solid #2a4a2a'}}>
+              {fbUser.photoURL&&<img src={fbUser.photoURL} alt="" style={{width:24,height:24,borderRadius:'50%'}} referrerPolicy="no-referrer"/>}
+              <span style={{fontSize:14,color:TH.green}}>☁️ {fbUser.displayName||fbUser.email}</span>
+              {fbSyncing&&<span style={{fontSize:12,color:TH.textDim}}>syncing...</span>}
+              <button style={{fontSize:12,color:TH.textDim,background:'none',border:'1px solid '+TH.border,borderRadius:4,padding:'2px 8px',cursor:'pointer',fontFamily:'inherit'}} onClick={fbSignOut}>Sign Out</button>
+            </div>
+            :<button style={{padding:'8px 20px',background:'#1a1a2e',color:TH.text,border:'1px solid '+TH.border,borderRadius:8,fontSize:15,cursor:'pointer',fontFamily:'inherit',display:'inline-flex',alignItems:'center',gap:8}} onClick={fbSignIn}>
+              <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#34A853" d="M10.53 28.59A14.5 14.5 0 019.5 24c0-1.59.28-3.14.76-4.59l-7.98-6.19A23.99 23.99 0 000 24c0 3.77.9 7.34 2.44 10.5l8.09-5.91z"/><path fill="#FBBC05" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+              Sign in with Google
+            </button>}
+          </div>
           {loadingSlots?<div style={{color:TH.textDim}}>Loading...</div>:<>
           {autoSaveData&&<div style={{...S.card,borderColor:TH.green,textAlign:'left',cursor:'pointer'}} onClick={()=>loadSave(autoSaveData)}>
-            <div style={{fontSize:18,color:TH.green}}>▶ Continue — {autoSaveData.charName||'?'}</div>
+            <div style={{fontSize:18,color:TH.green}}>▶ Continue — {autoSaveData.charName||'?'} {fbUser&&<span style={{fontSize:13}}>☁️</span>}</div>
             <div style={{fontSize:15,color:TH.textDim}}>{autoSaveData.classLevels?Object.entries(autoSaveData.classLevels).map(([cid,lv])=>`${CLASSES[cid]?.icon||''}${CLASSES[cid]?.name||cid} ${lv}`).join(' / '):'?'} · Lv{getLvl(autoSaveData.xp||0)+1} · Day {autoSaveData.day} · {autoSaveData.gold}g</div>
             <div style={{fontSize:14,color:TH.textDim}}>{fmtD(autoSaveData._at)}</div>
           </div>}
-          <div style={{...S.card,textAlign:'left'}}><div style={S.cT}>💾 Save Slots</div>
+          <div style={{...S.card,textAlign:'left'}}><div style={S.cT}>💾 Save Slots {fbUser&&<span style={{fontSize:13,color:TH.green,fontWeight:'normal'}}>☁️ Cloud</span>}</div>
             {[1,2].map(i=>{const data=saveSlots[i-1];return(
               <div key={i} style={{padding:'8px 10px',background:TH.panelLight,borderRadius:4,marginBottom:6,border:`1px solid ${data?TH.borderGold:TH.border}`}}>
                 {data?(<div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
@@ -5804,7 +5894,7 @@ function CindervaleAlchemistInner(){
           :hiredAppr.length===0?<div style={{fontSize:14,color:TH.textDim}}>Hire an apprentice first.</div>
           :<button style={{...S.btn('gold'),fontSize:15,width:'100%'}} onClick={()=>{setTorchStep(1);setTorchApprentice(null);setTorchHeirloom(null);setTorchLegacy(null);setShowSaveMenu(false);}}>🔥 Pass the Torch</button>}
         </div>}
-                <div style={S.cT}>💾 Save / Load</div>
+                <div style={S.cT}>💾 Save / Load {fbUser&&<span style={{fontSize:13,color:TH.green,fontWeight:'normal'}}>☁️ {fbUser.displayName||'Cloud'}</span>}</div>
         {[1,2].map(i=>{const data=saveSlots[i-1];return(
           <div key={i} style={{padding:'6px 8px',background:TH.panelLight,borderRadius:4,marginBottom:4,border:`1px solid ${data?TH.borderGold:TH.border}`}}>
             <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
