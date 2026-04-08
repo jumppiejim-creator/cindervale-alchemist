@@ -288,7 +288,7 @@ function CindervaleAlchemistInner(){
     alchemist:{type:'brewBonus',val:1,desc:'+1 all brew checks',icon:'⚗️'},
     enchanter:{type:'enchantBonus',val:1,desc:'+1 all inscription checks',icon:'✨'},
     scholar:{type:'researchBonus',val:1,desc:'+1 all research checks',icon:'📚'},
-    merchant:{type:'sellBonus',val:0.10,desc:'+10% sell prices',icon:'💰'},
+    // merchant mentor removed in V2 — replaced by feat-based economy bonuses
     warden:{type:'extractionBonus',val:1,desc:'+1 extraction checks',icon:'🌲'},
     artificer:{type:'craftBonus',val:1,desc:'+1 all craft checks',icon:'🔧'},
     // Prestige mentor types — each unique to the prestige identity
@@ -389,6 +389,65 @@ function CindervaleAlchemistInner(){
   // Effective class levels and specs: merge current + inherited from torch
   const eCL=(cid)=>Math.max(classLevels[cid]||0,torchClassLevels[cid]||0);
   const eSpec=(cid)=>specs[cid]||torchSpecs[cid]||null;
+
+  // ─── PRESTIGE PREREQ HELPERS ───
+  const RANK_NAMES={0:'Untrained',1:'Trained',2:'Expert',3:'Master'};
+  const RANK_MIN={trained:1,expert:2,master:3};
+  const checkPrestigeReq=(req)=>{
+    for(const [k,v] of Object.entries(req)){
+      if(k==='skillRank'){
+        for(const [skId,rankName] of Object.entries(v)){
+          if((skRanks[skId]||0)<(RANK_MIN[rankName]||1))return false;
+        }
+      } else if(k==='feat'){
+        const feats=Array.isArray(v)?v:[v];
+        if(!feats.every(fid=>playerFeats.includes(fid)))return false;
+      } else if(k==='anyTwoClasses'){
+        const baseClasses=Object.keys(CLASSES);
+        const atLevel=baseClasses.filter(cid=>eCL(cid)>=v);
+        if(atLevel.length<2)return false;
+      } else if(CLASSES[k]){
+        if(eCL(k)<v)return false;
+      }
+    }
+    return true;
+  };
+  const formatPrestigeReq=(req)=>{
+    const parts=[];
+    for(const [k,v] of Object.entries(req)){
+      if(k==='skillRank'){
+        for(const [skId,rankName] of Object.entries(v)){
+          const sk=SKILLS[skId];parts.push((sk?.icon||'')+' '+(sk?.name||skId)+' ('+rankName+')');
+        }
+      } else if(k==='feat'){
+        const feats=Array.isArray(v)?v:[v];
+        feats.forEach(fid=>{const f=FEATS[fid];parts.push('🌟 '+(f?.name||fid));});
+      } else if(k==='anyTwoClasses'){
+        parts.push('Any 2 classes at Lv'+v);
+      } else if(CLASSES[k]){
+        parts.push(CLASSES[k].icon+' '+CLASSES[k].name+' '+v);
+      }
+    }
+    return parts.join(' + ');
+  };
+  const formatPrestigeReqShort=(req)=>{
+    const parts=[];
+    for(const [k,v] of Object.entries(req)){
+      if(k==='skillRank'){
+        for(const [skId,rankName] of Object.entries(v)){
+          const sk=SKILLS[skId];parts.push((sk?.icon||'')+rankName.charAt(0).toUpperCase());
+        }
+      } else if(k==='feat'){
+        const feats=Array.isArray(v)?v:[v];
+        feats.forEach(fid=>parts.push('🌟'));
+      } else if(k==='anyTwoClasses'){
+        parts.push('2×Lv'+v);
+      } else if(CLASSES[k]){
+        parts.push(CLASSES[k].icon+v);
+      }
+    }
+    return parts.join('+');
+  };
 
   // Ingredients available at current location (computed from locRegions + mapped hidden areas)
   const locIngredients=React.useMemo(()=>{
@@ -623,6 +682,15 @@ function CindervaleAlchemistInner(){
       s.playerFeats=s.playerFeats||[];
       s.asiSpent=s.asiSpent||[];
     }
+    // V2 migration: remove COM stat, removed skills, merchant class
+    if(s.stats?.com!==undefined){const{com,...rest}=s.stats;s.stats=rest;if(!s.stats.dis)s.stats.dis=10;}
+    const _removedSkills=['aesthetics','haggling','stockpiling','efficiency','lore','appraisal','procurement'];
+    if(s.skRanks){_removedSkills.forEach(sk=>{delete s.skRanks[sk];});}
+    if(s.skProgress){_removedSkills.forEach(sk=>{delete s.skProgress[sk];});}
+    // V2 migration: clean merchant from specs/torchSpecs
+    if(s.specs?.merchant)delete s.specs.merchant;
+    if(s.torchSpecs?.merchant)delete s.torchSpecs.merchant;
+    if(s.torchClassLevels?.merchant)delete s.torchClassLevels.merchant;
     setPhase(s.phase||'identity');setCharName(s.charName||'');setCharRace(s.charRace||null);setCharGender(s.charGender||null);setStats(s.stats||DEF.stats);
     setPtsLeft(s.ptsLeft??12);setSkRanks(s.skRanks||{});setSkPts(s.skPts||0);setSkProgress(s.skProgress||{});
     const _cl=s.classLevels||{};const cleanCL={};Object.entries(_cl).forEach(([k,v])=>{if(CLASSES[k])cleanCL[k]=v;});
@@ -712,7 +780,7 @@ function CindervaleAlchemistInner(){
       setPendingLevelUp({
         newCharLevel:newLv,step:'overview',
         chosenClass:null,chosenSpec:null,asiChoices:null,chosenFeat:null,
-        skillPointsSpent:{},needsASI,needsFeat,needsSpec:false,skillPointsAvailable:2+(getFeatureVal('bonusSkillEveryOther')&&newLv%2===0?1:0),
+        skillPointsSpent:{},needsASI,needsFeat,needsSpec:false,skillPointsAvailable:3+(getFeatureVal('bonusSkillEveryOther')&&newLv%2===0?1:0),
       });
       addLog(`⬆ Level ${newLv+1}! Time to advance your training.`,'level');
       const nw=[{icon:'⬆',text:`Level ${newLv+1}! Choose how to advance.`,color:TH.goldBright}];
@@ -820,7 +888,7 @@ function CindervaleAlchemistInner(){
   const gainXP=(base)=>{const mult=1+getFeatureVal('xpMultiplier');setXp(x=>x+Math.floor(base*mult));};
   const getBuyPrice=(basePrice)=>{const disc=getFeatureVal('buyDiscount')+getFeatureVal('shopDiscount');return Math.max(1,Math.floor(basePrice*(1-disc)));};
   const regUnlock=(reg)=>Math.max(0,reg.unlock-getFeatureVal('bonusRegionSlot'));
-  const addRep=(fid,a)=>{const repB=1+getFeatureVal('repGainBonus');const dblRep=getFeatureVal('doubleRep')?2:1;const persRank=skRanks['persuasion']||0;const persMod=Math.min(0.30,persRank*0.06+getMod(eStat('com'))*0.01);const gain=Math.floor(a*repB*dblRep*(1+persMod));setFRep(p=>{const n={...p};const oldRep=n[fid]||0;const newRep=Math.max(0,oldRep+gain);const oldLvl=getRepLvl(oldRep);const newLvl=getRepLvl(newRep);if(newLvl>oldLvl){const f=FACTIONS[fid];const tb=f?.tierBonuses?.[newLvl-1];if(tb)addLog(`🏛️ ${f.icon} ${f.name}: ${REP_LVS[newLvl]} unlocked — ${tb.name}!`,'quest');}n[fid]=newRep;if(persRank>0&&Math.random()<Math.min(0.10,persRank*0.02+getMod(eStat('com'))*0.005)){const others=Object.keys(n).filter(f=>f!==fid&&FACTIONS[f]);if(others.length>0){const spillFid=others[Math.floor(Math.random()*others.length)];n[spillFid]=(n[spillFid]||0)+1;}}return n;});};
+  const addRep=(fid,a)=>{const repB=1+getFeatureVal('repGainBonus');const dblRep=getFeatureVal('doubleRep')?2:1;const persRank=skRanks['persuasion']||0;const persMod=Math.min(0.30,persRank*0.06+getMod(eStat('inu'))*0.01);const repSpill=getFeatureVal('repSpillover');const gain=Math.floor(a*repB*dblRep*(1+persMod));setFRep(p=>{const n={...p};const oldRep=n[fid]||0;const newRep=Math.max(0,oldRep+gain);const oldLvl=getRepLvl(oldRep);const newLvl=getRepLvl(newRep);if(newLvl>oldLvl){const f=FACTIONS[fid];const tb=f?.tierBonuses?.[newLvl-1];if(tb)addLog(`🏛️ ${f.icon} ${f.name}: ${REP_LVS[newLvl]} unlocked — ${tb.name}!`,'quest');}n[fid]=newRep;if(repSpill>0||persRank>0){const spillChance=repSpill>0?repSpill:Math.min(0.10,persRank*0.02);if(Math.random()<spillChance){const others=Object.keys(n).filter(f=>f!==fid&&FACTIONS[f]);if(others.length>0){const spillFid=others[Math.floor(Math.random()*others.length)];n[spillFid]=(n[spillFid]||0)+1;}}}return n;});};
   const getRL=fid=>getRepLvl(fRep[fid]||0);
 
   const genCust=useCallback(()=>{
@@ -837,7 +905,7 @@ function CindervaleAlchemistInner(){
         const cd=CUST_DATA[name]||{title:'Villager'};
         const r=availPots[Math.floor(Math.random()*availPots.length)];
         const qty=1+Math.floor(Math.random()*(level>=6?3:level>=3?2:1));
-        const basePay=r.xp+getSkMod('aesthetics')*2+getSkMod('haggling')+Math.floor(upEff('sellBonus')*r.xp);
+        const basePay=r.xp+getFeatureVal('potionSaleBonus')+Math.floor(upEff('sellBonus')*r.xp);
         const payPer=Math.floor(basePay*(1+custPayBF+getFeatureVal('potionValueBonus'))*GOLD_MULT);
         const pl=POT_LINES[name];
         pQ.push({kind:'potion',customer:name,title:cd.title,potionId:r.id,potionName:r.name,potionIcon:r.icon,
@@ -856,7 +924,7 @@ function CindervaleAlchemistInner(){
         if(r&&known.includes(r.id)){
           const name=CUST_NAMES[Math.floor(Math.random()*CUST_NAMES.length)];
           const cd=CUST_DATA[name]||{title:'Villager'};
-          const qty=1;const basePay=r.xp+getSkMod('aesthetics')*2+getSkMod('haggling')+Math.floor(upEff('sellBonus')*r.xp);
+          const qty=1;const basePay=r.xp+getFeatureVal('potionSaleBonus')+Math.floor(upEff('sellBonus')*r.xp);
           const payPer=Math.floor(basePay*(1+custPayBF+getFeatureVal('potionValueBonus'))*GOLD_MULT);
           pQ.push({kind:'potion',customer:name,title:cd.title,potionId:r.id,potionName:r.name,potionIcon:r.icon,
             qty,payPer,xpPer:Math.floor(r.xp*0.3),line:'"I heard you sell excellent '+r.name+'. I had to come see for myself."',
@@ -1283,7 +1351,7 @@ function CindervaleAlchemistInner(){
   // ─── HARVEST (Hour-by-Hour Expedition) ───
   const getExpeditionInfo=(reg)=>{
     if(!reg)return null;
-    let travelTime=Math.max(0,reg.time-getSkMod('efficiency')-getFeatureVal('travelReduction'));
+    let travelTime=Math.max(0,reg.time-getFeatureVal('travelReduction'));
     const weatherReduc=getFeatureVal('weatherReduction');
     if(dayFlags.includes('ash_storm'))travelTime+=Math.max(0,Math.ceil(1*(1-weatherReduc)));
     // Seasonal travel modifier
@@ -1375,7 +1443,7 @@ function CindervaleAlchemistInner(){
           hourG[d.bonus.ingredient]=(hourG[d.bonus.ingredient]||0)+d.bonus.extraYield;}});
       } else {
         // Failed extraction: base 35% chance for 1 ingredient + Efficiency bonus
-        const effRank=skRanks['efficiency']||0;const effSalvage=Math.min(0.40,effRank*0.10+getMod(eStat('dis'))*0.02);
+        const effSalvage=0.10;
         if(Math.random()<0.35||(effSalvage>0&&Math.random()<effSalvage)){const id=picked[Math.floor(Math.random()*picked.length)];hourG[id]=1;}
       }
       const hxpBase=ext.success?(reg.diff*18+level*2):Math.floor(reg.diff*5);const hxp=Math.floor(hxpBase*(1+getFeatureVal('forageXPBonus')));
@@ -1521,7 +1589,7 @@ function CindervaleAlchemistInner(){
         break;
       }
       // Efficiency: travel reduction is handled above; failed extraction salvage handled in harvest
-      const effMod=getSkMod('efficiency');
+      const effMod=getFeatureVal('travelReduction');
       let effBonus=false;
       // ═══ NATURALIST FIELD DISCOVERY ═══
       let discovery=null;
@@ -1563,7 +1631,7 @@ function CindervaleAlchemistInner(){
           // Research check to map it
           const mapDC=hr.dc;
           const mapCh=pureCheck('research',mapDC);
-          const loreB=getSkMod('lore');if(loreB>0)mapCh.total+=loreB;
+          const loreB=getSkMod('research');if(loreB>0)mapCh.total+=loreB;
           if(mapCh.roll!==1&&mapCh.total>=mapDC){
             mappedRegions.push(hr.id);
             hiddenDisc={...hr,mapped:true};
@@ -2103,7 +2171,7 @@ function CindervaleAlchemistInner(){
     modPot(potId,-qty);setGold(g=>g+sp*qty);recordBrandSale(getBaseRecipeId(potId),qty);
     addLog(`Sold ${qty>1?qty+'× ':''}${r.icon}${r.name}. (+${sp*qty}g)`,'info');
     // Appraisal: rank×5% chance per sale to attract a repeat customer next morning
-    const apprMod=getSkMod('appraisal');
+    const apprMod=getFeatureVal('enchantGoldFlat');
     if(apprMod>0&&Math.random()<apprMod*0.05){
       addLog(`⚖️ Appraisal: Your sale impressed — a repeat customer will arrive tomorrow for ${r.icon}${r.name}!`,'info');
       setDayFlags(f=>[...f,'repeat_cust_'+getBaseRecipeId(potId)]);
@@ -2305,7 +2373,7 @@ function CindervaleAlchemistInner(){
     const isCrit=ch.roll===20&&!autoSucc;
     const mwGold=isCrit&&getFeatureVal('masterworkOnCrit')?(r.xp*2):0;
     if(mwGold>0)setGold(g=>g+mwGold);
-    const xpEarned=Math.floor((r.xp+getSkMod('aesthetics')*2)*qT.xpMult);
+    const xpEarned=Math.floor((r.xp+getFeatureVal('brewXPBonus'))*qT.xpMult);
     gainXP(xpEarned);
     const fl=CRAFT_SUCCESS[Math.floor(Math.random()*CRAFT_SUCCESS.length)];
     const qualLabel=qT.name!=='Standard'?' ['+qT.icon+' '+qT.name+']':'';
@@ -2368,7 +2436,7 @@ function CindervaleAlchemistInner(){
         const dblChance=getFeatureVal('doubleBatchChance')+upEff('doubleBatch');
         let qty=1;if(dblChance>0&&Math.random()<dblChance)qty=2;
         modPot(match.id,qty);
-        gainXP(match.xp+getSkMod('aesthetics')*2+15);
+        gainXP(match.xp+getFeatureVal('brewXPBonus')+15);
         showResult(match.icon+' '+match.name+' — Eureka!','craft',
           (discovered?'New recipe discovered!\n':'')+(qty>1?'Bonus double batch!\n':'')+'+'+String(match.xp+15)+' XP',ch);
         if(!hasMilestone('first_brew'))earnMilestone('first_brew');
@@ -2415,7 +2483,7 @@ function CindervaleAlchemistInner(){
 
   // ─── RESEARCH (spend hours to discover recipes/enchantments) ───
   const doResearch=(type)=>{
-    const loreMod=getSkMod('lore');const scholarReduc=getFeatureVal('researchCostReduction');
+    const loreMod=getFeatureVal('researchTimeReduction');const scholarReduc=getFeatureVal('researchCostReduction');
     const resCost=Math.max(1,(loreMod>=4?1:2)-scholarReduc);
     const freeResPerDay=getFeatureVal('freeResearchPerDay')+upEff('freeResearchPerDay');
     const freeUsed=dayFlags.filter(f=>f==='free_research_used').length;
@@ -2603,7 +2671,7 @@ function CindervaleAlchemistInner(){
         if(rr.success){Object.assign(ch,rr);ch.success=true;}
       }
     }
-    if(ch.success){const baseGR=20+ench.dc*3+cust.tier*12+getSkMod('aesthetics')*3+getSkMod('appraisal')*3;
+    if(ch.success){const baseGR=20+ench.dc*3+cust.tier*12+getFeatureVal('enchantGoldFlat')+getFeatureVal('potionSaleBonus');
       const critGold=isMW?Math.floor(baseGR*0.5):0;
       const enchGoldB=getFeatureVal('enchantGoldBonus');const custPayB=getFeatureVal('customerPayBonus');
       const debtPenalty=debt>50?-0.20:0;
@@ -2658,7 +2726,7 @@ function CindervaleAlchemistInner(){
     if(selInf){potId=potId+selInf.suffix;setInfusionsUsedToday(n=>n+1);}
     if(successes>0)modPot(potId,successes);
     setBrewCounts(p=>({...p,[r.id]:(p[r.id]||0)+successes}));
-    const xpPer=Math.floor((r.xp+getSkMod('aesthetics')*2)*qT.xpMult);
+    const xpPer=Math.floor((r.xp+getFeatureVal('brewXPBonus'))*qT.xpMult);
     gainXP(xpPer*successes);
     const qualLabel=qT.name!=='Standard'?' ['+qT.icon+' '+qT.name+']':'';
     showResult(r.icon+' Batch Brew'+qualLabel+': '+successes+'/'+qty+' succeeded!','craft',
@@ -2721,7 +2789,7 @@ function CindervaleAlchemistInner(){
     const mwBonus=isMWPotion?getFeatureVal('healingBonusMW'):0;
     const baseGold=15+ailment.tier*12;const baseXp=20+ailment.tier*15;
     const clinicMult=Math.max(1,getFeatureVal('clinicPayMult')||1);
-    const goldReward=Math.floor(baseGold*matchMult*(1+getSkMod('haggling')*0.03)*clinicMult*(1+mwBonus));
+    const goldReward=Math.floor(baseGold*matchMult*(1+getFeatureVal('sellBonus'))*clinicMult*(1+mwBonus));
     const xpReward=Math.floor(baseXp*matchMult);
     const locFacs=gameLocation==='tidecrest'?['tidekeepers','harbormasters','pearl_divers']:gameLocation==='ashfall'?['flamekeepers','sand_merchants','dustwalkers']:['hearthkeepers','cinderfolk','ashwardens'];
     const repFaction=ailment.tier>=3?locFacs[0]:locFacs[Math.floor(Math.random()*locFacs.length)];
@@ -2764,7 +2832,7 @@ function CindervaleAlchemistInner(){
     ch.success=ch.roll===1?false:ch.roll===20?true:ch.total>=dc;
     if(ch.success){
       const venomMult=Math.max(1,getFeatureVal('venomContractMult')||1);
-      const goldReward=Math.floor(contract.basePay*potency.payMult*(1+getSkMod('haggling')*0.03)*GOLD_MULT*venomMult);
+      const goldReward=Math.floor(contract.basePay*potency.payMult*(1+getFeatureVal('sellBonus'))*GOLD_MULT*venomMult);
       const xpReward=Math.floor(contract.baseXp*potency.payMult*0.8);
       const repReward=Math.floor((8+contract.tier*4)*potency.payMult*0.5);
       setGold(g=>g+goldReward);gainXP(xpReward);addRep(lf(contract.faction),repReward);
@@ -2829,7 +2897,7 @@ function CindervaleAlchemistInner(){
     }
     // Both succeeded! Create a Named Weapon
     const wName=genWeaponName();
-    const goldValue=Math.floor((weapon.tier*20+enchant.tier*15)*(1+getSkMod('haggling')*0.03+getFeatureVal('enchantGoldBonus'))*GOLD_MULT);
+    const goldValue=Math.floor((weapon.tier*20+enchant.tier*15)*(1+getFeatureVal('sellBonus')+getFeatureVal('enchantGoldBonus'))*GOLD_MULT);
     const xpReward=Math.floor(weapon.tier*15+enchant.tier*12);
     gainXP(xpReward);
     const newWeapon={id:'fw_'+Math.random().toString(36).slice(2),name:wName,weaponType:weapon.name,weaponIcon:weapon.icon,
@@ -2869,7 +2937,7 @@ function CindervaleAlchemistInner(){
         const ratio=newCompleted/totalLayers;
         const payMult=ratio>=1?1.0:ratio>=0.66?0.75:0.4;
         const shieldMult=Math.max(1,getFeatureVal('shieldPayMult')||1);
-        const goldReward=Math.floor(comm.baseGold*payMult*(1+getSkMod('haggling')*0.03+getFeatureVal('enchantGoldBonus'))*GOLD_MULT*shieldMult);
+        const goldReward=Math.floor(comm.baseGold*payMult*(1+getFeatureVal('sellBonus')+getFeatureVal('enchantGoldBonus'))*GOLD_MULT*shieldMult);
         const xpReward=Math.floor(comm.baseXp*payMult);
         const repReward=ratio>=1?12+comm.tier*5:ratio>=0.66?6:0;
         // Bonus referral for perfect completion
@@ -3068,8 +3136,8 @@ function CindervaleAlchemistInner(){
   };
 
   // ═══ DIPLOMAT EMBASSY ═══
-  const getMaxEnvoys=()=>{const dLv=eCL('merchant');return dLv>=10?3:dLv>=6?2:1;};
-  const getHarmonyCap=()=>{const dLv=eCL('merchant');return dLv>=10?3:dLv>=6?2:1;};
+  const getMaxEnvoys=()=>{const dLv=prestigeLevels?.diplomat||0;return dLv>=5?3:dLv>=3?2:dLv>=1?1:0;};
+  const getHarmonyCap=()=>{const dLv=prestigeLevels?.diplomat||0;return dLv>=5?3:dLv>=3?2:dLv>=1?1:0;};
   const dispatchEnvoy=(pairId)=>{
     const pair=FACTION_PAIRS.find(p=>p.id===pairId);if(!pair)return;
     const currentHarmony=factionHarmony[pairId]||0;
@@ -3086,8 +3154,8 @@ function CindervaleAlchemistInner(){
       const newHarmony=currentHarmony+1;
       setFactionHarmony(prev=>({...prev,[pairId]:newHarmony}));
       // Lv6+: envoys also grant personal rep
-      const dLv=eCL('merchant');
-      if(dLv>=6){pair.factions.forEach(fid=>addRep(fid,5));}
+      const dLv=prestigeLevels?.diplomat||0;
+      if(dLv>=3){pair.factions.forEach(fid=>addRep(fid,5));}
       gainXP(20+newHarmony*10);
       const SUCC=['The factions find common ground. A small step toward unity.','Your words bridge old grudges. Both sides leave with new respect.','"Perhaps we have more in common than we thought," they agree.'];
       showResult('🤝 Envoy Successful! — Harmony '+newHarmony,'craft',
@@ -3132,9 +3200,9 @@ function CindervaleAlchemistInner(){
   const trainApprentice=(apprId,statId)=>{
     const ap=hiredAppr.find(a=>a.id===apprId);if(!ap)return;
     if(hours<1){addLog('Training takes ⚡1 Energy.','error');return;}
-    const gmLv=eCL('merchant');
-    // Lv10: passive training costs 0 hours
-    const hourCost=0; // Training: free (spec feature)
+    const hasMasterTrainer=playerFeats.includes('master_trainer');
+    // Training: free (feat feature)
+    const hourCost=0;
     if(hourCost>0&&hours<hourCost){addLog('Training takes ⚡1 Energy.','error');return;}
     snapshot();
     if(hourCost>0)spendEnergy(hourCost);
@@ -3168,7 +3236,7 @@ function CindervaleAlchemistInner(){
   };
   const teachTrait=(apprId,traitId)=>{
     const ap=hiredAppr.find(a=>a.id===apprId);if(!ap)return;
-    if(eCL('merchant')<10){addLog('Teaching traits requires Guildmaster Lv10.','error');return;}
+    if(!playerFeats.includes('master_trainer')){addLog('Teaching traits requires Master Trainer feat.','error');return;}
     if((ap.traits||[]).includes(traitId)){addLog(ap.name+' already has this trait.','error');return;}
     if((ap.traits||[]).length>=4){addLog(ap.name+' has too many traits (max 4).','error');return;}
     // Teach trait: free (spec feature)
@@ -3188,8 +3256,7 @@ function CindervaleAlchemistInner(){
   };
   // Process curriculum (auto-training over multiple days)
   const processCurriculum=()=>{
-    const gmLv=eCL('merchant');
-    if(gmLv<6)return[];
+    if(!playerFeats.includes('master_trainer'))return[];
     const results=[];
     Object.entries(trainingSessions).forEach(([apId,session])=>{
       if(!session||session.daysLeft<=0)return;
@@ -3211,7 +3278,7 @@ function CindervaleAlchemistInner(){
     return results;
   };
   const startCurriculum=(apprId,statId)=>{
-    if(eCL('merchant')<6){addLog('Curricula require Guildmaster Lv6.','error');return;}
+    if(!playerFeats.includes('master_trainer')){addLog('Curricula require Master Trainer feat.','error');return;}
     if(trainingSessions[apprId]){addLog('This apprentice is already in a curriculum.','error');return;}
     setTrainingSessions(prev=>({...prev,[apprId]:{stat:statId,daysLeft:3}}));
     const ap=hiredAppr.find(a=>a.id===apprId);
@@ -3466,7 +3533,7 @@ function CindervaleAlchemistInner(){
 
   // ─── SHOP SHELVES ───
   const compShelfBonus=(()=>{let b=0;companions.filter(c=>c.active).forEach(c=>{const comp=RANGER_COMPANIONS.find(r=>r.id===c.compId);if(comp?.secondary?.type==='organize'&&c.loyalty>=(comp.secondary.unlockLv||3))b+=c.loyalty;});return b;})();
-  const baseShelf=(hasUp('display')?12:hasUp('shopfront')?8:4)+getSkMod('stockpiling')*2+Math.floor(getFeatureVal('shelfCapBonus'))+compShelfBonus;
+  const baseShelf=(hasUp('display')?12:hasUp('shopfront')?8:4)+getFeatureVal('shelfCapBonus')+Math.floor(getFeatureVal('shelfCapBonus'))+compShelfBonus;
   const SHELF_MAX=Math.floor(baseShelf*(1+getFeatureVal('shelfCapacityBonus'))*(getFeatureVal('doubleStorage')?2:1));
   const shelfTotal=Object.values(shelves).reduce((s,v)=>s+v,0);
   const stockShelf=(potId,qty)=>{
@@ -3549,7 +3616,7 @@ function CindervaleAlchemistInner(){
     else if(q.type==='gather')modInv(q.target,-q.count);
     else if(q.type==='multi')q.targets.forEach(t=>{const c=consumePots(t,1);Object.keys(c).forEach(k=>{qConsumed[k]+=c[k];});});
     const qQB=qualityBonusMult(qConsumed);
-    setAQ(p=>p.filter(a=>a.id!==q.id));setDoneQ(p=>[...p,q.id]);const loreXp=getSkMod('lore')*4;
+    setAQ(p=>p.filter(a=>a.id!==q.id));setDoneQ(p=>[...p,q.id]);const loreXp=getFeatureVal('questXPFlat');
     const qGoldB=1+getFeatureVal('questGoldBonus')+(getSeason(day,gameLocation).questGoldMod||0);const qRepB=1+getFeatureVal('questRepBonus');const qXpB=1+getFeatureVal('questXPBonus');
     const qGold=Math.floor(q.gold*qGoldB*qQB.mult*GOLD_MULT);
     gainXP(Math.floor((q.xp+loreXp)*qXpB*qQB.mult));setGold(g=>g+qGold);
@@ -3616,7 +3683,7 @@ function CindervaleAlchemistInner(){
     const bqQB=qualityBonusMult(bqConsumed);
     setActiveBQ(p=>p.filter(q=>q.id!==bq.id));
     setDoneBQCount(c=>c+1);
-    const bqLoreXp=getSkMod('lore')*4;
+    const bqLoreXp=getFeatureVal('questXPFlat');
     const bqGoldB=1+getFeatureVal('questGoldBonus');const bqRepB=1+getFeatureVal('questRepBonus');const bqXpB=1+getFeatureVal('questXPBonus');
     const bqGold=Math.floor(bq.gold*bqGoldB*bqQB.mult*GOLD_MULT);
     gainXP(Math.floor((bq.xp+bqLoreXp)*bqXpB*bqQB.mult));setGold(g=>g+bqGold);
@@ -4060,9 +4127,9 @@ function CindervaleAlchemistInner(){
         const infCustBonus=infId&&(prestigeLevels.spellbrewer||0)>=5?0.15:0;
         // Each stocked potion has a 30-60% chance to sell overnight + class/feat bonuses
         let sold=0;
-        for(let i=0;i<qty;i++){if(Math.random()<0.3+level*0.02+(skRanks['haggling']||0)*0.02+shelfSaleB+infCustBonus+brandShelfBonus)sold++;}
+        for(let i=0;i<qty;i++){if(Math.random()<0.3+level*0.02+shelfSaleB+infCustBonus+brandShelfBonus)sold++;}
         if(sold>0){
-          const basePrice=r.xp+getSkMod('aesthetics')*2+getSkMod('haggling')+Math.floor(upEff('sellBonus')*r.xp);
+          const basePrice=r.xp+getFeatureVal('potionSaleBonus')+Math.floor(upEff('sellBonus')*r.xp);
           const price=Math.floor(basePrice*(1+sellB+custPayB+pvb)*qMult*infMult*freshMult*brandMult*GOLD_MULT);
           shelfGold+=price*sold;shelfSold[potId]=(shelfSold[potId]||0)+sold;
           next[potId]=qty-sold;if(next[potId]<=0)delete next[potId];
@@ -4102,9 +4169,8 @@ function CindervaleAlchemistInner(){
     if(facMit0.some(f=>getRepLvl(fRep[f]||0)>=3))newThreats[locThreatIds[0]]=Math.max(0,(newThreats[locThreatIds[0]]||0)-1);
     if(facMit1.some(f=>getRepLvl(fRep[f]||0)>=3))newThreats[locThreatIds[1]]=Math.max(0,(newThreats[locThreatIds[1]]||0)-1);
     if(facMit2.some(f=>getRepLvl(fRep[f]||0)>=3))newThreats[locThreatIds[2]]=Math.max(0,(newThreats[locThreatIds[2]]||0)-1);
-    // Warden/Merchant class decay (-1 each)
+    // Warden class decay (-1)
     if(eCL('warden')>=4)newThreats[locThreatIds[1]]=Math.max(0,(newThreats[locThreatIds[1]]||0)-1);
-    if(eCL('merchant')>=4)newThreats[locThreatIds[2]]=Math.max(0,(newThreats[locThreatIds[2]]||0)-1);
     // Brand Master: famous brands reduce magic threat
     (brands||[]).forEach(b=>{if(b.sold>=80)newThreats[locThreatIds[2]]=Math.max(0,(newThreats[locThreatIds[2]]||0)-5);});
     // Staff patrol reductions (accumulated during staff loop)
@@ -4489,7 +4555,7 @@ function CindervaleAlchemistInner(){
       }
     }
     // Procurement: rare/mid-tier ingredients appear in shop
-    const procRank=skRanks['procurement']||0;const procChance=Math.min(0.40,procRank*0.08+getMod(eStat('com'))*0.02);const procList=[];
+    const procChance=0;const procList=[];
     const restockB=getFeatureVal('shopRestockBonus');
     const rareIngr=new Set();locRegions.filter(r=>r.diff>=2&&level>=regUnlock(r)).forEach(r=>r.ingr.forEach(id=>rareIngr.add(id)));
     const alreadyInShop=new Set(SHOP_I.filter(s=>!s.loc||s.loc===gameLocation).map(s=>s.id));
@@ -4629,7 +4695,7 @@ function CindervaleAlchemistInner(){
     // Shelf Sales detail
     if(Object.keys(shelfSold).length>0){
       const sLines=Object.entries(shelfSold).map(([id,q])=>{const r=RECIPES.find(x=>x.id===getBaseRecipeId(id));
-        const basePrice=r?r.xp+getSkMod('aesthetics')*2+getSkMod('haggling')+Math.floor(upEff('sellBonus')*r.xp):0;
+        const basePrice=r?r.xp+getFeatureVal('potionSaleBonus')+Math.floor(upEff('sellBonus')*r.xp):0;
         const price=Math.floor(basePrice*(1+getFeatureVal('sellBonus')+getFeatureVal('customerPayBonus')+getFeatureVal('potionValueBonus'))*GOLD_MULT);
         return{icon:r?.icon||'🧪',label:(r?.name||id)+' ×'+q,val:'+'+price*q+'g',color:TH.gold};});
       mrSections.push({title:'🏪 Shelf Sales',lines:sLines});}
@@ -4781,7 +4847,7 @@ function CindervaleAlchemistInner(){
     const spoilLines=[];
     const spoilThresholdBase=8;
     const blightSpoilMult=getThreatPenalty(locThreatIds[1],'spoilMult');
-    const spoilThresholdBonus=getFeatureVal('spoilThreshold')+upEff('spoilThreshold')+getSkMod('stockpiling')*3+(curSeason.spoilMod||0);
+    const spoilThresholdBonus=getFeatureVal('spoilThreshold')+upEff('spoilThreshold')+0+(curSeason.spoilMod||0);
     const totalSpoilThreshold=Math.max(4,spoilThresholdBase+spoilThresholdBonus);
     const effSpoilThreshold=blightSpoilMult>1?Math.max(4,Math.floor(totalSpoilThreshold/blightSpoilMult)):totalSpoilThreshold;
     // Naturalist bonus: documented flora entries give +3 threshold for their ingredient
@@ -4908,7 +4974,7 @@ function CindervaleAlchemistInner(){
       }
     }
     // ═══ GUILDMASTER ACADEMY MORNING ═══
-    if(eSpec('merchant')==='guildmaster'){
+    if(playerFeats.includes('master_trainer')){
       const currResults=processCurriculum();
       if(currResults.length>0)mrSections.push({title:'🎓 Academy',lines:currResults});
     }
@@ -5753,9 +5819,8 @@ function CindervaleAlchemistInner(){
             <div style={{fontSize:13,color:TH.textDim,marginBottom:8}}>Reach level 3 in two different classes to unlock powerful prestige paths. Prestige levels advance BOTH the prestige class and one parent class simultaneously.</div>
             <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(220px,1fr))',gap:6}}>
               {Object.values(PRESTIGE_CLASSES).map(pc=>{
-                const reqs=Object.entries(pc.req);
-                const reqText=reqs.map(([cid,lv])=>CLASSES[cid]?.icon+' '+CLASSES[cid]?.name+' '+lv).join(' + ');
-                const involves=reqs.some(([cid])=>cid===startingClass);
+                const reqText=formatPrestigeReq(pc.req);
+                const involves=Object.keys(pc.req).some(k=>k===startingClass);
                 return <div key={pc.id} style={{padding:'6px 8px',borderRadius:4,
                   background:involves?pc.color+'12':TH.panelLight,
                   border:'1px solid '+(involves?pc.color+'44':TH.border),
@@ -6743,7 +6808,7 @@ function CindervaleAlchemistInner(){
               <div style={{fontSize:15,color:TH.gold,padding:'4px 8px',background:TH.gold+'10',borderRadius:4,marginBottom:3}}>📋 Choose a class to advance</div>
               {pendingLevelUp.needsFeat&&<div style={{fontSize:15,color:TH.purple,padding:'4px 8px',background:TH.purple+'10',borderRadius:4,marginBottom:3}}>🌟 Select a feat</div>}
               {pendingLevelUp.needsASI&&<div style={{fontSize:15,color:TH.cyan,padding:'4px 8px',background:TH.cyan+'10',borderRadius:4,marginBottom:3}}>📊 Ability Score Increase (+2 to stats)</div>}
-              <div style={{fontSize:15,color:TH.green,padding:'4px 8px',background:TH.green+'10',borderRadius:4,marginBottom:3}}>🎓 Assign {pendingLevelUp.skillPointsAvailable} skill points{pendingLevelUp.skillPointsAvailable>2?` (2 base + ${pendingLevelUp.skillPointsAvailable-2} 🧠 Focused Mind)`:''}</div>
+              <div style={{fontSize:15,color:TH.green,padding:'4px 8px',background:TH.green+'10',borderRadius:4,marginBottom:3}}>🎓 Assign {pendingLevelUp.skillPointsAvailable} skill points{pendingLevelUp.skillPointsAvailable>3?` (3 base + ${pendingLevelUp.skillPointsAvailable-3} 🧠 Focused Mind)`:''}</div>
             </div>
             <div style={{textAlign:'center'}}>
               <button style={{...S.btn('gold'),fontSize:17,padding:'8px 28px'}} onClick={()=>setPendingLevelUp(p=>({...p,step:'class'}))}>Begin Advancement →</button>
@@ -6821,8 +6886,7 @@ function CindervaleAlchemistInner(){
             {/* ═══ PRESTIGE CLASSES ═══ */}
             {(()=>{
               const available=Object.values(PRESTIGE_CLASSES).filter(pc=>{
-                const reqs=Object.entries(pc.req);
-                const meets=reqs.every(([cid,lv])=>Math.max(classLevels[cid]||0,torchClassLevels[cid]||0)>=lv);
+                const meets=checkPrestigeReq(pc.req);
                 const curLv=prestigeLevels[pc.id]||0;
                 return meets&&curLv<pc.maxLv;
               });
@@ -6839,7 +6903,7 @@ function CindervaleAlchemistInner(){
                     onClick={()=>setPendingLevelUp(p=>({...p,chosenClass:'prestige_'+pc.id,needsSpec:false,chosenSpec:null,prestigeParentClass:null}))}>
                     <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
                       <span style={{fontSize:18,color:pc.color,fontWeight:'bold'}}>{pc.icon} {pc.name} <span style={{fontSize:14,color:TH.textDim}}>{curLv>0?'Lv '+curLv+' \u2192 '+nextLv:'NEW'}</span></span>
-                      <span style={{fontSize:12,color:TH.textDim}}>{Object.entries(pc.req).map(([cid,lv])=>CLASSES[cid]?.icon+lv).join('+')}</span>
+                      <span style={{fontSize:12,color:TH.textDim}}>{formatPrestigeReqShort(pc.req)}</span>
                     </div>
                     <div style={{fontSize:13,color:TH.textDim,margin:'2px 0'}}>{pc.desc}</div>
                     {nextFeature&&<div style={{fontSize:14,color:pc.color,marginTop:3,padding:'3px 6px',background:pc.color+'10',borderRadius:3}}>
@@ -6888,16 +6952,14 @@ function CindervaleAlchemistInner(){
               </div>;
             })()}
             {(()=>{
-              const locked=Object.values(PRESTIGE_CLASSES).filter(pc=>{
-                const reqs=Object.entries(pc.req);return !reqs.every(([cid,lv])=>Math.max(classLevels[cid]||0,torchClassLevels[cid]||0)>=lv);
-              });
+              const locked=Object.values(PRESTIGE_CLASSES).filter(pc=>!checkPrestigeReq(pc.req));
               if(locked.length===0)return null;
               return <div style={{marginTop:8}}>
                 <div style={{fontSize:13,color:TH.textDim,marginBottom:4}}>Locked Prestige Classes:</div>
                 <div style={{display:'flex',flexWrap:'wrap',gap:3}}>
                   {locked.map(pc=><span key={pc.id} style={{padding:'2px 6px',fontSize:11,borderRadius:3,background:TH.bg,border:'1px solid '+TH.border,color:TH.textDim}}
-                    title={pc.desc+' | Requires: '+Object.entries(pc.req).map(([cid,lv])=>CLASSES[cid]?.name+' Lv'+lv).join(' + ')}>
-                    {pc.icon} {pc.name} ({Object.entries(pc.req).map(([cid,lv])=>CLASSES[cid]?.icon+lv).join('+')})</span>
+                    title={pc.desc+' | Requires: '+formatPrestigeReq(pc.req)}>
+                    {pc.icon} {pc.name} ({formatPrestigeReqShort(pc.req)})</span>
                   )}
                 </div>
               </div>;
@@ -6953,10 +7015,18 @@ function CindervaleAlchemistInner(){
               if(catFeats.length===0)return null;
               return(<div key={catId} style={{marginBottom:8}}>
                 <div style={{fontSize:15,color:cat.color,fontWeight:'bold',marginBottom:4}}>{cat.icon} {cat.name}</div>
-                {catFeats.map(fid=>{const f=FEATS[fid];const selected=pendingLevelUp.chosenFeat===fid;return(
-                  <div key={fid} style={{padding:'5px 8px',background:selected?cat.color+'15':TH.panelLight,borderRadius:4,marginBottom:3,border:`1px solid ${selected?cat.color:TH.border}`,cursor:'pointer',fontSize:14}}
-                    onClick={()=>setPendingLevelUp(p=>({...p,chosenFeat:fid}))}>
+                {catFeats.map(fid=>{const f=FEATS[fid];const selected=pendingLevelUp.chosenFeat===fid;
+                  // Check feat prereqs
+                  let locked=false,lockReason='';
+                  if(f.req){
+                    if(f.req.feat&&!playerFeats.includes(f.req.feat)){locked=true;lockReason='Requires '+FEATS[f.req.feat]?.name;}
+                    Object.entries(f.req).forEach(([k,v])=>{if(k!=='feat'&&CLASSES[k]&&eCL(k)<v){locked=true;lockReason='Requires '+CLASSES[k].icon+' '+CLASSES[k].name+' '+v;}});
+                  }
+                  return(
+                  <div key={fid} style={{padding:'5px 8px',background:locked?TH.bg:selected?cat.color+'15':TH.panelLight,borderRadius:4,marginBottom:3,border:`1px solid ${locked?TH.border+'66':selected?cat.color:TH.border}`,cursor:locked?'not-allowed':'pointer',fontSize:14,opacity:locked?0.5:1}}
+                    onClick={()=>{if(!locked)setPendingLevelUp(p=>({...p,chosenFeat:fid}));}}>
                     <span style={{color:cat.color}}>{f.icon}</span> <b>{f.name}</b> — {f.desc}
+                    {locked&&<span style={{fontSize:12,color:TH.red,marginLeft:6}}>🔒 {lockReason}</span>}
                   </div>
                 );})}
               </div>);})}
@@ -7011,7 +7081,7 @@ function CindervaleAlchemistInner(){
           {pendingLevelUp.step==='skills'&&<>
             <div style={{textAlign:'center',marginBottom:8}}>
               <div style={{fontSize:20,color:TH.gold}}>🎓 Assign Skill Points</div>
-              <div style={{fontSize:14,color:TH.textDim}}>Spend {pendingLevelUp.skillPointsAvailable} skill points to improve your abilities.{pendingLevelUp.skillPointsAvailable>2&&<span style={{color:TH.gold}}> (2 base + {pendingLevelUp.skillPointsAvailable-2} from 🧠 Focused Mind)</span>}</div>
+              <div style={{fontSize:14,color:TH.textDim}}>Spend {pendingLevelUp.skillPointsAvailable} skill points to improve your abilities.{pendingLevelUp.skillPointsAvailable>3&&<span style={{color:TH.gold}}> (3 base + {pendingLevelUp.skillPointsAvailable-3} from 🧠 Focused Mind)</span>}</div>
               {getFeatureVal('bonusSkillEveryOther')>0&&<div style={{fontSize:12,color:TH.textDim}}>Focused Mind: +1 skill point every other level (Lv{pendingLevelUp.newCharLevel+1} {pendingLevelUp.newCharLevel%2===0?'→ bonus applies':'→ no bonus this level'})</div>}
             </div>
             {(()=>{
@@ -7439,7 +7509,7 @@ function CindervaleAlchemistInner(){
           </div>
           {showShop&&<div>
             <div style={{fontSize:16,color:TH.gold,marginBottom:4}}>Buy Ingredients{dayFlags.includes('bargain_day')?' — 🏷️ Half Price Today!':''}</div>
-            {[...SHOP_I].filter(s=>!s.loc||s.loc===gameLocation).sort((a,b)=>(INGR[a.id]?.name||'').localeCompare(INGR[b.id]?.name||'')).map(item=>{let bp=getBuyPrice(Math.max(1,item.price-Math.floor(getSkMod('haggling')/2)));if(dayFlags.includes('bargain_day'))bp=Math.max(1,Math.floor(bp/2));const have=inv[item.id]||0;return(
+            {[...SHOP_I].filter(s=>!s.loc||s.loc===gameLocation).sort((a,b)=>(INGR[a.id]?.name||'').localeCompare(INGR[b.id]?.name||'')).map(item=>{let bp=getBuyPrice(Math.max(1,item.price-Math.floor(getFeatureVal('buyDiscount')*5)));if(dayFlags.includes('bargain_day'))bp=Math.max(1,Math.floor(bp/2));const have=inv[item.id]||0;return(
               <div key={item.id} style={{display:'flex',alignItems:'center',gap:6,padding:'3px 0',fontSize:16}}>
                 <span>{INGR[item.id]?.icon} {INGR[item.id]?.name}</span>
                 <span style={{fontSize:14,color:TH.textDim}}>×{have}</span>
@@ -7449,14 +7519,14 @@ function CindervaleAlchemistInner(){
               </div>);})}
             {procureItems.length>0&&<>
               <div style={{fontSize:16,color:TH.purple,marginTop:8,marginBottom:4}}>📦 Procurement — Rare Finds (today only)</div>
-              {[...procureItems].sort((a,b)=>(a.name||'').localeCompare(b.name||'')).map(item=>{let bp=getBuyPrice(Math.max(1,item.price-Math.floor(getSkMod('haggling')/2)));const have=inv[item.id]||0;return(
+              {[...procureItems].sort((a,b)=>(a.name||'').localeCompare(b.name||'')).map(item=>{let bp=getBuyPrice(Math.max(1,item.price-Math.floor(getFeatureVal('buyDiscount')*5)));const have=inv[item.id]||0;return(
                 <div key={item.id} style={{display:'flex',alignItems:'center',gap:6,padding:'3px 0',fontSize:16,background:TH.purple+'08',borderRadius:3,paddingLeft:4}}>
                   <span>{item.icon} {item.name}</span>
                   <span style={{fontSize:14,color:TH.textDim}}>×{have}</span>
                   <span style={{color:TH.purple,marginLeft:'auto'}}>{bp}g</span>
                   <button style={S.btn(gold>=bp?'def':'dim')} onClick={()=>{if(gold>=bp){setGold(g=>g-bp);modInv(item.id,1);}}} disabled={gold<bp}>+1</button>
                 </div>);})}</>}            {Object.entries(pots).filter(([,q])=>q>0).length>0&&<div style={{fontSize:16,color:TH.gold,marginTop:8,marginBottom:4}}>Sell Potions</div>}
-            {Object.entries(pots).filter(([,q])=>q>0).map(([id,qty])=>{const baseId=getBaseRecipeId(id);const r=RECIPES.find(r=>r.id===baseId);if(!r)return null;const pq=getPotQuality(id);const qT=QUALITY[pq]||QUALITY.std;const _mInf=getInfusion(id);const _mInfObj=_mInf?INFUSIONS[_mInf]:null;const baseSp=r.xp+getSkMod('aesthetics')*2+getSkMod('haggling')+Math.floor(upEff('sellBonus')*r.xp);const infSellMult=getInfusion(id)?INFUSIONS[getInfusion(id)]?.sellMult||1:1;
+            {Object.entries(pots).filter(([,q])=>q>0).map(([id,qty])=>{const baseId=getBaseRecipeId(id);const r=RECIPES.find(r=>r.id===baseId);if(!r)return null;const pq=getPotQuality(id);const qT=QUALITY[pq]||QUALITY.std;const _mInf=getInfusion(id);const _mInfObj=_mInf?INFUSIONS[_mInf]:null;const baseSp=r.xp+getFeatureVal('potionSaleBonus')+Math.floor(upEff('sellBonus')*r.xp);const infSellMult=getInfusion(id)?INFUSIONS[getInfusion(id)]?.sellMult||1:1;
               const brandMult=getBrandSellMult(getBaseRecipeId(id));
               const bmLv=prestigeLevels.brandmaster||0;
               const brandMWExtra=(bmLv>=4&&getBrandForRecipe(getBaseRecipeId(id))&&(pq==='mw'||pq==='gm'))?0.25:0;
@@ -7468,8 +7538,8 @@ function CindervaleAlchemistInner(){
                 {qty>1&&<button style={S.btn()} onClick={()=>sellPotion(id,qty,sp,r)}>All ({sp*qty}g)</button>}
               </div>);})}
             {Object.entries(inv).filter(([,q])=>q>0).length>0&&<div style={{fontSize:16,color:TH.gold,marginTop:8,marginBottom:4}}>Sell Ingredients</div>}
-            {Object.entries(inv).filter(([,q])=>q>0).map(([id,qty])=>{const ig=INGR[id];if(!ig)return null;const baseSp=Math.max(1,Math.floor((ig.val||5)*0.4)+getSkMod('haggling')+getSkMod('appraisal'));const sp=Math.max(1,Math.floor(baseSp*(1+getFeatureVal('sellBonus'))*GOLD_MULT));
-              const isHid=HIDDEN_INGR&&HIDDEN_INGR[id];const spThresh=(isHid?12:8)+getFeatureVal('spoilThreshold')+upEff('spoilThreshold')+getSkMod('stockpiling')*3;return(
+            {Object.entries(inv).filter(([,q])=>q>0).map(([id,qty])=>{const ig=INGR[id];if(!ig)return null;const baseSp=Math.max(1,Math.floor((ig.val||5)*0.4)+getFeatureVal('ingrSellBonus'));const sp=Math.max(1,Math.floor(baseSp*(1+getFeatureVal('sellBonus'))*GOLD_MULT));
+              const isHid=HIDDEN_INGR&&HIDDEN_INGR[id];const spThresh=(isHid?12:8)+getFeatureVal('spoilThreshold')+upEff('spoilThreshold')+0;return(
               <div key={id} style={{display:'flex',alignItems:'center',gap:6,padding:'3px 0',fontSize:16}}>
                 <span>{ig.icon}{ig.name} ×{qty}</span><span style={{color:TH.gold,marginLeft:'auto'}}>{sp}g ea</span>
                 <button style={S.btn()} onClick={()=>{modInv(id,-1);setGold(g=>g+sp);addLog(`Sold ${ig.icon}${ig.name}. (+${sp}g)`,'info');}}>Sell 1</button>
@@ -7479,7 +7549,7 @@ function CindervaleAlchemistInner(){
           </div>}
           {(dlgNpc==='brenna'||dlgNpc==='sola'||dlgNpc==='razak'||dlgNpc==='mako'||dlgNpc==='finn'||dlgNpc==='sr_kael')&&!showShop&&NPCS[dlgNpc]&&<NpcDlg npc={{...NPCS[dlgNpc],id:dlgNpc}} {...{dlgLine,setDlgLine,setDlgNpc,availQ,aQ,acceptQ,compQ,qP,qObj,S,questDlg,setQuestDlg,openNpc}}/>}
         </div>
-        {/* ── Black Market (Merchant Fence) ── */}
+        {/* ── Black Market (legacy — hidden unless blackMarket effect active) ── */}
         {getFeatureVal('blackMarket')&&<div style={{...S.card,borderColor:'#800040',background:TH.panel+'cc'}}>
           <div style={{...S.cT,color:'#ff4080'}}>🕶️ Black Market</div>
           <div style={{fontSize:14,color:TH.textDim,marginBottom:6,lineHeight:1.5}}>
@@ -7487,7 +7557,7 @@ function CindervaleAlchemistInner(){
             {!getFeatureVal('noRisk')?' ⚠️ Risk of confiscation — you may lose goods AND gold.':' No risk — you\'re untouchable.'}
           </div>
           {Object.entries(pots).filter(([,q])=>q>0).map(([id,qty])=>{const baseId=getBaseRecipeId(id);const r=RECIPES.find(r=>r.id===baseId);if(!r)return null;const pq=getPotQuality(id);const qT=QUALITY[pq]||QUALITY.std;
-            const baseSp=r.xp+getSkMod('aesthetics')*2+getSkMod('haggling')+Math.floor(upEff('sellBonus')*r.xp);
+            const baseSp=r.xp+getFeatureVal('potionSaleBonus')+Math.floor(upEff('sellBonus')*r.xp);
             const bmMult=getFeatureVal('blackMarketMulti')||2;
             const bmPrice=Math.floor(baseSp*bmMult*(1+getFeatureVal('sellBonus')));
             const riskChance=getFeatureVal('noRisk')?0:getFeatureVal('reducedRisk')?0.08:0.2;
@@ -8494,13 +8564,13 @@ function CindervaleAlchemistInner(){
         </div>}
 
         {/* ═══ GUILDMASTER ACADEMY ═══ */}
-        {eSpec('merchant')==='guildmaster'&&<div style={{...S.card,borderColor:'#d0a030',background:'#d0a03008'}} className={isWsOpen('ws20')?'':'ws-closed'}>
+        {playerFeats.includes('master_trainer')&&<div style={{...S.card,borderColor:'#d0a030',background:'#d0a03008'}} className={isWsOpen('ws20')?'':'ws-closed'}>
           <div style={{...S.cT,cursor:'pointer',userSelect:'none'}} onClick={()=>toggleWs('ws20')}><span style={{display:'flex',justifyContent:'space-between',width:'100%'}}><span>🎓 Staff Academy</span><span style={{fontSize:13,color:TH.textDim}}>{isWsOpen('ws20')?'▲':'▼'}</span></span></div>
           {(()=>{
-            const gmLv=eCL('merchant');
-            const canCurriculum=gmLv>=6;
-            const canTeachTraits=gmLv>=10;
-            const passiveTraining=gmLv>=10;
+            const hasMT=playerFeats.includes('master_trainer');
+            const canCurriculum=hasMT;
+            const canTeachTraits=hasMT;
+            const passiveTraining=hasMT;
             return <>
               {hiredAppr.length===0&&<div style={{fontSize:14,color:TH.textDim}}>Hire staff first, then train them here.</div>}
               {hiredAppr.map(ap=>{
@@ -8552,17 +8622,15 @@ function CindervaleAlchemistInner(){
                   </div>}
                 </div>;
               })}
-              {gmLv<6&&<div style={{fontSize:12,color:TH.textDim,marginTop:4}}>🔒 Curricula at Merchant Lv6</div>}
-              {gmLv>=6&&gmLv<10&&<div style={{fontSize:12,color:TH.textDim,marginTop:4}}>🔒 Teach traits & free training at Merchant Lv10</div>}
+              {!canCurriculum&&<div style={{fontSize:12,color:TH.textDim,marginTop:4}}>🔒 Curricula & trait teaching require Master Trainer feat</div>}
             </>;
           })()}
         </div>}
 
         {/* ═══ DIPLOMAT EMBASSY ═══ */}
-        {eSpec('merchant')==='diplomat'&&<div style={{...S.card,borderColor:'#4090c0',background:'#4090c008'}} className={isWsOpen('ws21')?'':'ws-closed'}>
+        {(prestigeLevels?.diplomat||0)>=1&&<div style={{...S.card,borderColor:'#4090c0',background:'#4090c008'}} className={isWsOpen('ws21')?'':'ws-closed'}>
           <div style={{...S.cT,cursor:'pointer',userSelect:'none'}} onClick={()=>toggleWs('ws21')}><span style={{display:'flex',justifyContent:'space-between',width:'100%'}}><span>🤝 Embassy — Faction Harmony</span><span style={{fontSize:13,color:TH.textDim}}>{isWsOpen('ws21')?'▲':'▼'}</span></span></div>
           {(()=>{
-            const dLv=eCL('merchant');
             const maxHarmony=getHarmonyCap();
             const envoysToday=dayFlags.filter(f=>f==='envoy_sent').length;
             const maxEnvoys=getMaxEnvoys();
@@ -8606,8 +8674,8 @@ function CindervaleAlchemistInner(){
                   </div>
                 </div>;
               })}
-              {dLv<6&&<div style={{fontSize:12,color:TH.textDim,marginTop:4}}>🔒 More envoys & Harmony 2 at Merchant Lv6</div>}
-              {dLv>=6&&dLv<10&&<div style={{fontSize:12,color:TH.textDim,marginTop:4}}>🔒 Harmony 3 & Grand Alliance at Merchant Lv10</div>}
+              {maxHarmony<2&&<div style={{fontSize:12,color:TH.textDim,marginTop:4}}>🔒 More envoys & Harmony 2 at Diplomat Lv3</div>}
+              {maxHarmony>=2&&maxHarmony<3&&<div style={{fontSize:12,color:TH.textDim,marginTop:4}}>🔒 Harmony 3 & Grand Alliance at Diplomat Lv5</div>}
             </>;
           })()}
         </div>}
@@ -9060,7 +9128,7 @@ function CindervaleAlchemistInner(){
           const totalMod=getSkMod(craftSk)+upEff('craftSkillBonus')+getFeatureVal('craftBonus');
           const needed=adjDC-totalMod;
           const successPct=Math.min(95,Math.max(5,Math.floor((21-needed)/20*100)));
-          const hagMod=Math.floor(getSkMod('haggling')/2);
+          const hagMod=Math.floor(getFeatureVal('buyDiscount')*5);
           const buyCalc=(n)=>{
             const needed={};Object.entries(cost).forEach(([id,q])=>{const need=q*n-(inv[id]||0);if(need>0)needed[id]=need;});
             const allShop=Object.keys(needed).every(id=>SHOP_I.find(i=>i.id===id&&(!i.loc||i.loc===gameLocation)));
@@ -9075,7 +9143,7 @@ function CindervaleAlchemistInner(){
             {!fOk&&<div style={{fontSize:13,color:TH.red,fontWeight:'bold',margin:'3px 0',padding:'2px 6px',background:TH.red+'12',borderRadius:3,border:'1px solid '+TH.red+'33'}}>🔒 Requires {FACTIONS[r.faction]?.icon} {FACTIONS[r.faction]?.name} reputation: {REP_LVS[r.fReq]||'Lv'+r.fReq} (currently: {REP_LVS[getRL(r.faction)]||'Unknown'})</div>}
             <div style={S.row}>{Object.entries(cost).map(([id,q])=>{
               const have=(inv[id]||0)>=q;
-              const iQty=inv[id]||0;const iHid=HIDDEN_INGR&&HIDDEN_INGR[id];const iThresh=(iHid?12:8)+getFeatureVal('spoilThreshold')+upEff('spoilThreshold')+getSkMod('stockpiling')*3;
+              const iQty=inv[id]||0;const iHid=HIDDEN_INGR&&HIDDEN_INGR[id];const iThresh=(iHid?12:8)+getFeatureVal('spoilThreshold')+upEff('spoilThreshold')+0;
               const iWarn=iQty>iThresh;
               const srcs=getIngrSource(id);const srcTip=srcs.length?srcs.map(s=>s.text).join('\n'):'Source unknown';
               const sWarn=getIngrSeasonWarn(id);
@@ -9202,7 +9270,7 @@ function CindervaleAlchemistInner(){
           <div style={{...S.cT,cursor:'pointer',userSelect:'none'}} onClick={()=>toggleWs('ws26')}><span style={{display:'flex',justifyContent:'space-between',width:'100%'}}><span>💰 Sell</span><span style={{fontSize:13,color:TH.textDim}}>{isWsOpen('ws26')?'▲':'▼'}</span></span></div>
           {Object.entries(pots).filter(([,q])=>q>0).length>0&&<div style={{fontSize:15,color:TH.gold,marginBottom:4}}>Potions</div>}
           {Object.entries(pots).filter(([,q])=>q>0).map(([id,qty])=>{const baseId=getBaseRecipeId(id);const r=RECIPES.find(r=>r.id===baseId);if(!r)return null;const pq=getPotQuality(id);const qT=QUALITY[pq]||QUALITY.std;
-            const sp=Math.floor((r.xp+getSkMod('aesthetics')*2+getSkMod('haggling')+Math.floor(upEff('sellBonus')*r.xp))*qT.sellMult);
+            const sp=Math.floor((r.xp+getFeatureVal('potionSaleBonus')+Math.floor(upEff('sellBonus')*r.xp))*qT.sellMult);
             const hasBuff=r.buff&&ELIXIR_BUFFS[r.buff];
             const buffActive=hasBuff&&activeBuffs[r.buff]?.daysLeft>0;
             return(<div key={id} style={{display:'flex',alignItems:'center',gap:6,padding:'3px 0',fontSize:16}}>
@@ -9215,8 +9283,8 @@ function CindervaleAlchemistInner(){
               {qty>1&&<button style={S.btn()} onClick={()=>sellPotion(id,qty,sp,r)}>Sell All ({sp*qty}g)</button>}
             </div>);})}
           {Object.entries(inv).filter(([,q])=>q>0).length>0&&<div style={{fontSize:15,color:TH.gold,marginTop:6,marginBottom:4}}>Ingredients</div>}
-          {Object.entries(inv).filter(([,q])=>q>0).map(([id,qty])=>{const ig=INGR[id];if(!ig)return null;const sp=Math.max(1,Math.floor(((ig.val||5)*0.4)+getSkMod('haggling')+getSkMod('appraisal'))*GOLD_MULT);
-            const isHid=HIDDEN_INGR&&HIDDEN_INGR[id];const spThresh=(isHid?12:8)+getFeatureVal('spoilThreshold')+upEff('spoilThreshold')+getSkMod('stockpiling')*3;
+          {Object.entries(inv).filter(([,q])=>q>0).map(([id,qty])=>{const ig=INGR[id];if(!ig)return null;const sp=Math.max(1,Math.floor(((ig.val||5)*0.4)+getFeatureVal('ingrSellBonus'))*GOLD_MULT);
+            const isHid=HIDDEN_INGR&&HIDDEN_INGR[id];const spThresh=(isHid?12:8)+getFeatureVal('spoilThreshold')+upEff('spoilThreshold')+0;
             const spColor=qty>spThresh+8?'#c04040':qty>spThresh+4?'#d08030':qty>spThresh?'#c0a040':'';
             const srcs=getIngrSource(id);const srcTip=srcs.length?srcs.map(s=>s.text).join('\n'):'Source unknown';
             const sWarn=getIngrSeasonWarn(id);
@@ -9242,7 +9310,7 @@ function CindervaleAlchemistInner(){
           <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
             {(()=>{const undiscP=RECIPES.filter(r=>!known.includes(r.id)&&level>=r.unlock&&canCraftAtLocation(r.ingr)&&(!r.faction||getRL(r.faction)>=(r.fReq||0)));
               const undiscE=ENCHANTMENTS.filter(e=>!knownEnch.includes(e.id)&&(!e.faction||getRL(e.faction)>=(e.fReq||0))&&canCraftAtLocation(e.ingr));
-              const resCost=Math.max(1,(getSkMod('lore')>=4?1:2)-getFeatureVal('researchCostReduction'));
+              const resCost=Math.max(1,2-getFeatureVal('researchTimeReduction')-getFeatureVal('researchCostReduction'));
               const freeRes=getFeatureVal('freeResearchPerDay')+upEff('freeResearchPerDay');
               const freeUsed=dayFlags.filter(f=>f==='free_research_used').length;
               const hasFree=freeRes>freeUsed;
@@ -9445,7 +9513,7 @@ function CindervaleAlchemistInner(){
           {Object.entries(shelves).filter(([,q])=>q>0).length>0?
             <div style={{marginBottom:6}}>{Object.entries(shelves).filter(([,q])=>q>0).map(([id,qty])=>{const baseId=getBaseRecipeId(id);const r=RECIPES.find(x=>x.id===baseId);if(!r)return null;const _inf=getInfusion(id);const _infObj=_inf?INFUSIONS[_inf]:null;
               const pq=getPotQuality(id);const sqT=QUALITY[pq]||QUALITY.std;
-              const sp=Math.floor((r.xp+getSkMod('aesthetics')*2+getSkMod('haggling')+Math.floor(upEff('sellBonus')*r.xp))*sqT.sellMult);
+              const sp=Math.floor((r.xp+getFeatureVal('potionSaleBonus')+Math.floor(upEff('sellBonus')*r.xp))*sqT.sellMult);
               return(<div key={id} style={{display:'flex',alignItems:'center',gap:6,padding:'3px 6px',background:TH.panelLight,borderRadius:3,marginBottom:2,fontSize:15}}>
                 <span style={{flex:1}}>{r.icon} {r.name}{sqT.icon?' '+sqT.icon:''} ×{qty}</span><span style={{color:TH.gold,fontSize:14}}>{sp}g ea</span>
                 <button style={{...S.btn('def'),fontSize:13,padding:'1px 5px'}} onClick={()=>unstockShelf(id,1)}>−1</button>
@@ -9524,7 +9592,7 @@ function CindervaleAlchemistInner(){
               const cost={};ench.ingr.forEach(id=>{const lid=li(id);cost[lid]=(cost[lid]||0)+1;});
               const can=Object.entries(cost).every(([id,q])=>(inv[id]||0)>=q);
               const adjDC=Math.max(5,ench.dc+upEff('enchDC')+upEff('allDC'));
-              const reward=20+ench.dc*3+cust.tier*12+getSkMod('aesthetics')*3+getSkMod('appraisal')*2;
+              const reward=20+ench.dc*3+cust.tier*12+getFeatureVal('enchantGoldFlat')+getFeatureVal('potionSaleBonus');
               const showHints=getFeatureVal('showCustHints');
               const hintMod=getSkMod('inscription')+getSkMod('arcane_sense')+getSkMod('focus')+upEff('craftSkillBonus')+getFeatureVal('enchantBonus')+getFeatureVal('enchantSuccessFlat');
               const hintPct=Math.min(95,Math.max(5,Math.floor((21-(adjDC-hintMod))/20*100)));
@@ -9853,7 +9921,7 @@ function CindervaleAlchemistInner(){
           {showTaskGuide&&<div style={{fontSize:14,lineHeight:1.5,color:TH.textDim}}>
             <div style={{marginBottom:3}}><b style={{color:TH.text}}>⛏️ Forage</b> — Staff mount a full-day expedition to gather ingredients. They spend ~6h with travel deducted per region (e.g. Ashfields 1h travel = 5h gathering, Volcanic Vents 3h travel = 3h gathering). Yield per hour scales with <b style={{color:STATS.tec.color}}>Technique</b> and experience. Frees you to craft, enchant, and tend the shop.</div>
             <div style={{marginBottom:3}}><b style={{color:TH.text}}>⚗️ Brew</b> — Attempts to brew a known recipe overnight using your ingredients. ~50% base success rate, scaling with <b style={{color:STATS.tec.color}}>Technique</b>. Failed brews have a 50% chance to lose ingredients.</div>
-            <div style={{marginBottom:3}}><b style={{color:TH.text}}>🏪 Shop</b> — Tends the storefront, earning passive gold each day. Income scales with your level, staff experience, and their <b style={{color:STATS.com.color}}>Commerce</b> stat. Reliable daily income with no resource cost.</div>
+            <div style={{marginBottom:3}}><b style={{color:TH.text}}>🏪 Shop</b> — Tends the storefront, earning passive gold each day. Income scales with your level, staff experience, and their <b style={{color:STATS.inu.color}}>Intuition</b> stat. Reliable daily income with no resource cost.</div>
             <div><b style={{color:TH.text}}>📚 Research</b> — Studies texts overnight with a chance to discover new recipes or enchantment inscriptions. Discovery chance scales with <b style={{color:STATS.acu.color}}>Acumen</b>. Great for unlocking formulas while you sleep.</div>
             <div><b style={{color:TH.text}}>🔨 Construct</b> — Prepares a workshop upgrade overnight. Progress scales with <b style={{color:STATS.dis.color}}>Discipline</b>. When prep reaches 100%, the upgrade's gold cost drops 40% and one material requirement is waived.</div>
           </div>}
@@ -10310,7 +10378,7 @@ function CindervaleAlchemistInner(){
           const factionMitigators={reavers:['ashwardens'],blight:['cinderfolk'],veilbreakers:['veilwalkers'],sand_raiders:['dustwalkers'],the_scorch:['flamekeepers'],cult_of_buried:['sand_merchants']};
           const helpingFactions=(factionMitigators[tid]||[]).filter(fid=>getRepLvl(fRep[fid]||0)>=3);
           // Class mitigation
-          const classMit={};classMit[locThreatIds[1]]=eCL('warden')>=4;classMit[locThreatIds[2]]=eCL('merchant')>=4;
+          const classMit={};classMit[locThreatIds[1]]=eCL('warden')>=4;classMit[locThreatIds[2]]=false;
           // Defense quests for this threat
           const myDQ=defenseQuests.filter(dq=>dq.threatId===tid);
           // Daily growth info
@@ -10377,7 +10445,7 @@ function CindervaleAlchemistInner(){
                   :<div style={{color:TH.textDim}}>👥 No staff assigned to patrol this threat. <span style={{color:TH.gold,cursor:'pointer',textDecoration:'underline'}} onClick={()=>setScreen('staff')}>Go to Staff Hall →</span></div>}
                 {suppressingOPs.length>0&&<div>🏗️ <b>Outposts:</b> {suppressingOPs.length} outpost{suppressingOPs.length>1?'s':''} suppressing <span style={{color:TH.green}}>(-{suppressingOPs.length*outpostSuppressAmt}/day)</span></div>}
                 {helpingFactions.length>0&&<div>🏛️ <b>Faction Aid:</b> {helpingFactions.map(fid=>FACTIONS[fid]?.icon+' '+FACTIONS[fid]?.name+' (Trusted)').join(', ')} <span style={{color:TH.green}}>(-1/day each)</span></div>}
-                {classMit[tid]&&<div>📋 <b>Class Ability:</b> {tidIdx===1?'Warden Lv4':'Merchant Lv4'} <span style={{color:TH.green}}>(-1/day)</span></div>}
+                {classMit[tid]&&<div>📋 <b>Class Ability:</b> Warden Lv4 <span style={{color:TH.green}}>(-1/day)</span></div>}
                 {patrollers.length===0&&suppressingOPs.length===0&&helpingFactions.length===0&&!classMit[tid]&&<div style={{color:'#c06040',fontStyle:'italic'}}>No active defenses — this threat will grow unchecked!</div>}
               </div>
             </div>
@@ -10987,7 +11055,7 @@ function CindervaleAlchemistInner(){
             <div style={S.sideHd}>🌿 Ingredients</div>
             {Object.entries(inv).filter(([,q])=>q>0).sort((a,b)=>b[1]-a[1]).map(([id,q])=>{
               const isHid=typeof HIDDEN_INGR!=='undefined'&&HIDDEN_INGR&&HIDDEN_INGR[id];
-              const spThresh=(isHid?12:8)+getFeatureVal('spoilThreshold')+upEff('spoilThreshold')+getSkMod('stockpiling')*3;
+              const spThresh=(isHid?12:8)+getFeatureVal('spoilThreshold')+upEff('spoilThreshold')+0;
               const spColor=q>spThresh+8?'#c04040':q>spThresh+4?'#d08030':q>spThresh?'#c0a040':'';
               return <div key={id} style={{display:'flex',justifyContent:'space-between',fontSize:13,padding:'1px 0'}}>
               <span title={INGR[id]?.name||id} style={{color:spColor||TH.text,cursor:'help'}}>{INGR[id]?.icon} {INGR[id]?.name||id}</span>
@@ -11027,8 +11095,8 @@ function CindervaleAlchemistInner(){
           <div style={S.sideSec}>
             <div style={S.sideHd}>💰 Economy</div>
             <div style={{fontSize:13,color:TH.gold,marginBottom:3}}>Gold: {gold}g</div>
-            <div style={{fontSize:13,color:TH.textDim}}>Haggling: +{getSkMod('haggling')}</div>
-            <div style={{fontSize:13,color:TH.textDim}}>Appraisal: +{getSkMod('appraisal')}</div>
+            <div style={{fontSize:13,color:TH.textDim}}>Sell Bonus: +{Math.round(getFeatureVal('sellBonus')*100)}%</div>
+            <div style={{fontSize:13,color:TH.textDim}}>Buy Discount: -{Math.round(getFeatureVal('buyDiscount')*100)}%</div>
           </div>
           <div style={S.sideSec}>
             <div style={S.sideHd}>🌿 Inventory</div>
@@ -11046,7 +11114,7 @@ function CindervaleAlchemistInner(){
             <div style={{fontSize:13,color:TH.textDim,marginBottom:2}}>Extraction: +{getSkMod('extraction')}</div>
             <div style={{fontSize:13,color:TH.textDim,marginBottom:2}}>Danger Sense: +{getSkMod('danger_sense')}</div>
             <div style={{fontSize:13,color:TH.textDim,marginBottom:2}}>Divination: +{getSkMod('divination')}</div>
-            <div style={{fontSize:13,color:TH.textDim}}>Efficiency: +{getSkMod('efficiency')}</div>
+            <div style={{fontSize:13,color:TH.textDim}}>Travel Reduction: -{getFeatureVal('travelReduction')}h</div>
           </div>
           <div style={S.sideSec}>
             <div style={S.sideHd}>🌿 Carrying</div>

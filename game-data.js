@@ -19,8 +19,8 @@ var RACES={
   human:{id:'human',name:'Human',icon:'👤',desc:'Versatile and adaptable. Humans thrive in any discipline.',
     skillBonus:{persuasion:1,networking:1},
     tip:'"Humans can talk their way into — or out of — just about anything. Centuries of living alongside every other race tends to sharpen the social instincts."'},
-  halfling:{id:'halfling',name:'Halfling',icon:'🧑‍🌾',desc:'Small but resourceful, with a supernatural knack for commerce.',
-    skillBonus:{haggling:2},
+  halfling:{id:'halfling',name:'Halfling',icon:'🧑‍🌾',desc:'Small but resourceful, with a supernatural knack for persuasion.',
+    skillBonus:{persuasion:1,divination:1},
     tip:'"Something about those big, earnest eyes makes even the most hardened merchant drop their prices. Halflings have elevated the art of the deal to a cultural institution."'},
   elf:{id:'elf',name:'Elf',icon:'🧝',desc:'Ancient and perceptive, with centuries of accumulated knowledge.',
     skillBonus:{research:2},
@@ -39,14 +39,12 @@ var RACE_IDS=Object.keys(RACES);
 var GENDERS=[{id:'male',name:'Male',icon:'♂'},{id:'female',name:'Female',icon:'♀'}];
 
 // ═══ STATS & SKILLS ═══
-var STATS={cre:{id:'cre',name:'Creativity',icon:'🎨',color:TH.statCre},inu:{id:'inu',name:'Intuition',icon:'🔮',color:TH.statInu},acu:{id:'acu',name:'Acumen',icon:'📚',color:TH.statAcu},tec:{id:'tec',name:'Technique',icon:'🔧',color:TH.statTec},com:{id:'com',name:'Commerce',icon:'💬',color:TH.statCom},dis:{id:'dis',name:'Discipline',icon:'📋',color:TH.statDis}};
+var STATS={cre:{id:'cre',name:'Creativity',icon:'🎨',color:TH.statCre},inu:{id:'inu',name:'Intuition',icon:'🔮',color:TH.statInu},acu:{id:'acu',name:'Acumen',icon:'📚',color:TH.statAcu},tec:{id:'tec',name:'Technique',icon:'🔧',color:TH.statTec},dis:{id:'dis',name:'Discipline',icon:'📋',color:TH.statDis}};
 var STAT_IDS=Object.keys(STATS);
 
 var SKILLS={
   improvisation:{id:'improvisation',name:'Improvisation',stat:'cre',icon:'💡',uses:'Craft check for Creativity-based recipes',
     mech:'Adds to your d20 craft roll for CRE-based recipes (Spore Bomb, Forge Catalyst, etc). Each rank adds your proficiency bonus to the check.'},
-  aesthetics:{id:'aesthetics',name:'Aesthetics',stat:'cre',icon:'✨',uses:'+sell price, +XP per brew, +enchant reward',
-    mech:'+2g per rank to potion sell & shelf price. +2 XP per rank when brewing. +3g per rank on enchanting customer rewards.'},
   innovation:{id:'innovation',name:'Innovation',stat:'cre',icon:'🌟',uses:'Boosts Research study discovery chance',
     mech:'+6% per rank to Research study discovery chance (base 20%, cap 65%). Stack with Research skill for maximum discovery rate.'},
   adaptation:{id:'adaptation',name:'Adaptation',stat:'cre',icon:'🔄',uses:'Bonus on newer recipes + experiments',
@@ -59,12 +57,8 @@ var SKILLS={
     mech:'Full rank modifier added to your Inscription check when enchanting customer items. Stacks with Focus and Inscription skill.'},
   divination:{id:'divination',name:'Divination',stat:'inu',icon:'👁️',uses:'Bonus ingredients + site insight',
     mech:'Rank×10% chance per successful foraging hour to find +1 bonus ingredient from the region\'s full list. At rank 2+, reveals which site has best yields today.'},
-  lore:{id:'lore',name:'Lore',stat:'acu',icon:'📖',uses:'+XP on quests, faster Research',
-    mech:'+rank×4 bonus XP on every quest and board request turn-in. At rank 4+, Research study sessions cost 1 hour instead of 2.'},
   research:{id:'research',name:'Research',stat:'acu',icon:'🔬',uses:'Craft check for Acumen-based recipes, +discovery chance',
     mech:'Adds to d20 craft roll for ACU-based recipes. +4% per rank to Research discovery chance. +20 bonus XP on experiments at rank 2+.'},
-  appraisal:{id:'appraisal',name:'Appraisal',stat:'acu',icon:'⚖️',uses:'+enchant reward, +ingredient sell, repeat customers',
-    mech:'+rank×3g on enchanting customer rewards. +rank×2g on ingredient sell price. Rank×5% chance that selling a potion triggers a repeat customer next morning.'},
   analysis:{id:'analysis',name:'Analysis',stat:'acu',icon:'🧮',uses:'Chance to auto-succeed craft checks',
     mech:'Rank×5% chance per craft check to auto-succeed (treated as natural 20 for double-batch purposes). At rank 3: 15% of crafts auto-succeed.'},
   precision:{id:'precision',name:'Precision',stat:'tec',icon:'🎯',uses:'Craft check for Technique-based recipes',
@@ -75,20 +69,12 @@ var SKILLS={
     mech:'THE foraging skill — this is your d20 roll each expedition hour. Determines whether you find resources. Higher ranks dramatically increase yield.'},
   refinement:{id:'refinement',name:'Refinement',stat:'tec',icon:'💎',uses:'Chance for bonus potions when crafting',
     mech:'Rank×6% chance when crafting any potion to produce a bonus extra at no additional ingredient cost. At rank 3: 18% free potion chance.'},
-  haggling:{id:'haggling',name:'Haggling',stat:'com',icon:'🤝',uses:'-buy prices, +sell prices, +shelf sales',
-    mech:'-rank/2 off shop buy prices. +rank to potion sell & shelf price. +2% per rank to overnight shelf sale chance.'},
-  persuasion:{id:'persuasion',name:'Persuasion',stat:'com',icon:'🗣️',uses:'Boosts faction reputation gains + cross-faction spillover',
-    mech:'All faction reputation gains multiplied by (1 + rank×6%). Rank×2% chance that a quest turn-in also grants +1 rep with a random allied faction.'},
-  networking:{id:'networking',name:'Networking',stat:'com',icon:'🌐',uses:'Attracts more customers',
-    mech:'Increases the number of potion orders and enchantment customers generated each morning. More customers = more gold opportunities.'},
-  procurement:{id:'procurement',name:'Procurement',stat:'com',icon:'📦',uses:'Rare and mid-tier ingredients appear in shop daily',
-    mech:'Each morning, rank×8% chance per rare/mid-tier ingredient to appear in the shop at 1.5× base price. Finds ingredients from tier 2+ regions.'},
+  persuasion:{id:'persuasion',name:'Persuasion',stat:'inu',icon:'🗣️',uses:'Faction negotiation, envoy, and reputation checks',
+    mech:'Your d20 roll for social checks: faction envoy missions, harmony negotiations, apprentice stat training, and trait teaching. Higher ranks directly improve success rates on these checks.'},
+  networking:{id:'networking',name:'Networking',stat:'acu',icon:'🌐',uses:'Diplomat diplomacy checks, faction contact rolls',
+    mech:'Your d20 roll for diplomatic checks: faction harmony envoys, cross-faction negotiations, and networking events. Higher ranks directly improve success rates on these checks.'},
   endurance:{id:'endurance',name:'Endurance',stat:'dis',icon:'💪',uses:'Chance to save Energy on actions',
     mech:'Rank×10% chance that any action costs 0 Energy. At rank 3: 30% Energy save chance. Pure stamina — every action might be free.'},
-  efficiency:{id:'efficiency',name:'Efficiency',stat:'dis',icon:'⏱️',uses:'-travel time, failed extractions yield something',
-    mech:'-rank hours off expedition travel time (min 0, stacks with Warden). Rank×10% chance that a failed extraction still yields 1 common ingredient. Never waste a trip.'},
-  stockpiling:{id:'stockpiling',name:'Stockpiling',stat:'dis',icon:'🏗️',uses:'+shelf capacity, +spoilage threshold',
-    mech:'+rank×2 to max shop shelf capacity. +rank×3 to spoilage threshold. The anti-waste skill — keep more, lose less.'},
   focus:{id:'focus',name:'Focus',stat:'dis',icon:'🧘',uses:'Enchant quality + inscription bonus',
     mech:'+rank to Inscription enchanting check. Rank×5% chance to produce Masterwork quality enchantments. The enchanting quality skill.'},
 };
@@ -191,13 +177,13 @@ var CLASSES={
           {classLv:6,name:'Swiss Army',desc:'Gadgets provide multiple benefits. +15% batch brew success. Workshop upgrades cost -15%.',effects:{batchSuccessBonus:0.15,upgradeCostReduction:0.15}},
           {classLv:10,name:'Masterwork Tools',desc:'Legendary utility tools. All craft DCs -2 permanently. 90% salvage on failure. Gadgets can be upgraded indefinitely beyond mark caps (+1 power per extra mark). Equip 2 gadgets simultaneously.',effects:{craftBonus:3,salvagePercent:0.90,infiniteGadgetMarks:true,dualGadgets:true}},
         ]},
-      constructor:{id:'constructor',name:'Constructor',desc:'Master workshop builder. Upgrades cost less, staff work harder, and legendary blueprints reshape production.',mechDesc:'Blueprint Drafting. Draft and build custom workshop structures from blueprints. Each blueprint requires a drafting phase (research) followed by a construction phase (staff assignment). Completed blueprints provide unique workshop bonuses not available through normal upgrades.',icon:'🏗️',color:'#8090a0',bStat:'dis',bSkills:['stockpiling','endurance'],
+      constructor:{id:'constructor',name:'Constructor',desc:'Master workshop builder. Upgrades cost less, staff work harder, and legendary blueprints reshape production.',mechDesc:'Blueprint Drafting. Draft and build custom workshop structures from blueprints. Each blueprint requires a drafting phase (research) followed by a construction phase (staff assignment). Completed blueprints provide unique workshop bonuses not available through normal upgrades.',icon:'🏗️',color:'#8090a0',bStat:'dis',bSkills:['endurance','precision'],
         features:[
           {classLv:3,name:'Workshop Pro',desc:'Workshop upgrades cost 50% less gold. +2 to DIS checks.',effects:{upgradeCostReduction:0.5,staffEfficiencyBonus:0.15}},
           {classLv:6,name:'Assembly Floor',desc:'Batch brewing capacity +2 (brew up to 7 at once). Staff efficiency +20%.',effects:{batchSizeBonus:2,staffEfficiencyBonus:0.20}},
           {classLv:10,name:'Master Builder',desc:'Unlock 3 legendary blueprints: Alchemical Forge (auto-brews your most profitable recipe each morning), Crystal Greenhouse (produces 1 random rare ingredient daily), Arcane Conduit (+2 Energy per day permanently). All construction completes in half time.',effects:{passiveIncomeMulti:3,overnightCraft:true,legendaryBlueprints:true,bonusEnergy:2,halfConstructTime:true}},
         ]},
-      reclaimer:{id:'reclaimer',name:'Reclaimer',desc:'Waste nothing. Salvage failed brews, break down items for materials, and turn spoilage into profit.',mechDesc:'Salvage System. Failed brews and enchantments return a percentage of ingredients instead of losing everything. The salvage rate increases with level (75% at Lv3, 100% at Lv10). At Lv6 you can deconstruct finished potions back into ingredients. Spoiled ingredients produce Alchemical Residue.',icon:'♻️',color:'#60a080',bStat:'com',bSkills:['procurement','haggling'],
+      reclaimer:{id:'reclaimer',name:'Reclaimer',desc:'Waste nothing. Salvage failed brews, break down items for materials, and turn spoilage into profit.',mechDesc:'Salvage System. Failed brews and enchantments return a percentage of ingredients instead of losing everything. The salvage rate increases with level (75% at Lv3, 100% at Lv10). At Lv6 you can deconstruct finished potions back into ingredients. Spoiled ingredients produce Alchemical Residue.',icon:'♻️',color:'#60a080',bStat:'dis',bSkills:['endurance','precision'],
         features:[
           {classLv:3,name:'Zero Waste',desc:'75% salvage on failure. Break down potions. 50% of spoiled ingredients become Alchemical Residue.',effects:{salvagePercent:0.75,ingredientEfficiency:0.25,spoilSalvage:0.50}},
           {classLv:6,name:'Deconstruct',desc:'Break any item into component ingredients. Failed enchants return all materials.',effects:{failEnchantReturn:1.0,saveIngredientChance:0.30}},
@@ -205,7 +191,7 @@ var CLASSES={
         ]},
     }},
   scholar:{id:'scholar',name:'Scholar',icon:'📚',color:TH.cyan,primaryStat:'acu',
-    profSkills:['research','lore'],
+    profSkills:['research','analysis'],
     desc:'Discover recipes faster, earn more XP, and turn experiments from gambles into science.',
     shortDesc:'Research, discovery, XP acceleration',
     features:[
@@ -233,49 +219,14 @@ var CLASSES={
           {classLv:6,name:'Ecological Insight',desc:'Research discovers region-specific recipes. +20% XP from foraging and experiments.',effects:{xpMultiplier:0.20,discoveryChanceBonus:0.15}},
           {classLv:10,name:'Nature\'s Library',desc:'Every expedition yields 1 bonus hidden-area ingredient (even unmapped areas). Seasonal ingredients available in all seasons. Once per day, commune to reveal the highest-yield region. Field Journal entries grant permanent +2 craft bonus for documented ingredients.',effects:{forageDiscovery:0.30,forageXPBonus:0.25,hiddenForageBonus:true,allSeasonIngr:true,journalCraftBonus:2}},
         ]},
-      archivist:{id:'archivist',name:'Archivist',desc:'Pursue lore fragments and quest chains. Board quests refresh faster, and deep knowledge grants permanent stats.',mechDesc:'Lore Fragments. Discover ancient lore fragments during quests and research. Fragments form chains that, when completed, grant permanent passive bonuses. The Lore Archive tracks your collection and shows incomplete chains. Board quests refresh more often and reward bonus reputation.',icon:'📜',color:'#c0a060',bStat:'dis',bSkills:['lore','focus'],
+      archivist:{id:'archivist',name:'Archivist',desc:'Pursue lore fragments and quest chains. Board quests refresh faster, and deep knowledge grants permanent stats.',mechDesc:'Lore Fragments. Discover ancient lore fragments during quests and research. Fragments form chains that, when completed, grant permanent passive bonuses. The Lore Archive tracks your collection and shows incomplete chains. Board quests refresh more often and reward bonus reputation.',icon:'📜',color:'#c0a060',bStat:'dis',bSkills:['research','focus'],
         features:[
           {classLv:3,name:'Deep Records',desc:'Quest log shows hidden objectives. +30% quest XP.',effects:{questRepBonus:5,questXPBonus:0.30}},
           {classLv:6,name:'Master Index',desc:'Board quests refresh twice daily. Quest chains unlock earlier.',effects:{doubleQuestRefresh:true,questGoldBonus:0.25}},
           {classLv:10,name:'Living Archive',desc:'Completed lore chains grant permanent +1 to a stat of your choice (up to 3 total). Quest turn-ins have 25% chance to also reward a lore fragment. Board quests refresh 3× daily with at least one rare-ingredient quest. Faction alignment bonuses are 50% stronger.',effects:{questXPBonus:0.50,doubleRep:true,loreStatBonus:true,loreDropChance:0.25,tripleBoardRefresh:true,alignmentBoost:0.50}},
         ]},
     }},
-  merchant:{id:'merchant',name:'Merchant',icon:'💰',color:TH.gold,primaryStat:'com',
-    profSkills:['haggling','networking'],
-    desc:'Maximize income from every angle — prices, customers, staff, and trade connections.',
-    shortDesc:'Gold generation, staff, shop mastery',
-    features:[
-      {classLv:1,name:'Shopkeeping',desc:'Enhanced shop front. Shelf sale chance +10%. Gain proficiency in Haggling and Networking.',effects:{shelfSaleBonus:0.10}},
-      {classLv:2,name:'Bargain Hunter',desc:'Shop buy prices -15%. Sell prices +10%.',effects:{buyDiscount:0.15,sellBonus:0.10}},
-      {classLv:3,name:'Specialization',desc:'Choose a specialization path. +5% sell bonus.',effects:{sellBonus:0.05}},
-      {classLv:4,name:'Staff Manager',desc:'+1 max apprentice slot. Staff gain +10% efficiency.',effects:{maxApprenticeBonus:1,staffEfficiencyBonus:0.10}},
-      {classLv:5,name:'Trade Routes',desc:'Passive income doubled. Shop restocks 2 additional rare items daily. +25% shelf capacity.',effects:{passiveIncomeMulti:2,shopRestockBonus:2,shelfCapacityBonus:0.25}},
-      {classLv:6,name:'Reputation Precedes You',desc:'All faction reputation gains +25%. Faction vendors offer 10% discount.',effects:{repGainBonus:0.25,buyDiscount:0.10}},
-      {classLv:7,name:'Golden Tongue',desc:'Enchanting/potion customers pay 20% more. +1 customer per morning.',effects:{customerPayBonus:0.20,customerBonus:1}},
-      {classLv:8,name:'Trade Empire',desc:'Staff efficiency +30% (stacks). +1 max apprentice. Payroll -25%.',effects:{staffEfficiencyBonus:0.30,maxApprenticeBonus:1,payrollDiscount:0.25}},
-      {classLv:9,name:'Connections',desc:'Commission 1 specific rare ingredient per day at 3× price (guaranteed).',effects:{commissionAccess:1}},
-      {classLv:10,name:'Trade Empire',desc:'Staff perform 2 tasks simultaneously. All customers pay double. +2 premium customers each morning at 3× price. Once per day, conjure any ingredient into your shop at standard price — your network reaches everywhere.',effects:{goldIncomeBonus:1.0,dualStaffTasks:true,premiumCustomers:2,conjureIngredient:true}},
-    ],
-    specs:{
-      guildmaster:{id:'guildmaster',name:'Guildmaster',desc:'Build and manage a large staff. Train apprentices faster, hire from elite pools, and halve payroll costs.',mechDesc:'Staff Training. Assign apprentices to focused training sessions that boost their specific stats over multiple days. The training interface lets you pick which stat to develop. Staff gain XP 50% faster, and at higher levels you hire from an expanded pool with better base stats.',icon:'👑',color:'#d0a030',bStat:'com',bSkills:['networking','persuasion'],
-        features:[
-          {classLv:3,name:'Training Program',desc:'Staff gain XP 50% faster. Can assign staff to skill training.',effects:{staffXPBonus:0.50,staffEfficiencyBonus:0.15}},
-          {classLv:6,name:'Guild Network',desc:'Hire from expanded pool. Staff have higher base stats.',effects:{expandedHirePool:true,betterStaffStats:true}},
-          {classLv:10,name:'Grand Guildmaster',desc:'Hire up to 8 staff. Staff salary costs halved. Max-level staff gain a Mastery trait doubling their task efficiency. Once per week, a Legendary Apprentice applies (starts Lv3, 2 positive traits, no negatives).',effects:{staffForageBonus:0.30,halfPayroll:true,maxStaff:8,staffMastery:true,legendaryHire:true}},
-        ]},
-      diplomat:{id:'diplomat',name:'Diplomat',desc:'Double faction reputation gains and forge cross-faction alliances. Unlock exclusive vendor stock.',mechDesc:'Faction Harmony. Build diplomatic bridges between faction pairs, creating harmony bonuses that benefit both sides. The harmony system tracks relationships you have brokered. Cross-faction quests become available, and faction rep gains are doubled across the board.',icon:'🤝',color:'#4090c0',bStat:'inu',bSkills:['persuasion','lore'],
-        features:[
-          {classLv:3,name:'Embassy',desc:'Double faction rep gains. Faction NPCs offer unique dialogue and quests.',effects:{doubleRep:true,questRepBonus:10}},
-          {classLv:6,name:'Trade Agreements',desc:'Exclusive faction vendors with rare stock. Cross-faction quests.',effects:{shopRestockBonus:3,questGoldBonus:0.30}},
-          {classLv:10,name:'Grand Alliance',desc:'Allied with all factions simultaneously. Faction vendors stock legendary items.',effects:{repGainBonus:0.50,buyDiscount:0.25,shopRestockBonus:5}},
-        ]},
-      fence:{id:'fence',name:'Fence',desc:'Sell through black market channels at extreme markups. High reward, with risk of confiscation.',mechDesc:'Black Market. Sell potions through underground channels at 2x price (3x at Lv10), but with a risk of confiscation where you lose both goods and gold. Risk decreases with level until you become Untouchable at Lv10 with zero confiscation chance. Smuggling side-quests also become available.',icon:'🗝️',color:'#808060',bStat:'cre',bSkills:['haggling','procurement'],
-        features:[
-          {classLv:3,name:'Black Market',desc:'Sell potions/enchantments at 2× price with risk of confiscation.',effects:{blackMarket:true,blackMarketMulti:2}},
-          {classLv:6,name:'Underground Network',desc:'Special black market customers. Reduced confiscation risk.',effects:{customerBonus:1,reducedRisk:true}},
-          {classLv:10,name:'Untouchable',desc:'Zero confiscation risk. Black market prices 3×. Smuggling side-quests.',effects:{noRisk:true,blackMarketMulti:3,sellBonus:0.25}},
-        ]},
-    }},
+  // Merchant class removed in V2 balance patch — mechanics rehomed to feats, prestige classes, and other base classes
   warden:{id:'warden',name:'Warden',icon:'🛡️',color:TH.teal,primaryStat:'dis',
     profSkills:['extraction','endurance'],
     desc:'Masters of wilderness and expedition. Make foraging dramatically more productive.',
@@ -299,7 +250,7 @@ var CLASSES={
           {classLv:6,name:'Pathfinder',desc:'Discover hidden sub-regions with unique ingredients. Creature bonuses grow.',effects:{yieldMultiplier:0.50,critExtractionMulti:2}},
           {classLv:10,name:'Apex Predator',desc:'Companions perform all actions twice per day. Your highest-loyalty companion (★5) gains a Legendary ability unique to its role: Foragers find rare ingredients, Merchants attract VIPs, Greeters earn referral gold, Guardians heal staff injuries, Muses grant bonus Energy, Scouts negate all expedition danger. Send any companion on a solo expedition from their card (1/day, 0 Energy).',effects:{companionDualAction:true,guaranteedRare:true,legendaryCompanion:true,soloExpedition:true}},
         ]},
-      quartermaster:{id:'quartermaster',name:'Quartermaster',desc:'Master of logistics. Double storage, reduce spoilage, and squeeze maximum value from every ingredient.',mechDesc:'Supply Chains. Establish trade partnerships with ingredient suppliers who deliver goods automatically on a schedule. Manage caravan runs to different regions for bulk delivery. Partners level up through completed runs, improving quantity and adding rare ingredients.',icon:'📋',color:'#6080a0',bStat:'dis',bSkills:['stockpiling','efficiency'],
+      quartermaster:{id:'quartermaster',name:'Quartermaster',desc:'Master of logistics. Double storage, reduce spoilage, and squeeze maximum value from every ingredient.',mechDesc:'Supply Chains. Establish trade partnerships with ingredient suppliers who deliver goods automatically on a schedule. Manage caravan runs to different regions for bulk delivery. Partners level up through completed runs, improving quantity and adding rare ingredients.',icon:'📋',color:'#6080a0',bStat:'dis',bSkills:['endurance','focus'],
         features:[
           {classLv:3,name:'Supply Chain',desc:'Workshop storage doubled. Ingredient efficiency +25%. Spoilage threshold +4.',effects:{doubleStorage:true,ingredientEfficiency:0.25,spoilThreshold:4}},
           {classLv:6,name:'Logistics Master',desc:'Ingredient management mastery. Staff foraging +25%. +25% personal foraging yield. +4 spoilage threshold. Caravan deliveries are always fresh.',effects:{staffForageBonus:0.25,yieldMultiplier:0.25,spoilThreshold:4}},
@@ -317,40 +268,74 @@ var CLASSES={
 // ═══ FEATS ═══
 var FEAT_CATEGORIES={
   crafting:{name:'Crafting',icon:'⚗️',color:TH.green},
-  foraging:{name:'Foraging',icon:'⛏️',color:TH.teal},
+  exploration:{name:'Exploration',icon:'🧭',color:TH.teal},
   enchanting:{name:'Enchanting',icon:'✨',color:TH.purple},
-  commerce:{name:'Commerce',icon:'💰',color:TH.gold},
+  economic:{name:'Economic',icon:'💰',color:TH.gold},
+  social:{name:'Social / Faction',icon:'🤝',color:'#4090c0'},
+  legacy:{name:'Legacy',icon:'🕯️',color:'#c050e0'},
+  combat:{name:'Combat / Survival',icon:'⚔️',color:TH.red},
   general:{name:'General',icon:'🌟',color:TH.textBright},
 };
 var FEATS={
   // ── Crafting ──
-  careful_hands:{id:'careful_hands',name:'Careful Hands',icon:'🤲',cat:'crafting',desc:'Once per day, reroll a failed craft check.',effects:{craftReroll:1}},
+  careful_hands:{id:'careful_hands',name:'Careful Hands',icon:'🤲',cat:'crafting',desc:'25% ingredient save on failed brews. Once per day, reroll a failed craft check.',effects:{craftReroll:1,failSalvage:0.25}},
   bulk_processor:{id:'bulk_processor',name:'Bulk Processor',icon:'📦',cat:'crafting',desc:'Max batch brew size +2.',effects:{batchSizeBonus:2}},
   recipe_intuition:{id:'recipe_intuition',name:'Recipe Intuition',icon:'💡',cat:'crafting',desc:'+10% experiment discovery chance. Experiments cost 0 hours on failure.',effects:{experimentBonus:0.10,freeFailExperiment:true}},
   quality_assurance:{id:'quality_assurance',name:'Quality Assurance',icon:'✅',cat:'crafting',desc:'Brewed potions worth +20% when sold or shelved.',effects:{potionValueBonus:0.20}},
-  rapid_infusion:{id:'rapid_infusion',name:'Rapid Infusion',icon:'⚡',cat:'crafting',desc:'The first brew each day costs 0 hours.',effects:{firstBrewFree:true}},
+  rapid_infusion:{id:'rapid_infusion',name:'Rapid Infusion',icon:'⚡',cat:'crafting',desc:'Infusions don\'t cost extra time. First brew each day costs 0 hours.',effects:{firstBrewFree:true},req:{alchemist:3}},
   lucky_brew:{id:'lucky_brew',name:'Lucky Brew',icon:'🍀',cat:'crafting',desc:'10% chance any craft produces a random bonus potion alongside.',effects:{luckyBrewChance:0.10}},
   methodical_brewer:{id:'methodical_brewer',name:'Methodical Brewer',icon:'📏',cat:'crafting',desc:'Recipes brewed 10+ times get -2 DC permanently. Mastery discount cap +2.',effects:{masteryDiscountBonus:2}},
-  // ── Foraging ──
-  trailblazer_boots:{id:'trailblazer_boots',name:"Trailblazer's Boots",icon:'🥾',cat:'foraging',desc:'-1 travel time to all regions. +1 bonus ingredient per foraging hour.',effects:{travelReduction:1,bonusPerSuccess:1}},
-  lucky_find:{id:'lucky_find',name:'Lucky Find',icon:'🔎',cat:'foraging',desc:'10% chance per hour to find a random rare ingredient from any unlocked region.',effects:{luckyFindChance:0.10}},
-  companion_handler:{id:'companion_handler',name:'Companion Handler',icon:'🐾',cat:'foraging',desc:'Companion actions +50% effectiveness. Companions gain loyalty 2× faster. +15% companion encounter chance.',effects:{companionEffBonus:0.50,companionLoyaltyMult:2,companionEncounterBonus:0.15}},
-  seasoned_explorer:{id:'seasoned_explorer',name:'Seasoned Explorer',icon:'🧭',cat:'foraging',desc:'+2 to all extraction checks.',effects:{extractionBonus:2}},
-  pack_mule:{id:'pack_mule',name:'Pack Mule',icon:'🎒',cat:'foraging',desc:'+25% ingredient yield from foraging. +4 spoilage threshold.',effects:{yieldMultiplier:0.25,spoilThreshold:4}},
-  danger_magnet:{id:'danger_magnet',name:'Danger Magnet',icon:'⚡',cat:'foraging',desc:'Events 2× more likely, positive events 3× more likely. High risk, high reward.',effects:{bonusPerSuccess:1,positiveEventMulti:3}},
+  efficient_brewing:{id:'efficient_brewing',name:'Efficient Brewing',icon:'♻️',cat:'crafting',desc:'15% chance to save all ingredients on a successful brew.',effects:{ingrSaveOnSuccess:0.15}},
+  double_batch:{id:'double_batch',name:'Double Batch',icon:'🔁',cat:'crafting',desc:'+5% double batch chance.',effects:{doubleBatchChance:0.05}},
+  overachiever:{id:'overachiever',name:'Overachiever',icon:'💪',cat:'crafting',desc:'+1 to all craft checks.',effects:{craftBonus:1}},
+  // ── Exploration ──
+  trailblazer_boots:{id:'trailblazer_boots',name:"Trailblazer's Boots",icon:'🥾',cat:'exploration',desc:'-1 travel time to all regions.',effects:{travelReduction:1}},
+  lucky_find:{id:'lucky_find',name:'Lucky Find',icon:'🔎',cat:'exploration',desc:'+5% chance for bonus rare ingredient per forage hour.',effects:{luckyFindChance:0.05}},
+  companion_handler:{id:'companion_handler',name:'Companion Handler',icon:'🐾',cat:'exploration',desc:'Companion actions +50% effectiveness. Companions gain loyalty 2× faster. +15% companion encounter chance.',effects:{companionEffBonus:0.50,companionLoyaltyMult:2,companionEncounterBonus:0.15}},
+  seasoned_explorer:{id:'seasoned_explorer',name:'Seasoned Explorer',icon:'🧭',cat:'exploration',desc:'+2 to all extraction checks.',effects:{extractionBonus:2}},
+  pack_mule:{id:'pack_mule',name:'Pack Mule',icon:'🎒',cat:'exploration',desc:'Carry +2 extra items from expeditions. +25% ingredient yield.',effects:{yieldMultiplier:0.25,bonusCarry:2}},
+  danger_magnet:{id:'danger_magnet',name:'Danger Magnet',icon:'⚡',cat:'exploration',desc:'Events 2× more likely, positive events 3× more likely. High risk, high reward.',effects:{bonusPerSuccess:1,positiveEventMulti:3}},
+  night_owl:{id:'night_owl',name:'Night Owl',icon:'🦉',cat:'exploration',desc:'Night expeditions -1 DC penalty.',effects:{nightDCReduction:1}},
   // ── Enchanting ──
   runelord:{id:'runelord',name:'Runelord',icon:'🔮',cat:'enchanting',desc:'+2 to all inscription checks.',effects:{enchantBonus:2}},
   mana_efficient:{id:'mana_efficient',name:'Mana Efficient',icon:'💎',cat:'enchanting',desc:'25% chance to save all enchanting materials on success.',effects:{enchantMatSave:0.25}},
   arcane_recycler:{id:'arcane_recycler',name:'Arcane Recycler',icon:'♻️',cat:'enchanting',desc:'Failed enchants return 75% of ingredients. Successful enchants have 15% chance to produce a bonus scroll.',effects:{failEnchantReturn:0.75,enchantBonusScroll:0.15}},
   runic_savant:{id:'runic_savant',name:'Runic Savant',icon:'📖',cat:'enchanting',desc:'+5 flat inscription bonus. +1 inscription. On selection, learn 3 undiscovered enchantment patterns.',effects:{enchantSuccessFlat:5,enchantBonus:1,learnEnchOnPick:3}},
   masterwork_focus:{id:'masterwork_focus',name:'Masterwork Focus',icon:'💫',cat:'enchanting',desc:'Natural 18-20 on inscription = critical (3× reward).',effects:{enchantCritRange:18}},
-  // ── Commerce ──
-  silver_tongue:{id:'silver_tongue',name:'Silver Tongue',icon:'🗣️',cat:'commerce',desc:'+15% shelf sale chance. +10% all sell prices.',effects:{shelfSaleBonus:0.15,sellBonus:0.10}},
-  talent_scout:{id:'talent_scout',name:'Talent Scout',icon:'🔍',cat:'commerce',desc:'+2 hire candidates. All candidates have +2 to highest stat.',effects:{hireBonusCandidates:2,hireBonusStat:2}},
-  patron:{id:'patron',name:'Patron of the Arts',icon:'🎭',cat:'commerce',desc:'Customer orders pay 25% more. +1 customer per morning.',effects:{customerPayBonus:0.25,customerBonus:1}},
-  supply_lines:{id:'supply_lines',name:'Supply Lines',icon:'🚚',cat:'commerce',desc:'Procurement finds 2× rare items. Shop buy prices -10%. +2 max shelf capacity.',effects:{shopRestockBonus:1,buyDiscount:0.10,shelfCapBonus:2}},
-  penny_pincher:{id:'penny_pincher',name:'Penny Pincher',icon:'🪙',cat:'commerce',desc:'All gold costs (purchases, upgrades, hiring, payroll) -15%.',effects:{upgradeCostReduction:0.15,buyDiscount:0.15}},
-  taskmaster:{id:'taskmaster',name:'Taskmaster',icon:'📋',cat:'commerce',desc:'Staff brew/forage efficiency +25%. Staff injuries heal 1 day faster. Weekly free staff reassignment.',effects:{staffEfficiencyBonus:0.25,staffInjuryReduction:1,staffReassign:true}},
+  glyph_mastery:{id:'glyph_mastery',name:'Glyph Mastery',icon:'✨',cat:'enchanting',desc:'Enchant DC 10 and below auto-succeed.',effects:{autoEnchDC:10},req:{enchanter:3}},
+  // ── Economic (from old passive skills) ──
+  shrewd_bargainer:{id:'shrewd_bargainer',name:'Shrewd Bargainer',icon:'🤝',cat:'economic',desc:'+5% sell prices.',effects:{sellBonus:0.05}},
+  bulk_buyer:{id:'bulk_buyer',name:'Bulk Buyer',icon:'🛒',cat:'economic',desc:'-10% buy prices.',effects:{buyDiscount:0.10}},
+  artisans_touch:{id:'artisans_touch',name:"Artisan's Touch",icon:'✨',cat:'economic',desc:'+2 XP per brew.',effects:{brewXPBonus:2}},
+  master_presenter:{id:'master_presenter',name:'Master Presenter',icon:'🏆',cat:'economic',desc:'+2g per potion sale.',effects:{potionSaleBonus:2},req:{feat:'artisans_touch'}},
+  organized_shelves:{id:'organized_shelves',name:'Organized Shelves',icon:'📦',cat:'economic',desc:'+4 shelf capacity.',effects:{shelfCapBonus:4}},
+  preservation:{id:'preservation',name:'Preservation',icon:'🧊',cat:'economic',desc:'+5 spoil threshold.',effects:{spoilThreshold:5}},
+  deep_preservation:{id:'deep_preservation',name:'Deep Preservation',icon:'❄️',cat:'economic',desc:'+8 spoil threshold.',effects:{spoilThreshold:8},req:{feat:'preservation'}},
+  scholars_memory:{id:'scholars_memory',name:"Scholar's Memory",icon:'📚',cat:'economic',desc:'+8 XP per quest turn-in.',effects:{questXPFlat:8}},
+  quick_study:{id:'quick_study',name:'Quick Study',icon:'⏱️',cat:'economic',desc:'Research costs 1h less.',effects:{researchTimeReduction:1},req:{feat:'scholars_memory'}},
+  keen_eye:{id:'keen_eye',name:'Keen Eye',icon:'👁️',cat:'economic',desc:'+3g per enchant commission.',effects:{enchantGoldFlat:3}},
+  gem_cutter:{id:'gem_cutter',name:'Gem Cutter',icon:'💠',cat:'economic',desc:'+1g per ingredient sold.',effects:{ingrSellBonus:1}},
+  supplier_contacts:{id:'supplier_contacts',name:'Supplier Contacts',icon:'📬',cat:'economic',desc:'2 rare ingredients appear in shop daily.',effects:{shopRestockBonus:2}},
+  regular_clientele:{id:'regular_clientele',name:'Regular Clientele',icon:'🏪',cat:'economic',desc:'+1 base customer per day.',effects:{customerBonus:1}},
+  showmanship:{id:'showmanship',name:'Showmanship',icon:'🎪',cat:'economic',desc:'Shelf potions +5% sell chance.',effects:{shelfSaleBonus:0.05},req:{feat:'regular_clientele'}},
+  silver_tongue:{id:'silver_tongue',name:'Silver Tongue',icon:'🗣️',cat:'economic',desc:'+15% shelf sale chance. +10% all sell prices.',effects:{shelfSaleBonus:0.15,sellBonus:0.10}},
+  talent_scout:{id:'talent_scout',name:'Talent Scout',icon:'🔍',cat:'economic',desc:'+2 hire candidates. All candidates have +2 to highest stat.',effects:{hireBonusCandidates:2,hireBonusStat:2}},
+  patron:{id:'patron',name:'Patron of the Arts',icon:'🎭',cat:'economic',desc:'Customer orders pay 25% more. +1 customer per morning.',effects:{customerPayBonus:0.25,customerBonus:1}},
+  supply_lines:{id:'supply_lines',name:'Supply Lines',icon:'🚚',cat:'economic',desc:'Shop buy prices -10%. +2 max shelf capacity.',effects:{buyDiscount:0.10,shelfCapBonus:2}},
+  penny_pincher:{id:'penny_pincher',name:'Penny Pincher',icon:'🪙',cat:'economic',desc:'All gold costs (purchases, upgrades, hiring, payroll) -15%.',effects:{upgradeCostReduction:0.15,buyDiscount:0.15}},
+  taskmaster:{id:'taskmaster',name:'Taskmaster',icon:'📋',cat:'economic',desc:'Staff brew/forage efficiency +25%. Staff injuries heal 1 day faster.',effects:{staffEfficiencyBonus:0.25,staffInjuryReduction:1}},
+  // ── Social/Faction ──
+  faction_diplomat:{id:'faction_diplomat',name:'Faction Diplomat',icon:'🤝',cat:'social',desc:'+15% reputation gains from all sources.',effects:{repGainBonus:0.15}},
+  cross_faction_charm:{id:'cross_faction_charm',name:'Cross-Faction Charm',icon:'🌐',cat:'social',desc:'10% rep spillover to non-aligned factions.',effects:{repSpillover:0.10},req:{feat:'faction_diplomat'}},
+  master_trainer:{id:'master_trainer',name:'Master Trainer',icon:'👨‍🏫',cat:'social',desc:'Apprentices gain 2× XP.',effects:{staffXPBonus:1.0}},
+  inspiring_presence:{id:'inspiring_presence',name:'Inspiring Presence',icon:'🌟',cat:'social',desc:'Staff morale +10%.',effects:{healMorale:10}},
+  // ── Legacy ──
+  ancestral_wisdom:{id:'ancestral_wisdom',name:'Ancestral Wisdom',icon:'🕯️',cat:'legacy',desc:'Pass the Torch carries 25% gold (up from 15%), 5 recipes (up from 3), 50% rep (up from 33%). +1 Energy.',effects:{torchGoldBonus:0.10,torchRecipeBonus:2,torchRepBonus:0.17,torchEnergyBonus:1}},
+  mentors_gift:{id:'mentors_gift',name:"Mentor's Gift",icon:'🎁',cat:'legacy',desc:'Torch carries 1 additional legacy feature.',effects:{torchExtraLegacy:1},req:{feat:'ancestral_wisdom'}},
+  // ── Combat/Survival ──
+  iron_will:{id:'iron_will',name:'Iron Will',icon:'🛡️',cat:'combat',desc:'+2 to all Danger Sense checks.',effects:{dangerSenseBonus:2}},
+  thick_skin:{id:'thick_skin',name:'Thick Skin',icon:'🦎',cat:'combat',desc:'Expedition injuries heal 1 day faster.',effects:{injuryHealBonus:1}},
+  ward_of_protection:{id:'ward_of_protection',name:'Ward of Protection',icon:'🔰',cat:'combat',desc:'-5% threat growth rate.',effects:{threatGainReduction:0.05}},
   // ── General ──
   early_riser:{id:'early_riser',name:'Early Riser',icon:'🌅',cat:'general',desc:'First 1-Energy action each day costs 0 Energy.',effects:{firstActionFree:true}},
   multitasker:{id:'multitasker',name:'Multitasker',icon:'🔀',cat:'general',desc:'One free 0-hour action per day.',effects:{freeAction:1}},
@@ -361,14 +346,13 @@ var FEATS={
   lorekeeper:{id:'lorekeeper',name:'Lorekeeper',icon:'📚',cat:'general',desc:'+25% XP from quests/board requests. Quest completion +5 faction rep.',effects:{questXPBonus:0.25,questRepBonus:5}},
   relentless:{id:'relentless',name:'Relentless',icon:'🔥',cat:'general',desc:'After a failed check, +2 to next check of same type. Stacks to +6.',effects:{failStreakBonus:2,failStreakCap:6}},
   crisis_responder:{id:'crisis_responder',name:'Crisis Responder',icon:'🛡️',cat:'general',desc:'During the Hollow March, crisis checks get +3. Brew/enchant solutions need 1 fewer item. Gold solutions cost 20% less.',effects:{crisisCheckBonus:3,crisisCostReduction:1,crisisGoldDiscount:0.20}},
-  ancestral_wisdom:{id:'ancestral_wisdom',name:'Ancestral Wisdom',icon:'🕯️',cat:'general',desc:'Pass the Torch carries 25% gold (up from 15%), 5 recipes (up from 3), 50% rep (up from 33%). Apprentice starts with +1 Energy.',effects:{torchGoldBonus:0.10,torchRecipeBonus:2,torchRepBonus:0.17,torchEnergyBonus:1}},
   fortified_workshop:{id:'fortified_workshop',name:'Fortified Workshop',icon:'🏰',cat:'general',desc:'Threats grow 20% slower. Warning 2 days before 75+ threat events. Workshop upgrades can\'t be disabled by March failures.',effects:{threatGainReduction:0.20,threatWarning:true,upgradeProtection:true}},
 };
 var FEAT_IDS=Object.keys(FEATS);
 
 // ═══ ASI LEVELS ═══
 var ASI_LEVELS=[4,8,12];
-var FEAT_LEVELS=[2,4,6,8,10,12,14,16];
+var FEAT_LEVELS=[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20];
 
 
 // ═══ UPGRADES ═══
@@ -473,46 +457,46 @@ var AP_POOL=[
   {id:'ap_dag',name:'Dag the Steady',icon:'🧑',personality:'Former Ashwarden.',baseStat:{dis:14,tec:11,inu:9},specialty:'shopkeeping',salary:7,traits:['Organized','By-the-Book']},
   {id:'ap_fenna',name:'Fenna Moonbright',icon:'👱‍♀️',personality:'Veilwalker initiate.',baseStat:{inu:14,acu:12,tec:8},specialty:'enchanting',salary:8,traits:['Arcane Gifted','Fragile']},
   {id:'ap_grum',name:'Grum Sootbeard',icon:'🧔',personality:'Old assistant.',baseStat:{acu:12,tec:12,dis:10},specialty:'brewing',salary:7,traits:['Experienced','Slow']},
-  {id:'ap_pip',name:'Pip Quickfingers',icon:'🧒',personality:'Street-smart haggler.',baseStat:{com:14,cre:11,dis:8},specialty:'shopkeeping',salary:4,traits:['Silver Tongue','Unreliable']},
+  {id:'ap_pip',name:'Pip Quickfingers',icon:'🧒',personality:'Street-smart haggler.',baseStat:{inu:14,cre:11,dis:8},specialty:'shopkeeping',salary:4,traits:['Silver Tongue','Unreliable']},
   {id:'ap_miriel',name:'Miriel Inkwell',icon:'👩‍🔬',personality:'Bookish gnome, always scribbling notes.',baseStat:{acu:14,inu:11,tec:9},specialty:'research',salary:7,traits:['Methodical','Absent-Minded']},
   {id:'ap_theron',name:'Theron Ashvale',icon:'🧑‍🎓',personality:'Former university student, seeking practical experience.',baseStat:{acu:13,cre:11,dis:10},specialty:'research',salary:6,traits:['Curious','Impatient']},
   {id:'ap_olga',name:'Olga Stonebrew',icon:'👵',personality:'Retired alchemist from the capital.',baseStat:{tec:13,inu:12,acu:11},specialty:'brewing',salary:9,traits:['Master Brewer','Set in Ways']},
   {id:'ap_ren',name:'Ren Swiftfoot',icon:'🧝',personality:'Elven courier turned forager.',baseStat:{dis:12,inu:13,tec:10},specialty:'foraging',salary:6,traits:['Fleet-Footed','Restless']},
   {id:'ap_vex',name:'Vex Copperhand',icon:'🧑‍🔧',personality:'Tinkerer who fixes anything.',baseStat:{tec:14,acu:11,dis:9},specialty:'brewing',salary:7,traits:['Inventive','Perfectionist']},
-  {id:'ap_luma',name:'Luma Brightquill',icon:'👩‍💼',personality:'Former merchant guild clerk.',baseStat:{com:13,dis:12,acu:10},specialty:'shopkeeping',salary:6,traits:['Numerate','Cautious']},
+  {id:'ap_luma',name:'Luma Brightquill',icon:'👩‍💼',personality:'Former merchant guild clerk.',baseStat:{inu:13,dis:12,acu:10},specialty:'shopkeeping',salary:6,traits:['Numerate','Cautious']},
   {id:'ap_zara',name:'Zara Veilsight',icon:'🧙‍♀️',personality:'Mystic with a talent for pattern-reading.',baseStat:{acu:13,inu:13,cre:10},specialty:'research',salary:8,traits:['Insightful','Eccentric']},
   // ═══ ASHFALL CROSSING APPRENTICES ═══
-  {id:'ap_rashid',name:'Rashid Sandborn',icon:'👳',personality:'Desert-raised trader with a nose for rare ingredients.',loc:'ashfall',baseStat:{com:13,dis:12,inu:10},specialty:'shopkeeping',salary:6,traits:['Haggler','Restless']},
+  {id:'ap_rashid',name:'Rashid Sandborn',icon:'👳',personality:'Desert-raised trader with a nose for rare ingredients.',loc:'ashfall',baseStat:{inu:13,dis:12,cre:10},specialty:'shopkeeping',salary:6,traits:['Haggler','Restless']},
   {id:'ap_keva',name:'Keva Flamedaughter',icon:'👩‍🦰',personality:'Flamekeeper acolyte who chose alchemy over prayer.',loc:'ashfall',baseStat:{inu:13,acu:12,tec:10},specialty:'brewing',salary:7,traits:['Devout','Perfectionist']},
   {id:'ap_torq',name:'Torq Duststrider',icon:'🧑‍🦲',personality:'Former Dustwalker scout, knows every trail.',loc:'ashfall',baseStat:{dis:14,inu:11,tec:10},specialty:'foraging',salary:6,traits:['Tireless','Stubborn']},
-  {id:'ap_yara',name:'Yara the Quick',icon:'👧',personality:'Street kid from the Crossing. Fast learner.',loc:'ashfall',baseStat:{tec:12,com:13,dis:9},specialty:'brewing',salary:4,traits:['Quick Learner','Unreliable']},
+  {id:'ap_yara',name:'Yara the Quick',icon:'👧',personality:'Street kid from the Crossing. Fast learner.',loc:'ashfall',baseStat:{tec:12,cre:13,dis:9},specialty:'brewing',salary:4,traits:['Quick Learner','Unreliable']},
   {id:'ap_naveen',name:'Naveen Crystaleye',icon:'🧑‍🔬',personality:'Salt Cavern researcher with encyclopedic mineral knowledge.',loc:'ashfall',baseStat:{acu:14,tec:12,inu:9},specialty:'research',salary:8,traits:['Methodical','Fragile']},
   {id:'ap_duri',name:'Duri Ironvein',icon:'🧔',personality:'Obsidian miner turned alchemist\'s assistant.',loc:'ashfall',baseStat:{tec:13,dis:13,inu:8},specialty:'foraging',salary:7,traits:['Experienced','Slow']},
   {id:'ap_lira',name:'Lira Miragecatcher',icon:'🧝‍♀️',personality:'Half-elf drawn to the Mirage Bazaar\'s mysteries.',loc:'ashfall',baseStat:{inu:14,acu:12,cre:11},specialty:'enchanting',salary:8,traits:['Arcane Gifted','Eccentric']},
-  {id:'ap_baz',name:'Baz Saltbeard',icon:'🧔‍♂️',personality:'Grizzled dwarf who ran a competing shop that failed.',loc:'ashfall',baseStat:{tec:12,com:12,dis:11},specialty:'shopkeeping',salary:7,traits:['Experienced','Set in Ways']},
-  {id:'ap_holt',name:'Holt Cinderforge',icon:'👷',personality:'Blacksmith\'s son looking for a change.',baseStat:{tec:13,dis:12,com:9},specialty:'foraging',salary:5,traits:['Strong','Blunt']},
+  {id:'ap_baz',name:'Baz Saltbeard',icon:'🧔‍♂️',personality:'Grizzled dwarf who ran a competing shop that failed.',loc:'ashfall',baseStat:{tec:12,inu:12,dis:11},specialty:'shopkeeping',salary:7,traits:['Experienced','Set in Ways']},
+  {id:'ap_holt',name:'Holt Cinderforge',icon:'👷',personality:'Blacksmith\'s son looking for a change.',baseStat:{tec:13,dis:12,inu:9},specialty:'foraging',salary:5,traits:['Strong','Blunt']},
   // ═══ PATROL SPECIALISTS ═══
-  {id:'ap_garren',name:'Garren Shieldwall',icon:'💂',personality:'Former town guard captain, retired but restless.',baseStat:{dis:14,tec:11,com:10},specialty:'patrolling',salary:8,traits:['Vigilant','Tireless']},
+  {id:'ap_garren',name:'Garren Shieldwall',icon:'💂',personality:'Former town guard captain, retired but restless.',baseStat:{dis:14,tec:11,inu:10},specialty:'patrolling',salary:8,traits:['Vigilant','Tireless']},
   {id:'ap_nell',name:'Nell Hawkeye',icon:'🧝‍♀️',personality:'Half-elf ranger who patrols the forest road.',baseStat:{dis:13,inu:12,tec:10},specialty:'patrolling',salary:7,traits:['Watchful','Fleet-Footed']},
   {id:'ap_soraya',name:'Soraya Dustblade',icon:'⚔️',personality:'Dustwalker veteran turned freelance guard.',loc:'ashfall',baseStat:{dis:14,tec:12,inu:10},specialty:'patrolling',salary:8,traits:['Vigilant','Experienced']},
-  {id:'ap_malik',name:'Malik Ashwatch',icon:'🛡️',personality:'Night watchman from the Crossing, knows every shadow.',loc:'ashfall',baseStat:{dis:13,inu:13,com:9},specialty:'patrolling',salary:7,traits:['Night Owl','Keen Senses']},
+  {id:'ap_malik',name:'Malik Ashwatch',icon:'🛡️',personality:'Night watchman from the Crossing, knows every shadow.',loc:'ashfall',baseStat:{dis:13,inu:13,tec:9},specialty:'patrolling',salary:7,traits:['Night Owl','Keen Senses']},
 
   // ═══ SKYREACH APPRENTICES ═══
   {id:'ap_tarn',name:'Tarn Ridgewalker',icon:'🧑‍🦰',personality:'Windrunner dropout, knows every trail.',loc:'skyreach',baseStat:{dis:13,inu:12,tec:10},specialty:'foraging',salary:6,traits:['Fleet-Footed','Restless']},
   {id:'ap_elsi',name:'Elsi Frostweave',icon:'👩‍🦱',personality:'Quiet herbalist, incredible with frost ingredients.',loc:'skyreach',baseStat:{inu:13,tec:12,dis:10},specialty:'brewing',salary:7,traits:['Keen Senses','Shy']},
   {id:'ap_jek',name:'Jek Stormhand',icon:'🧑‍🎨',personality:'Former Starcaller student, arcane talent.',loc:'skyreach',baseStat:{inu:14,acu:12,tec:9},specialty:'enchanting',salary:8,traits:['Arcane Gifted','Eccentric']},
-  {id:'ap_mira_sr',name:'Mira Cloudstep',icon:'👩‍💼',personality:'Cloud Trader\'s daughter, born salesperson.',loc:'skyreach',baseStat:{com:14,dis:11,cre:10},specialty:'shopkeeping',salary:6,traits:['Silver Tongue','Impatient']},
+  {id:'ap_mira_sr',name:'Mira Cloudstep',icon:'👩‍💼',personality:'Cloud Trader\'s daughter, born salesperson.',loc:'skyreach',baseStat:{inu:14,dis:11,cre:10},specialty:'shopkeeping',salary:6,traits:['Silver Tongue','Impatient']},
   {id:'ap_galt',name:'Galt Ironpeak',icon:'⛏️',personality:'Dwarf miner who followed altitude crystals up.',loc:'skyreach',baseStat:{tec:14,dis:12,inu:8},specialty:'foraging',salary:7,traits:['Tireless','Gruff']},
   {id:'ap_sera_sr',name:'Sera Windchime',icon:'📝',personality:'Obsessive note-taker, discovers everything.',loc:'skyreach',baseStat:{acu:14,inu:12,cre:10},specialty:'research',salary:8,traits:['Insightful','Perfectionist']},
-  {id:'ap_kord',name:'Kord Avalanche',icon:'💂',personality:'Skywarden veteran, built like a mountain.',loc:'skyreach',baseStat:{dis:14,tec:12,com:9},specialty:'patrolling',salary:8,traits:['Vigilant','Experienced']},
+  {id:'ap_kord',name:'Kord Avalanche',icon:'💂',personality:'Skywarden veteran, built like a mountain.',loc:'skyreach',baseStat:{dis:14,tec:12,inu:9},specialty:'patrolling',salary:8,traits:['Vigilant','Experienced']},
   {id:'ap_neve',name:'Neve Starling',icon:'🧙‍♀️',personality:'Starcaller herbalist, spiritual approach to alchemy.',loc:'skyreach',baseStat:{inu:14,acu:11,tec:10},specialty:'brewing',salary:7,traits:['Devout','Perfectionist']},
   {id:'ap_brek',name:'Brek Cliffhammer',icon:'🧔‍♂️',personality:'Mountain rescue specialist.',loc:'skyreach',baseStat:{dis:13,tec:12,inu:11},specialty:'patrolling',salary:7,traits:['Watchful','Tireless']},
-  {id:'ap_wynn',name:'Wynn Thinair',icon:'👵',personality:'Former tavern keeper, knows everyone.',loc:'skyreach',baseStat:{com:13,dis:12,acu:10},specialty:'shopkeeping',salary:6,traits:['Experienced','Cautious']},
+  {id:'ap_wynn',name:'Wynn Thinair',icon:'👵',personality:'Former tavern keeper, knows everyone.',loc:'skyreach',baseStat:{inu:13,dis:12,acu:10},specialty:'shopkeeping',salary:6,traits:['Experienced','Cautious']},
 ];
 var TASK_TYPES={
   forage:{name:'Forage',icon:'⛏️',stat:'tec',desc:'Sends staff to gather ingredients from a region overnight. Higher TEC = more items found.'},
   brew:{name:'Brew',icon:'⚗️',stat:'tec',desc:'Attempts to brew a potion from your ingredients. ~50% base success, TEC improves odds. Failed brews may lose ingredients.'},
-  shopkeep:{name:'Shop',icon:'🏪',stat:'com',desc:'Tends the shop counter, earning gold based on level and COM stat. Reliable daily income.'},
+  shopkeep:{name:'Shop',icon:'🏪',stat:'inu',desc:'Tends the shop counter, earning gold based on level and INU stat. Reliable daily income.'},
   research_task:{name:'Research',icon:'📚',stat:'acu',desc:'Studies texts overnight. Chance to discover new recipes or enchantments. Higher ACU = better discovery odds.'},
   construct:{name:'Construct',icon:'🔨',stat:'dis',desc:'Preps a workshop upgrade overnight. Higher DIS = faster progress. When complete, gold cost -40% and one material requirement waived.'},
   patrol:{name:'Patrol',icon:'🛡️',stat:'dis',desc:'Patrols against a rival faction threat overnight. Higher DIS = more threat reduced. Vigilant staff excel at this.'},
@@ -1159,7 +1143,7 @@ var RECIPES=[
     desc:'Bottled bioluminescence. Massively boosts enchanting precision for 3 days.',buff:'phosphor_elixir'},
   {id:'pearl_throne_tonic',name:'Pearl Throne Tonic',icon:'👑',ingr:['throne_pearl','royal_coral','reef_crystal'],xp:95,unlock:6,dc:16,stat:'inu',
     desc:'Essence of the coral throne. Boosts sell prices and customer relations for 4 days.',buff:'pearl_throne_tonic'},
-  {id:'pirate_gold_flask',name:'Pirate Gold Flask',icon:'🏴',ingr:['pirate_gold','enchanted_compass','cursed_doubloon'],xp:100,unlock:7,dc:17,stat:'com',
+  {id:'pirate_gold_flask',name:'Pirate Gold Flask',icon:'🏴',ingr:['pirate_gold','enchanted_compass','cursed_doubloon'],xp:100,unlock:7,dc:17,stat:'inu',
     desc:'Cursed gold dissolved in compass oil. Grants uncanny treasure sense for 3 days.',buff:'pirate_gold_flask'},
   {id:'vent_bloom_essence',name:'Vent Bloom Essence',icon:'🌋',ingr:['vent_bloom','tube_worm_extract','volcanic_vent_mineral'],xp:110,unlock:7,dc:18,stat:'tec',
     desc:'Deep-sea vent life distilled. The ultimate crafting accelerant for 2 days.',buff:'vent_bloom_essence'},
@@ -1250,7 +1234,7 @@ var RECIPES=[
     desc:'Slippery, sharp-smelling oil extracted from sea urchin spines. Cuts through rust and corrosion.'},
   {id:'coral_potion',name:'Coral Mend Potion',icon:'🪸',ingr:['coral_shard','anemone_extract'],xp:45,unlock:1,dc:10,stat:'inu',
     desc:'Living coral extract that bonds with bone and shell. Used by divers for pressure injuries.'},
-  {id:'sailors_grog',name:'Sailor\'s Grog',icon:'🍺',ingr:['sea_glass','sponge_pulp','kelp_frond'],xp:38,unlock:1,dc:9,stat:'com',
+  {id:'sailors_grog',name:'Sailor\'s Grog',icon:'🍺',ingr:['sea_glass','sponge_pulp','kelp_frond'],xp:38,unlock:1,dc:9,stat:'inu',
     desc:'Not technically medicinal. But sailors swear it cures everything from scurvy to heartbreak.'},
   {id:'jellyfish_balm',name:'Jellyfish Balm',icon:'🪼',ingr:['jellyfish_essence','pearl_dust'],xp:55,unlock:2,dc:12,stat:'inu',
     desc:'Neutralizes venom and numbs pain. Essential for reef divers.'},
@@ -1264,7 +1248,7 @@ var RECIPES=[
     desc:'A luminescent paste that hardens into an unbreakable seal. Perfect for underwater repairs.'},
   {id:'depth_ward',name:'Depth Ward Potion',icon:'🛡️',ingr:['nautilus_shell','whale_oil'],xp:70,unlock:4,dc:14,stat:'tec',
     desc:'Protects the body against crushing deep-sea pressure. Mandatory for trench dives.'},
-  {id:'siren_draught',name:'Siren Draught',icon:'🧜',ingr:['siren_tear','deep_coral'],xp:80,unlock:4,dc:15,stat:'com',
+  {id:'siren_draught',name:'Siren Draught',icon:'🧜',ingr:['siren_tear','deep_coral'],xp:80,unlock:4,dc:15,stat:'inu',
     desc:'A single tear from the deep distilled into liquid charisma. The drinker\'s voice becomes irresistible.'},
   {id:'reef_tonic',name:'Reef Tonic',icon:'🐠',ingr:['giant_clam','sea_fan','moonfish_scale'],xp:75,unlock:4,dc:14,stat:'inu',
     desc:'A vibrant cocktail of reef essences that accelerates natural healing and boosts vitality.'},
@@ -1296,7 +1280,7 @@ var RECIPES=[
     desc:'Ground sharktooth in pressurized brine. Grants predatory focus and fearlessness.'},
   {id:'vent_mineral_flask',name:'Vent Mineral Flask',icon:'🌋',ingr:['abyssal_vent_mineral','storm_glass_tc'],xp:110,unlock:7,dc:18,stat:'tec',
     desc:'Volcanic minerals from ocean floor vents, stabilized in storm glass. Explosive potential.'},
-  {id:'harbor_alliance_brew',name:'Harbor Alliance Brew',icon:'🤝',ingr:['harbor_seal','trade_manifest','diver_token'],xp:140,unlock:8,dc:19,stat:'com',
+  {id:'harbor_alliance_brew',name:'Harbor Alliance Brew',icon:'🤝',ingr:['harbor_seal','trade_manifest','diver_token'],xp:140,unlock:8,dc:19,stat:'inu',
     desc:'A ceremonial brew binding all harbor factions in alliance. Only brewed in times of great need.'},
 
   // ═══ SKYREACH RECIPES ═══
@@ -1307,9 +1291,9 @@ var RECIPES=[
     desc:'Frost daisy crushed with summit grass. A rough field dressing that numbs pain on contact.'},
   {id:'breeze_balm',name:'Breeze Balm',icon:'🧴',ingr:['breeze_seed','sky_clover'],xp:28,unlock:0,dc:8,stat:'tec',
     desc:'Windborne seeds ground into a cooling salve. Applied to sore muscles after a day\'s climb.'},
-  {id:'cloud_berry_tonic',name:'Cloud Berry Tonic',icon:'🫐',ingr:['cloud_berry','eagle_down'],xp:30,unlock:0,dc:8,stat:'com',
+  {id:'cloud_berry_tonic',name:'Cloud Berry Tonic',icon:'🫐',ingr:['cloud_berry','eagle_down'],xp:30,unlock:0,dc:8,stat:'inu',
     desc:'Tart cloud berry juice softened with eagle down fiber. Visitors from below can\'t get enough.'},
-  {id:'mountain_tea',name:'Mountain Tea',icon:'☕',ingr:['alpine_mint','cloud_moss'],xp:20,unlock:0,dc:7,stat:'com',
+  {id:'mountain_tea',name:'Mountain Tea',icon:'☕',ingr:['alpine_mint','cloud_moss'],xp:20,unlock:0,dc:7,stat:'inu',
     desc:'Hot mint tea brewed from alpine herbs. The whole settlement drinks it. Surprisingly lucrative.'},
   {id:'summit_paste',name:'Summit Paste',icon:'🏔️',ingr:['thin_air_lichen','frost_daisy'],xp:30,unlock:0,dc:8,stat:'tec',
     desc:'Lichen scraped from exposed peaks mixed into a thick paste. Hardens skin against wind and cold.'},
@@ -1324,7 +1308,7 @@ var RECIPES=[
     desc:'Powdered cliff quartz suspended in ice moss gel. Treats fractures and deep bruises from falls.'},
   {id:'raptor_eye_brew',name:'Raptor Eye Brew',icon:'🦅',ingr:['raptor_plume','fog_orchid'],xp:45,unlock:1,dc:10,stat:'acu',
     desc:'Raptor plume infused with fog orchid nectar. Grants preternaturally sharp vision for hours.'},
-  {id:'cloud_wine',name:'Cloud Wine',icon:'🍷',ingr:['cloud_berry','alpine_mint','drip_fungus'],xp:35,unlock:1,dc:9,stat:'com',
+  {id:'cloud_wine',name:'Cloud Wine',icon:'🍷',ingr:['cloud_berry','alpine_mint','drip_fungus'],xp:35,unlock:1,dc:9,stat:'inu',
     desc:'Skyreach\'s famous local vintage. Fermented cloud berry with mint and fungal cultures.'},
   // Mid (DC 11-12)
   {id:'canopy_elixir',name:'Canopy Elixir',icon:'🌿',ingr:['canopy_dew','vapor_fern'],xp:50,unlock:2,dc:11,stat:'inu',
@@ -1374,7 +1358,7 @@ var RECIPES=[
     desc:'Official Skywarden protection ward. Planted along mountain passes to repel threats.'},
   {id:'celestial_ink',name:'Celestial Ink',icon:'✒️',ingr:['starcaller_seal','aurora_lichen','meltwater_pearl'],xp:100,unlock:6,dc:15,stat:'acu',faction:'starcallers',fReq:3,
     desc:'Ink that shimmers with starlight. Enchantments inscribed with this are permanently more powerful.'},
-  {id:'cloud_trader_blend',name:'Cloud Trader\'s Blend',icon:'📦',ingr:['cloud_trader_token','frost_amber','mist_silk'],xp:100,unlock:6,dc:15,stat:'com',faction:'cloud_traders',fReq:2,
+  {id:'cloud_trader_blend',name:'Cloud Trader\'s Blend',icon:'📦',ingr:['cloud_trader_token','frost_amber','mist_silk'],xp:100,unlock:6,dc:15,stat:'inu',faction:'cloud_traders',fReq:2,
     desc:'The Cloud Traders\' exclusive blend. One sip and any merchant treats you like family.'},
   {id:'void_edge_oil',name:'Void Edge Oil',icon:'🗡️',ingr:['levitation_dust','star_metal','thunder_iron'],xp:105,unlock:7,dc:17,stat:'tec',
     desc:'Gravity-defying dust mixed with alien iron. A treated blade cuts through magical barriers.'},
@@ -1387,7 +1371,7 @@ var RECIPES=[
     desc:'Wind from the world\'s birth. Drinking it is like swallowing a hurricane. You survive. Barely.'},
   {id:'zenith_elixir',name:'Zenith Elixir',icon:'⭐',ingr:['zenith_stone','celestial_essence','void_crystal'],xp:170,unlock:8,dc:20,stat:'acu',
     desc:'The pinnacle of Skyreach alchemy. Three impossible ingredients fused into transcendence.'},
-  {id:'skyreach_alliance',name:'Skyreach Alliance Brew',icon:'🤝',ingr:['skyward_seal','starcaller_seal','cloud_trader_token'],xp:140,unlock:8,dc:19,stat:'com',
+  {id:'skyreach_alliance',name:'Skyreach Alliance Brew',icon:'🤝',ingr:['skyward_seal','starcaller_seal','cloud_trader_token'],xp:140,unlock:8,dc:19,stat:'inu',
     desc:'A ceremonial brew binding all Skyreach factions. Only brewed when the peaks are threatened.'},
   // ═══ SKYREACH CARTOGRAPHER ELIXIRS ═══
   {id:'spring_mineral_tonic',name:'Spring Mineral Tonic',icon:'♨️',ingr:['spring_mineral','cloud_moss','windstone'],xp:80,unlock:5,dc:14,stat:'inu',
@@ -2795,7 +2779,7 @@ var SUPPLY_PARTNERS=[
 ];
 
 // ═══ GUILDMASTER ACADEMY ═══
-var TRAINABLE_STATS=['tec','inu','acu','com','dis','cre'];
+var TRAINABLE_STATS=['tec','inu','acu','dis','cre'];
 var TEACHABLE_TRAITS=['Quick Learner','Keen Senses','Tireless','Organized','Creative','Methodical','Inventive','Insightful','Numerate','Fleet-Footed'];
 
 // ═══ DIPLOMAT EMBASSY & ENVOY SYSTEM ═══
@@ -2833,7 +2817,7 @@ var FACTION_PAIRS=[
 // ═══ PRESTIGE CLASSES ═══
 var PRESTIGE_CLASSES={
   cartographer:{id:'cartographer',name:'Cartographer',icon:'🗺️',color:'#50a0a0',
-    req:{warden:3,scholar:3},maxLv:5,
+    req:{warden:3,skillRank:{extraction:'expert'}},maxLv:5,
     desc:'Explorer-scholar who maps hidden regions containing unique ingredients.',
     features:[
       {lv:1,name:'Hidden Paths',desc:'Discover secret sub-areas within known regions with unique ingredients. 25% chance per forage hour.',legacyEffects:{extractionBonus:1,luckyFindChance:0.05}},
@@ -2843,7 +2827,7 @@ var PRESTIGE_CLASSES={
       {lv:5,name:'Legendary Atlas',desc:'Discover the Heartforge\'s hidden chambers. Unique legendary ingredients only you can access.',legacyEffects:{extractionBonus:2,luckyFindChance:0.15,yieldMultiplier:0.20}},
     ]},
   spellbrewer:{id:'spellbrewer',name:'Spellbrewer',icon:'⚗️',color:'#9060c0',
-    req:{alchemist:3,enchanter:3},maxLv:5,
+    req:{skillRank:{precision:'expert',inscription:'expert'}},maxLv:5,
     desc:'Creates infused potions that combine brewing and enchanting effects.',
     features:[
       {lv:1,name:'Infusion Novice',desc:'Unlock Vigor and Clarity infusions. 2 infusions per day. Catalyst: any ingredient with 5+ stock.',effects:{infusionSlots:2}},
@@ -2863,7 +2847,7 @@ var PRESTIGE_CLASSES={
       {lv:5,name:'Master Construct',desc:'+1 automaton (3 total). Automata can perform prestige tasks. Self-repairing.',legacyEffects:{craftBonus:2,staffEfficiencyBonus:0.20,enchantBonus:1}},
     ]},
   brandmaster:{id:'brandmaster',name:'Brand Master',icon:'🏷️',color:'#d0a060',
-    req:{merchant:3,alchemist:3},maxLv:5,
+    req:{alchemist:3,feat:['artisans_touch','shrewd_bargainer']},maxLv:5,
     desc:'Creates named product lines that build customer loyalty and premium pricing.',
     features:[
       {lv:1,name:'First Label',desc:'Create 1 brand with up to 2 recipes. Branded potions +10% sell. Brand levels up with sales.',effects:{brandSlots:1,maxRecipes:2}},
@@ -2873,7 +2857,7 @@ var PRESTIGE_CLASSES={
       {lv:5,name:'Legendary Brand',desc:'3rd brand slot. Famous brands attract collectors trading rare ingredients. 25% brand rep carries through torch.',effects:{brandSlots:3,maxRecipes:4,collectors:true,torchBrandRep:0.25}},
     ]},
   wildcrafter:{id:'wildcrafter',name:'Wildcrafter',icon:'🌿',color:'#60a040',
-    req:{warden:3,alchemist:3},maxLv:5,
+    req:{warden:3,skillRank:{extraction:'expert',attunement:'trained'}},maxLv:5,
     desc:'Brews potions in the field using fresh ingredients for bonus potency.',
     features:[
       {lv:1,name:'Field Alchemy',desc:'1 field brew per expedition from your haul. Fresh potions sell at 1.2×. Standard quality only.',effects:{fieldBrews:1,freshMult:1.2}},
@@ -2883,7 +2867,7 @@ var PRESTIGE_CLASSES={
       {lv:5,name:'Living Apothecary',desc:'4 field brews. Auto-suggests best potion. Legendary field-only recipe: Essence of the Wild.',effects:{fieldBrews:4,freshMult:1.5,fieldLegendary:true}},
     ]},
   antiquarian:{id:'antiquarian',name:'Antiquarian',icon:'📖',color:'#c0a080',
-    req:{scholar:3,merchant:3},maxLv:5,
+    req:{scholar:3,feat:['keen_eye']},maxLv:5,
     desc:'Discovers and appraises mysterious relics for massive profit or permanent bonuses.',
     features:[
       {lv:1,name:'Relic Sense',desc:'15% relic find chance per expedition hour. Appraise interface unlocked (1 Energy, Acumen check).',effects:{relicChance:0.15}},
@@ -2903,7 +2887,7 @@ var PRESTIGE_CLASSES={
       {lv:5,name:'Fortress Network',desc:'4 slots. Upgrade one outpost to a fortress (caps one threat at 50). Outposts share storage.',effects:{outpostSlots:4,outpostGather:4,outpostSuppress:5,fortressUpgrade:true,outpostShareStorage:true}},
     ]},
   arcanist:{id:'arcanist',name:'Arcanist',icon:'✨',color:'#8060c0',
-    req:{scholar:3,enchanter:3},maxLv:5,
+    req:{scholar:3,skillRank:{arcane_sense:'expert'}},maxLv:5,
     desc:'Researches and designs entirely new custom enchantment patterns.',
     features:[
       {lv:1,name:'Pattern Research',desc:'Spend 2h to research a new enchantment pattern. Choose effect type and power level.',legacyEffects:{enchantBonus:1}},
@@ -2911,6 +2895,16 @@ var PRESTIGE_CLASSES={
       {lv:3,name:'Dual-Effect Patterns',desc:'Design enchantments with two effects. Custom patterns sell at 2× value.',legacyEffects:{enchantBonus:2,sellBonus:0.10}},
       {lv:4,name:'Pattern Library',desc:'Store up to 10 custom patterns. Share patterns with staff for automated inscribing.',legacyEffects:{enchantBonus:2,staffEfficiencyBonus:0.15}},
       {lv:5,name:'Grand Theorem',desc:'Design legendary enchantments. Custom patterns can have 3 effects. Named masterworks.',legacyEffects:{enchantBonus:3,discoveryChanceBonus:0.15}},
+    ]},
+  diplomat:{id:'diplomat',name:'Diplomat',icon:'🤝',color:'#4090c0',
+    req:{anyTwoClasses:3,skillRank:{persuasion:'expert'}},maxLv:5,
+    desc:'Forges cross-faction alliances and doubles faction reputation gains. Unlock exclusive vendor stock.',
+    features:[
+      {lv:1,name:'Embassy',desc:'Double faction rep gains. Faction NPCs offer unique dialogue and quests.',effects:{doubleRep:true,questRepBonus:10}},
+      {lv:2,name:'Trade Agreements',desc:'Exclusive faction vendors with rare stock. Cross-faction quests.',effects:{shopRestockBonus:3,questGoldBonus:0.30}},
+      {lv:3,name:'Faction Harmony',desc:'Build diplomatic bridges between faction pairs, creating harmony bonuses.',effects:{factionHarmony:true,repGainBonus:0.25}},
+      {lv:4,name:'Grand Alliance',desc:'Allied with all factions simultaneously. Faction vendors stock legendary items.',effects:{repGainBonus:0.50,buyDiscount:0.25,shopRestockBonus:5}},
+      {lv:5,name:'Ambassador',desc:'Faction harmony bonuses doubled. Cross-faction rep spillover 25%. Carries through Torch.',effects:{harmonyDouble:true,repSpillover:0.25,torchHarmony:true}},
     ]},
 };
 
@@ -4676,7 +4670,7 @@ var CRISIS_TEMPLATES=[
   {id:'morale',name:'Morale Collapse',icon:'😰',narrative:'Fear spreads. Citizens pack to flee. Without hope, the defense crumbles.',
     solutions:[
       {id:'brew_courage',label:'Brew Courage Draughts',icon:'⚗️',skill:'attunement',stat:'inu',costType:'potion',desc:'Liquid courage. Not a metaphor — literal alchemical bravery.'},
-      {id:'rally_speech',label:'Rally the People',icon:'📣',skill:'persuasion',stat:'com',costType:'combat',desc:'Give the speech of your life. Inspire them to stand and fight.'},
+      {id:'rally_speech',label:'Rally the People',icon:'📣',skill:'persuasion',stat:'inu',costType:'combat',desc:'Give the speech of your life. Inspire them to stand and fight.'},
       {id:'deploy_patrol',label:'Visible Patrols',icon:'👥',skill:null,stat:null,costType:'staff',desc:'Deploy your staff as visible patrol presence to calm civilians.'},
       {id:'pay_bounty',label:'Post Bounties',icon:'💰',skill:null,stat:null,costType:'gold',desc:'Offer gold bounties to anyone who fights. Money talks.'},
     ]},
@@ -4722,7 +4716,7 @@ var MARCH_RECIPES=[
     desc:'A legendary potion that hardens walls and wards. Reduces all threats by 10 when brewed during the March.',marchEffect:{threatReduc:10}},
   {id:'march_veilseal',name:'Veilseal Elixir',icon:'🔮',ingr:['veil_shard','moonpetal','embercap'],xp:130,unlock:10,dc:17,stat:'inu',
     desc:'Seals tears in reality. Reduces magical threat by 20 when brewed during the March.',marchEffect:{threatReduc:20,threatPos:2}},
-  {id:'march_rallying_cry',name:'Rallying Cry Tonic',icon:'📯',ingr:['embervein','starwort','bark_resin'],xp:110,unlock:10,dc:15,stat:'com',
+  {id:'march_rallying_cry',name:'Rallying Cry Tonic',icon:'📯',ingr:['embervein','starwort','bark_resin'],xp:110,unlock:10,dc:15,stat:'inu',
     desc:'Inspires defenders to fight harder. Grants +2 Energy next day and reduces bandit threat by 15.',marchEffect:{threatReduc:15,threatPos:0,bonusEnergy:2}},
   {id:'march_ironwall',name:'Ironwall Concentrate',icon:'🛡️',ingr:['sacred_ember','hearthstone','ironroot_bark'],xp:140,unlock:10,dc:18,stat:'tec',
     desc:'Coats fortifications in alchemical compounds. Reduces corruption threat by 20 and grants staff injury immunity for 3 days.',marchEffect:{threatReduc:20,threatPos:1,staffShield:3}},
@@ -4891,10 +4885,10 @@ var genBoardQuests=(level,day,bonusQuests=0,loc='cindervale',knownRecipes=[])=>{
 // ═══ INGREDIENT CONTRACTS ═══
 var CONTRACT_TIERS={basic:{maxVal:15,maxQty:3,label:'Basic'},premium:{maxVal:25,maxQty:4,label:'Premium'},elite:{maxVal:999,maxQty:5,label:'Elite'}};
 function getContractTier(level,classLevels,fRep){
-  const mercLv=classLevels?.merchant||0;const maxRep=Math.max(...Object.values(fRep||{}).map(Number));
-  if(level>=12||maxRep>=400)return 'elite';if(level>=8||mercLv>=5)return 'premium';return 'basic';
+  const maxRep=Math.max(...Object.values(fRep||{}).map(Number));
+  if(level>=12||maxRep>=400)return 'elite';if(level>=8)return 'premium';return 'basic';
 }
-function getContractSlots(level,classLevels){const mercLv=classLevels?.merchant||0;let slots=0;if(level>=5)slots=1;if(level>=8)slots=2;if(level>=12)slots=3;if(mercLv>=7)slots+=1;return slots;}
+function getContractSlots(level,classLevels){let slots=0;if(level>=5)slots=1;if(level>=8)slots=2;if(level>=12)slots=3;return slots;}
 
 // ═══ SETTLEMENT INVESTMENT ═══
 var SETTLEMENT_PROJECTS=[
@@ -4941,4 +4935,4 @@ ZONE_IMGS.stormspire_peaks='https://jumppiejim-creator.github.io/cindervale-alch
 ZONE_IMGS.sky_ruins='https://jumppiejim-creator.github.io/cindervale-alchemist/skyreach-sky-ruins.jpg';
 ZONE_IMGS.observatory_summit='https://jumppiejim-creator.github.io/cindervale-alchemist/skyreach-observatory-summit.jpg';
 
-var DEF={phase:'identity',charName:'',charRace:null,charGender:null,stats:{cre:10,inu:10,acu:10,tec:10,com:10,dis:10},ptsLeft:12,skRanks:{},skPts:0,classLevels:{},specs:{},playerFeats:[],asiSpent:[],startingClass:null,screen:'map',day:1,hours:4,gameLocation:'cindervale',xp:0,gold:15,inv:{ashbloom:3,hearthstone:1,embercap:1},pots:{},known:['healing_salve'],aQ:[],doneQ:[],log:[],milestones:[],fRep:{ashwardens:0,hearthkeepers:0,veilwalkers:0,cinderfolk:0},upgrades:[],hiredAppr:[],apprTasks:{},apprXP:{},boardQ:[],activeBQ:[],doneBQCount:0,dayFlags:[],knownEnch:['e_sharp','e_glow','e_ironbark','e_feather','e_windwalk','e_rootbind'],constructProgress:{},hollowMarch:{active:false,wave:0,nextWaveDay:0,demands:[],history:[],finalStandAvailable:false,finalStandComplete:false,marchRecipesUnlocked:[]}};
+var DEF={phase:'identity',charName:'',charRace:null,charGender:null,stats:{cre:10,inu:10,acu:10,tec:10,dis:10},ptsLeft:12,skRanks:{},skPts:0,classLevels:{},specs:{},playerFeats:[],asiSpent:[],startingClass:null,screen:'map',day:1,hours:4,gameLocation:'cindervale',xp:0,gold:15,inv:{ashbloom:3,hearthstone:1,embercap:1},pots:{},known:['healing_salve'],aQ:[],doneQ:[],log:[],milestones:[],fRep:{ashwardens:0,hearthkeepers:0,veilwalkers:0,cinderfolk:0},upgrades:[],hiredAppr:[],apprTasks:{},apprXP:{},boardQ:[],activeBQ:[],doneBQCount:0,dayFlags:[],knownEnch:['e_sharp','e_glow','e_ironbark','e_feather','e_windwalk','e_rootbind'],constructProgress:{},hollowMarch:{active:false,wave:0,nextWaveDay:0,demands:[],history:[],finalStandAvailable:false,finalStandComplete:false,marchRecipesUnlocked:[]}};
