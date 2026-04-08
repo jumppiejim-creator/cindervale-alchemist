@@ -740,7 +740,7 @@ function CindervaleAlchemistInner(){
   };
   const getRaceSkBonus=skId=>{const r=RACES[charRace];if(!r||!r.skillBonus)return 0;return r.skillBonus[skId]||0;};
   const getSkMod=skId=>{const sk=SKILLS[skId];if(!sk)return 0;return getMod(eStat(sk.stat))+rankB(skRanks[skId]||0,pb)+getRaceSkBonus(skId);};
-  const doCheck=(skId,dc)=>{const sk=SKILLS[skId];if(!sk)return{success:false,total:0,roll:0,name:'?',mod:0,rb:0,dc,statName:'',extras:[]};const roll=d20();const mod=getMod(eStat(sk.stat));const rb=rankB(skRanks[skId]||0,pb);let total=roll+mod+rb;const utb=(skRanks[skId]||0)===0?getFeatureVal('untrainedBonus'):0;if(utb)total+=utb;const asb=getFeatureVal('allSkillBonus');if(asb)total+=asb;const r={roll,mod,rb,total,dc,success:total>=dc,name:sk.name,icon:sk.icon,statName:STATS[sk.stat]?.name||'',extras:[]};if(utb)r.extras.push({label:'🃏 Untrained',val:utb});if(asb)r.extras.push({label:'🏆 Monument',val:'+'+asb});setLastCheck(r);return r;};
+  const doCheck=(skId,dc)=>{const sk=SKILLS[skId];if(!sk)return{success:false,total:0,roll:0,name:'?',mod:0,rb:0,dc,statName:'',extras:[]};const roll=d20();const mod=getMod(eStat(sk.stat));const rb=rankB(skRanks[skId]||0,pb);let total=roll+mod+rb;const utb=(skRanks[skId]||0)===0?getFeatureVal('untrainedBonus'):0;if(utb)total+=utb;const asb=getFeatureVal('allSkillBonus');if(asb)total+=asb;const r={roll,mod,rb,total,dc,success:roll===1?false:roll===20?true:total>=dc,name:sk.name,icon:sk.icon,statName:STATS[sk.stat]?.name||'',extras:[]};if(utb)r.extras.push({label:'🃏 Untrained',val:utb});if(asb)r.extras.push({label:'🏆 Monument',val:'+'+asb});setLastCheck(r);return r;};
   const hasUp=id=>upgrades.includes(id);
   const upEff=key=>{let v=0;upgrades.filter(uid=>!disabledUpgrades.includes(uid)).forEach(uid=>{const u=UPGRADES[uid];if(u?.effect?.[key])v+=typeof u.effect[key]==='number'?u.effect[key]:(u.effect[key]?1:0);});if(v>0&&getFeatureVal('upgradeDoubleBonus'))v*=2;return v;};
   const modInv=(id,a)=>setInv(p=>{const n={...p};n[id]=(n[id]||0)+a;if(n[id]<=0)delete n[id];return n;});
@@ -1267,7 +1267,7 @@ function CindervaleAlchemistInner(){
     const effDc=skId==='extraction'&&dayFlags.includes('clear_sky')?dc-2:dc;
     const dcNote=skId==='extraction'&&dayFlags.includes('clear_sky')?'☀️ -2':'';
     const extras=[];if(utb)extras.push({label:'🃏 Untrained',val:utb});
-    return{roll,mod,rb,total,dc:effDc,dcNote,success:total>=effDc,name:sk.name,icon:sk.icon,statName:STATS[sk.stat]?.name||'',extras};
+    return{roll,mod,rb,total,dc:effDc,dcNote,success:roll===1?false:roll===20?true:total>=effDc,name:sk.name,icon:sk.icon,statName:STATS[sk.stat]?.name||'',extras};
   };
   const doHarvest=()=>{
     const reg=locRegions.find(r=>r.id===selHex);if(!reg)return;
@@ -1287,7 +1287,7 @@ function CindervaleAlchemistInner(){
       h++;
       const ext=pureCheck('extraction',reg.dc);
       const extB=getFeatureVal('extractionBonus');
-      if(extB){ext.total+=extB;ext.success=ext.total>=ext.dc;ext.extras.push({label:'🌿 Extraction',val:extB});}
+      if(extB){ext.total+=extB;ext.success=ext.roll===1?false:ext.roll===20?true:ext.total>=ext.dc;ext.extras.push({label:'🌿 Extraction',val:extB});}
       const isCrit=ext.roll===20;
       const hourG={};
       const pickN=reg.pick||reg.ingr.length;
@@ -1493,7 +1493,7 @@ function CindervaleAlchemistInner(){
           const docDC=10+reg.diff*2;
           const autoDoc=natLv>=10;
           let documented=autoDoc;
-          if(!autoDoc){const docCh=pureCheck('research',docDC);const rb=getFeatureVal('craftBonus');if(rb)docCh.total+=rb;documented=docCh.total>=docDC;}
+          if(!autoDoc){const docCh=pureCheck('research',docDC);const rb=getFeatureVal('craftBonus');if(rb)docCh.total+=rb;documented=docCh.roll!==1&&docCh.total>=docDC;}
           if(documented){
             localNewDiscs.push(disc.id); // track locally, state update after loop
             discovery={...disc,documented:true};
@@ -1519,7 +1519,7 @@ function CindervaleAlchemistInner(){
           const mapDC=hr.dc;
           const mapCh=pureCheck('research',mapDC);
           const loreB=getSkMod('lore');if(loreB>0)mapCh.total+=loreB;
-          if(mapCh.total>=mapDC){
+          if(mapCh.roll!==1&&mapCh.total>=mapDC){
             mappedRegions.push(hr.id);
             hiddenDisc={...hr,mapped:true};
             // Grant bonus ingredients from the hidden area immediately
@@ -1564,7 +1564,7 @@ function CindervaleAlchemistInner(){
           // Attunement check to approach
           const tameDC=10+reg.diff*2;
           const tameCh=pureCheck('attunement',tameDC);
-          if(tameCh.total>=tameDC){
+          if(tameCh.roll!==1&&tameCh.total>=tameDC){
             // Approachable! Store for post-expedition decision (don't auto-tame)
             localNewComps.push({compId:comp.id});
             companionEnc={...comp,approachable:true,check:tameCh};
@@ -1749,7 +1749,7 @@ function CindervaleAlchemistInner(){
     const ch=doCheck('research',dc);
     const apBonus=aqLv>=2?3:0;
     if(apBonus){ch.total+=apBonus;ch.extras.push({label:'📖 Appraisal',val:apBonus});}
-    ch.success=ch.total>=dc;
+    ch.success=ch.roll===1?false:ch.roll===20?true:ch.total>=dc;
     if(ch.success){
       setRelics(p=>p.map(r=>r.id===relicId?{...r,appraised:true}:r));
       const cat=RELIC_CATS.find(c=>c.id===relic.category);
@@ -1898,7 +1898,7 @@ function CindervaleAlchemistInner(){
       const ch=pureCheck(solution.skill,solution.dc);
       const craftB=getFeatureVal('craftBonus')+upEff('craftSkillBonus');
       ch.total+=craftB;
-      success=ch.total>=solution.dc;
+      success=ch.roll===1?false:ch.roll===20?true:ch.total>=solution.dc;
       mastery=success&&(ch.total>=solution.dc+HOLLOW_MARCH.masteryThreshold);
       rollResult={roll:ch.natural,total:ch.total,dc:solution.dc,skill:solution.skill};
     }
@@ -2103,7 +2103,7 @@ function CindervaleAlchemistInner(){
     const sk=r.stat==='inu'?'attunement':r.stat==='tec'?'precision':r.stat==='acu'?'research':'improvisation';
     const ch=doCheck(sk,adjDC);
     const cfb=getFeatureVal('craftBonus');if(cfb){ch.total+=cfb;ch.extras.push({label:'Class',val:cfb});}
-    ch.success=ch.total>=adjDC;
+    ch.success=ch.roll===1?false:ch.roll===20?true:ch.total>=adjDC;
     if(!ch.success){
       addLog('🌿 Field brew failed! '+r.icon+r.name+' — ingredients lost to the wilderness.','error');
       showResult(r.icon+' '+r.name+' — Field Brew Failed!','error','The mixture refuses to bind in these conditions.',ch);
@@ -2186,7 +2186,7 @@ function CindervaleAlchemistInner(){
     if(qualDCMod!==qT.dcMod)ch.extras.push({label:'🫕 Cauldron',val:qualDCMod-qT.dcMod+' DC'});
     // craftFloor: minimum roll result (capped at 10)
     const cFloor=Math.min(getFeatureVal('craftFloor'),10);
-    if(cFloor&&ch.roll<cFloor&&!autoSucc){ch.extras.push({label:'⚗️ Craft Floor',val:ch.roll+'→'+cFloor});ch.total+=(cFloor-ch.roll);ch.roll=cFloor;}
+    if(cFloor&&ch.roll>1&&ch.roll<cFloor&&!autoSucc){ch.extras.push({label:'⚗️ Craft Floor',val:ch.roll+'→'+cFloor});ch.total+=(cFloor-ch.roll);ch.roll=cFloor;}
     // Adaptation: bonus for unfamiliar recipes
     const adaptMod=getSkMod('adaptation');const bc=brewCounts[r.id]||0;
     const adaptVal=adaptMod>0?(bc<5?adaptMod:bc<=15?Math.max(1,Math.floor(adaptMod/2)):1):0;
@@ -2195,10 +2195,10 @@ function CindervaleAlchemistInner(){
     const fsb=getFeatureVal('failStreakBonus');const fsc=getFeatureVal('failStreakCap');
     const fsVal=fsb>0?Math.min(failStreakRef.current*fsb,fsc||99):0;
     if(fsVal>0){ch.total+=fsVal;ch.extras.push({label:'🔥 Streak',val:fsVal});}
-    ch.success=ch.total>=adjDC||autoSucc;
+    ch.success=ch.roll===1?false:(ch.roll===20?true:(ch.total>=adjDC||autoSucc));
     // luckyBrewChance: random lucky success override
     const luckyChance=getFeatureVal('luckyBrewChance');
-    if(!ch.success&&luckyChance>0&&Math.random()<luckyChance){ch.success=true;ch.extras.push({label:'🍀 Lucky!',val:'Auto'});}
+    if(!ch.success&&ch.roll!==1&&luckyChance>0&&Math.random()<luckyChance){ch.success=true;ch.extras.push({label:'🍀 Lucky!',val:'Auto'});}
     if(!ch.success){
       // craftReroll: once per day, reroll a failed craft (includes companion resurrect charges)
       const rerollCharges=getFeatureVal('craftReroll')+dayFlags.filter(f=>f==='companion_reroll').length;
@@ -2207,8 +2207,8 @@ function CindervaleAlchemistInner(){
         const rr=doCheck(sk,adjDC);
         const rrCsb=upEff('craftSkillBonus');const rrCfb=getFeatureVal('craftBonus');
         rr.total+=rrCsb+rrCfb;if(adaptVal>0)rr.total+=adaptVal;
-        const rrFloor=Math.min(getFeatureVal('craftFloor'),10);if(rrFloor&&rr.roll<rrFloor){rr.total+=(rrFloor-rr.roll);rr.roll=rrFloor;}
-        rr.success=rr.total>=adjDC;
+        const rrFloor=Math.min(getFeatureVal('craftFloor'),10);if(rrFloor&&rr.roll>1&&rr.roll<rrFloor){rr.total+=(rrFloor-rr.roll);rr.roll=rrFloor;}
+        rr.success=rr.roll===1?false:rr.roll===20?true:rr.total>=adjDC;
         rr.extras.push({label:'🔄 Reroll',val:'1/day'});
         setDayFlags(f=>[...f,'craft_rerolled']);
         if(rr.success){Object.assign(ch,rr);ch.success=true;}
@@ -2318,7 +2318,7 @@ function CindervaleAlchemistInner(){
       const ch=doCheck(sk,adjDC);const csb=upEff('craftSkillBonus');if(csb){ch.total+=csb;ch.extras.push({label:'Upgrades',val:csb});}
       const cfb=getFeatureVal('craftBonus');if(cfb){ch.total+=cfb;ch.extras.push({label:'Class Mastery',val:cfb});}
       const adaptMod=getSkMod('adaptation');if(adaptMod>0){ch.total+=adaptMod;ch.extras.push({label:'🔄 Adaptation',val:adaptMod});}
-      ch.success=ch.total>=adjDC;
+      ch.success=ch.roll===1?false:ch.roll===20?true:ch.total>=adjDC;
       if(ch.success){
         const dblChance=getFeatureVal('doubleBatchChance')+upEff('doubleBatch');
         let qty=1;if(dblChance>0&&Math.random()<dblChance)qty=2;
@@ -2387,7 +2387,7 @@ function CindervaleAlchemistInner(){
     const ch=doCheck('research',dc);
     const innovB=getSkMod('innovation');if(innovB>0){ch.total+=innovB;ch.extras.push({label:'Innovation',val:innovB});}
     const cfb=getFeatureVal('craftBonus');if(cfb){ch.total+=cfb;ch.extras.push({label:'Class Mastery',val:cfb});}
-    ch.success=ch.total>=dc;
+    ch.success=ch.roll===1?false:ch.roll===20?true:ch.total>=dc;
     if(type==='potion'){
       const undiscovered=RECIPES.filter(r=>!known.includes(r.id)&&level>=r.unlock&&(!r.faction||getRL(r.faction)>=(r.fReq||0))&&canCraftAtLocation(r.ingr)&&!r.fieldOnly);
       if(undiscovered.length===0){addLog('📚 You spend two hours poring over your notes, but you already know every recipe available to you.','info');return;}
@@ -2546,13 +2546,13 @@ function CindervaleAlchemistInner(){
     const isMW=isCrit||focusMW;
     const arcPatternB=isCustomEnch?getPatternInscBonus():0;
     if(arcPatternB){ch.total+=arcPatternB;ch.extras.push({label:'\u2728 Arcanist',val:arcPatternB});}
-    const adj=ch.total+arcB+focB+csb+efb+esf+arcPatternB;ch.total=adj;ch.success=adj>=adjDC||(autoEnchDC>0&&adjDC<=autoEnchDC)||isCrit;
+    const adj=ch.total+arcB+focB+csb+efb+esf+arcPatternB;ch.total=adj;ch.success=ch.roll===1?false:(ch.roll===20?true:(adj>=adjDC||(autoEnchDC>0&&adjDC<=autoEnchDC)||isCrit));
     if(!ch.success){
       const crCharges=getFeatureVal('checkReroll')+dayFlags.filter(f=>f==='companion_reroll').length;
       const crUsed=dayFlags.filter(f=>f==='check_rerolled').length;
       if(crCharges>crUsed){
         const rr=doCheck('inscription',adjDC);
-        const rrAdj=rr.total+arcB+focB+csb+efb+esf;rr.total=rrAdj;rr.success=rrAdj>=adjDC||(autoEnchDC>0&&adjDC<=autoEnchDC);
+        const rrAdj=rr.total+arcB+focB+csb+efb+esf;rr.total=rrAdj;rr.success=rr.roll===1?false:(rr.roll===20?true:(rrAdj>=adjDC||(autoEnchDC>0&&adjDC<=autoEnchDC)));
         rr.extras.push({label:'🔄 Reroll',val:'1/day'});
         setDayFlags(f=>[...f,'check_rerolled']);
         if(rr.success){Object.assign(ch,rr);ch.success=true;}
@@ -2605,7 +2605,7 @@ function CindervaleAlchemistInner(){
       const ch=doCheck(sk,adjDC);
       const csb=upEff('craftSkillBonus');const cfb=getFeatureVal('craftBonus');
       ch.total+=csb+cfb;if(batchBonus>0&&i>0)ch.total+=Math.floor(batchBonus*(i)*10);
-      ch.success=ch.total>=adjDC;
+      ch.success=ch.roll===1?false:ch.roll===20?true:ch.total>=adjDC;
       if(ch.success)successes++;
       rolls.push(ch);
     }
@@ -2716,7 +2716,7 @@ function CindervaleAlchemistInner(){
     const ch=doCheck('improvisation',dc);
     const cfb=getFeatureVal('craftBonus');if(cfb){ch.total+=cfb;ch.extras.push({label:'Venomist',val:cfb});}
     const csb=upEff('craftSkillBonus');if(csb){ch.total+=csb;ch.extras.push({label:'Upgrades',val:csb});}
-    ch.success=ch.total>=dc;
+    ch.success=ch.roll===1?false:ch.roll===20?true:ch.total>=dc;
     if(ch.success){
       const venomMult=Math.max(1,getFeatureVal('venomContractMult')||1);
       const goldReward=Math.floor(contract.basePay*potency.payMult*(1+getSkMod('haggling')*0.03)*GOLD_MULT*venomMult);
@@ -2761,7 +2761,7 @@ function CindervaleAlchemistInner(){
     const forgeDC=weapon.forgeDC;
     const forgeCh=doCheck('precision',forgeDC);
     const cfb=getFeatureVal('craftBonus');if(cfb){forgeCh.total+=cfb;forgeCh.extras.push({label:'Craft',val:cfb});}
-    forgeCh.success=forgeCh.total>=forgeDC;
+    forgeCh.success=forgeCh.roll===1?false:forgeCh.roll===20?true:forgeCh.total>=forgeDC;
     if(!forgeCh.success){
       // Forge failure — materials lost
       const FAIL=['The metal warps under the hammer. The blank is ruined.','A crack splits the blade during tempering. Back to raw ore.','The alloy refuses to hold shape. Your materials are spent.'];
@@ -2772,7 +2772,7 @@ function CindervaleAlchemistInner(){
     const enchDC=(enchant.dc||12)+(threatEnchDC||0);
     const inscCh=doCheck('inscription',enchDC);
     const eb=getFeatureVal('enchantBonus');if(eb){inscCh.total+=eb;inscCh.extras.push({label:'Runesmith',val:eb});}
-    inscCh.success=inscCh.total>=enchDC;
+    inscCh.success=inscCh.roll===1?false:inscCh.roll===20?true:inscCh.total>=enchDC;
     if(!inscCh.success){
       // Inscription failed — plain weapon, sellable but not special
       const plainGold=Math.floor(weapon.tier*8+5);
@@ -2813,7 +2813,7 @@ function CindervaleAlchemistInner(){
     const dc=enchant.dc||12;
     const ch=doCheck('inscription',dc);
     const eb=getFeatureVal('enchantBonus');if(eb){ch.total+=eb;ch.extras.push({label:'Wardkeeper',val:eb});}
-    ch.success=ch.total>=dc;
+    ch.success=ch.roll===1?false:ch.roll===20?true:ch.total>=dc;
     if(ch.success){
       const newCompleted=sc.layersCompleted+1;
       const totalLayers=comm.layers.length;
@@ -2943,7 +2943,7 @@ function CindervaleAlchemistInner(){
     const ch=doCheck('research',baseDC);
     const arcB=getPatternInscBonus();if(arcB){ch.total+=arcB;ch.extras.push({label:'Arcanist',val:arcB});}
     const cfb=getFeatureVal('craftBonus');if(cfb){ch.total+=cfb;ch.extras.push({label:'Mastery',val:cfb});}
-    ch.success=ch.total>=baseDC;
+    ch.success=ch.roll===1?false:ch.roll===20?true:ch.total>=baseDC;
     if(ch.success){
       const effects=effectIds.map(eid=>PATTERN_EFFECTS.find(e=>e.id===eid)).filter(Boolean);
       const totalXp=effects.reduce((s,e)=>s+e.power[powerLevel],0);
@@ -3002,7 +3002,7 @@ function CindervaleAlchemistInner(){
     Object.entries(matCost).forEach(([id,q])=>modInv(id,-q));
     const ch=doCheck('precision',12);
     const cfb=getFeatureVal('craftBonus');if(cfb){ch.total+=cfb;ch.extras.push({label:'Craft',val:cfb});}
-    ch.success=ch.total>=12;
+    ch.success=ch.roll===1?false:ch.roll===20?true:ch.total>=12;
     if(ch.success){
       const name='Unit '+AUTOMATON_NAMES[automata.length]||('Auto-'+(automata.length+1));
       const newAuto={id:'auto_'+Date.now(),name,task:null,xp:0};
@@ -3036,7 +3036,7 @@ function CindervaleAlchemistInner(){
     setDayFlags(f=>[...f,'envoy_sent']);
     const ch=doCheck('persuasion',pair.dc+currentHarmony*2);
     const netMod=getSkMod('networking');if(netMod>0){ch.total+=netMod;ch.extras.push({label:'Networking',val:netMod});}
-    ch.success=ch.total>=(pair.dc+currentHarmony*2);
+    ch.success=ch.roll===1?false:ch.roll===20?true:ch.total>=(pair.dc+currentHarmony*2);
     if(ch.success){
       const newHarmony=currentHarmony+1;
       setFactionHarmony(prev=>({...prev,[pairId]:newHarmony}));
@@ -3097,7 +3097,7 @@ function CindervaleAlchemistInner(){
     const dc=10+Math.floor((ap.baseStat[statId]||10)/3);
     const ch=doCheck('persuasion',dc);
     const comMod=getSkMod('networking');if(comMod>0){ch.total+=comMod;ch.extras.push({label:'Networking',val:comMod});}
-    ch.success=ch.total>=dc;
+    ch.success=ch.roll===1?false:ch.roll===20?true:ch.total>=dc;
     const statName=STATS[statId]?.name||statId;
     if(ch.success){
       const gain=ch.total>=dc+5?2:1;
@@ -3129,7 +3129,7 @@ function CindervaleAlchemistInner(){
     // Teach trait: free (spec feature)
     snapshot();// free
     const dc=15;
-    const ch=doCheck('persuasion',dc);ch.success=ch.total>=dc;
+    const ch=doCheck('persuasion',dc);ch.success=ch.roll===1?false:ch.roll===20?true:ch.total>=dc;
     if(ch.success){
       setHiredAppr(prev=>prev.map(a=>a.id===apprId?{...a,traits:[...(a.traits||[]),traitId]}:a));
       gainXP(50);
@@ -3246,7 +3246,7 @@ function CindervaleAlchemistInner(){
     // free
     const ch=doCheck('research',bp.draftDC);
     const cfb=getFeatureVal('craftBonus');if(cfb){ch.total+=cfb;ch.extras.push({label:'Craft',val:cfb});}
-    ch.success=ch.total>=bp.draftDC;
+    ch.success=ch.roll===1?false:ch.roll===20?true:ch.total>=bp.draftDC;
     if(!ch.success){
       showResult('🏗️ Draft Failed — '+bp.name,'error',bp.icon+' '+bp.desc+'\nThe calculations don\'t add up. Try again tomorrow.',ch);return;
     }
@@ -3273,7 +3273,7 @@ function CindervaleAlchemistInner(){
     setInv(p=>{const n={...p};Object.entries(matCheck).forEach(([id,q])=>{n[id]=Math.max(0,(n[id]||0)-q);});return n;});
     const ch=doCheck('precision',bp.draftDC-2);
     const cfb=getFeatureVal('craftBonus');if(cfb){ch.total+=cfb;ch.extras.push({label:'Craft',val:cfb});}
-    ch.success=ch.total>=(bp.draftDC-2);
+    ch.success=ch.roll===1?false:ch.roll===20?true:ch.total>=(bp.draftDC-2);
     if(!ch.success){
       showResult('🏗️ Build Session — '+bp.name,'info',bp.icon+' The work is slow today. No progress, but no damage either.\nProgress: '+entry.buildProgress+'/'+sessionsNeeded,ch);return;
     }
@@ -3380,7 +3380,7 @@ function CindervaleAlchemistInner(){
     setInv(p=>{const n={...p};Object.entries(lmc(bp.matCost)).forEach(([id,q])=>{n[id]=Math.max(0,(n[id]||0)-q);});return n;});
     const ch=doCheck('precision',bp.dc);
     const cfb=getFeatureVal('craftBonus');if(cfb){ch.total+=cfb;ch.extras.push({label:'Craft',val:cfb});}
-    ch.success=ch.total>=bp.dc;
+    ch.success=ch.roll===1?false:ch.roll===20?true:ch.total>=bp.dc;
     if(!ch.success){
       showResult('⚙️ Gadget Failed — '+bp.name,'error',bp.icon+' '+bp.desc+'\nThe mechanism jams. Materials consumed.',ch);return;
     }
@@ -3632,7 +3632,7 @@ function CindervaleAlchemistInner(){
     while(h<hoursLeft){
       h++;
       const ext=pureCheck('extraction',nightDC);
-      if(extB){ext.total+=extB;ext.success=ext.total>=ext.dc;ext.extras.push({label:'🌿 Extraction',val:extB});}
+      if(extB){ext.total+=extB;ext.success=ext.roll===1?false:ext.roll===20?true:ext.total>=ext.dc;ext.extras.push({label:'🌿 Extraction',val:extB});}
       const isCrit=ext.roll===20;
       const hourG={};
       const pickN=reg.pick||reg.ingr.length;
