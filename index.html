@@ -405,6 +405,46 @@ function CindervaleAlchemistInner(){
   },[locRegions,mappedRegions,prestigeLevels]);
   const canCraftAtLocation=(ingrList)=>ingrList.every(id=>locIngredients.has(locIngr(id,gameLocation)));
 
+  // ─── INGREDIENT SOURCE INFO ───
+  const getIngrSource=React.useCallback((id)=>{
+    const src=[];
+    // Regions (with sites)
+    locRegions.forEach(reg=>{
+      if(reg.ingr.includes(id)){
+        const siteNames=reg.sites?reg.sites.filter(s=>s.weights&&s.weights[id]).map(s=>s.name):[];
+        const fac=reg.faction?FACTIONS[reg.faction]:null;
+        const facNote=fac?' ('+fac.icon+' '+fac.name+' rep)':'';
+        src.push({type:'region',text:reg.icon+' '+reg.name+(siteNames.length?' ('+siteNames.join(', ')+')':'')+facNote});
+      }
+    });
+    // Hidden regions
+    if(typeof HIDDEN_REGIONS!=='undefined'){
+      HIDDEN_REGIONS.filter(hr=>locRegions.some(r=>r.id===hr.region)).forEach(hr=>{
+        if(hr.ingr.includes(id))src.push({type:'hidden',text:'🗺️ '+hr.name+' (hidden — requires mapping)'});
+      });
+    }
+    // Shop
+    if(SHOP_I.find(si=>si.id===id&&(!si.loc||si.loc===gameLocation)))src.push({type:'shop',text:'🏪 Available at the market'});
+    // Seasonal — check all seasons for this location
+    const locSeasons=SEASONS[gameLocation]||[];
+    locSeasons.forEach(s=>{
+      const si=getSeasonalIngr(s,gameLocation);
+      if(si.includes(id))src.push({type:'seasonal',text:s.icon+' Seasonal: '+s.name,seasonId:s.id});
+    });
+    return src;
+  },[locRegions,gameLocation]);
+
+  const getIngrSeasonWarn=React.useCallback((id)=>{
+    const locSeasons=SEASONS[gameLocation]||[];
+    const curS=getSeason(day,gameLocation);
+    const curSeasonal=getSeasonalIngr(curS,gameLocation,!!getFeatureVal('allSeasonIngr'));
+    if(curSeasonal.includes(id))return null; // currently in season
+    for(const s of locSeasons){
+      if(getSeasonalIngr(s,gameLocation).includes(id))return{season:s.name,icon:s.icon};
+    }
+    return null;
+  },[gameLocation,day]);
+
   const pickHex=(regId)=>{setSelHex(regId);setZonePopup(regId);const reg=locRegions.find(r=>r.id===regId);setSelFlavor(reg?.flavor?reg.flavor[Math.floor(Math.random()*reg.flavor.length)]:'');};
   const [vBuild,setVBuild]=useState('workshop');
   const [dlgNpc,setDlgNpc]=useState(null);
@@ -7794,8 +7834,8 @@ function CindervaleAlchemistInner(){
                   {/* Ingredients */}
                   <div style={{display:'flex',flexWrap:'wrap',gap:2,marginBottom:6}}>
                     {Object.entries(cost).map(([id,q])=>{
-                      const have=(inv[id]||0)>=q;
-                      return <span key={id} title={INGR[id]?.name||id} style={{...S.tag,fontSize:13,borderColor:have?TH.green+'88':TH.red+'88',cursor:'help'}}>
+                      const have=(inv[id]||0)>=q;const srcs=getIngrSource(id);const srcTip=srcs.length?srcs.map(s=>s.text).join('\n'):'Source unknown';
+                      return <span key={id} title={srcTip} style={{...S.tag,fontSize:13,borderColor:have?TH.green+'88':TH.red+'88',cursor:'help'}}>
                         {INGR[id]?.icon}{INGR[id]?.name} <b style={{color:have?TH.green:TH.red}}>{inv[id]||0}/{q}</b>
                       </span>;
                     })}
@@ -8895,7 +8935,8 @@ function CindervaleAlchemistInner(){
               <div style={{display:'flex',flexWrap:'wrap',gap:4}}>
                 {enchEntries.map(([id,qty])=>{
                   const have=inv[id]||0;const ok=have>=qty;
-                  return <span key={id} style={{fontSize:13,padding:'2px 6px',background:ok?TH.green+'10':TH.panel,border:'1px solid '+(ok?TH.green+'44':TH.border),borderRadius:4,color:ok?TH.green:'#c06040'}}>
+                  const srcs=getIngrSource(id);const srcTip=srcs.length?srcs.map(s=>s.text).join('\n'):'Source unknown';
+                  return <span key={id} title={srcTip} style={{fontSize:13,padding:'2px 6px',background:ok?TH.green+'10':TH.panel,border:'1px solid '+(ok?TH.green+'44':TH.border),borderRadius:4,color:ok?TH.green:'#c06040',cursor:'help'}}>
                     {INGR[id]?.icon||''}{INGR[id]?.name||id} {have}/{qty}
                   </span>;
                 })}
@@ -9036,10 +9077,14 @@ function CindervaleAlchemistInner(){
               const have=(inv[id]||0)>=q;
               const iQty=inv[id]||0;const iHid=HIDDEN_INGR&&HIDDEN_INGR[id];const iThresh=(iHid?12:8)+getFeatureVal('spoilThreshold')+upEff('spoilThreshold')+getSkMod('stockpiling')*3;
               const iWarn=iQty>iThresh;
-              return <span key={id} title={INGR[id]?.name||id} style={{...S.tag,borderColor:have?TH.green:TH.red,cursor:'help'}}>
+              const srcs=getIngrSource(id);const srcTip=srcs.length?srcs.map(s=>s.text).join('\n'):'Source unknown';
+              const sWarn=getIngrSeasonWarn(id);
+              return <span key={id} title={srcTip} style={{...S.tag,borderColor:have?TH.green:TH.red,cursor:'help',position:'relative'}}>
                 {INGR[id]?.icon}{INGR[id]?.name} <b style={{color:have?TH.green:TH.red}}>{iQty}/{q}</b>{iWarn&&<span style={{fontSize:10,color:'#c0a040'}}> ⚠️</span>}
+                {sWarn&&<span style={{fontSize:10,color:'#d09030',marginLeft:2}} title={'Available during '+sWarn.season}>⏳</span>}
               </span>;})}
             </div>
+            {(()=>{const seasonWarns=Object.keys(cost).filter(id=>getIngrSeasonWarn(id));return seasonWarns.length>0?<div style={{fontSize:12,color:'#d09030',marginTop:2}}>{seasonWarns.map(id=>{const w=getIngrSeasonWarn(id);return <span key={id} style={{marginRight:8}}>⏳ {INGR[id]?.icon}{INGR[id]?.name} — seasonal, available during {w.icon} {w.season}</span>;})}</div>:null;})()}
             <div style={{marginTop:3}}>
               {(()=>{
               const masteryDisc=getMasteryDiscount(brewCounts,r.id,getFeatureVal('masteryDiscountBonus'));
@@ -9173,9 +9218,11 @@ function CindervaleAlchemistInner(){
           {Object.entries(inv).filter(([,q])=>q>0).map(([id,qty])=>{const ig=INGR[id];if(!ig)return null;const sp=Math.max(1,Math.floor(((ig.val||5)*0.4)+getSkMod('haggling')+getSkMod('appraisal'))*GOLD_MULT);
             const isHid=HIDDEN_INGR&&HIDDEN_INGR[id];const spThresh=(isHid?12:8)+getFeatureVal('spoilThreshold')+upEff('spoilThreshold')+getSkMod('stockpiling')*3;
             const spColor=qty>spThresh+8?'#c04040':qty>spThresh+4?'#d08030':qty>spThresh?'#c0a040':'';
+            const srcs=getIngrSource(id);const srcTip=srcs.length?srcs.map(s=>s.text).join('\n'):'Source unknown';
+            const sWarn=getIngrSeasonWarn(id);
             return(
-            <div key={id} style={{display:'flex',alignItems:'center',gap:6,padding:'3px 0',fontSize:16}}>
-              <span style={{color:spColor||TH.text}}>{ig.icon}{ig.name} ×{qty}{spColor&&<span style={{fontSize:11,marginLeft:4,color:spColor}}>⚠️</span>}</span><span style={{color:TH.gold,marginLeft:'auto'}}>{sp}g ea</span>
+            <div key={id} style={{display:'flex',alignItems:'center',gap:6,padding:'3px 0',fontSize:16}} title={srcTip}>
+              <span style={{color:spColor||TH.text,cursor:'help'}}>{ig.icon}{ig.name} ×{qty}{spColor&&<span style={{fontSize:11,marginLeft:4,color:spColor}}>⚠️</span>}{sWarn&&<span style={{fontSize:11,color:'#d09030',marginLeft:4}}>⏳ {sWarn.icon} {sWarn.season}</span>}</span><span style={{color:TH.gold,marginLeft:'auto'}}>{sp}g ea</span>
               <button style={S.btn()} onClick={()=>{modInv(id,-1);setGold(g=>g+sp);addLog(`Sold ${ig.icon}${ig.name} for ${sp}g.`,'info');}}>Sell 1</button>
               {qty>spThresh&&<button style={{...S.btn('green'),fontSize:13}} onClick={()=>{const excess=qty-spThresh;modInv(id,-excess);setGold(g=>g+sp*excess);addLog(`Sold ${excess}× ${ig.icon}${ig.name} for ${sp*excess}g (trimmed to safe storage).`,'info');}}>Sell to Safe ({qty-spThresh}×{sp}g)</button>}
               {qty>1&&<button style={S.btn()} onClick={()=>{modInv(id,-qty);setGold(g=>g+sp*qty);addLog(`Sold ${qty}× ${ig.icon}${ig.name} for ${sp*qty}g.`,'info');}}>Sell All ({sp*qty}g)</button>}
@@ -10802,7 +10849,7 @@ function CindervaleAlchemistInner(){
         <div style={S.card}><div style={S.cT}>🎒 Pack</div>
           <div style={{fontSize:15,color:TH.gold,marginBottom:4}}>Ingredients</div>
           <div style={{display:'flex',flexWrap:'wrap',gap:3}}>
-            {Object.entries(inv).filter(([,q])=>q>0).map(([id,qty])=><span key={id} style={{...S.tag,padding:'3px 6px'}}>{INGR[id]?.icon||'?'}{INGR[id]?.name||id} <b style={{color:TH.gold}}>×{qty}</b></span>)}
+            {Object.entries(inv).filter(([,q])=>q>0).map(([id,qty])=>{const srcs=getIngrSource(id);const srcTip=srcs.length?srcs.map(s=>s.text).join('\n'):'';return <span key={id} title={srcTip} style={{...S.tag,padding:'3px 6px',cursor:srcTip?'help':'default'}}>{INGR[id]?.icon||'?'}{INGR[id]?.name||id} <b style={{color:TH.gold}}>×{qty}</b></span>;})}
             {Object.keys(inv).filter(id=>inv[id]>0).length===0&&<span style={{color:TH.textDim}}>Empty</span>}
           </div>
           {Object.entries(pots).filter(([,q])=>q>0).length>0&&<><div style={{fontSize:15,color:TH.gold,marginTop:6,marginBottom:4}}>Potions</div>
