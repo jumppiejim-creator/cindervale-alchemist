@@ -1,0 +1,1632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cindervale Alchemist — Player Handbook v7.0</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Crimson+Text:ital,wght@0,400;0,600;0,700;1,400&family=EB+Garamond:wght@400;500;600;700&display=swap');
+
+  :root {
+    --parchment: #f5efe0;
+    --parchment-dark: #ebe3d0;
+    --brown: #5c3a1e;
+    --brown-light: #8a6a4a;
+    --brown-dark: #3a2210;
+    --teal: #2a6a5a;
+    --teal-light: #3a8a7a;
+    --gold: #b8963a;
+    --red: #8a2a1a;
+    --green: #3a6a2a;
+    --purple: #5a3a7a;
+    --text: #2a1a0a;
+    --text-light: #5a4a3a;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--parchment);
+    color: var(--text);
+    font-family: 'Crimson Text', 'EB Garamond', Georgia, 'Times New Roman', serif;
+    font-size: 11pt;
+    line-height: 1.55;
+    max-width: 8.5in;
+    margin: 0 auto;
+    padding: 0.5in 0.6in;
+  }
+
+  h1 {
+    font-family: 'EB Garamond', Georgia, serif;
+    font-size: 28pt;
+    color: var(--brown);
+    text-align: center;
+    margin-bottom: 4px;
+    letter-spacing: 1px;
+    font-weight: 700;
+  }
+
+  h2 {
+    font-family: 'EB Garamond', Georgia, serif;
+    font-size: 20pt;
+    color: var(--brown);
+    margin-top: 28px;
+    margin-bottom: 10px;
+    padding-bottom: 4px;
+    border-bottom: 2px solid var(--brown);
+    letter-spacing: 0.5px;
+    font-weight: 600;
+  }
+
+  h3 {
+    font-family: 'EB Garamond', Georgia, serif;
+    font-size: 15pt;
+    color: var(--brown-dark);
+    margin-top: 18px;
+    margin-bottom: 6px;
+    font-weight: 600;
+  }
+
+  h4 {
+    font-family: 'EB Garamond', Georgia, serif;
+    font-size: 12pt;
+    color: var(--teal);
+    margin-top: 12px;
+    margin-bottom: 4px;
+    font-weight: 600;
+  }
+
+  p { margin-bottom: 8px; }
+
+  .title-page {
+    text-align: center;
+    padding: 2in 0 1in 0;
+  }
+  .title-page h1 { font-size: 36pt; margin-bottom: 8px; }
+  .title-page .subtitle {
+    font-size: 16pt;
+    color: var(--brown-light);
+    font-style: italic;
+    margin-bottom: 24px;
+  }
+  .title-page .version {
+    font-size: 13pt;
+    color: var(--teal);
+    margin-top: 30px;
+    font-weight: 600;
+  }
+  .title-page .tagline {
+    font-size: 11pt;
+    color: var(--text-light);
+    margin-top: 8px;
+    font-style: italic;
+  }
+
+  .divider {
+    border: none;
+    border-top: 2px solid var(--brown);
+    margin: 20px 0;
+  }
+  .divider-thin {
+    border: none;
+    border-top: 1px solid var(--brown-light);
+    margin: 12px 0;
+  }
+  .divider-teal {
+    border: none;
+    border-top: 2px solid var(--teal);
+    margin: 16px 0;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 10px 0 14px 0;
+    font-size: 10pt;
+  }
+  table th {
+    background: var(--brown);
+    color: var(--parchment);
+    padding: 5px 8px;
+    text-align: left;
+    font-weight: 600;
+    font-family: 'EB Garamond', Georgia, serif;
+    font-size: 10.5pt;
+  }
+  table td {
+    padding: 4px 8px;
+    border-bottom: 1px solid #d5cbb8;
+    vertical-align: top;
+  }
+  table tr:nth-child(even) td { background: var(--parchment-dark); }
+  table tr:nth-child(odd) td { background: var(--parchment); }
+
+  .note {
+    background: #f0e8d0;
+    border-left: 3px solid var(--teal);
+    padding: 8px 12px;
+    margin: 10px 0;
+    font-style: italic;
+    font-size: 10pt;
+    color: var(--text-light);
+  }
+
+  .callout {
+    background: #eee5d0;
+    border: 1px solid var(--brown-light);
+    border-radius: 4px;
+    padding: 10px 14px;
+    margin: 10px 0;
+  }
+  .callout-title {
+    font-weight: 700;
+    color: var(--brown);
+    margin-bottom: 4px;
+  }
+
+  ul, ol { margin: 6px 0 10px 24px; }
+  li { margin-bottom: 3px; }
+
+  .skill-entry { margin-bottom: 4px; }
+  .skill-name { font-weight: 700; color: var(--brown-dark); }
+  .skill-stat { color: var(--teal); font-weight: 600; }
+
+  .class-block {
+    margin: 14px 0;
+    padding: 10px 14px;
+    background: #f0e8d0;
+    border: 1px solid #d0c8b0;
+    border-radius: 4px;
+  }
+  .class-name {
+    font-size: 14pt;
+    font-weight: 700;
+    color: var(--brown);
+  }
+  .class-portrait {
+    float: left;
+    width: 140px;
+    height: 140px;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 2px solid var(--brown);
+    margin: 0 14px 10px 0;
+    box-shadow: 2px 2px 6px rgba(0,0,0,0.2);
+  }
+  .title-img {
+    display: block;
+    max-width: 420px;
+    margin: 30px auto 20px;
+    border-radius: 10px;
+    border: 3px solid var(--brown);
+    box-shadow: 3px 3px 12px rgba(0,0,0,0.25);
+  }
+  .spec-block {
+    margin: 8px 0 8px 12px;
+    padding: 6px 10px;
+    background: var(--parchment);
+    border-left: 3px solid var(--teal);
+  }
+  .spec-name {
+    font-weight: 700;
+    color: var(--teal);
+    font-size: 11pt;
+  }
+
+  .feat-category {
+    font-size: 13pt;
+    color: var(--brown);
+    font-weight: 700;
+    margin-top: 14px;
+    margin-bottom: 6px;
+    border-bottom: 1px solid var(--brown-light);
+    padding-bottom: 2px;
+  }
+  .feat-entry {
+    margin-bottom: 3px;
+    padding-left: 8px;
+  }
+  .feat-name { font-weight: 700; color: var(--brown-dark); }
+  .feat-req { color: var(--red); font-size: 9.5pt; font-style: italic; }
+
+  .toc { margin: 20px 0; }
+  .toc-entry {
+    display: flex;
+    justify-content: space-between;
+    padding: 3px 0;
+    border-bottom: 1px dotted #c0b8a0;
+  }
+  .toc-chapter { font-weight: 600; color: var(--brown); }
+  .toc-desc { color: var(--text-light); font-style: italic; font-size: 10pt; }
+
+  .page-break { page-break-before: always; }
+
+  @media print {
+    body {
+      background: white;
+      padding: 0.4in 0.5in;
+      font-size: 10pt;
+      max-width: none;
+    }
+    .page-break { page-break-before: always; }
+    .no-break { page-break-inside: avoid; }
+    table { page-break-inside: auto; }
+    tr { page-break-inside: avoid; }
+    h2, h3 { page-break-after: avoid; }
+    .title-page { padding: 2.5in 0 1in 0; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════ -->
+<!-- TITLE PAGE -->
+<!-- ═══════════════════════════════════════ -->
+<div class="title-page">
+  <h1>Cindervale Alchemist</h1>
+  <div class="subtitle">Player Handbook</div>
+  <hr class="divider" style="width: 40%; margin: 20px auto;">
+  <div class="version">Version 7.0 &mdash; V2 Balance Patch</div>
+  <img class="title-img" src="ws_base_workshop.png" alt="Alchemist's Workshop">
+  <div class="tagline">Brew potions. Inscribe runes. Build your legacy.</div>
+  <div style="margin-top: 60px; color: var(--text-light); font-size: 10pt;">
+    A single-player browser RPG of alchemy, exploration, and settlement building.<br>
+    Run your workshop across four unique locations. Master five crafting disciplines.<br>
+    Pass the Torch and begin anew.
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════ -->
+<!-- TABLE OF CONTENTS -->
+<!-- ═══════════════════════════════════════ -->
+<div class="page-break"></div>
+<h2>Table of Contents</h2>
+<div class="toc">
+  <div class="toc-entry"><span class="toc-chapter">Chapter 1: Game Overview</span><span class="toc-desc">Core concepts and what to expect</span></div>
+  <div class="toc-entry"><span class="toc-chapter">Chapter 2: Races</span><span class="toc-desc">Six playable races with unique bonuses</span></div>
+  <div class="toc-entry"><span class="toc-chapter">Chapter 3: Ability Scores &amp; Skills</span><span class="toc-desc">Five stats, seventeen skills, d20 check system</span></div>
+  <div class="toc-entry"><span class="toc-chapter">Chapter 4: Base Classes</span><span class="toc-desc">Five classes with full feature tables and specializations</span></div>
+  <div class="toc-entry"><span class="toc-chapter">Chapter 5: Prestige Classes</span><span class="toc-desc">Nine advanced multiclass paths</span></div>
+  <div class="toc-entry"><span class="toc-chapter">Chapter 6: Feats</span><span class="toc-desc">Permanent abilities earned every level</span></div>
+  <div class="toc-entry"><span class="toc-chapter">Chapter 7: Locations &amp; Regions &amp; Skyreach Peaks</span><span class="toc-desc">Four locations with 32 foraging regions</span></div>
+  <div class="toc-entry"><span class="toc-chapter">Chapter 8: Factions</span><span class="toc-desc">Fifteen factions across four locations</span></div>
+  <div class="toc-entry"><span class="toc-chapter">Chapter 9: Companion Creatures</span><span class="toc-desc">Ranger companions with roles and loyalty</span></div>
+  <div class="toc-entry"><span class="toc-chapter">Chapter 10: Settlement Investment</span><span class="toc-desc">Build up the town around your workshop</span></div>
+  <div class="toc-entry"><span class="toc-chapter">Chapter 11: Core Systems &amp; Travel</span><span class="toc-desc">Crafting, foraging, enchanting, research, and travel</span></div>
+  <div class="toc-entry"><span class="toc-chapter">Chapter 12: The Hollow March</span><span class="toc-desc">Endgame invasion event and crisis management</span></div>
+  <div class="toc-entry"><span class="toc-chapter">Chapter 13: Pass the Torch</span><span class="toc-desc">Generational legacy and New Game+</span></div>
+</div>
+
+<!-- ═══════════════════════════════════════ -->
+<!-- CHAPTER 1: GAME OVERVIEW -->
+<!-- ═══════════════════════════════════════ -->
+<div class="page-break"></div>
+<h2>Chapter 1: Game Overview</h2>
+
+<p><strong>Cindervale Alchemist</strong> is a single-player browser RPG where you run an alchemy shop across four unique locations. Brew potions, inscribe enchantments, forage ingredients, manage staff, build your workshop, and invest in your settlement. When your character reaches their peak, Pass the Torch and start a new generation carrying forward your legacy.</p>
+
+<h3>Core Features</h3>
+<ul>
+  <li><strong>4 Locations</strong> &mdash; Cindervale (volcanic), Ashfall Crossing (desert), Tidecrest Harbor (coastal), and Skyreach Peaks (alpine). Each has 8 foraging regions, 4 factions, 3 external threats, and unique ingredients.</li>
+  <li><strong>5 Base Classes</strong> with <strong>15 Specializations</strong> &mdash; Alchemist, Enchanter, Artificer, Scholar, and Warden. Each class has 3 specialization paths unlocked at level 3.</li>
+  <li><strong>9 Prestige Classes</strong> &mdash; Advanced multiclass paths with mixed prerequisites combining class levels, skill ranks, and feats.</li>
+  <li><strong>15 Factions</strong> &mdash; 3-4 per location (plus 3 external threats per location). Build reputation through quests, donations, and alignment for unique bonuses.</li>
+  <li><strong>62 Feats</strong> in 8 categories &mdash; Permanent abilities earned one per level.</li>
+  <li><strong>D20 Skill System</strong> &mdash; 17 skills across 5 ability scores. Roll d20 + modifier vs. DC for crafting, foraging, enchanting, social checks, and more.</li>
+  <li><strong>Pass the Torch</strong> &mdash; Retire your character and begin a new generation, carrying forward gold, recipes, reputation, and a legacy chain.</li>
+</ul>
+
+<h3>The Game Loop</h3>
+<p>Each day you have a pool of <strong>Energy</strong> (base 4, increased by upgrades, class features, and feats) and <strong>Hours</strong> (base 4). Spend them on actions:</p>
+<ul>
+  <li><strong>Brew Potions</strong> &mdash; Combine ingredients, roll a craft check vs. DC. Success produces potions to sell, shelf, or use in quests.</li>
+  <li><strong>Forage Ingredients</strong> &mdash; Travel to a region, spend hours extracting. Roll extraction checks per hour for ingredients.</li>
+  <li><strong>Enchant Items</strong> &mdash; Customers bring items for enchantment. Roll inscription checks to inscribe runes for gold.</li>
+  <li><strong>Research</strong> &mdash; Study to discover new recipes and enchantment patterns.</li>
+  <li><strong>Manage Staff</strong> &mdash; Hire apprentices and assign them to brew, forage, shopkeep, or research.</li>
+  <li><strong>Complete Quests</strong> &mdash; NPCs post quests requiring specific potions, ingredients, or tasks.</li>
+  <li><strong>Invest in Settlement</strong> &mdash; Build roads, markets, watchtowers, and more to improve the town.</li>
+</ul>
+
+<h3>Progression</h3>
+<p>Gain XP from every action. Level up to earn class levels, skill points (3 per level), and feats (1 per level). Choose specializations at class level 3. Pursue prestige classes when you meet their prerequisites. Build toward the Hollow March endgame event, then Pass the Torch to begin anew.</p>
+
+<!-- ═══════════════════════════════════════ -->
+<!-- CHAPTER 2: RACES -->
+<!-- ═══════════════════════════════════════ -->
+<div class="page-break"></div>
+<h2>Chapter 2: Races</h2>
+
+<p>Choose one of six races at character creation. Each provides a permanent skill bonus that applies to all d20 checks using that skill. These bonuses stack with skill ranks and ability score modifiers.</p>
+
+<table>
+  <tr><th>Race</th><th>Bonus</th><th>Description</th></tr>
+  <tr><td><strong>Human</strong></td><td>+1 Persuasion, +1 Networking</td><td>Versatile and well-connected. Humans excel at diplomacy and cross-faction dealings. Their natural charm opens doors everywhere they go.</td></tr>
+  <tr><td><strong>Halfling</strong></td><td>+1 Persuasion, +1 Divination</td><td>Small but resourceful, with a supernatural knack for persuasion. Halflings see things others miss and talk their way through anything.</td></tr>
+  <tr><td><strong>Elf</strong></td><td>+2 Research</td><td>Long-lived scholars with a deep affinity for knowledge. Elves uncover recipes and patterns faster than any other race.</td></tr>
+  <tr><td><strong>Dwarf</strong></td><td>+2 Precision</td><td>Master crafters with steady hands. Dwarves produce consistently superior work through sheer technical skill.</td></tr>
+  <tr><td><strong>Goliath</strong></td><td>+2 Endurance</td><td>Tireless workers who shrug off fatigue. Goliaths can sustain effort that would break other races.</td></tr>
+  <tr><td><strong>Dragonborn</strong></td><td>+2 Inscription</td><td>Born with an innate understanding of runes and sigils. Dragonborn are natural enchanters whose inscriptions burn bright.</td></tr>
+</table>
+
+<div class="note">
+  <strong>Tip:</strong> Halflings' big earnest eyes make them supernaturally persuasive. Use that +1 Persuasion to ace social checks with faction envoys and harmony negotiations.
+</div>
+
+<!-- ═══════════════════════════════════════ -->
+<!-- CHAPTER 3: ABILITY SCORES & SKILLS -->
+<!-- ═══════════════════════════════════════ -->
+<div class="page-break"></div>
+<h2>Chapter 3: Ability Scores &amp; Skills</h2>
+
+<h3>Ability Scores (5 Stats)</h3>
+<p>Every character has five ability scores. At character creation, each starts at <strong>10</strong> and you have <strong>12 points</strong> to distribute freely. Ability scores provide modifiers to skill checks and determine your effectiveness in different activities.</p>
+
+<table>
+  <tr><th>Stat</th><th>Abbr.</th><th>Governs</th><th>Key Class</th></tr>
+  <tr><td><strong>Creativity</strong></td><td>CRE</td><td>Improvisation and experimental brewing</td><td>Alchemist</td></tr>
+  <tr><td><strong>Intuition</strong></td><td>INU</td><td>Attunement, persuasion, and divination</td><td>Warden</td></tr>
+  <tr><td><strong>Acumen</strong></td><td>ACU</td><td>Research, analysis, and networking</td><td>Scholar, Enchanter</td></tr>
+  <tr><td><strong>Technique</strong></td><td>TEC</td><td>Precision, inscription, and refinement</td><td>Artificer</td></tr>
+  <tr><td><strong>Discipline</strong></td><td>DIS</td><td>Endurance and focus. Key stat for combat checks.</td><td>Combat / Survival</td></tr>
+</table>
+
+<div class="note">
+  <strong>V2 Change:</strong> Commerce (COM) has been removed. Persuasion moved to INU; Networking moved to ACU. Seven skills were removed (Aesthetics, Haggling, Stockpiling, Efficiency, Lore, Appraisal, Procurement). All passive skill benefits have been converted to feats.
+</div>
+
+<hr class="divider-teal">
+
+<h3>Skills (17 Total)</h3>
+<p>Skills are <strong>pure d20 check bonuses</strong>. When you make a skill check, you roll d20 + ability modifier + skill rank bonus. Natural 1 always fails; natural 20 always succeeds.</p>
+
+<h4>Skill Ranks</h4>
+<table>
+  <tr><th>Rank</th><th>Level</th><th>Bonus</th><th>Cost to Reach</th></tr>
+  <tr><td>Untrained</td><td>0</td><td>+0</td><td>&mdash;</td></tr>
+  <tr><td>Trained</td><td>1</td><td>+1</td><td>1 skill point</td></tr>
+  <tr><td>Expert</td><td>2</td><td>+2</td><td>2 skill points</td></tr>
+  <tr><td>Master</td><td>3</td><td>+3</td><td>3 skill points</td></tr>
+</table>
+<p>You earn <strong>3 skill points per level</strong>. Total cost to reach Master from Untrained: 6 skill points (1 + 2 + 3).</p>
+
+<hr class="divider-thin">
+
+<h4>Creativity (CRE) Skills</h4>
+<div class="skill-entry"><span class="skill-name">Improvisation</span> <span class="skill-stat">(CRE)</span> &mdash; Adds to d20 craft roll for CRE-based recipes.</div>
+<div class="skill-entry"><span class="skill-name">Innovation</span> <span class="skill-stat">(CRE)</span> &mdash; +6% per rank to Research study discovery chance.</div>
+<div class="skill-entry"><span class="skill-name">Adaptation</span> <span class="skill-stat">(CRE)</span> &mdash; +rank bonus to craft on recipes brewed fewer than 5 times.</div>
+
+<h4>Intuition (INU) Skills</h4>
+<div class="skill-entry"><span class="skill-name">Attunement</span> <span class="skill-stat">(INU)</span> &mdash; Adds to d20 craft roll for INU-based recipes.</div>
+<div class="skill-entry"><span class="skill-name">Danger Sense</span> <span class="skill-stat">(INU)</span> &mdash; Rank x 12% chance to avoid negative expedition events.</div>
+<div class="skill-entry"><span class="skill-name">Arcane Sensitivity</span> <span class="skill-stat">(INU)</span> &mdash; Bonus to enchanting inscription checks.</div>
+<div class="skill-entry"><span class="skill-name">Divination</span> <span class="skill-stat">(INU)</span> &mdash; Rank x 10% per hour to find +1 bonus ingredient.</div>
+<div class="skill-entry"><span class="skill-name">Persuasion</span> <span class="skill-stat">(INU)</span> &mdash; d20 roll for social checks: faction envoy, harmony, training.</div>
+
+<h4>Acumen (ACU) Skills</h4>
+<div class="skill-entry"><span class="skill-name">Research</span> <span class="skill-stat">(ACU)</span> &mdash; Adds to d20 craft roll for ACU-based recipes. +4% per rank to discovery.</div>
+<div class="skill-entry"><span class="skill-name">Analysis</span> <span class="skill-stat">(ACU)</span> &mdash; Rank x 5% chance per craft to auto-succeed.</div>
+<div class="skill-entry"><span class="skill-name">Networking</span> <span class="skill-stat">(ACU)</span> &mdash; d20 roll for diplomatic and cross-faction checks.</div>
+
+<h4>Technique (TEC) Skills</h4>
+<div class="skill-entry"><span class="skill-name">Precision</span> <span class="skill-stat">(TEC)</span> &mdash; Adds to d20 craft roll for TEC-based recipes.</div>
+<div class="skill-entry"><span class="skill-name">Inscription</span> <span class="skill-stat">(TEC)</span> &mdash; THE enchanting skill &mdash; your d20 roll when inscribing.</div>
+<div class="skill-entry"><span class="skill-name">Extraction</span> <span class="skill-stat">(TEC)</span> &mdash; THE foraging skill &mdash; your d20 roll each expedition hour.</div>
+<div class="skill-entry"><span class="skill-name">Refinement</span> <span class="skill-stat">(TEC)</span> &mdash; Rank x 6% chance to produce a bonus extra at no cost.</div>
+
+<h4>Discipline (DIS) Skills</h4>
+<div class="skill-entry"><span class="skill-name">Endurance</span> <span class="skill-stat">(DIS)</span> &mdash; Rank x 10% chance any action costs 0 Energy.</div>
+<div class="skill-entry"><span class="skill-name">Focus</span> <span class="skill-stat">(DIS)</span> &mdash; +rank to Inscription. Rank x 5% for Masterwork enchantments.</div>
+
+<table>
+  <tr><th>Stat</th><th>Skills</th></tr>
+  <tr><td>CRE</td><td>Improvisation, Innovation, Adaptation</td></tr>
+  <tr><td>INU</td><td>Attunement, Danger Sense, Arcane Sensitivity, Divination, Persuasion</td></tr>
+  <tr><td>ACU</td><td>Research, Analysis, Networking</td></tr>
+  <tr><td>TEC</td><td>Precision, Inscription, Extraction, Refinement</td></tr>
+  <tr><td>DIS</td><td>Endurance, Focus</td></tr>
+</table>
+
+<!-- ═══════════════════════════════════════ -->
+<!-- CHAPTER 4: BASE CLASSES -->
+<!-- ═══════════════════════════════════════ -->
+<div class="page-break"></div>
+<h2>Chapter 4: Base Classes</h2>
+
+<p>There are <strong>5 base classes</strong>. Each class has 10 levels of features and 3 specialization paths that unlock at class level 3. You can multiclass freely &mdash; your character level is the sum of all class levels. Class levels are earned by spending XP, with higher levels costing more.</p>
+
+<!-- ALCHEMIST -->
+<div class="class-block no-break">
+  <img class="class-portrait" src="handbook_portrait_alchemist.jpg" alt="Alchemist">
+  <div class="class-name">Alchemist &#9876;&#65039;</div>
+  <p><em>Primary Stat: CRE &mdash; Proficient Skills: Attunement, Improvisation</em></p>
+  <p>Sense ingredient harmony intuitively, producing better potions more reliably. The Alchemist is the core brewing class &mdash; brew potions, the fundamental craft loop of the game.</p>
+</div>
+
+<table>
+  <tr><th>Lv</th><th>Feature</th><th>Description</th></tr>
+  <tr><td>1</td><td>Potion Crafting</td><td>Begin your alchemical journey. +1 craft bonus and 10% ingredient save chance.</td></tr>
+  <tr><td>2</td><td>Ingredient Sense</td><td>+1 to all craft checks. +1 extraction bonus from heightened reagent awareness.</td></tr>
+  <tr><td>3</td><td>Specialization</td><td>Choose a specialization path. +5% ingredient save chance.</td></tr>
+  <tr><td>4</td><td>Efficient Brewing</td><td>15% chance to save one ingredient per brew.</td></tr>
+  <tr><td>5</td><td>Double Batch</td><td>25% chance to produce 2x potions on success.</td></tr>
+  <tr><td>6</td><td>Intuitive DC</td><td>Craft checks can't roll below 5. 10% lucky brew chance for bonus potions.</td></tr>
+  <tr><td>7</td><td>Master Brewer</td><td>+2 to all craft checks (stacks). Unlock one legendary recipe.</td></tr>
+  <tr><td>8</td><td>Reagent Attunement</td><td>Foraging may yield bonus ingredients attuned to your most-brewed recipe. +15% ingredient efficiency on all crafts.</td></tr>
+  <tr><td>9</td><td>Perfected Art</td><td>Craft failures on recipes brewed 10+ times produce a lesser version. Once per day, reroll a failed craft.</td></tr>
+  <tr><td>10</td><td>Magnum Opus</td><td>Your 3 most-brewed recipes auto-succeed at Masterwork quality. Once per day, brew any recipe mastered 20+ times with zero ingredients.</td></tr>
+</table>
+
+<h4>Specializations</h4>
+
+<div class="spec-block">
+  <div class="spec-name">Apothecary (INU)</div>
+  <p>Healers and clinicians. Cure ailments, brew restorative potions, and earn gold treating patients. Clinic patients arrive daily with ailments that must be diagnosed and treated with the right healing potion.</p>
+  <table>
+    <tr><th>Lv</th><th>Feature</th><th>Description</th></tr>
+    <tr><td>3</td><td>Healer's Touch</td><td>Healing potions are 2x value/XP. Healing recipes -2 DC.</td></tr>
+    <tr><td>6</td><td>Panacea</td><td>Unlock multi-cure recipes. Healing potions also restore morale to staff.</td></tr>
+    <tr><td>10</td><td>Miracle Worker</td><td>Clinic patients auto-diagnosed. Clinic treatments pay 3x gold and XP. Once per day, Miracle Cure on any patient (5x reward). Healing potions 50% chance to produce bonus Masterwork copy.</td></tr>
+  </table>
+</div>
+
+<div class="spec-block">
+  <div class="spec-name">Transmuter (CRE)</div>
+  <p>Masters of ingredient conversion. Transform materials at ever-better ratios and transmute across types.</p>
+  <table>
+    <tr><th>Lv</th><th>Feature</th><th>Description</th></tr>
+    <tr><td>3</td><td>Efficient Transmutation</td><td>Convert ingredients at 2:1 ratio. Unlock transmutation recipes.</td></tr>
+    <tr><td>6</td><td>Lead to Gold</td><td>Transmute faction-specific ingredients. Convert potions between types.</td></tr>
+    <tr><td>10</td><td>Philosopher's Stone</td><td>1:1 ingredient conversion. Transmutations cost 0 hours.</td></tr>
+  </table>
+</div>
+
+<div class="spec-block">
+  <div class="spec-name">Venomist (TEC)</div>
+  <p>Brew volatile poisons and offensive concoctions. Sell deadly wares to guard factions for premium gold.</p>
+  <table>
+    <tr><th>Lv</th><th>Feature</th><th>Description</th></tr>
+    <tr><td>3</td><td>Volatile Mixtures</td><td>Unlock offensive/volatile recipes. Poisons sell 2x to local guard factions. +2 craft bonus on volatile recipes.</td></tr>
+    <tr><td>6</td><td>Concentrated Dose</td><td>+20% double batch chance. +2 craft bonus.</td></tr>
+    <tr><td>10</td><td>Plague Doctor</td><td>Legendary venom recipes. +3 craft. 30% double batch on volatile. Craft failures produce lesser venoms. Venom contracts pay 3x. 2 legendary poisons reduce threat by 15.</td></tr>
+  </table>
+</div>
+
+<!-- ENCHANTER -->
+<div class="page-break"></div>
+<div class="class-block no-break">
+  <img class="class-portrait" src="handbook_portrait_enchanter.jpg" alt="Enchanter">
+  <div class="class-name">Enchanter &#10024;</div>
+  <p><em>Primary Stat: ACU &mdash; Proficient Skills: Inscription, Arcane Sensitivity</em></p>
+  <p>Turn mundane items into treasures with runes and inscriptions. Inscribe runes for premium gold from customers.</p>
+</div>
+
+<table>
+  <tr><th>Lv</th><th>Feature</th><th>Description</th></tr>
+  <tr><td>1</td><td>Inscribe Enchantment</td><td>Can enchant customer items. +1 inscription, material cost -1.</td></tr>
+  <tr><td>2</td><td>Mana Flow</td><td>+1 to all inscription checks. Enchanting material cost reduced by 1 (min 1).</td></tr>
+  <tr><td>3</td><td>Specialization</td><td>Choose a specialization path. +5 inscription bonus.</td></tr>
+  <tr><td>4</td><td>Arcane Mastery</td><td>+8% enchant success chance. See customer satisfaction hints.</td></tr>
+  <tr><td>5</td><td>Dual Inscription</td><td>Apply 2 enchantments to a single customer item (second at +3 DC).</td></tr>
+  <tr><td>6</td><td>Resonance</td><td>Enchanting customers pay 25% more gold. Unlock 2 new enchantment patterns.</td></tr>
+  <tr><td>7</td><td>Overcharge</td><td>Natural 20 inscription = "Masterwork" enchantment worth 3x gold.</td></tr>
+  <tr><td>8</td><td>Archmage</td><td>DC 12 and below enchantments auto-succeed. +2 inscription (stacks).</td></tr>
+  <tr><td>9</td><td>Rune Library</td><td>Know all enchantment patterns regardless of faction requirements.</td></tr>
+  <tr><td>10</td><td>Reality Weaver</td><td>+12 flat inscription bonus, +50% gold from enchanting. Crits on 17+.</td></tr>
+</table>
+
+<h4>Specializations</h4>
+
+<div class="spec-block">
+  <div class="spec-name">Runesmith (TEC)</div>
+  <p>Forge powerful weapon enchantments. Martial runes command top prices from warriors and adventurers.</p>
+  <table>
+    <tr><th>Lv</th><th>Feature</th><th>Description</th></tr>
+    <tr><td>3</td><td>Battle Runes</td><td>Weapon/martial enchantments +25% value. -1 DC on weapon runes.</td></tr>
+    <tr><td>6</td><td>Runic Mastery</td><td>All enchantment material costs -1. Can re-enchant failed items same day.</td></tr>
+    <tr><td>10</td><td>Legendary Arms</td><td>Artifact-grade weapon enchantments. Martial enchants worth 3x gold.</td></tr>
+  </table>
+</div>
+
+<div class="spec-block">
+  <div class="spec-name">Wardkeeper (DIS)</div>
+  <p>Specialize in defensive enchantments. Layer protective wards for lucrative shield commissions.</p>
+  <table>
+    <tr><th>Lv</th><th>Feature</th><th>Description</th></tr>
+    <tr><td>3</td><td>Wards</td><td>Defensive enchantments +50% value. +2 to defensive inscription checks.</td></tr>
+    <tr><td>6</td><td>Layered Wards</td><td>Apply 3 enchantments to armor items. 40% chance to save materials on enchant success.</td></tr>
+    <tr><td>10</td><td>Unbreakable</td><td>Permanent wards. Defensive enchants auto-succeed DC 15. Shield commissions pay 3x. Once per day, Fortress Ward reduces all threats by 5 for 3 days.</td></tr>
+  </table>
+</div>
+
+<div class="spec-block">
+  <div class="spec-name">Spellweaver (INU)</div>
+  <p>Craft exotic utility enchantments and tap into planar power sources. Attract rare, high-paying customers.</p>
+  <table>
+    <tr><th>Lv</th><th>Feature</th><th>Description</th></tr>
+    <tr><td>3</td><td>Exotic Inscriptions</td><td>Utility/exotic enchantments unlocked. +2 to exotic inscription checks.</td></tr>
+    <tr><td>6</td><td>Planar Weave</td><td>Extraplanar power sources. Exotic enchants worth 2x and attract special customers.</td></tr>
+    <tr><td>10</td><td>Planar Convergence</td><td>Impossible enchantments. Combine two enchant types into one inscription.</td></tr>
+  </table>
+</div>
+
+<!-- ARTIFICER -->
+<div class="page-break"></div>
+<div class="class-block no-break">
+  <img class="class-portrait" src="handbook_portrait_artificer.jpg" alt="Artificer">
+  <div class="class-name">Artificer &#9881;&#65039;</div>
+  <p><em>Primary Stat: TEC &mdash; Proficient Skills: Precision, Refinement</em></p>
+  <p>Precision engineers who optimize crafting speed, material usage, and workshop efficiency. Optimize everything, salvage failures.</p>
+</div>
+
+<table>
+  <tr><th>Lv</th><th>Feature</th><th>Description</th></tr>
+  <tr><td>1</td><td>Technical Crafting</td><td>+1 to TEC-based craft checks. Gain proficiency in Precision and Refinement.</td></tr>
+  <tr><td>2</td><td>Salvage</td><td>Recover 50% of ingredients on craft failure (rounded up).</td></tr>
+  <tr><td>3</td><td>Specialization</td><td>Choose a specialization path. +10% salvage on failures.</td></tr>
+  <tr><td>4</td><td>Calibration</td><td>-1 DC for recipes you've brewed 3+ times. Auto-succeed DC 8 and below.</td></tr>
+  <tr><td>5</td><td>Overclock</td><td>Workshop upgrades provide 50% more of their numerical bonuses.</td></tr>
+  <tr><td>6</td><td>Production Line</td><td>Batch brew: +10% success rate per item after the first.</td></tr>
+  <tr><td>7</td><td>Prototype</td><td>Once per day, reroll a failed craft. +15% discovery chance from research.</td></tr>
+  <tr><td>8</td><td>Grand Artificer</td><td>Unlock legendary device recipes. Workshop upgrade costs -25%.</td></tr>
+  <tr><td>9</td><td>Systematic Mastery</td><td>Batch brew cap +3. All batch brews show individual roll results.</td></tr>
+  <tr><td>10</td><td>Masterwork Engine</td><td>Two free 0-hour crafting actions per day. Batch size +2. 100% salvage on failures. Upgrades cost -30% and provide double bonuses.</td></tr>
+</table>
+
+<h4>Specializations</h4>
+
+<div class="spec-block">
+  <div class="spec-name">Tinkerer (ACU)</div>
+  <p>Build utility gadgets and experiment with unconventional techniques. Innovation over brute force.</p>
+  <table>
+    <tr><th>Lv</th><th>Feature</th><th>Description</th></tr>
+    <tr><td>3</td><td>Gadgeteer</td><td>Craft utility gadgets for passive bonuses. +1 craft. +15% experiment discovery. 50% salvage.</td></tr>
+    <tr><td>6</td><td>Swiss Army</td><td>Gadgets provide multiple benefits. +15% batch success. Upgrades -15%.</td></tr>
+    <tr><td>10</td><td>Masterwork Tools</td><td>All craft DCs -2 permanently. 90% salvage. Gadgets upgrade indefinitely. Equip 2 gadgets.</td></tr>
+  </table>
+</div>
+
+<div class="spec-block">
+  <div class="spec-name">Constructor (DIS)</div>
+  <p>Master workshop builder. Upgrades cost less, staff work harder, and legendary blueprints reshape production.</p>
+  <table>
+    <tr><th>Lv</th><th>Feature</th><th>Description</th></tr>
+    <tr><td>3</td><td>Workshop Pro</td><td>Workshop upgrades cost 50% less gold. +2 to DIS checks.</td></tr>
+    <tr><td>6</td><td>Assembly Floor</td><td>Batch brewing capacity +2 (brew up to 7 at once). Staff efficiency +20%.</td></tr>
+    <tr><td>10</td><td>Master Builder</td><td>3 legendary blueprints: Alchemical Forge (auto-brews most profitable recipe), Crystal Greenhouse (1 random rare ingredient daily), Arcane Conduit (+2 Energy permanently). Half construction time.</td></tr>
+  </table>
+</div>
+
+<div class="spec-block">
+  <div class="spec-name">Reclaimer (DIS)</div>
+  <p>Waste nothing. Salvage failed brews, break down items for materials, and turn spoilage into profit.</p>
+  <table>
+    <tr><th>Lv</th><th>Feature</th><th>Description</th></tr>
+    <tr><td>3</td><td>Zero Waste</td><td>75% salvage on failure. Break down potions. 50% of spoiled ingredients become Alchemical Residue.</td></tr>
+    <tr><td>6</td><td>Deconstruct</td><td>Break any item into components. Failed enchants return all materials.</td></tr>
+    <tr><td>10</td><td>Perfect Reclamation</td><td>One free craft per day (no ingredients consumed). Deconstruction yields 150%.</td></tr>
+  </table>
+</div>
+
+<!-- SCHOLAR -->
+<div class="page-break"></div>
+<div class="class-block no-break">
+  <img class="class-portrait" src="handbook_portrait_scholar.jpg" alt="Scholar">
+  <div class="class-name">Scholar &#128218;</div>
+  <p><em>Primary Stat: ACU &mdash; Proficient Skills: Research, Analysis</em></p>
+  <p>Discover recipes faster, earn more XP, and turn experiments from gambles into science. Research, discovery, XP acceleration.</p>
+</div>
+
+<table>
+  <tr><th>Lv</th><th>Feature</th><th>Description</th></tr>
+  <tr><td>1</td><td>Research Study</td><td>Can conduct research studies to discover recipes. +5% discovery chance.</td></tr>
+  <tr><td>2</td><td>Speed Reader</td><td>One free research study per day (no hour cost). +10% base discovery chance.</td></tr>
+  <tr><td>3</td><td>Specialization</td><td>Choose a specialization path. +5% discovery chance.</td></tr>
+  <tr><td>4</td><td>Eureka!</td><td>Experiments: +15% discovery chance. On discovery, show recipe stat/DC info.</td></tr>
+  <tr><td>5</td><td>Academic Network</td><td>+15% XP from all sources. +1 free research study per day (2 total).</td></tr>
+  <tr><td>6</td><td>Cross-Reference</td><td>Experiment Bench shows hints based on how close your combination is.</td></tr>
+  <tr><td>7</td><td>Thesis Defense</td><td>+3 to all ACU-based checks. Research can discover enchantment patterns too. +15% discovery. +10% XP.</td></tr>
+  <tr><td>8</td><td>Grand Theorem</td><td>+25% discovery from all sources. See full ingredient tables for explored regions.</td></tr>
+  <tr><td>9</td><td>Polymath</td><td>+2 to all craft, inscription, and extraction checks. +10% XP from all sources.</td></tr>
+  <tr><td>10</td><td>Omniscience</td><td>Know all recipes. Experiment Bench shows exact results. +2 craft. +30% XP. Publish papers for passive gold.</td></tr>
+</table>
+
+<h4>Specializations</h4>
+
+<div class="spec-block">
+  <div class="spec-name">Theorist (ACU)</div>
+  <p>Publish academic papers for passive income and reputation. Research discovers more, faster, and better.</p>
+  <table>
+    <tr><th>Lv</th><th>Feature</th><th>Description</th></tr>
+    <tr><td>3</td><td>Published Research</td><td>2x XP from research and experiments. Can publish papers for passive gold.</td></tr>
+    <tr><td>6</td><td>Peer Review</td><td>Research studies have +20% discovery chance. Papers earn more over time.</td></tr>
+    <tr><td>10</td><td>Grand Unified Theory</td><td>Research produces 2 discoveries instead of 1. Papers earn faction rep. Scaling craft bonus from paper count (+1/+2/+3).</td></tr>
+  </table>
+</div>
+
+<div class="spec-block">
+  <div class="spec-name">Naturalist (INU)</div>
+  <p>Document flora and geology in a Field Journal. Unlock permanent yield bonuses and seasonal mastery.</p>
+  <table>
+    <tr><th>Lv</th><th>Feature</th><th>Description</th></tr>
+    <tr><td>3</td><td>Field Guide</td><td>See full ingredient tables for explored regions. Experiments with foraged ingredients +15% discovery.</td></tr>
+    <tr><td>6</td><td>Ecological Insight</td><td>Research discovers region-specific recipes. +20% XP from foraging and experiments.</td></tr>
+    <tr><td>10</td><td>Nature's Library</td><td>Every expedition yields 1 bonus hidden-area ingredient. Seasonal ingredients available all seasons. Once/day commune reveals highest-yield region. Journal craft bonus +2 for documented ingredients.</td></tr>
+  </table>
+</div>
+
+<div class="spec-block">
+  <div class="spec-name">Archivist (DIS)</div>
+  <p>Pursue lore fragments and quest chains. Board quests refresh faster, and deep knowledge grants permanent stats.</p>
+  <table>
+    <tr><th>Lv</th><th>Feature</th><th>Description</th></tr>
+    <tr><td>3</td><td>Deep Records</td><td>Quest log shows hidden objectives. +30% quest XP.</td></tr>
+    <tr><td>6</td><td>Master Index</td><td>Board quests refresh twice daily. Quest chains unlock earlier.</td></tr>
+    <tr><td>10</td><td>Living Archive</td><td>Completed lore chains grant permanent +1 to a stat (up to 3). 25% quest lore fragment chance. Board quests 3x daily with rare-ingredient quest. Faction alignment bonuses 50% stronger.</td></tr>
+  </table>
+</div>
+
+<!-- WARDEN -->
+<div class="page-break"></div>
+<div class="class-block no-break">
+  <img class="class-portrait" src="handbook_portrait_warden.jpg" alt="Warden">
+  <div class="class-name">Warden &#128737;&#65039;</div>
+  <p><em>Primary Stat: DIS &mdash; Proficient Skills: Extraction, Endurance</em></p>
+  <p>Masters of wilderness and expedition. Make foraging dramatically more productive.</p>
+</div>
+
+<table>
+  <tr><th>Lv</th><th>Feature</th><th>Description</th></tr>
+  <tr><td>1</td><td>Trailblazer</td><td>-1 travel time to all regions (min 0). Gain proficiency in Extraction and Endurance.</td></tr>
+  <tr><td>2</td><td>Enduring Spirit</td><td>+1 Energy per day. Weather penalties halved.</td></tr>
+  <tr><td>3</td><td>Specialization</td><td>Choose a specialization path. +1 extraction bonus.</td></tr>
+  <tr><td>4</td><td>Iron Constitution</td><td>Immune to expedition events that cost time.</td></tr>
+  <tr><td>5</td><td>Expert Forager</td><td>Critical extraction (nat 20) yields 3x ingredients. Successes yield +1 bonus.</td></tr>
+  <tr><td>6</td><td>Deep Mapping</td><td>Forage a second region in same expedition at -2 hours.</td></tr>
+  <tr><td>7</td><td>Wilderness Mastery</td><td>+2 extraction bonus. Positive expedition events 2x more likely. 15% bonus rare find per hour.</td></tr>
+  <tr><td>8</td><td>Expedition Commander</td><td>Staff foraging yields +40%. Staff gain XP 25% faster.</td></tr>
+  <tr><td>9</td><td>Indomitable</td><td>+3 extraction bonus. +1 bonus ingredient per success. Failed extractions still yield 1 common ingredient.</td></tr>
+  <tr><td>10</td><td>Legend of the Wild</td><td>All travel times become 0. +50% foraging yields. Overnight foraging.</td></tr>
+</table>
+
+<h4>Specializations</h4>
+
+<div class="spec-block">
+  <div class="spec-name">Ranger (INU)</div>
+  <p>Tame wild companions that gather, sell, scout, and fight alongside you. The signature beast-bond spec.</p>
+  <table>
+    <tr><th>Lv</th><th>Feature</th><th>Description</th></tr>
+    <tr><td>3</td><td>Tracker</td><td>Target ingredients without yield penalty. Befriend wild creatures.</td></tr>
+    <tr><td>6</td><td>Pathfinder</td><td>Discover hidden sub-regions with unique ingredients. Creature bonuses grow.</td></tr>
+    <tr><td>10</td><td>Apex Predator</td><td>Companions perform all actions twice per day. Highest-loyalty companion gains Legendary ability unique to its role. Solo expeditions from companion card (1/day, 0 Energy).</td></tr>
+  </table>
+</div>
+
+<div class="spec-block">
+  <div class="spec-name">Quartermaster (DIS)</div>
+  <p>Master of logistics. Double storage, reduce spoilage, and squeeze maximum value from every ingredient. Establish supply chain caravans.</p>
+  <table>
+    <tr><th>Lv</th><th>Feature</th><th>Description</th></tr>
+    <tr><td>3</td><td>Supply Chain</td><td>Workshop storage doubled. Ingredient efficiency +25%. Spoilage threshold +4.</td></tr>
+    <tr><td>6</td><td>Logistics Master</td><td>Staff foraging +25%. +25% personal yield. +4 spoilage threshold. Caravans always fresh.</td></tr>
+    <tr><td>10</td><td>War Room</td><td>Fully automated ingredient management. Foraging yield +100%. Spoilage threshold +8.</td></tr>
+  </table>
+</div>
+
+<div class="spec-block">
+  <div class="spec-name">Sentinel (TEC)</div>
+  <p>Night expeditions for bonus foraging after dark. Guard the settlement against rising threats.</p>
+  <table>
+    <tr><th>Lv</th><th>Feature</th><th>Description</th></tr>
+    <tr><td>3</td><td>Night Watch</td><td>Night expeditions: 2 bonus gathering hours at +4 DC, increased danger.</td></tr>
+    <tr><td>6</td><td>Trap Setter</td><td>Set traps for guaranteed rare ingredient finds. Night danger reduced.</td></tr>
+    <tr><td>10</td><td>Eternal Vigil</td><td>Night expeditions 4 hours at +3 DC. All threats passively decay by 3/day. Once/day Preemptive Strike: 2 Energy to reduce any threat by 20.</td></tr>
+  </table>
+</div>
+
+<hr class="divider-teal">
+
+<div class="callout">
+  <div class="callout-title">Where Did Merchant Go?</div>
+  <p>The Merchant class has been removed in the V2 balance patch. Its mechanics have been rehomed across the game for better integration:</p>
+  <ul>
+    <li><strong>Caravans &amp; supply chains</strong> &rarr; Warden Quartermaster specialization</li>
+    <li><strong>Apprentice training bonuses</strong> &rarr; Master Trainer feat</li>
+    <li><strong>Faction harmony &amp; diplomacy</strong> &rarr; Diplomat prestige class</li>
+    <li><strong>Brand creation &amp; product lines</strong> &rarr; Brand Master prestige class</li>
+    <li><strong>Customer bonuses &amp; sell price increases</strong> &rarr; Economic feats (Regular Clientele, Silver Tongue, Patron of the Arts, etc.)</li>
+  </ul>
+  <p>This consolidation reduces class count from 6 to 5 while preserving every meaningful Merchant mechanic in a more flexible, multiclass-friendly form.</p>
+</div>
+
+<!-- ═══════════════════════════════════════ -->
+<!-- CHAPTER 5: PRESTIGE CLASSES -->
+<!-- ═══════════════════════════════════════ -->
+<div class="page-break"></div>
+<h2>Chapter 5: Prestige Classes</h2>
+
+<p>There are <strong>nine prestige classes</strong>. Prestige classes have mixed prerequisites &mdash; class levels, skill ranks, and feats. Each prestige class has 5 levels of features. Prestige levels count toward your total character level.</p>
+
+<h3>Prestige Requirements</h3>
+<table>
+  <tr><th>Prestige Class</th><th>Requirements</th></tr>
+  <tr><td>Cartographer</td><td>Warden 3, Expert Extraction</td></tr>
+  <tr><td>Spellbrewer</td><td>Expert Precision, Expert Inscription</td></tr>
+  <tr><td>Magitech Engineer</td><td>Artificer 3, Enchanter 3</td></tr>
+  <tr><td>Brand Master</td><td>Alchemist 3, Artisan's Touch feat, Shrewd Bargainer feat</td></tr>
+  <tr><td>Wildcrafter</td><td>Warden 3, Expert Extraction, Trained Attunement</td></tr>
+  <tr><td>Antiquarian</td><td>Scholar 3, Keen Eye feat</td></tr>
+  <tr><td>Siege Engineer</td><td>Warden 3, Artificer 3</td></tr>
+  <tr><td>Arcanist</td><td>Scholar 3, Expert Arcane Sensitivity</td></tr>
+  <tr><td>Diplomat</td><td>Any two base classes at 3, Expert Persuasion</td></tr>
+</table>
+
+<hr class="divider-thin">
+
+<!-- Cartographer -->
+<h3>Cartographer &#128506;&#65039;</h3>
+<p><em>Explorer-scholar who maps hidden regions containing unique ingredients.</em></p>
+<table>
+  <tr><th>Lv</th><th>Feature</th><th>Description</th></tr>
+  <tr><td>1</td><td>Hidden Paths</td><td>Discover secret sub-areas within known regions with unique ingredients. 25% chance per forage hour.</td></tr>
+  <tr><td>2</td><td>Detailed Maps</td><td>Hidden area discovery chance +15%. Mapped areas yield +1 bonus ingredient.</td></tr>
+  <tr><td>3</td><td>Cartographer's Insight</td><td>See all ingredients in a region before committing to forage. +10% XP from foraging.</td></tr>
+  <tr><td>4</td><td>Pathfinder's Network</td><td>Staff foraging uses your mapped paths: +25% staff forage yield.</td></tr>
+  <tr><td>5</td><td>Legendary Atlas</td><td>Discover the Heartforge's hidden chambers. Unique legendary ingredients only you can access.</td></tr>
+</table>
+
+<!-- Spellbrewer -->
+<h3>Spellbrewer &#9876;&#65039;</h3>
+<p><em>Creates infused potions that combine brewing and enchanting effects.</em></p>
+<table>
+  <tr><th>Lv</th><th>Feature</th><th>Description</th></tr>
+  <tr><td>1</td><td>Infusion Novice</td><td>Unlock Vigor and Clarity infusions. 2 infusions per day. Catalyst: any ingredient with 5+ stock.</td></tr>
+  <tr><td>2</td><td>Resonant Brew</td><td>Unlock Fortify infusion. Infusion DC penalty reduced by 1. 3 infusions per day.</td></tr>
+  <tr><td>3</td><td>Essence Weaver</td><td>Unlock Prosperity infusion. 25% chance catalyst is preserved. 4 infusions per day.</td></tr>
+  <tr><td>4</td><td>Arcane Distiller</td><td>Unlock Lingering infusion. Catalyst always preserved on Masterwork+ brews. 5 infusions per day.</td></tr>
+  <tr><td>5</td><td>Grand Spellbrewer</td><td>Stack two infusions on one brew (double catalyst). Infused shelf potions attract +1 daily customer.</td></tr>
+</table>
+
+<!-- Magitech Engineer -->
+<h3>Magitech Engineer &#128295;</h3>
+<p><em>Builds magical automata that perform workshop tasks autonomously.</em></p>
+<table>
+  <tr><th>Lv</th><th>Feature</th><th>Description</th></tr>
+  <tr><td>1</td><td>Automaton Frame</td><td>Build a basic automaton (1 active). Performs one task per day at 60% efficiency.</td></tr>
+  <tr><td>2</td><td>Improved Servos</td><td>Automaton efficiency +20%. Can assign to brew, forage, or shopkeep.</td></tr>
+  <tr><td>3</td><td>Second Automaton</td><td>+1 automaton slot (2 total). Automata gain XP and level up like staff.</td></tr>
+  <tr><td>4</td><td>Enchanted Core</td><td>Automata can perform enchanting tasks. Efficiency +20% (total 100%).</td></tr>
+  <tr><td>5</td><td>Master Construct</td><td>+1 automaton (3 total). Automata can perform prestige tasks. Self-repairing.</td></tr>
+</table>
+
+<div class="page-break"></div>
+
+<!-- Brand Master -->
+<h3>Brand Master &#127991;&#65039;</h3>
+<p><em>Creates named product lines that build customer loyalty and premium pricing.</em></p>
+<table>
+  <tr><th>Lv</th><th>Feature</th><th>Description</th></tr>
+  <tr><td>1</td><td>First Label</td><td>Create 1 brand with up to 2 recipes. Branded potions +10% sell. Brand levels up with sales.</td></tr>
+  <tr><td>2</td><td>Brand Recognition</td><td>Brands hold 3 recipes. +5 aligned faction rep per 10 branded sales. Sales tracker UI.</td></tr>
+  <tr><td>3</td><td>Product Line</td><td>2nd brand slot. Brand orders appear (2x price). Branded shelf potions +10% sell chance.</td></tr>
+  <tr><td>4</td><td>Premium Label</td><td>Brands hold 4 recipes. Famous tier unlocks (+60% sell). Branded MW+ potions extra +25%.</td></tr>
+  <tr><td>5</td><td>Legendary Brand</td><td>3rd brand slot. Famous brands attract collectors trading rare ingredients. 25% brand rep carries through Torch.</td></tr>
+</table>
+
+<!-- Wildcrafter -->
+<h3>Wildcrafter &#127807;</h3>
+<p><em>Brews potions in the field using fresh ingredients for bonus potency.</em></p>
+<table>
+  <tr><th>Lv</th><th>Feature</th><th>Description</th></tr>
+  <tr><td>1</td><td>Field Alchemy</td><td>1 field brew per expedition from your haul. Fresh potions sell at 1.2x. Standard quality only.</td></tr>
+  <tr><td>2</td><td>Fresh Reagents</td><td>2 field brews. Fresh 1.3x. Fine quality field brewing. +1 bonus ingredient per expedition.</td></tr>
+  <tr><td>3</td><td>Wilderness Recipes</td><td>3 field brews. Fresh 1.4x. Unlock 3 field-only recipes (Vitality Draught, Trailblazer Tonic, Wilderness Elixir).</td></tr>
+  <tr><td>4</td><td>Master Fieldcrafter</td><td>3 field brews. Fresh 1.5x. Masterwork field brewing. 15% double batch chance.</td></tr>
+  <tr><td>5</td><td>Living Apothecary</td><td>4 field brews. Auto-suggests best potion. Legendary field-only recipe: Essence of the Wild.</td></tr>
+</table>
+
+<!-- Antiquarian -->
+<h3>Antiquarian &#128214;</h3>
+<p><em>Discovers and appraises mysterious relics for massive profit or permanent bonuses.</em></p>
+<table>
+  <tr><th>Lv</th><th>Feature</th><th>Description</th></tr>
+  <tr><td>1</td><td>Relic Sense</td><td>15% relic find chance per expedition hour. Appraise interface unlocked (1 Energy, Acumen check).</td></tr>
+  <tr><td>2</td><td>Keen Appraisal</td><td>25% find chance. +3 appraisal bonus. See relic rarity before appraising.</td></tr>
+  <tr><td>3</td><td>Collector's Network</td><td>Sell appraised relics at 3x value. Museum display unlocked. Collection set bonuses active.</td></tr>
+  <tr><td>4</td><td>Relic Expertise</td><td>35% find chance. Auto-identify (no check). Staff can do Relic Hunt tasks.</td></tr>
+  <tr><td>5</td><td>Grand Collection</td><td>Complete all 5 sets for +10g/morning museum income. Legendary relics in diff 4+. Set bonuses doubled.</td></tr>
+</table>
+
+<!-- Siege Engineer -->
+<h3>Siege Engineer &#127959;&#65039;</h3>
+<p><em>Builds outposts that gather ingredients and suppress external threats.</em></p>
+<table>
+  <tr><th>Lv</th><th>Feature</th><th>Description</th></tr>
+  <tr><td>1</td><td>Field Outpost</td><td>1 outpost slot. Gathers 2 ingredients/morning. Suppresses nearby threats (-3/day).</td></tr>
+  <tr><td>2</td><td>Fortified Outpost</td><td>2 slots. Gathering +1 (3/morning). -4 suppression. +1 forage yield at outpost regions.</td></tr>
+  <tr><td>3</td><td>Processing Station</td><td>3 slots. Assign 1 auto-brew recipe per outpost from stored ingredients.</td></tr>
+  <tr><td>4</td><td>Supply Depot</td><td>3 slots. Gathering +1 (4/morning). -5 suppression. Auto-brewed potions stock to shelves.</td></tr>
+  <tr><td>5</td><td>Fortress Network</td><td>4 slots. Upgrade one outpost to a fortress (caps one threat at 50). Outposts share storage.</td></tr>
+</table>
+
+<!-- Arcanist -->
+<h3>Arcanist &#10024;</h3>
+<p><em>Researches and designs entirely new custom enchantment patterns.</em></p>
+<table>
+  <tr><th>Lv</th><th>Feature</th><th>Description</th></tr>
+  <tr><td>1</td><td>Pattern Research</td><td>Spend 2h to research a new enchantment pattern. Choose effect type and power level.</td></tr>
+  <tr><td>2</td><td>Refined Patterns</td><td>Custom enchantments get +2 inscription bonus. Can name your creations.</td></tr>
+  <tr><td>3</td><td>Dual-Effect Patterns</td><td>Design enchantments with two effects. Custom patterns sell at 2x value.</td></tr>
+  <tr><td>4</td><td>Pattern Library</td><td>Store up to 10 custom patterns. Share patterns with staff for automated inscribing.</td></tr>
+  <tr><td>5</td><td>Grand Theorem</td><td>Design legendary enchantments. Custom patterns can have 3 effects. Named masterworks.</td></tr>
+</table>
+
+<!-- Diplomat -->
+<div class="page-break"></div>
+<h3>Diplomat &#129309;</h3>
+<p><em>Forges cross-faction alliances and doubles faction reputation gains. Unlock exclusive vendor stock.</em></p>
+<p>The Diplomat was formerly a Merchant specialization. In V2 it has been elevated to a full prestige class, representing the pinnacle of cross-faction diplomacy available to any versatile character.</p>
+<table>
+  <tr><th>Lv</th><th>Feature</th><th>Description</th></tr>
+  <tr><td>1</td><td>Embassy</td><td>Double faction rep gains. Faction NPCs offer unique dialogue and quests.</td></tr>
+  <tr><td>2</td><td>Trade Agreements</td><td>Exclusive faction vendors with rare stock. Cross-faction quests.</td></tr>
+  <tr><td>3</td><td>Faction Harmony</td><td>Build diplomatic bridges between faction pairs, creating harmony bonuses.</td></tr>
+  <tr><td>4</td><td>Grand Alliance</td><td>Allied with all factions simultaneously. Faction vendors stock legendary items.</td></tr>
+  <tr><td>5</td><td>Ambassador</td><td>Faction harmony bonuses doubled. Cross-faction rep spillover 25%. Carries through Torch.</td></tr>
+</table>
+
+<!-- ═══════════════════════════════════════ -->
+<!-- CHAPTER 6: FEATS -->
+<!-- ═══════════════════════════════════════ -->
+<div class="page-break"></div>
+<h2>Chapter 6: Feats</h2>
+
+<p>Feats are permanent abilities. You earn <strong>1 feat per level</strong>. There are 62 feats organized into 8 categories. Some feats have prerequisites (other feats or class levels). Once chosen, a feat's benefits are always active.</p>
+
+<!-- Crafting Feats -->
+<div class="feat-category">Crafting (10 feats)</div>
+<div class="feat-entry"><span class="feat-name">Careful Hands</span> &mdash; 25% ingredient save on failed brews. Once per day, reroll a failed craft check.</div>
+<div class="feat-entry"><span class="feat-name">Bulk Processor</span> &mdash; Max batch brew size +2.</div>
+<div class="feat-entry"><span class="feat-name">Recipe Intuition</span> &mdash; +10% experiment discovery chance. Experiments cost 0 hours on failure.</div>
+<div class="feat-entry"><span class="feat-name">Quality Assurance</span> &mdash; Brewed potions worth +20% when sold or shelved.</div>
+<div class="feat-entry"><span class="feat-name">Rapid Infusion</span> &mdash; Infusions don't cost extra time. First brew each day costs 0 hours. <span class="feat-req">(Req: Alchemist 3)</span></div>
+<div class="feat-entry"><span class="feat-name">Lucky Brew</span> &mdash; 10% chance any craft produces a random bonus potion alongside.</div>
+<div class="feat-entry"><span class="feat-name">Methodical Brewer</span> &mdash; Recipes brewed 10+ times get -2 DC permanently. Mastery discount cap +2.</div>
+<div class="feat-entry"><span class="feat-name">Efficient Brewing</span> &mdash; 15% chance to save all ingredients on a successful brew.</div>
+<div class="feat-entry"><span class="feat-name">Double Batch</span> &mdash; +5% double batch chance.</div>
+<div class="feat-entry"><span class="feat-name">Overachiever</span> &mdash; +1 to all craft checks.</div>
+
+<!-- Exploration Feats -->
+<div class="feat-category">Exploration (7 feats)</div>
+<div class="feat-entry"><span class="feat-name">Trailblazer's Boots</span> &mdash; -1 travel time to all regions.</div>
+<div class="feat-entry"><span class="feat-name">Lucky Find</span> &mdash; +5% chance for bonus rare ingredient per forage hour.</div>
+<div class="feat-entry"><span class="feat-name">Companion Handler</span> &mdash; Companion actions +50% effectiveness. Companions gain loyalty 2x faster. +15% companion encounter chance.</div>
+<div class="feat-entry"><span class="feat-name">Seasoned Explorer</span> &mdash; +2 to all extraction checks.</div>
+<div class="feat-entry"><span class="feat-name">Pack Mule</span> &mdash; Carry +2 extra items from expeditions. +25% ingredient yield.</div>
+<div class="feat-entry"><span class="feat-name">Danger Magnet</span> &mdash; Events 2x more likely, positive events 3x more likely. High risk, high reward.</div>
+<div class="feat-entry"><span class="feat-name">Night Owl</span> &mdash; Night expeditions -1 DC penalty.</div>
+
+<!-- Enchanting Feats -->
+<div class="feat-category">Enchanting (6 feats)</div>
+<div class="feat-entry"><span class="feat-name">Runelord</span> &mdash; +2 to all inscription checks.</div>
+<div class="feat-entry"><span class="feat-name">Mana Efficient</span> &mdash; 25% chance to save all enchanting materials on success.</div>
+<div class="feat-entry"><span class="feat-name">Arcane Recycler</span> &mdash; Failed enchants return 75% of ingredients. Successful enchants have 15% chance to produce a bonus scroll.</div>
+<div class="feat-entry"><span class="feat-name">Runic Savant</span> &mdash; +5 flat inscription bonus. +1 inscription. On selection, learn 3 undiscovered enchantment patterns.</div>
+<div class="feat-entry"><span class="feat-name">Masterwork Focus</span> &mdash; Natural 18-20 on inscription = critical (3x reward).</div>
+<div class="feat-entry"><span class="feat-name">Glyph Mastery</span> &mdash; Enchant DC 10 and below auto-succeed. <span class="feat-req">(Req: Enchanter 3)</span></div>
+
+<!-- Economic Feats -->
+<div class="feat-category">Economic (20 feats)</div>
+<div class="feat-entry"><span class="feat-name">Shrewd Bargainer</span> &mdash; +5% sell prices.</div>
+<div class="feat-entry"><span class="feat-name">Bulk Buyer</span> &mdash; -10% buy prices.</div>
+<div class="feat-entry"><span class="feat-name">Artisan's Touch</span> &mdash; +2 XP per brew.</div>
+<div class="feat-entry"><span class="feat-name">Master Presenter</span> &mdash; +2g per potion sale. <span class="feat-req">(Req: Artisan's Touch)</span></div>
+<div class="feat-entry"><span class="feat-name">Organized Shelves</span> &mdash; +4 shelf capacity.</div>
+<div class="feat-entry"><span class="feat-name">Preservation</span> &mdash; +5 spoil threshold.</div>
+<div class="feat-entry"><span class="feat-name">Deep Preservation</span> &mdash; +8 spoil threshold. <span class="feat-req">(Req: Preservation)</span></div>
+<div class="feat-entry"><span class="feat-name">Scholar's Memory</span> &mdash; +8 XP per quest turn-in.</div>
+<div class="feat-entry"><span class="feat-name">Quick Study</span> &mdash; Research costs 1h less. <span class="feat-req">(Req: Scholar's Memory)</span></div>
+<div class="feat-entry"><span class="feat-name">Keen Eye</span> &mdash; +3g per enchant commission.</div>
+<div class="feat-entry"><span class="feat-name">Gem Cutter</span> &mdash; +1g per ingredient sold.</div>
+<div class="feat-entry"><span class="feat-name">Supplier Contacts</span> &mdash; 2 rare ingredients appear in shop daily.</div>
+<div class="feat-entry"><span class="feat-name">Regular Clientele</span> &mdash; +1 base customer per day.</div>
+<div class="feat-entry"><span class="feat-name">Showmanship</span> &mdash; Shelf potions +5% sell chance. <span class="feat-req">(Req: Regular Clientele)</span></div>
+<div class="feat-entry"><span class="feat-name">Silver Tongue</span> &mdash; +15% shelf sale chance. +10% all sell prices.</div>
+<div class="feat-entry"><span class="feat-name">Talent Scout</span> &mdash; +2 hire candidates. All candidates have +2 to highest stat.</div>
+<div class="feat-entry"><span class="feat-name">Patron of the Arts</span> &mdash; Customer orders pay 25% more. +1 customer per morning.</div>
+<div class="feat-entry"><span class="feat-name">Supply Lines</span> &mdash; Shop buy prices -10%. +2 max shelf capacity.</div>
+<div class="feat-entry"><span class="feat-name">Penny Pincher</span> &mdash; All gold costs (purchases, upgrades, hiring, payroll) -15%.</div>
+<div class="feat-entry"><span class="feat-name">Taskmaster</span> &mdash; Staff brew/forage efficiency +25%. Staff injuries heal 1 day faster.</div>
+
+<!-- Social/Faction Feats -->
+<div class="feat-category">Social / Faction (4 feats)</div>
+<div class="feat-entry"><span class="feat-name">Faction Diplomat</span> &mdash; +15% reputation gains from all sources.</div>
+<div class="feat-entry"><span class="feat-name">Cross-Faction Charm</span> &mdash; 10% rep spillover to non-aligned factions. <span class="feat-req">(Req: Faction Diplomat)</span></div>
+<div class="feat-entry"><span class="feat-name">Master Trainer</span> &mdash; Apprentices gain 2x XP.</div>
+<div class="feat-entry"><span class="feat-name">Inspiring Presence</span> &mdash; Staff morale +10%.</div>
+
+<!-- Legacy Feats -->
+<div class="feat-category">Legacy (2 feats)</div>
+<div class="feat-entry"><span class="feat-name">Ancestral Wisdom</span> &mdash; Pass the Torch carries 25% gold (up from 15%), 5 recipes (up from 3), 50% rep (up from 33%). +1 Energy.</div>
+<div class="feat-entry"><span class="feat-name">Mentor's Gift</span> &mdash; Torch carries 1 additional legacy feature. <span class="feat-req">(Req: Ancestral Wisdom)</span></div>
+
+<!-- Combat/Survival Feats -->
+<div class="feat-category">Combat / Survival (3 feats)</div>
+<div class="feat-entry"><span class="feat-name">Iron Will</span> &mdash; +2 to all Danger Sense checks.</div>
+<div class="feat-entry"><span class="feat-name">Thick Skin</span> &mdash; Expedition injuries heal 1 day faster.</div>
+<div class="feat-entry"><span class="feat-name">Ward of Protection</span> &mdash; -5% threat growth rate.</div>
+
+<!-- General Feats -->
+<div class="feat-category">General (10 feats)</div>
+<div class="feat-entry"><span class="feat-name">Early Riser</span> &mdash; First 1-Energy action each day costs 0 Energy.</div>
+<div class="feat-entry"><span class="feat-name">Multitasker</span> &mdash; One free 0-hour action per day.</div>
+<div class="feat-entry"><span class="feat-name">Jack of All Trades</span> &mdash; +1 to all skill checks where you have 0 invested ranks. +1 to your lowest ability score modifier.</div>
+<div class="feat-entry"><span class="feat-name">Prodigy</span> &mdash; +1 to two ability scores of your choice (can exceed soft cap). +5% XP.</div>
+<div class="feat-entry"><span class="feat-name">Tough</span> &mdash; Once per day, reroll a failed check. Negative town events halved.</div>
+<div class="feat-entry"><span class="feat-name">Focused Mind</span> &mdash; +1 skill point every other level (retroactive). +5% XP from all sources.</div>
+<div class="feat-entry"><span class="feat-name">Lorekeeper</span> &mdash; +25% XP from quests/board requests. Quest completion +5 faction rep.</div>
+<div class="feat-entry"><span class="feat-name">Relentless</span> &mdash; After a failed check, +2 to next check of same type. Stacks to +6.</div>
+<div class="feat-entry"><span class="feat-name">Crisis Responder</span> &mdash; During the Hollow March, crisis checks get +3. Brew/enchant solutions need 1 fewer item. Gold solutions cost 20% less.</div>
+<div class="feat-entry"><span class="feat-name">Fortified Workshop</span> &mdash; Threats grow 20% slower. Warning 2 days before 75+ threat events. Workshop upgrades can't be disabled by March failures.</div>
+
+<!-- ═══════════════════════════════════════ -->
+<!-- CHAPTER 7: LOCATIONS & REGIONS -->
+<!-- ═══════════════════════════════════════ -->
+<div class="page-break"></div>
+<h2>Chapter 7: Locations &amp; Regions &amp; Skyreach Peaks</h2>
+
+<p>The world of Cindervale Alchemist spans <strong>4 locations</strong>, each with 8 foraging regions of increasing difficulty. Regions unlock as your character level increases. Higher-difficulty regions require more travel time but yield rarer and more valuable ingredients.</p>
+
+<p>Each region has 3 foraging sites that weight different ingredients. Difficulty rating determines the base DC for extraction checks and the rarity of ingredients available.</p>
+
+<hr class="divider-teal">
+
+<!-- CINDERVALE -->
+<h3>Cindervale (Volcanic)</h3>
+<p>A volcanic settlement built on the rim of a dormant caldera. Ash-covered plains give way to crystal caves, moonlit glades, and the legendary Heartforge at the summit. The original location &mdash; where every alchemist begins their journey.</p>
+
+<table>
+  <tr><th>Region</th><th>Diff</th><th>Unlock</th><th>Travel</th><th>DC</th><th>Description</th></tr>
+  <tr><td>Ashfields</td><td>*</td><td>Lv 0</td><td>1h</td><td>8</td><td>Grey ash plains with hardy blooms growing between broken flagstones.</td></tr>
+  <tr><td>Ironwood</td><td>**</td><td>Lv 1</td><td>1h</td><td>10</td><td>Ancient forest with bark like hammered iron.</td></tr>
+  <tr><td>Fungal Caves</td><td>**</td><td>Lv 2</td><td>2h</td><td>11</td><td>Bioluminescent caverns thick with spores and rare fungi.</td></tr>
+  <tr><td>Crystal Hollows</td><td>***</td><td>Lv 3</td><td>2h</td><td>13</td><td>Underground chambers encrusted with resonating crystals.</td></tr>
+  <tr><td>Moonlit Glade</td><td>***</td><td>Lv 4</td><td>2h</td><td>14</td><td>Silver-lit grove where moonpetals bloom under perpetual moonlight.</td></tr>
+  <tr><td>Volcanic Vents</td><td>****</td><td>Lv 5</td><td>3h</td><td>15</td><td>Active vents with sulfur blooms and obsidian formations.</td></tr>
+  <tr><td>Deep Mines</td><td>****</td><td>Lv 6</td><td>3h</td><td>16</td><td>Cinderfolk-guarded shafts with mithril seams and shadow ore.</td></tr>
+  <tr><td>Heartforge Rim</td><td>*****</td><td>Lv 8</td><td>4h</td><td>18</td><td>The caldera summit where primordial creation energy still pulses.</td></tr>
+</table>
+
+<p><strong>Cindervale Factions:</strong> Ashwardens, Hearthkeepers, Veilwalkers, Cinderfolk</p>
+<p><strong>Threats:</strong> Ashland Reavers (bandits), The Blight (fungal corruption), Veilbreakers (rogue mages)</p>
+
+<hr class="divider-thin">
+
+<!-- ASHFALL CROSSING -->
+<h3>Ashfall Crossing (Desert)</h3>
+<p>A sun-scorched desert trading hub built around an ancient buried temple. Scorching flats, salt caverns, obsidian wastes, and mirage-haunted bazaars. The desert hides treasures beneath its sands.</p>
+
+<table>
+  <tr><th>Region</th><th>Diff</th><th>Unlock</th><th>Travel</th><th>DC</th><th>Description</th></tr>
+  <tr><td>Sunscorch Flats</td><td>*</td><td>Lv 0</td><td>1h</td><td>8</td><td>Windswept dunes with hardy desert plants along ancient caravan trails.</td></tr>
+  <tr><td>Salt Caverns</td><td>**</td><td>Lv 1</td><td>1h</td><td>10</td><td>Underground caverns where salt crystals grow to enormous size.</td></tr>
+  <tr><td>Obsidian Wastes</td><td>**</td><td>Lv 2</td><td>2h</td><td>11</td><td>Fields of volcanic glass formations hiding rare minerals.</td></tr>
+  <tr><td>Sandworm Tunnels</td><td>***</td><td>Lv 3</td><td>2h</td><td>13</td><td>Dangerous tunnels carved by massive sandworms.</td></tr>
+  <tr><td>Oasis Grove</td><td>***</td><td>Lv 4</td><td>2h</td><td>14</td><td>Hidden paradise around a desert spring with lush vegetation.</td></tr>
+  <tr><td>Molten Vents</td><td>****</td><td>Lv 5</td><td>3h</td><td>15</td><td>Subterranean volcanic vents beneath the desert floor.</td></tr>
+  <tr><td>Mirage Bazaar</td><td>****</td><td>Lv 6</td><td>3h</td><td>16</td><td>A market that exists half in reality and half in mirage.</td></tr>
+  <tr><td>Buried Temple</td><td>*****</td><td>Lv 8</td><td>4h</td><td>18</td><td>Ancient temple sealed beneath the sands for millennia.</td></tr>
+</table>
+
+<p><strong>Ashfall Factions:</strong> Sand Merchants Guild, Flamekeepers, Dustwalkers</p>
+<p><strong>Threats:</strong> Sand Raiders (bandits), The Scorch (heat corruption), Cult of the Buried (fanatic priests)</p>
+
+<hr class="divider-thin">
+
+<!-- TIDECREST HARBOR -->
+<h3>Tidecrest Harbor (Coastal)</h3>
+<p>A bustling port town where the sea provides. Driftwood shores, tidal pools, kelp forests, and the haunted depths of the Drowned Sanctum. The ocean holds ancient secrets.</p>
+
+<table>
+  <tr><th>Region</th><th>Diff</th><th>Unlock</th><th>Travel</th><th>DC</th><th>Description</th></tr>
+  <tr><td>Driftwood Shores</td><td>*</td><td>Lv 0</td><td>1h</td><td>8</td><td>Beaches strewn with driftwood and salt-crusted treasures.</td></tr>
+  <tr><td>Tidal Pools</td><td>**</td><td>Lv 1</td><td>1h</td><td>10</td><td>Shallow pools teeming with marine life and coral specimens.</td></tr>
+  <tr><td>Kelp Forest</td><td>**</td><td>Lv 2</td><td>2h</td><td>11</td><td>Underwater forest of towering kelp with hidden treasures.</td></tr>
+  <tr><td>Fog Hollows</td><td>***</td><td>Lv 3</td><td>2h</td><td>13</td><td>Misty coastal caves where bioluminescent life glows.</td></tr>
+  <tr><td>Coral Labyrinth</td><td>***</td><td>Lv 4</td><td>2h</td><td>14</td><td>Maze-like coral formations hiding rare pearls and royal coral.</td></tr>
+  <tr><td>Shipwreck Graveyard</td><td>****</td><td>Lv 5</td><td>3h</td><td>15</td><td>Sunken ships holding centuries of treasure and enchanted cargo.</td></tr>
+  <tr><td>Abyssal Trench</td><td>****</td><td>Lv 6</td><td>3h</td><td>16</td><td>The deepest waters where pressure creates impossible minerals.</td></tr>
+  <tr><td>Drowned Sanctum</td><td>*****</td><td>Lv 8</td><td>4h</td><td>18</td><td>Submerged temple of a sea oracle, pulsing with tidal magic.</td></tr>
+</table>
+
+<p><strong>Tidecrest Factions:</strong> Harbormaster's Guild, Pearl Divers, Tidekeepers, Merchant Marine</p>
+<p><strong>Threats:</strong> The Corsairs (pirates), The Murk (deep-sea corruption), Cult of the Drowned (fanatical tidal cultists)</p>
+
+<hr class="divider-thin">
+
+<!-- SKYREACH PEAKS -->
+<div class="page-break"></div>
+<h3>Skyreach Peaks (Alpine)</h3>
+<p>An alpine trading post perched in the clouds above an ancient monastery. Frost meadows give way to wind-carved cliffs, glacial lakes, and the legendary Observatory Summit where the atmosphere thins to nothing and void crystals grow. The newest frontier for ambitious alchemists.</p>
+
+<table>
+  <tr><th>Region</th><th>Diff</th><th>Unlock</th><th>Travel</th><th>DC</th><th>Description</th></tr>
+  <tr><td>Alpine Meadows (Frost Meadows)</td><td>*</td><td>Lv 0</td><td>1h</td><td>8</td><td>Rolling meadow carpeted in silver-blue blooms trembling in constant wind.</td></tr>
+  <tr><td>Cloud Forest (Windswept Ridge)</td><td>**</td><td>Lv 1</td><td>1h</td><td>10</td><td>Fog-shrouded forest where water condenses on every surface.</td></tr>
+  <tr><td>Wind-Carved Cliffs (Cloud Gardens)</td><td>**</td><td>Lv 2</td><td>2h</td><td>11</td><td>Stone shaped by eternal wind into frozen wave formations.</td></tr>
+  <tr><td>Crystal Caverns (Thunder Pass)</td><td>***</td><td>Lv 3</td><td>2h</td><td>13</td><td>Underground caverns where crystals hum with resonant energy.</td></tr>
+  <tr><td>Glacial Lake (Eagle's Nest)</td><td>***</td><td>Lv 4</td><td>2h</td><td>14</td><td>Impossibly clear lake surrounded by glacial silt and aurora-reflecting lichens.</td></tr>
+  <tr><td>Stormspire Peaks (Glacial Caverns)</td><td>****</td><td>Lv 5</td><td>3h</td><td>15</td><td>Peaks where lightning constantly strikes, creating stormglass and charged minerals.</td></tr>
+  <tr><td>Sky Ruins (Monastery Ruins)</td><td>****</td><td>Lv 6</td><td>3h</td><td>16</td><td>Ruins of once-floating architecture where gravity is a suggestion.</td></tr>
+  <tr><td>Observatory Summit (Skyreach Summit)</td><td>*****</td><td>Lv 8</td><td>4h</td><td>18</td><td>The absolute apex where earth meets infinite sky. Stars visible at noon.</td></tr>
+</table>
+
+<p><strong>Skyreach Factions:</strong> Skywardens, Starcallers, Cloud Traders, Windrunners</p>
+<p><strong>Threats:</strong> Sky Raiders (renegade climbers), The Gale (unnatural perpetual storm), Eclipse Covenant (secretive star cult)</p>
+
+<!-- ═══════════════════════════════════════ -->
+<!-- CHAPTER 8: FACTIONS -->
+<!-- ═══════════════════════════════════════ -->
+<div class="page-break"></div>
+<h2>Chapter 8: Factions</h2>
+
+<p>There are <strong>15 factions</strong> across 4 locations &mdash; Cindervale (4), Ashfall Crossing (3), Tidecrest Harbor (4), and Skyreach Peaks (4). Build reputation through quests, donations, and alignment to unlock faction bonuses across 5 tiers. You can align with one faction per location for an alignment bonus.</p>
+
+<h3>Reputation Tiers</h3>
+<p>Each faction has 5 tiers of bonuses that unlock as your reputation grows. Additionally, you may <strong>align</strong> with one faction per location, granting a powerful alignment bonus on top of normal tier rewards.</p>
+
+<hr class="divider-teal">
+
+<h3>Cindervale Factions</h3>
+
+<h4>Ashwardens</h4>
+<p>Military protectors of the caldera roads. Their sigils mark safe passages through the ash.</p>
+<p><strong>Alignment Bonus:</strong> +20% forage yield, +1 craft bonus, protection enchants cost -1 ingredient.</p>
+<table>
+  <tr><th>Tier</th><th>Name</th><th>Effect</th></tr>
+  <tr><td>1</td><td>Guarded Zones</td><td>Unlock Ashwarden-guarded foraging zones.</td></tr>
+  <tr><td>2</td><td>Protection Recipes</td><td>Unlock Ashwarden protection recipes.</td></tr>
+  <tr><td>3</td><td>Warden Sigils</td><td>Quests occasionally reward bonus Warden Sigils.</td></tr>
+  <tr><td>4</td><td>Elite Contracts</td><td>+20% gold from all quest rewards.</td></tr>
+  <tr><td>5</td><td>Defender</td><td>+1 to all craft checks. Protection enchants cost -1 ingredient.</td></tr>
+</table>
+
+<h4>Hearthkeepers</h4>
+<p>Religious order tending the sacred flame. They value healing, community, and tradition.</p>
+<p><strong>Alignment Bonus:</strong> +15% potion value, +15% XP from all sources, +15% staff efficiency.</p>
+<table>
+  <tr><th>Tier</th><th>Name</th><th>Effect</th></tr>
+  <tr><td>1</td><td>Purification</td><td>+10% potion sale value.</td></tr>
+  <tr><td>2</td><td>Holy Recipes</td><td>Unlock Hearthkeeper holy recipes.</td></tr>
+  <tr><td>3</td><td>Sacred Embers</td><td>Quests occasionally reward bonus Sacred Embers.</td></tr>
+  <tr><td>4</td><td>Temple Healing</td><td>Restore 1 Energy when completing a quest.</td></tr>
+  <tr><td>5</td><td>Keeper</td><td>+10% XP from all sources.</td></tr>
+</table>
+
+<h4>Veilwalkers</h4>
+<p>Arcane researchers who study the barrier between worlds. They value knowledge above all.</p>
+<p><strong>Alignment Bonus:</strong> +25% enchant success, +20% discovery chance, research -1h.</p>
+<table>
+  <tr><th>Tier</th><th>Name</th><th>Effect</th></tr>
+  <tr><td>1</td><td>Arcane ID</td><td>+5% enchantment success chance.</td></tr>
+  <tr><td>2</td><td>Rare Formulas</td><td>Unlock Veilwalker rare formulas.</td></tr>
+  <tr><td>3</td><td>Veil Shards</td><td>Quests occasionally reward bonus Veil Shards.</td></tr>
+  <tr><td>4</td><td>Library</td><td>+15% recipe &amp; enchantment discovery chance.</td></tr>
+  <tr><td>5</td><td>Veilseer</td><td>Research studies cost 1 fewer hour. See enchant success %.</td></tr>
+</table>
+
+<h4>Cinderfolk</h4>
+<p>Underground miners and smiths who know the deep stone. Practical people who value hard work.</p>
+<p><strong>Alignment Bonus:</strong> -20% shop prices, +2 forage yield, +40% rare find chance.</p>
+<table>
+  <tr><th>Tier</th><th>Name</th><th>Effect</th></tr>
+  <tr><td>1</td><td>Ore Discounts</td><td>-10% on all shop purchases.</td></tr>
+  <tr><td>2</td><td>Rare Minerals</td><td>Unlocks Deep Mines. Unlock Cinderfolk rare mineral recipes.</td></tr>
+  <tr><td>3</td><td>Deep Crystals</td><td>Quests occasionally reward bonus Deep Crystals.</td></tr>
+  <tr><td>4</td><td>Mining Crew</td><td>Foraging expeditions yield +1 extra item.</td></tr>
+  <tr><td>5</td><td>Stone Sibling</td><td>+25% rare find chance on expeditions.</td></tr>
+</table>
+
+<hr class="divider-thin">
+
+<h3>Ashfall Crossing Factions</h3>
+
+<h4>Sand Merchants Guild</h4>
+<p>Wealthy traders controlling the desert caravan routes. Gold speaks their language.</p>
+<p><strong>Alignment Bonus:</strong> +20% sell, rare procurement.</p>
+<table>
+  <tr><th>Tier</th><th>Name</th><th>Effect</th></tr>
+  <tr><td>1</td><td>Trade License</td><td>Guild wholesale prices (-15% buy).</td></tr>
+  <tr><td>2</td><td>Caravan Routes</td><td>Exotic ingredients in shop.</td></tr>
+  <tr><td>3</td><td>Master Trader</td><td>+10% potion value, +15% customer pay.</td></tr>
+  <tr><td>4</td><td>Merchant Prince</td><td>Supply chains +25% income.</td></tr>
+  <tr><td>5</td><td>Guild Sovereign</td><td>+2 all checks. Free daily procurement.</td></tr>
+</table>
+
+<h4>Flamekeepers</h4>
+<p>Guardians of the eternal flame in the desert temple. Spiritual and scholarly.</p>
+<p><strong>Alignment Bonus:</strong> +15% XP, free herbs, +1 Energy.</p>
+<table>
+  <tr><th>Tier</th><th>Name</th><th>Effect</th></tr>
+  <tr><td>1</td><td>Temple Access</td><td>Unlocks Oasis Grove.</td></tr>
+  <tr><td>2</td><td>Sacred Rites</td><td>+2 research, +1 craft.</td></tr>
+  <tr><td>3</td><td>Eternal Flame</td><td>All checks +1. +1 Energy on quest.</td></tr>
+  <tr><td>4</td><td>Sacred Guardian</td><td>+15% recipe &amp; enchantment discovery.</td></tr>
+  <tr><td>5</td><td>Flamewarden</td><td>Research -1 hour. +10% XP from all sources.</td></tr>
+</table>
+
+<h4>Dustwalkers</h4>
+<p>Desert scouts and survivalists who know every dune and hidden trail.</p>
+<p><strong>Alignment Bonus:</strong> +2 extraction, danger reduced, +1 Energy.</p>
+<table>
+  <tr><th>Tier</th><th>Name</th><th>Effect</th></tr>
+  <tr><td>1</td><td>Trail Knowledge</td><td>Travel time -1 Ashfall regions.</td></tr>
+  <tr><td>2</td><td>Desert Sense</td><td>+30% danger reduction. Unlocks Mirage Bazaar.</td></tr>
+  <tr><td>3</td><td>Pathfinder</td><td>Target no yield penalty. +50% discovery.</td></tr>
+  <tr><td>4</td><td>Desert Ghost</td><td>+1 expedition yield. +30% danger reduction.</td></tr>
+  <tr><td>5</td><td>Sand Sovereign</td><td>+2 extraction. Free daily expedition scout.</td></tr>
+</table>
+
+<div class="page-break"></div>
+
+<h3>Tidecrest Harbor Factions</h3>
+
+<h4>Harbormaster's Guild</h4>
+<p>Naval authority controlling the docks. Power, protection, and commerce.</p>
+<p><strong>Alignment Bonus:</strong> +15% sell prices, +2 combat, +1 Energy.</p>
+<table>
+  <tr><th>Tier</th><th>Name</th><th>Effect</th></tr>
+  <tr><td>1</td><td>Dock Access</td><td>+10% gold from all sales.</td></tr>
+  <tr><td>2</td><td>Naval Escort</td><td>Unlocks Abyssal Trench. +20% danger reduction.</td></tr>
+  <tr><td>3</td><td>Harbor Seal</td><td>Quests occasionally reward Harbor Seals.</td></tr>
+  <tr><td>4</td><td>Fleet Commander</td><td>Supply chains +25% income.</td></tr>
+  <tr><td>5</td><td>Admiral's Trust</td><td>+2 all checks. Free daily patrol.</td></tr>
+</table>
+
+<h4>Pearl Divers</h4>
+<p>Deep-sea harvesters who brave the depths for treasure.</p>
+<p><strong>Alignment Bonus:</strong> +2 extraction, +40% rare find, +1 Energy.</p>
+<table>
+  <tr><th>Tier</th><th>Name</th><th>Effect</th></tr>
+  <tr><td>1</td><td>Reef Guide</td><td>Unlocks Coral Labyrinth.</td></tr>
+  <tr><td>2</td><td>Breath Training</td><td>+1 expedition yield. -1 travel time.</td></tr>
+  <tr><td>3</td><td>Pearl Harvest</td><td>Quests occasionally reward Diver Tokens.</td></tr>
+  <tr><td>4</td><td>Pressure Sense</td><td>Target no yield penalty. +30% discovery.</td></tr>
+  <tr><td>5</td><td>Deep Diver</td><td>+50% rare find chance. See hidden site hints.</td></tr>
+</table>
+
+<h4>Tidekeepers</h4>
+<p>Spiritual order protecting the tidal balance and the Drowned Sanctum.</p>
+<p><strong>Alignment Bonus:</strong> +15% XP, free daily herbs, +1 Energy.</p>
+<table>
+  <tr><th>Tier</th><th>Name</th><th>Effect</th></tr>
+  <tr><td>1</td><td>Tidal Blessing</td><td>+5% XP from all sources.</td></tr>
+  <tr><td>2</td><td>Sacred Waters</td><td>+2 research, +1 craft.</td></tr>
+  <tr><td>3</td><td>Tidekeeper Sigils</td><td>Quests occasionally reward Tidekeeper Sigils.</td></tr>
+  <tr><td>4</td><td>Oracle's Sight</td><td>+15% recipe &amp; enchantment discovery.</td></tr>
+  <tr><td>5</td><td>Tidebound</td><td>Research -1 hour. See enchant success %.</td></tr>
+</table>
+
+<h4>Merchant Marine</h4>
+<p>Seafaring traders and shipping magnates who control the harbor's commerce.</p>
+<p><strong>Alignment Bonus:</strong> -20% shop prices, +2 forage yield, +40% rare find.</p>
+<table>
+  <tr><th>Tier</th><th>Name</th><th>Effect</th></tr>
+  <tr><td>1</td><td>Trade Discount</td><td>-10% on all shop purchases.</td></tr>
+  <tr><td>2</td><td>Shipping Lanes</td><td>Unlock Merchant Marine trade recipes.</td></tr>
+  <tr><td>3</td><td>Trade Manifests</td><td>Quests occasionally reward Trade Manifests.</td></tr>
+  <tr><td>4</td><td>Trade Fleet</td><td>Foraging expeditions yield +1 extra item.</td></tr>
+  <tr><td>5</td><td>Fleet Master</td><td>+25% rare find chance on expeditions.</td></tr>
+</table>
+
+<hr class="divider-thin">
+
+<h3>Skyreach Peaks Factions</h3>
+
+<h4>Skywardens</h4>
+<p>Mountain sentinels who patrol the high passes and guard against threats from above and below.</p>
+<p><strong>Alignment Bonus:</strong> +20% forage yield, +1 craft bonus.</p>
+<table>
+  <tr><th>Tier</th><th>Name</th><th>Effect</th></tr>
+  <tr><td>1</td><td>Mountain Guard</td><td>Unlock Skywarden-patrolled foraging zones.</td></tr>
+  <tr><td>2</td><td>Alpine Tactics</td><td>Unlock Skywarden protection recipes.</td></tr>
+  <tr><td>3</td><td>Skyward Seals</td><td>Quests occasionally reward bonus Skyward Seals.</td></tr>
+  <tr><td>4</td><td>Elite Contracts</td><td>+20% gold from all quest rewards.</td></tr>
+  <tr><td>5</td><td>Sentinel</td><td>+1 to all craft checks. Protection enchants cost -1 ingredient.</td></tr>
+</table>
+
+<h4>Starcallers</h4>
+<p>Mystical astronomers who read the heavens from the ancient observatory. Knowledge through starlight.</p>
+<p><strong>Alignment Bonus:</strong> +15% potion value, +15% XP, +15% staff efficiency.</p>
+<table>
+  <tr><th>Tier</th><th>Name</th><th>Effect</th></tr>
+  <tr><td>1</td><td>Star Charts</td><td>+10% potion sale value.</td></tr>
+  <tr><td>2</td><td>Celestial Formulas</td><td>Unlock Starcaller celestial recipes.</td></tr>
+  <tr><td>3</td><td>Sacred Instruments</td><td>Quests occasionally reward bonus Starcaller Seals.</td></tr>
+  <tr><td>4</td><td>Observatory Access</td><td>Restore 1 Energy when completing a quest.</td></tr>
+  <tr><td>5</td><td>Stargazer</td><td>+10% XP from all sources.</td></tr>
+</table>
+
+<h4>Cloud Traders</h4>
+<p>Merchant caravaneers who brave the mountain passes to trade between settlements.</p>
+<p><strong>Alignment Bonus:</strong> -20% shop prices, +2 forage yield, +40% rare find.</p>
+<table>
+  <tr><th>Tier</th><th>Name</th><th>Effect</th></tr>
+  <tr><td>1</td><td>Altitude Discount</td><td>-10% on all shop purchases.</td></tr>
+  <tr><td>2</td><td>Summit Supply</td><td>Unlock Cloud Trader rare mineral recipes.</td></tr>
+  <tr><td>3</td><td>Trade Tokens</td><td>Quests occasionally reward bonus Cloud Trader Tokens.</td></tr>
+  <tr><td>4</td><td>Pack Train</td><td>Foraging expeditions yield +1 extra item.</td></tr>
+  <tr><td>5</td><td>Summit Broker</td><td>+25% rare find chance on expeditions.</td></tr>
+</table>
+
+<h4>Windrunners</h4>
+<p>Swift scouts and pathfinders who navigate the treacherous peak trails. Masters of wind and weather.</p>
+<p><strong>Alignment Bonus:</strong> +25% enchant success, +20% discovery, research -1h.</p>
+<table>
+  <tr><th>Tier</th><th>Name</th><th>Effect</th></tr>
+  <tr><td>1</td><td>Trail Sense</td><td>+5% enchantment success chance.</td></tr>
+  <tr><td>2</td><td>Wind Reading</td><td>Unlock Windrunner rare formulas.</td></tr>
+  <tr><td>3</td><td>Wayfinder Compasses</td><td>Quests occasionally reward bonus Windrunner Compasses.</td></tr>
+  <tr><td>4</td><td>High Routes</td><td>+15% recipe &amp; enchantment discovery chance.</td></tr>
+  <tr><td>5</td><td>Pathfinder</td><td>Research studies cost 1 fewer hour. See enchant success %.</td></tr>
+</table>
+
+<!-- ═══════════════════════════════════════ -->
+<!-- CHAPTER 9: COMPANION CREATURES -->
+<!-- ═══════════════════════════════════════ -->
+<div class="page-break"></div>
+<h2>Chapter 9: Companion Creatures</h2>
+
+<p>The <strong>Ranger</strong> specialization (Warden) allows you to befriend wild creatures during foraging expeditions. Companions perform daily actions and grow in loyalty over time, unlocking secondary abilities and legendary powers.</p>
+
+<h3>Companion Roles</h3>
+<table>
+  <tr><th>Role</th><th>Primary Action</th><th>Description</th></tr>
+  <tr><td>Gatherer</td><td>Gather ingredients</td><td>Brings back ingredients from its home region daily. Yield scales with loyalty.</td></tr>
+  <tr><td>Shopkeeper</td><td>Earn gold</td><td>Tends the shop, generating passive gold income. Scales with loyalty.</td></tr>
+  <tr><td>Scout</td><td>Reduce danger</td><td>Patrols ahead, reducing expedition danger. At high loyalty, reduces travel time.</td></tr>
+  <tr><td>Greeter</td><td>Attract customers</td><td>Charms visitors at the shop door, increasing daily customer count.</td></tr>
+  <tr><td>Guardian</td><td>Boost morale</td><td>Protects and inspires staff. Prevents negative morning events at high loyalty.</td></tr>
+  <tr><td>Muse</td><td>Boost research</td><td>Inspires creativity, improving research discovery chance and XP.</td></tr>
+  <tr><td>Legendary</td><td>Gather (rare)</td><td>Extremely rare companions from the highest-difficulty regions. Powerful unique abilities.</td></tr>
+</table>
+
+<h3>Loyalty Levels</h3>
+<p>Companions gain loyalty through daily interaction. Higher loyalty unlocks stronger bonuses:</p>
+<ul>
+  <li><strong>Wary</strong> (1) &mdash; Base effectiveness.</li>
+  <li><strong>Friendly</strong> (2) &mdash; Improved primary action.</li>
+  <li><strong>Loyal</strong> (3) &mdash; Secondary ability unlocked.</li>
+  <li><strong>Devoted</strong> (4) &mdash; Further improved actions.</li>
+  <li><strong>Soulbound</strong> (5) &mdash; Legendary ability unlocked (at Ranger 10).</li>
+</ul>
+
+<h3>Companions by Location</h3>
+
+<h4>Cindervale</h4>
+<table>
+  <tr><th>Companion</th><th>Region</th><th>Role</th><th>Description</th></tr>
+  <tr><td>Cinder Fox</td><td>Ashfields</td><td>Gatherer</td><td>Rust-furred fox that knows every hidden bloom.</td></tr>
+  <tr><td>Cave Monkey</td><td>Fungal Caves</td><td>Shopkeeper</td><td>Clever primate surprisingly good with shelves.</td></tr>
+  <tr><td>Ash Hawk</td><td>Ironwood</td><td>Scout</td><td>Keen-eyed raptor riding thermal updrafts.</td></tr>
+  <tr><td>Ridge Hound</td><td>Crystal Hollows</td><td>Greeter</td><td>Loyal hound with crystalline eyes.</td></tr>
+  <tr><td>Fire Salamander</td><td>Volcanic Vents</td><td>Guardian</td><td>Heat-resistant lizard that glows with inner fire.</td></tr>
+  <tr><td>Silver Moth</td><td>Moonlit Glade</td><td>Muse</td><td>Luminous moth drawn to magical resonance.</td></tr>
+  <tr><td>Phoenix Hatchling</td><td>Heartforge Rim</td><td>Legendary</td><td>Impossibly rare newborn phoenix.</td></tr>
+</table>
+
+<h4>Ashfall Crossing</h4>
+<table>
+  <tr><th>Companion</th><th>Region</th><th>Role</th><th>Description</th></tr>
+  <tr><td>Dune Cat</td><td>Sunscorch Flats</td><td>Gatherer</td><td>Sand-colored feline that vanishes into dunes.</td></tr>
+  <tr><td>Crystal Scorpion</td><td>Salt Caverns</td><td>Guardian</td><td>Translucent scorpion with salt crystal energy.</td></tr>
+  <tr><td>Obsidian Vulture</td><td>Obsidian Wastes</td><td>Scout</td><td>Massive black bird. Nothing escapes its gaze.</td></tr>
+  <tr><td>Burrowing Grub</td><td>Sandworm Tunnels</td><td>Shopkeeper</td><td>Juvenile sandworm, surprisingly useful around the shop.</td></tr>
+  <tr><td>Oasis Gecko</td><td>Oasis Grove</td><td>Greeter</td><td>Vibrantly colored gecko. Customers find it charming.</td></tr>
+  <tr><td>Molten Beetle</td><td>Molten Vents</td><td>Muse</td><td>Heat-resistant beetle that inspires creativity.</td></tr>
+  <tr><td>Desert Sphinx</td><td>Buried Temple</td><td>Legendary</td><td>Ancient creature of myth. Speaks in riddles.</td></tr>
+</table>
+
+<h4>Tidecrest Harbor</h4>
+<table>
+  <tr><th>Companion</th><th>Region</th><th>Role</th><th>Description</th></tr>
+  <tr><td>Tidecrest Hawk</td><td>Driftwood Shores</td><td>Scout</td><td>Coastal raptor circling above the waves.</td></tr>
+  <tr><td>Harbor Dolphin</td><td>Tidal Pools</td><td>Gatherer</td><td>Friendly dolphin retrieving ingredients from the seafloor.</td></tr>
+  <tr><td>Kelp Serpent</td><td>Kelp Forest</td><td>Guardian</td><td>Shy serpent among the kelp. Protective and watchful.</td></tr>
+  <tr><td>Fog Owl</td><td>Fog Hollows</td><td>Muse</td><td>Silent owl whose presence sharpens the mind.</td></tr>
+  <tr><td>Reef Crab</td><td>Coral Labyrinth</td><td>Shopkeeper</td><td>Colorful crab that organizes with surprising care.</td></tr>
+  <tr><td>Electric Eel</td><td>Shipwreck Graveyard</td><td>Greeter</td><td>Bioluminescent eel that dazzles visitors.</td></tr>
+  <tr><td>Leviathan Calf</td><td>Drowned Sanctum</td><td>Legendary</td><td>Baby sea leviathan with immense potential.</td></tr>
+</table>
+
+<h4>Skyreach Peaks</h4>
+<table>
+  <tr><th>Companion</th><th>Region</th><th>Role</th><th>Description</th></tr>
+  <tr><td>Snow Hare</td><td>Alpine Meadows</td><td>Gatherer</td><td>Quick hare that finds hidden herbs under snow.</td></tr>
+  <tr><td>Cloud Lynx</td><td>Cloud Forest</td><td>Shopkeeper</td><td>Silent feline comfortable among the mist.</td></tr>
+  <tr><td>Mountain Goat</td><td>Wind-Carved Cliffs</td><td>Scout</td><td>Sure-footed goat navigating impossible terrain.</td></tr>
+  <tr><td>Falcon</td><td>Crystal Caverns</td><td>Greeter</td><td>Majestic bird that impresses visitors.</td></tr>
+  <tr><td>Seal</td><td>Glacial Lake</td><td>Guardian</td><td>Playful seal that boosts morale.</td></tr>
+  <tr><td>Storm Owl</td><td>Stormspire Peaks</td><td>Muse</td><td>Electric-feathered owl at home in lightning.</td></tr>
+  <tr><td>Wyvern</td><td>Observatory Summit</td><td>Legendary</td><td>Young wyvern with ancient power in its blood.</td></tr>
+</table>
+
+<!-- ═══════════════════════════════════════ -->
+<!-- CHAPTER 10: SETTLEMENT INVESTMENT -->
+<!-- ═══════════════════════════════════════ -->
+<div class="page-break"></div>
+<h2>Chapter 10: Settlement Investment</h2>
+
+<p>Build up the town around your workshop by investing gold and materials into settlement projects. Projects take multiple days to build and provide permanent bonuses. Some have prerequisites &mdash; you must build certain structures before others become available.</p>
+
+<h3>Settlement Projects</h3>
+<table>
+  <tr><th>Project</th><th>Cost</th><th>Build</th><th>Effect</th><th>Req</th></tr>
+  <tr><td>Paved Roads</td><td>300g + mats</td><td>3 days</td><td>-1 travel time to all regions.</td><td>&mdash;</td></tr>
+  <tr><td>Market Square</td><td>500g + mats</td><td>5 days</td><td>+2 customers/morning, +10% shelf sale, weekly Traveling Merchant.</td><td>&mdash;</td></tr>
+  <tr><td>Watchtower</td><td>400g + mats</td><td>4 days</td><td>Threats grow 15% slower, warning at 60+.</td><td>&mdash;</td></tr>
+  <tr><td>Herbalist Garden</td><td>600g + mats</td><td>5 days</td><td>2 random ingredients/morning, +1 spoilage threshold.</td><td>&mdash;</td></tr>
+  <tr><td>Guild Hall</td><td>800g + mats</td><td>6 days</td><td>+1 staff slot, +2 hire candidates, training costs halved.</td><td>&mdash;</td></tr>
+  <tr><td>Trade Depot</td><td>1000g + mats</td><td>7 days</td><td>Contract costs -40%, shop prices -15%, +1 customer/morning.</td><td>Market Square</td></tr>
+  <tr><td>Academy</td><td>1200g + mats</td><td>8 days</td><td>+10% XP permanently, research -1 hour, staff specialization.</td><td>&mdash;</td></tr>
+  <tr><td>Fortified Walls</td><td>1500g + mats</td><td>10 days</td><td>Threats capped at 80, events halved, +50g/morning.</td><td>Watchtower</td></tr>
+  <tr><td>Grand Library</td><td>2000g + mats</td><td>12 days</td><td>+25% discovery, +15% lore drops, 2x paper gold.</td><td>Academy</td></tr>
+  <tr><td>Monument</td><td>3000g + mats</td><td>15 days</td><td>+1 all stats, +1 all skills, +5 rep/day to all factions. Carries through Torch.</td><td>Fortified Walls</td></tr>
+</table>
+
+<div class="note">
+  <strong>Note:</strong> Material costs vary by location. Each zone uses its own local materials (e.g., Ashite in Cindervale, Sandstone Dust in Ashfall, Driftstone in Tidecrest, Skystone Chip in Skyreach). The gold cost is the same everywhere.
+</div>
+
+<h3>Workshop Upgrades</h3>
+<p>In addition to settlement projects, your personal workshop can be upgraded with structures that improve crafting, storage, business, and comfort. Major upgrades include:</p>
+
+<table>
+  <tr><th>Upgrade</th><th>Category</th><th>Effect</th><th>Cost</th></tr>
+  <tr><td>Reinforced Cauldron</td><td>Crafting</td><td>Fine brew DC -1.</td><td>50g + mats</td></tr>
+  <tr><td>Master's Cauldron</td><td>Crafting</td><td>Masterwork DC -1, +10% double batch.</td><td>150g + mats</td></tr>
+  <tr><td>Enchanting Bench</td><td>Crafting</td><td>Fine inscription DC -1.</td><td>60g + mats</td></tr>
+  <tr><td>Arcane Nexus</td><td>Crafting</td><td>Masterwork inscription DC -1.</td><td>200g + mats</td></tr>
+  <tr><td>Precision Mortar</td><td>Crafting</td><td>15% save ingredient.</td><td>35g + mats</td></tr>
+  <tr><td>Runic Tools</td><td>Crafting</td><td>+1 craft checks.</td><td>80g + mats</td></tr>
+  <tr><td>Shelves</td><td>Storage</td><td>Stockpiling +2.</td><td>25g + mats</td></tr>
+  <tr><td>Cellar</td><td>Storage</td><td>Spoilage threshold +2.</td><td>80g + mats</td></tr>
+  <tr><td>Preservation Jars</td><td>Storage</td><td>Spoilage threshold +2.</td><td>60g + mats</td></tr>
+  <tr><td>Vault</td><td>Storage</td><td>Double capacity.</td><td>200g + mats</td></tr>
+  <tr><td>Shop Front</td><td>Business</td><td>+5g/day passive.</td><td>40g + mats</td></tr>
+  <tr><td>Signage</td><td>Business</td><td>+1 enchant customer.</td><td>30g</td></tr>
+  <tr><td>Display Cases</td><td>Business</td><td>+15% sell.</td><td>70g + mats</td></tr>
+  <tr><td>Rep Board</td><td>Business</td><td>+5 all rep/day.</td><td>50g</td></tr>
+  <tr><td>Ledger</td><td>Business</td><td>+1 staff, +20% efficiency.</td><td>40g</td></tr>
+  <tr><td>Beds</td><td>Comfort</td><td>+1 Energy/day.</td><td>35g + mats</td></tr>
+  <tr><td>Hearth</td><td>Comfort</td><td>+1 Energy, +morale.</td><td>100g + mats</td></tr>
+  <tr><td>Garden</td><td>Comfort</td><td>Free daily herbs.</td><td>45g + mats</td></tr>
+  <tr><td>Greenhouse</td><td>Comfort</td><td>Free rare herbs.</td><td>150g + mats</td></tr>
+  <tr><td>Library</td><td>Advanced</td><td>Research +2.</td><td>120g + mats</td></tr>
+  <tr><td>Forge</td><td>Advanced</td><td>+2 craft, +1 customer, +5% double batch.</td><td>180g + mats</td></tr>
+  <tr><td>Ley Line Tap</td><td>Advanced</td><td>+1 free research/day, daily veil shard.</td><td>300g + mats</td></tr>
+</table>
+
+<!-- ═══════════════════════════════════════ -->
+<!-- CHAPTER 11: CORE SYSTEMS & TRAVEL -->
+<!-- ═══════════════════════════════════════ -->
+<div class="page-break"></div>
+<h2>Chapter 11: Core Systems &amp; Travel</h2>
+
+<h3>Crafting (Brewing)</h3>
+<p>To brew a potion, you need the required ingredients and enough hours. Roll d20 + stat modifier + relevant craft skill rank + bonuses vs. the recipe's DC.</p>
+<ul>
+  <li><strong>Natural 1</strong> &mdash; Auto-fail. Ingredients consumed (unless salvage applies).</li>
+  <li><strong>Natural 20</strong> &mdash; Auto-success. Masterwork quality (2x value).</li>
+  <li><strong>Beat DC by 5+</strong> &mdash; Fine quality (1.5x value).</li>
+  <li><strong>Beat DC by 10+</strong> &mdash; Masterwork quality (2x value).</li>
+</ul>
+<p>Each recipe is associated with a primary stat (CRE, INU, ACU, or TEC). Your craft bonus comes from that stat's modifier plus your rank in the matching craft skill (Improvisation, Attunement, Research, or Precision).</p>
+
+<h3>Foraging (Extraction)</h3>
+<p>Travel to a region (costs travel time in hours), then spend remaining hours extracting ingredients. Each hour, roll d20 + Extraction skill vs. the region's DC.</p>
+<ul>
+  <li><strong>Success</strong> &mdash; Gain ingredients from the region's loot table.</li>
+  <li><strong>Failure</strong> &mdash; Gain nothing for that hour (or 1 common ingredient at Warden 9+).</li>
+  <li><strong>Natural 20</strong> &mdash; Critical extraction: bonus rare ingredients.</li>
+</ul>
+<p>Different foraging sites within a region weight ingredients differently, allowing you to target specific materials.</p>
+
+<h3>Enchanting (Inscription)</h3>
+<p>Customers bring items for enchantment. Roll d20 + Inscription skill vs. the enchantment pattern's DC. Requires materials (reduced by Enchanter features and workshop upgrades).</p>
+<ul>
+  <li><strong>Success</strong> &mdash; Earn gold from the customer. Beat DC by 5+ for Fine quality (1.5x gold). Beat by 10+ for Masterwork (2x gold).</li>
+  <li><strong>Failure</strong> &mdash; No payment. Materials consumed (unless recycler effects apply).</li>
+</ul>
+
+<h3>Research</h3>
+<p>Spend hours in research studies to discover new recipes and enchantment patterns. Discovery chance is based on your Research skill rank, Innovation skill, and various bonuses. Scholar class features dramatically increase discovery rates.</p>
+
+<h3>Experiments</h3>
+<p>Combine ingredients at the Experiment Bench to try to discover new recipes. More speculative than research but can discover recipes not available through study.</p>
+
+<h3>Travel</h3>
+<p>Traveling to a foraging region costs hours based on the region's distance. Base travel times range from 1h (easy regions) to 4h (legendary regions).</p>
+
+<div class="callout">
+  <div class="callout-title">V2 Travel Note</div>
+  <p>No skill passively reduces travel time. Travel reduction sources:</p>
+  <ul>
+    <li><strong>Warden class features</strong> &mdash; -1h at Lv 1 (Trailblazer), -3h total at Lv 10 (Legend of the Wild: all travel becomes 0).</li>
+    <li><strong>Trailblazer's Boots feat</strong> &mdash; -1h to all regions.</li>
+  </ul>
+  <p>Settlement projects (Paved Roads) and faction bonuses (e.g., Dustwalkers Tier 1, Pearl Divers Tier 2) can also reduce travel time in specific locations.</p>
+</div>
+
+<h3>Energy &amp; Hours</h3>
+<p>Each day you start with a pool of Energy (base 4) and Hours (base 4). Most actions cost 1 Energy and some number of hours. When you run out of either, your day is done.</p>
+<ul>
+  <li><strong>Brewing</strong> &mdash; 1 Energy, 1 hour (some recipes take more).</li>
+  <li><strong>Foraging</strong> &mdash; 1 Energy, travel time + gathering hours.</li>
+  <li><strong>Enchanting</strong> &mdash; 1 Energy, 1 hour per customer.</li>
+  <li><strong>Research</strong> &mdash; 1 Energy, 1-2 hours.</li>
+  <li><strong>Quests</strong> &mdash; 1 Energy to turn in.</li>
+</ul>
+
+<h3>Staff Management</h3>
+<p>Hire apprentices to delegate tasks. Staff can brew, forage, shopkeep, or research. They have their own stats, traits, and efficiency that improve with XP. Some traits are positive (Quick Learner, Keen Senses) and some negative (Clumsy, Shy). Staff morale affects efficiency.</p>
+
+<h3>Shelving &amp; Sales</h3>
+<p>Place brewed potions on shelves for passive sales. Each morning, customers may purchase shelved potions. Sale chance depends on shelf capacity, potion quality, and various bonuses. Unsold potions remain on shelves until they spoil or sell.</p>
+
+<!-- ═══════════════════════════════════════ -->
+<!-- CHAPTER 12: THE HOLLOW MARCH -->
+<!-- ═══════════════════════════════════════ -->
+<div class="page-break"></div>
+<h2>Chapter 12: The Hollow March</h2>
+
+<p>The <strong>Hollow March</strong> is the endgame invasion event that triggers when your character reaches level 10. Reality tears open and waves of crises assault your settlement. Survive 5 waves to unlock Pass the Torch. Survive all 10 for the Final Stand and legendary rewards.</p>
+
+<h3>How It Works</h3>
+<ul>
+  <li>Waves arrive at intervals (5-7 days for early waves, compressing to 3-4 days for late waves).</li>
+  <li>Each wave presents <strong>2-5 crises</strong> that must be resolved before the next wave.</li>
+  <li>Crisis DC starts at 15 (wave 1) and scales to 24 (wave 10).</li>
+  <li>Each crisis has multiple solution paths &mdash; you choose based on your strengths.</li>
+</ul>
+
+<h3>Crisis Types</h3>
+<table>
+  <tr><th>Crisis</th><th>Description</th></tr>
+  <tr><td>Veil Breach</td><td>A tear in reality. Seal it with enchantments, brew repellents, hold the line, or hire mercenaries.</td></tr>
+  <tr><td>Corruption Plague</td><td>Magical sickness spreading. Brew cures, enchant purification wards, forage rare remedies, or fund healers.</td></tr>
+  <tr><td>Siege Assault</td><td>The horde at the gates. Fortify defenses, enchant armor, lead a sortie, or buy war supplies.</td></tr>
+  <tr><td>Supply Crisis</td><td>Supply lines cut. Brew sustenance, emergency forage, deploy staff, or buy provisions.</td></tr>
+  <tr><td>Morale Collapse</td><td>Fear spreads. Brew courage draughts, rally the people, or stabilize through gold.</td></tr>
+</table>
+
+<h3>Solution Types</h3>
+<p>Each crisis offers 3-4 solution paths:</p>
+<ul>
+  <li><strong>Skill Check</strong> &mdash; Roll d20 + relevant skill vs. crisis DC. Beating DC by 5+ earns mastery bonus rewards.</li>
+  <li><strong>Potion Delivery</strong> &mdash; Provide specific potions (quantity scales with wave).</li>
+  <li><strong>Ingredient Delivery</strong> &mdash; Provide raw materials for the solution.</li>
+  <li><strong>Gold Payment</strong> &mdash; Pay mercenaries or healers (cost escalates steeply).</li>
+  <li><strong>Staff Deployment</strong> &mdash; Send your workforce to handle the crisis.</li>
+</ul>
+
+<h3>Consequences</h3>
+<ul>
+  <li><strong>Success</strong> &mdash; XP, gold, and threat reduction per crisis solved.</li>
+  <li><strong>Mastery (beat DC by 5+)</strong> &mdash; Bonus XP, gold, and extra threat reduction.</li>
+  <li><strong>Failure</strong> &mdash; Threat spike (+12-22), staff injuries, ingredient loss, gold loss. At wave 6+, workshop upgrades can be disabled for 3 days.</li>
+</ul>
+
+<h3>Final Stand (Wave 10)</h3>
+<p>The ultimate challenge: 6 crises in rapid succession at +4 DC on top of normal wave DC (total DC 28). Completing the Final Stand earns 3000 XP, 800 gold, the title "Defender of the Vale," and permanently caps all threats at 25.</p>
+
+<h3>The March and Your Build</h3>
+<div class="note">
+  <strong>Tip:</strong> The Crisis Responder feat gives +3 to crisis checks and reduces solution costs. Fortified Workshop slows threat growth and protects your upgrades. A diverse skill set across multiple stats ensures you always have a viable solution path.
+</div>
+
+<!-- ═══════════════════════════════════════ -->
+<!-- CHAPTER 13: PASS THE TORCH -->
+<!-- ═══════════════════════════════════════ -->
+<div class="page-break"></div>
+<h2>Chapter 13: Pass the Torch</h2>
+
+<p><strong>Pass the Torch</strong> is the generational legacy system. When your character has survived at least 5 waves of the Hollow March, you can retire them and begin a new generation. The new character inherits a portion of your achievements &mdash; but must earn their own class levels, skills, and prestige prerequisites from scratch.</p>
+
+<h3>What Carries Forward</h3>
+<table>
+  <tr><th>Legacy Element</th><th>Base Amount</th><th>With Ancestral Wisdom Feat</th></tr>
+  <tr><td>Gold</td><td>15% (cap 150g)</td><td>25% (cap increased)</td></tr>
+  <tr><td>Recipes</td><td>Top 3 most-brewed</td><td>Top 5 recipes</td></tr>
+  <tr><td>Faction Reputation</td><td>1/3 of total rep</td><td>50% of total rep</td></tr>
+  <tr><td>Legacy Feature Chain</td><td>1 chosen feature chain (class, spec, or prestige)</td><td>Same + 1 additional (with Mentor&rsquo;s Gift)</td></tr>
+  <tr><td>Settlement</td><td>All projects persist</td><td>Same</td></tr>
+  <tr><td>Museum Collection</td><td>Persists as-is</td><td>Same</td></tr>
+  <tr><td>Energy Bonus</td><td>&mdash;</td><td>+1 Energy</td></tr>
+</table>
+
+<h3>Legacy Feature Chain</h3>
+<p>At retirement, you choose one feature tree to pass forward. Your options are:</p>
+<ul>
+  <li><strong>Base class chain</strong> &mdash; all features from a base class you leveled (e.g., Alchemist Lv1&ndash;10)</li>
+  <li><strong>Specialization chain</strong> &mdash; all spec features you unlocked (e.g., Ranger Lv3 + Lv6 + Lv10)</li>
+  <li><strong>Prestige class chain</strong> &mdash; all prestige features you unlocked (e.g., Cartographer Lv1&ndash;5)</li>
+  <li><strong>Re-pass</strong> &mdash; if you inherited a chain from your own mentor, you can pass it forward again</li>
+</ul>
+<p>Every effect in the chosen chain is merged into a single permanent bonus. The new character has these effects active from day 1. They appear in the character sheet under &ldquo;Mentor&rsquo;s Legacy&rdquo; and are aggregated into all relevant checks automatically.</p>
+
+<h3>What Does NOT Carry Forward</h3>
+<p>The new character does <strong>not</strong> inherit class levels, specializations, or prestige progress. They must earn everything themselves:</p>
+<ul>
+  <li>No inherited class levels &mdash; prestige prerequisites must be met through your own progression</li>
+  <li>No inherited specs &mdash; specialization panels only appear when you choose your own spec at class level 3</li>
+  <li>No inherited skill ranks &mdash; start fresh with 3 skill points at level 1</li>
+</ul>
+<p>The legacy feature chain provides <em>passive bonuses</em> (craft bonus, extraction bonus, discovery chance, etc.) but does not shortcut class or prestige progression.</p>
+
+<h3>Lineage Record</h3>
+<p>Each retired character is recorded in your lineage, showing their name, race, classes, specs, and accomplishments. The lineage tracks your dynasty across generations and determines mentor bonuses.</p>
+
+<div class="callout">
+  <div class="callout-title">Strategy: Building a Legacy</div>
+  <p>Choose your legacy chain to complement your next build. A Warden/Ranger chain gives foraging bonuses to a character who plans to focus on Enchanting. A Scholar chain's XP and discovery bonuses help any build level faster. Prestige chains like Cartographer or Siege Engineer provide powerful passive effects without requiring the new character to invest in those prestige paths. Each generation starts with stronger passive bonuses than the last &mdash; but the journey is always your own.</p>
+</div>
+
+<!-- ═══════════════════════════════════════ -->
+<!-- BACK MATTER -->
+<!-- ═══════════════════════════════════════ -->
+<div class="page-break"></div>
+<h2>Quick Reference</h2>
+
+<h3>Character Creation Summary</h3>
+<ol>
+  <li>Choose a <strong>race</strong> (6 options, each with a skill bonus).</li>
+  <li>Distribute <strong>12 points</strong> across 5 ability scores (base 10 each).</li>
+  <li>Choose a <strong>starting class</strong> (5 options).</li>
+  <li>Begin play at character level 1 with 3 skill points and 1 feat.</li>
+</ol>
+
+<h3>Per-Level Gains</h3>
+<table>
+  <tr><th>Resource</th><th>Per Level</th></tr>
+  <tr><td>Skill Points</td><td>3</td></tr>
+  <tr><td>Feats</td><td>1</td></tr>
+  <tr><td>ASI (Ability Score Increase)</td><td>At character levels 4, 8, 12</td></tr>
+</table>
+
+<h3>Skill Rank Costs</h3>
+<table>
+  <tr><th>From</th><th>To</th><th>Cost</th></tr>
+  <tr><td>Untrained (0)</td><td>Trained (1)</td><td>1 point</td></tr>
+  <tr><td>Trained (1)</td><td>Expert (2)</td><td>2 points</td></tr>
+  <tr><td>Expert (2)</td><td>Master (3)</td><td>3 points</td></tr>
+</table>
+
+<h3>Quality Tiers</h3>
+<table>
+  <tr><th>Quality</th><th>How</th><th>Value</th></tr>
+  <tr><td>Standard</td><td>Meet DC</td><td>1x</td></tr>
+  <tr><td>Fine</td><td>Beat DC by 5+</td><td>1.5x</td></tr>
+  <tr><td>Masterwork</td><td>Beat DC by 10+ or Nat 20</td><td>2x</td></tr>
+</table>
+
+<h3>Threat Tiers</h3>
+<table>
+  <tr><th>Threat Level</th><th>Tier</th><th>Effects</th></tr>
+  <tr><td>0-24</td><td>Calm</td><td>No penalties.</td></tr>
+  <tr><td>25-49</td><td>Rising</td><td>Minor penalties (expedition danger up, spoilage up, or enchant DC up).</td></tr>
+  <tr><td>50-74</td><td>Dangerous</td><td>Moderate penalties. Staff yields reduced. Theft/contamination risks.</td></tr>
+  <tr><td>75-100</td><td>Critical</td><td>Severe penalties. Major yield loss, customer loss, ingredient destruction.</td></tr>
+</table>
+
+<hr class="divider">
+
+<div style="text-align: center; margin-top: 40px; color: var(--text-light);">
+  <p style="font-size: 12pt; font-style: italic;">Cindervale Alchemist &mdash; Player Handbook v7.0</p>
+  <p style="font-size: 10pt;">V2 Balance Patch &mdash; April 2026</p>
+  <p style="font-size: 9pt; margin-top: 12px;">Brew potions. Inscribe runes. Build your legacy. Pass the Torch.</p>
+</div>
+
+</body>
+</html>

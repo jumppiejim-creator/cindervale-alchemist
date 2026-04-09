@@ -327,8 +327,7 @@ function CindervaleAlchemistInner(){
   const [skPts,setSkPts]=useState(0);
   const [skProgress,setSkProgress]=useState({});
   const [classLevels,setClassLevels]=useState({});       // { alchemist: 5, warden: 3 }
-  const [torchClassLevels,setTorchClassLevels]=useState({}); // Inherited from mentor via Pass the Torch
-  const [torchSpecs,setTorchSpecs]=useState({}); // Inherited specs from mentor (e.g. {warden:'ranger'})
+  // torchClassLevels/torchSpecs removed in V2 torch rework — inheritance is now via legacyFeature only
   const [specs,setSpecs]=useState({});                    // { alchemist: 'apothecary' }
   const [playerFeats,setPlayerFeats]=useState([]);        // ['careful_hands','early_riser']
   const [asiSpent,setAsiSpent]=useState([]);              // [{lv:4,choices:{inu:2}}]
@@ -386,9 +385,9 @@ function CindervaleAlchemistInner(){
   const locFactions=Object.fromEntries(Object.entries(FACTIONS).filter(([,f])=>!f.loc||f.loc===gameLocation));
   const locQuests=QUESTS.filter(q=>{if(q.id.startsWith('aq'))return gameLocation==='ashfall';if(q.id.startsWith('tq'))return gameLocation==='tidecrest';if(q.id.startsWith('sr_'))return gameLocation==='skyreach';if(q.id.startsWith('q')&&!q.id.startsWith('q '))return gameLocation==='cindervale';if(q.id.startsWith('fc_')){const ashChains=['fc_sm','fc_fk','fc_dw'];const tcChains=['fc_hg','fc_pd','fc_tk','fc_mm'];if(ashChains.some(p=>q.id.startsWith(p)))return gameLocation==='ashfall';if(tcChains.some(p=>q.id.startsWith(p)))return gameLocation==='tidecrest';return gameLocation==='cindervale';}return true;});
   const locApprentices=AP_POOL.filter(a=>!a.loc||a.loc===gameLocation);
-  // Effective class levels and specs: merge current + inherited from torch
-  const eCL=(cid)=>Math.max(classLevels[cid]||0,torchClassLevels[cid]||0);
-  const eSpec=(cid)=>specs[cid]||torchSpecs[cid]||null;
+  // Effective class levels and specs: own only (torch rework removed inherited class levels)
+  const eCL=(cid)=>classLevels[cid]||0;
+  const eSpec=(cid)=>specs[cid]||null;
 
   // ─── PRESTIGE PREREQ HELPERS ───
   const RANK_NAMES={0:'Untrained',1:'Trained',2:'Expert',3:'Master'};
@@ -664,11 +663,11 @@ function CindervaleAlchemistInner(){
   const showResult=useCallback((title,type='info',detail='',check=null)=>{addLog(title,type);setResultPopup({title,type,detail,check,t:Date.now()});},[addLog]);
 
   const gatherState=useCallback(()=>({
-    phase,charName,charRace,charGender,stats,ptsLeft,skRanks,skPts,skProgress,classLevels,torchClassLevels,torchSpecs,specs,playerFeats,asiSpent,startingClass,
+    phase,charName,charRace,charGender,stats,ptsLeft,skRanks,skPts,skProgress,classLevels,specs,playerFeats,asiSpent,startingClass,
     screen,day,hours,gameLocation,xp,gold,inv,pots,known,aQ,doneQ,
     log:log.slice(-30),milestones,fRep,factionAlign,upgrades,hiredAppr,apprTasks,apprXP,enchQ,potCustQ,clinicPatients,venomContracts,forgedWeapons,shieldCommissions,planarFocus,gadgets,blueprints,fieldJournal,loreFragments,companions,caravans,supplyChains,caravanRuns,trainingSessions,factionHarmony,prestigeLevels,automata,customPatterns,mappedRegions,activeBuffs,debt,disabledUpgrades,shopLocked,injuryPenalty,staffInjuries,shelves,dailyReport,
     boardQ,activeBQ,doneBQCount,dayFlags,knownEnch,brewCounts,procureItems,pubPapers,selectedSite,constructProgress,lineage,brands,brandOrders,relics,museum,threats,outposts,ingredientContracts,settlementProjects,settlementConstruction,defenseQuests,hollowMarch,legacyFeature,
-  }),[phase,charName,charRace,charGender,stats,ptsLeft,skRanks,skPts,skProgress,classLevels,torchClassLevels,torchSpecs,specs,playerFeats,asiSpent,startingClass,screen,day,hours,xp,gold,inv,pots,known,aQ,doneQ,log,milestones,fRep,factionAlign,upgrades,hiredAppr,apprTasks,apprXP,enchQ,potCustQ,clinicPatients,venomContracts,forgedWeapons,shieldCommissions,planarFocus,gadgets,blueprints,fieldJournal,loreFragments,companions,caravans,supplyChains,caravanRuns,trainingSessions,factionHarmony,prestigeLevels,automata,customPatterns,mappedRegions,activeBuffs,debt,disabledUpgrades,shopLocked,injuryPenalty,staffInjuries,shelves,dailyReport,boardQ,activeBQ,doneBQCount,dayFlags,knownEnch,brewCounts,procureItems,constructProgress,selectedSite,lineage,brands,brandOrders,relics,museum,threats,outposts,ingredientContracts,settlementProjects,settlementConstruction,defenseQuests,hollowMarch,legacyFeature]);
+  }),[phase,charName,charRace,charGender,stats,ptsLeft,skRanks,skPts,skProgress,classLevels,specs,playerFeats,asiSpent,startingClass,screen,day,hours,xp,gold,inv,pots,known,aQ,doneQ,log,milestones,fRep,factionAlign,upgrades,hiredAppr,apprTasks,apprXP,enchQ,potCustQ,clinicPatients,venomContracts,forgedWeapons,shieldCommissions,planarFocus,gadgets,blueprints,fieldJournal,loreFragments,companions,caravans,supplyChains,caravanRuns,trainingSessions,factionHarmony,prestigeLevels,automata,customPatterns,mappedRegions,activeBuffs,debt,disabledUpgrades,shopLocked,injuryPenalty,staffInjuries,shelves,dailyReport,boardQ,activeBQ,doneBQCount,dayFlags,knownEnch,brewCounts,procureItems,constructProgress,selectedSite,lineage,brands,brandOrders,relics,museum,threats,outposts,ingredientContracts,settlementProjects,settlementConstruction,defenseQuests,hollowMarch,legacyFeature]);
 
   const restoreState=useCallback((s)=>{
     if(!s)return;
@@ -687,31 +686,15 @@ function CindervaleAlchemistInner(){
     const _removedSkills=['aesthetics','haggling','stockpiling','efficiency','lore','appraisal','procurement'];
     if(s.skRanks){_removedSkills.forEach(sk=>{delete s.skRanks[sk];});}
     if(s.skProgress){_removedSkills.forEach(sk=>{delete s.skProgress[sk];});}
-    // V2 migration: clean merchant from specs/torchSpecs
+    // V2 migration: clean merchant from specs
     if(s.specs?.merchant)delete s.specs.merchant;
-    if(s.torchSpecs?.merchant)delete s.torchSpecs.merchant;
-    if(s.torchClassLevels?.merchant)delete s.torchClassLevels.merchant;
+    // V2 torch rework: strip old torchClassLevels/torchSpecs from saves (inheritance is now via legacyFeature only)
+    delete s.torchClassLevels;delete s.torchSpecs;
     setPhase(s.phase||'identity');setCharName(s.charName||'');setCharRace(s.charRace||null);setCharGender(s.charGender||null);setStats(s.stats||DEF.stats);
     setPtsLeft(s.ptsLeft??12);setSkRanks(s.skRanks||{});setSkPts(s.skPts||0);setSkProgress(s.skProgress||{});
     const _cl=s.classLevels||{};const cleanCL={};Object.entries(_cl).forEach(([k,v])=>{if(CLASSES[k])cleanCL[k]=v;});
     setClassLevels(cleanCL);
-    // Torch migration: reconstruct from lineage if torchClassLevels missing
-    let tcl=s.torchClassLevels||{};let tsp=s.torchSpecs||{};
-    if(Object.keys(tcl).length===0){
-      const lin=s.lineage||lineage||loadLineage();
-      if(lin?.generations?.length>0){
-        const lg=lin.generations[lin.generations.length-1];
-        if(lg.classLevels&&Object.keys(lg.classLevels).length>0){
-          tcl=lg.classLevels;
-          tsp=lg.allSpecs?{...lg.allSpecs}:{};
-          if(Object.keys(tsp).length===0&&lg.class&&lg.spec)tsp[lg.class]=lg.spec;
-          if(!lg.allSpecs&&lg.classLevels){Object.entries(lg.classLevels).forEach(([cid,lv])=>{
-            if(lv>=3&&!tsp[cid]&&CLASSES[cid]?.specs){const sids=Object.keys(CLASSES[cid].specs);if(sids.length>0)tsp[cid]=sids[0];}
-          });}
-        }
-      }
-    }
-    setTorchClassLevels(tcl);setTorchSpecs(tsp);setSpecs(s.specs||{});setPlayerFeats(s.playerFeats||[]);setAsiSpent(s.asiSpent||[]);setStartingClass(s.startingClass||null);
+    setSpecs(s.specs||{});setPlayerFeats(s.playerFeats||[]);setAsiSpent(s.asiSpent||[]);setStartingClass(s.startingClass||null);
     setScreen(s.screen||'map');setDay(s.day||1);setHours(s.hours!=null?s.hours:4);setGameLocation(s.gameLocation||'cindervale');
     setXp(s.xp!=null?s.xp:0);setGold(s.gold!=null?s.gold:15);setInv(s.inv||{});setPots(s.pots||{});
     setKnown(s.known||['healing_salve']);setAQ(s.aQ||[]);setDoneQ(s.doneQ||[]);
@@ -722,7 +705,7 @@ function CindervaleAlchemistInner(){
     setDailyReport(s.dailyReport||[]);setEnchQ(s.enchQ||[]);setPotCustQ(s.potCustQ||[]);setClinicPatients(s.clinicPatients||[]);setVenomContracts(s.venomContracts||[]);setForgedWeapons(s.forgedWeapons||[]);setShieldCommissions(s.shieldCommissions||[]);setPlanarFocus(s.planarFocus||null);setGadgets(s.gadgets||[]);setBlueprints(s.blueprints||[]);setFieldJournal(s.fieldJournal||[]);setLoreFragments(s.loreFragments||[]);setCompanions(s.companions||[]);setCaravans(s.caravans||[]);setSupplyChains(s.supplyChains||[]);setCaravanRuns(s.caravanRuns||{});setTrainingSessions(s.trainingSessions||{});setFactionHarmony(s.factionHarmony||{});setPrestigeLevels(s.prestigeLevels||{});setAutomata(s.automata||[]);setCustomPatterns(s.customPatterns||[]);setMappedRegions(s.mappedRegions||[]);setActiveBuffs(s.activeBuffs||{});setDebt(s.debt||0);setDisabledUpgrades(s.disabledUpgrades||[]);setShopLocked(s.shopLocked||false);setInjuryPenalty(s.injuryPenalty||0);setStaffInjuries(s.staffInjuries||{});setShelves(s.shelves||{});setLastCheck(null);setNews([]);setMorningReport(null);setCompanionReport(null);
     setBoardQ(s.boardQ||[]);setActiveBQ(s.activeBQ||[]);setDoneBQCount(s.doneBQCount||0);setDayFlags(s.dayFlags||[]);setKnownEnch(s.knownEnch&&s.knownEnch.length>0?s.knownEnch:(LOCATIONS[s.gameLocation||'cindervale']?.startEnch||['e_sharp','e_glow','e_ironbark','e_feather','e_windwalk','e_rootbind']));
     setBrewCounts(s.brewCounts||{});setProcureItems(s.procureItems||[]);setPubPapers(s.pubPapers||[]);setConstructProgress(s.constructProgress||{});
-    setSelHex(null);setVBuild('workshop');setDlgNpc(null);setShowShop(false);setQuestDlg(null);setPendingLevelUp(null);setSelectedSite(s.selectedSite||null);if(s.lineage)setLineage(s.lineage);setBrands(s.brands||[]);setBrandOrders(s.brandOrders||[]);setRelics(s.relics||[]);setMuseum(s.museum||{pottery:0,tablets:0,jewelry:0,mechanisms:0,weapons:0});setThreats(s.threats||Object.fromEntries(locThreatIds.map(t=>[t,0])));setOutposts(s.outposts||[]);setIngredientContracts(s.ingredientContracts||[]);setSettlementProjects(s.settlementProjects||[]);setSettlementConstruction(s.settlementConstruction||null);setDefenseQuests(s.defenseQuests||[]);setHollowMarch(s.hollowMarch||DEF?.hollowMarch||{active:false,wave:0,nextWaveDay:0,demands:[],history:[],finalStandAvailable:false,finalStandComplete:false,marchRecipesUnlocked:[]});setLegacyFeature(s.legacyFeature||null);
+    setSelHex(null);setVBuild('workshop');setDlgNpc(null);setShowShop(false);setQuestDlg(null);setPendingLevelUp(null);setSelectedSite(s.selectedSite||null);setLineage(s.lineage||null);setBrands(s.brands||[]);setBrandOrders(s.brandOrders||[]);setRelics(s.relics||[]);setMuseum(s.museum||{pottery:0,tablets:0,jewelry:0,mechanisms:0,weapons:0});setThreats(s.threats||Object.fromEntries(locThreatIds.map(t=>[t,0])));setOutposts(s.outposts||[]);setIngredientContracts(s.ingredientContracts||[]);setSettlementProjects(s.settlementProjects||[]);setSettlementConstruction(s.settlementConstruction||null);setDefenseQuests(s.defenseQuests||[]);setHollowMarch(s.hollowMarch||DEF?.hollowMarch||{active:false,wave:0,nextWaveDay:0,demands:[],history:[],finalStandAvailable:false,finalStandComplete:false,marchRecipesUnlocked:[]});setLegacyFeature(s.legacyFeature||null);
   },[]);
 
   // ─── ALL EFFECTS (before any return!) ───
@@ -1091,15 +1074,8 @@ function CindervaleAlchemistInner(){
       lineage:lineage||null,
       museum:inheritData?.museum||{pottery:0,tablets:0,jewelry:0,mechanisms:0,weapons:0},
       threats:Object.fromEntries(locThreatIds.map(t=>[t,0])),outposts:[],ingredientContracts:[],settlementProjects:[],settlementConstruction:null,defenseQuests:[],
-      torchClassLevels:inheritData?.torchClassLevels||{},
-      torchSpecs:inheritData?.torchSpecs||{},
     };
     restoreState(defState);setLog([]);setGameStarted(true);
-    if(inheritData?.torchClassLevels){
-      const tcl=inheritData.torchClassLevels;
-      const classNames=Object.entries(tcl).filter(([,v])=>v>0).map(([cid,lv])=>(CLASSES[cid]?.icon||'')+CLASSES[cid]?.name+' Lv'+lv).join(', ');
-      if(classNames)addLog(`🔥 Mentor's Training: ${classNames} — counts toward prestige class prerequisites.`,'story');
-    }
     if(inheritData?.legacyFeature)setLegacyFeature(inheritData.legacyFeature);
     else setLegacyFeature(null);
     if(inheritData?.intro)addLog(inheritData.intro,'story');
@@ -1148,8 +1124,6 @@ function CindervaleAlchemistInner(){
       intro:apprentice.name+' sets out from '+LOCATIONS[gameLocation]?.name+', carrying the lessons of '+charName+'. A new chapter begins.',
       legacyFeature:selectedLegacy||null,
       torchEnergyBonus:torchEnergyB,
-      torchClassLevels:{...classLevels},
-      torchSpecs:{...specs},
     };
     // Start new game at selected location
     setShowTorch(false);setTorchApprentice(null);setTorchStep(0);setTorchHeirloom(null);setTorchLegacy(null);
@@ -1158,6 +1132,27 @@ function CindervaleAlchemistInner(){
   // Compute available legacy features from current build
   const getLegacyOptions=()=>{
     const options=[];
+    // Base class features: merge ALL features up to highest unlocked level
+    Object.entries(classLevels).forEach(([cid,clsLv])=>{
+      if(clsLv<1)return;
+      const cls=CLASSES[cid];if(!cls)return;
+      const eligible=cls.features.filter(f=>f.classLv<=clsLv&&f.effects);
+      if(eligible.length===0)return;
+      const best=eligible.reduce((a,b)=>b.classLv>a.classLv?b:a);
+      const mergedEffects={};
+      const featureChain=eligible.sort((a,b)=>a.classLv-b.classLv);
+      featureChain.forEach(f=>{Object.entries(f.effects).forEach(([k,v])=>{
+        if(typeof v==='boolean')mergedEffects[k]=true;
+        else mergedEffects[k]=(mergedEffects[k]||0)+v;
+      });});
+      options.push({
+        type:'class',classId:cid,name:cls.name+' Legacy',desc:best.name+' (Lv'+best.classLv+') and all prerequisite features.',lv:best.classLv,
+        icon:cls.icon,color:cls.color,
+        source:`${cls.icon} ${cls.name} Lv${best.classLv}`,
+        effects:mergedEffects,
+        featureChain:featureChain.map(f=>({name:f.name,lv:f.classLv,desc:f.desc})),
+      });
+    });
     // Specialization features: merge ALL features up to highest unlocked level
     Object.entries(specs).forEach(([cid,specId])=>{
       if(!specId)return;
@@ -1207,6 +1202,13 @@ function CindervaleAlchemistInner(){
         featureChain:featureChain.map(f=>({name:f.name,lv:f.lv,desc:f.desc})),
       });
     });
+    // Re-pass: if this character inherited a legacy feature, offer it as an option to carry forward
+    if(legacyFeature&&legacyFeature.effects){
+      const alreadyListed=options.some(o=>o.source===legacyFeature.source);
+      if(!alreadyListed){
+        options.push({...legacyFeature,name:(legacyFeature.name||'Inherited Legacy')+' (re-pass)',desc:'Carry forward your mentor\'s legacy to the next generation.'});
+      }
+    }
     return options;
   };
   const [showImport,setShowImport]=useState(false);
@@ -1284,11 +1286,21 @@ function CindervaleAlchemistInner(){
       setTimeout(()=>setLineageMsg(null),4000);
     }catch(e){setLineageMsg('Import failed: '+e.message);setTimeout(()=>setLineageMsg(null),5000);}
   };
-  const deleteLineage=()=>{
+  const deleteLineage=async()=>{
     if(!confirm('Permanently delete your lineage? All generation history, mentor bonuses, and legacy features will be lost. This cannot be undone.'))return;
     setLineage(null);
     try{localStorage.removeItem(LINEAGE_KEY);}catch(e){}
     if(fbUserRef.current)cloudDel(fbUserRef.current.uid,'lineage');
+    // Strip lineage from existing save slots and auto-save so it doesn't reappear on reload
+    const uid=fbUserRef.current?.uid;
+    setAutoSaveData(prev=>{
+      if(prev?.lineage){const cleaned={...prev};delete cleaned.lineage;delete cleaned.torchClassLevels;delete cleaned.torchSpecs;delete cleaned.legacyFeature;sSet(AK,cleaned);if(uid)cloudSet(uid,'auto',cleaned);return cleaned;}return prev;
+    });
+    setSaveSlots(prev=>{
+      const n=[...prev];
+      for(let i=0;i<n.length;i++){if(n[i]?.lineage){n[i]={...n[i]};delete n[i].lineage;delete n[i].torchClassLevels;delete n[i].torchSpecs;delete n[i].legacyFeature;sSet(sK(i+1),n[i]);if(uid)cloudSet(uid,'slot-'+(i+1),n[i]);}}
+      return n;
+    });
     setLineageMsg('Lineage deleted.');setTimeout(()=>setLineageMsg(null),3000);
   };
 
@@ -6911,8 +6923,7 @@ function CindervaleAlchemistInner(){
                     </div>}
                     {selected&&<div style={{marginTop:6,padding:'6px 8px',background:TH.bg,borderRadius:4,border:'1px solid '+TH.gold+'44'}} onClick={e=>e.stopPropagation()}>
                       {(()=>{
-                        const parentOptions=Object.keys(pc.req).filter(cid=>(torchClassLevels[cid]||0)<=(classLevels[cid]||0));
-                        const torchBlocked=Object.keys(pc.req).filter(cid=>(torchClassLevels[cid]||0)>(classLevels[cid]||0));
+                        const parentOptions=Object.keys(pc.req).filter(cid=>CLASSES[cid]&&(classLevels[cid]||0)>0);
                         if(parentOptions.length===1&&!pendingLevelUp.prestigeParentClass){
                           setTimeout(()=>setPendingLevelUp(p=>({...p,prestigeParentClass:parentOptions[0],needsSpec:(classLevels[parentOptions[0]]||0)+1===3&&!specs[parentOptions[0]]})),0);
                         }
@@ -6932,9 +6943,6 @@ function CindervaleAlchemistInner(){
                           </div>;
                         })}
                         </div>
-                        {torchBlocked.length>0&&<div style={{fontSize:11,color:TH.textDim,marginTop:4,fontStyle:'italic'}}>
-                          🔥 {torchBlocked.map(cid=>CLASSES[cid]?.name).join(', ')} covered by mentor's training (Lv{torchBlocked.map(cid=>torchClassLevels[cid]).join('/')})
-                        </div>}
                         </>;
                       })()}
                     </div>}
@@ -10758,23 +10766,7 @@ function CindervaleAlchemistInner(){
             </div>
           );})}
         </div>}
-        {/* Torch Mentor Inheritance Display */}
-        {Object.keys(torchClassLevels).length>0&&<div style={{...S.card,borderColor:'#c050e044'}}>
-          <div style={S.cT}>🔥 Mentor's Training</div>
-          <div style={{fontSize:13,color:TH.textDim,marginBottom:6}}>Inherited from your mentor via Pass the Torch. These class features are active and count toward prestige prerequisites.</div>
-          {Object.entries(torchClassLevels).filter(([,lv])=>lv>0).map(([cid,lv])=>{
-            const cls=CLASSES[cid];if(!cls)return null;
-            const sp=torchSpecs[cid];const spec=sp&&cls.specs?.[sp];
-            const ownLv=classLevels[cid]||0;
-            return <div key={cid} style={{padding:'4px 8px',marginBottom:3,borderRadius:4,background:'#c050e008',border:'1px solid #c050e022'}}>
-              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-                <span style={{fontSize:14,color:cls.color,fontWeight:'bold'}}>{cls.icon} {cls.name} Lv{lv}{spec?' — '+spec.icon+' '+spec.name:''}</span>
-                {ownLv>0&&<span style={{fontSize:11,color:TH.textDim}}>+{ownLv} own</span>}
-              </div>
-              {spec&&<div style={{fontSize:12,color:TH.textDim,marginTop:1}}>{spec.features?.filter(f=>f.classLv<=lv).map(f=>f.name).join(' → ')}</div>}
-            </div>;
-          })}
-        </div>}
+        {/* Legacy Feature Display (inherited via Pass the Torch) */}
         {/* Active Effects Summary */}
         {Object.keys(classLevels).length>0&&<div style={S.card}><div style={S.cT}>⚡ Active Bonuses</div>
           {factionAlign&&<div style={{fontSize:14,padding:'4px 8px',marginBottom:6,background:FACTIONS[factionAlign].color+'15',border:'1px solid '+FACTIONS[factionAlign].color+'44',borderRadius:4,color:FACTIONS[factionAlign].color}}>⚔️ <b>Aligned:</b> {FACTIONS[factionAlign].icon} {FACTIONS[factionAlign].alignBonus.name}</div>}
