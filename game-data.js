@@ -2863,10 +2863,10 @@ var PRESTIGE_CLASSES={
     desc:'Brews potions in the field using fresh ingredients for bonus potency.',
     features:[
       {lv:1,name:'Field Alchemy',desc:'1 field brew per expedition from your haul. Fresh potions sell at 1.2×. Standard quality only.',effects:{fieldBrews:1,freshMult:1.2}},
-      {lv:2,name:'Fresh Reagents',desc:'2 field brews. Fresh 1.3×. Fine quality field brewing. +1 bonus ingredient per expedition.',effects:{fieldBrews:2,freshMult:1.3,fieldFine:true,bonusForageIngr:1}},
-      {lv:3,name:'Wilderness Recipes',desc:'3 field brews. Fresh 1.4×. Unlock 3 field-only recipes (Vitality Draught, Trailblazer Tonic, Wilderness Elixir).',effects:{fieldBrews:3,freshMult:1.4,fieldRecipes:true}},
-      {lv:4,name:'Master Fieldcrafter',desc:'3 field brews. Fresh 1.5×. Masterwork field brewing. 15% double batch chance.',effects:{fieldBrews:3,freshMult:1.5,fieldMW:true,fieldDoubleBatch:0.15}},
-      {lv:5,name:'Living Apothecary',desc:'4 field brews. Auto-suggests best potion. Legendary field-only recipe: Essence of the Wild.',effects:{fieldBrews:4,freshMult:1.5,fieldLegendary:true}},
+      {lv:2,name:'Fresh Reagents',desc:'2 field brews. Fresh 1.3×. Fine quality field brewing. +1 bonus ingredient per expedition. Unlock Seasonal Bypass wildcraft (1/day).',effects:{fieldBrews:2,freshMult:1.3,fieldFine:true,bonusForageIngr:1,wildcraftSlots:1}},
+      {lv:3,name:'Wilderness Recipes',desc:'3 field brews. Fresh 1.4×. Unlock 3 field-only recipes. Unlock Wild Ally wildcraft (2/day).',effects:{fieldBrews:3,freshMult:1.4,fieldRecipes:true,wildcraftSlots:2}},
+      {lv:4,name:'Master Fieldcrafter',desc:'3 field brews. Fresh 1.5×. Masterwork field brewing. 15% double batch chance. Unlock Threat Suppression wildcraft (2/day).',effects:{fieldBrews:3,freshMult:1.5,fieldMW:true,fieldDoubleBatch:0.15,wildcraftSlots:2}},
+      {lv:5,name:'Living Apothecary',desc:'4 field brews. Auto-suggests best potion. Legendary field-only recipe: Essence of the Wild. Enhanced wildcrafts (3/day, 3-day Wild Ally, -12 threat).',effects:{fieldBrews:4,freshMult:1.5,fieldLegendary:true,wildcraftSlots:3}},
     ]},
   antiquarian:{id:'antiquarian',name:'Antiquarian',icon:'📖',color:'#c0a080',
     req:{scholar:3,feat:['keen_eye']},maxLv:5,
@@ -2908,6 +2908,21 @@ var PRESTIGE_CLASSES={
       {lv:4,name:'Grand Alliance',desc:'Allied with all factions simultaneously. Faction vendors stock legendary items.',effects:{repGainBonus:0.50,buyDiscount:0.25,shopRestockBonus:5}},
       {lv:5,name:'Ambassador',desc:'Faction harmony bonuses doubled. Cross-faction rep spillover 25%. Carries through Torch.',effects:{harmonyDouble:true,repSpillover:0.25,torchHarmony:true}},
     ]},
+};
+
+// ═══ WILDCRAFTS (Wildcrafter Prestige) ═══
+var WILDCRAFTS={
+  seasonal_bypass:{id:'seasonal_bypass',name:'Seasonal Bypass',icon:'🍃',color:'#60a040',unlockLv:2,
+    ingrCost:3,desc:'Choose a region and a season. Your next forage trip there uses that season\'s ingredient table.',
+    shortDesc:'Override season for one forage trip'},
+  wild_ally:{id:'wild_ally',name:'Wild Ally',icon:'🐾',color:'#40a060',unlockLv:3,
+    ingrCost:3,desc:'Attract a temporary companion creature for 1-3 days (scales with level). No loyalty, no legendary.',
+    shortDesc:'Summon a temporary companion',
+    duration:(wcLv)=>wcLv>=5?3:wcLv>=4?2:1},
+  threat_suppression:{id:'threat_suppression',name:'Threat Suppression',icon:'🛡️',color:'#4080a0',unlockLv:4,
+    ingrCost:3,desc:'Brew a suppression concoction. Directly reduce a zone threat by 8-12 (scales with level).',
+    shortDesc:'Reduce a zone threat level',
+    reduction:(wcLv)=>wcLv>=5?12:8},
 };
 
 // ═══ ARCANIST CUSTOM PATTERNS ═══

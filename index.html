@@ -357,6 +357,10 @@ function CindervaleAlchemistInner(){
   const [brewInfSel,setBrewInfSel]=useState({}); // {healing_salve:'vigor'}
   const [infusionsUsedToday,setInfusionsUsedToday]=useState(0);
   const [fieldBrewPhase,setFieldBrewPhase]=useState(null);
+  const [wildcraftsUsedToday,setWildcraftsUsedToday]=useState(0);
+  const [seasonalOverride,setSeasonalOverride]=useState(null); // {region:'ashfields',season:'spring'}
+  const [wildAlly,setWildAlly]=useState(null); // {compId:'rc_fox',daysLeft:2,role:'gatherer',primary:{...},passive:{...}}
+  const [wcPickRegion,setWcPickRegion]=useState(null); // region ID for Seasonal Bypass picker
   const [brands,setBrands]=useState([]);
   const [relics,setRelics]=useState([]); // [{id,category,rarity,name,value,appraised,displayed,region}]
   const [museum,setMuseum]=useState({pottery:0,tablets:0,jewelry:0,mechanisms:0,weapons:0});
@@ -642,10 +646,12 @@ function CindervaleAlchemistInner(){
     }
     // Companion passive bonuses (always-on while companion is active)
     if(companions?.length>0&&typeof RANGER_COMPANIONS!=='undefined'){companions.filter(cc=>cc.active).forEach(cc=>{const comp=RANGER_COMPANIONS.find(r=>r.id===cc.compId);if(comp?.passive?.[effectKey]!=null){const v=comp.passive[effectKey];total+=typeof v==='number'?v:v===true?1:0;}});}
+    // Wild Ally passive bonuses (Wildcrafter temporary companion)
+    if(wildAlly?.passive?.[effectKey]!=null){const v=wildAlly.passive[effectKey];total+=typeof v==='number'?v:v===true?1:0;}
     // Settlement project effects
     if(settlementProjects?.length>0&&typeof SETTLEMENT_PROJECTS!=='undefined'){settlementProjects.forEach(pid=>{const proj=SETTLEMENT_PROJECTS.find(p=>p.id===pid);if(proj?.effect?.[effectKey]!=null){const v=proj.effect[effectKey];total+=typeof v==='number'?v:v===true?1:0;}});}
     return total;
-  },[classLevels,specs,playerFeats,fRep,factionAlign,loreFragments,activeBuffs,mentorBonuses,museumBonuses,legacyFeature,pubPapers,fieldJournal,companions,settlementProjects]);
+  },[classLevels,specs,playerFeats,fRep,factionAlign,loreFragments,activeBuffs,mentorBonuses,museumBonuses,legacyFeature,pubPapers,fieldJournal,companions,wildAlly,settlementProjects]);
   const hasFeature=useCallback((effectKey)=>{
     for(const [cid,lv] of Object.entries(classLevels)){
       const cls=CLASSES[cid];if(!cls)continue;
@@ -666,8 +672,8 @@ function CindervaleAlchemistInner(){
     phase,charName,charRace,charGender,stats,ptsLeft,skRanks,skPts,skProgress,classLevels,specs,playerFeats,asiSpent,startingClass,
     screen,day,hours,gameLocation,xp,gold,inv,pots,known,aQ,doneQ,
     log:log.slice(-30),milestones,fRep,factionAlign,upgrades,hiredAppr,apprTasks,apprXP,enchQ,potCustQ,clinicPatients,venomContracts,forgedWeapons,shieldCommissions,planarFocus,gadgets,blueprints,fieldJournal,loreFragments,companions,caravans,supplyChains,caravanRuns,trainingSessions,factionHarmony,prestigeLevels,automata,customPatterns,mappedRegions,activeBuffs,debt,disabledUpgrades,shopLocked,injuryPenalty,staffInjuries,shelves,dailyReport,
-    boardQ,activeBQ,doneBQCount,dayFlags,knownEnch,brewCounts,procureItems,pubPapers,selectedSite,constructProgress,lineage,brands,brandOrders,relics,museum,threats,outposts,ingredientContracts,settlementProjects,settlementConstruction,defenseQuests,hollowMarch,legacyFeature,
-  }),[phase,charName,charRace,charGender,stats,ptsLeft,skRanks,skPts,skProgress,classLevels,specs,playerFeats,asiSpent,startingClass,screen,day,hours,xp,gold,inv,pots,known,aQ,doneQ,log,milestones,fRep,factionAlign,upgrades,hiredAppr,apprTasks,apprXP,enchQ,potCustQ,clinicPatients,venomContracts,forgedWeapons,shieldCommissions,planarFocus,gadgets,blueprints,fieldJournal,loreFragments,companions,caravans,supplyChains,caravanRuns,trainingSessions,factionHarmony,prestigeLevels,automata,customPatterns,mappedRegions,activeBuffs,debt,disabledUpgrades,shopLocked,injuryPenalty,staffInjuries,shelves,dailyReport,boardQ,activeBQ,doneBQCount,dayFlags,knownEnch,brewCounts,procureItems,constructProgress,selectedSite,lineage,brands,brandOrders,relics,museum,threats,outposts,ingredientContracts,settlementProjects,settlementConstruction,defenseQuests,hollowMarch,legacyFeature]);
+    boardQ,activeBQ,doneBQCount,dayFlags,knownEnch,brewCounts,procureItems,pubPapers,selectedSite,constructProgress,lineage,brands,brandOrders,relics,museum,threats,outposts,ingredientContracts,settlementProjects,settlementConstruction,defenseQuests,hollowMarch,legacyFeature,seasonalOverride,wildAlly,
+  }),[phase,charName,charRace,charGender,stats,ptsLeft,skRanks,skPts,skProgress,classLevels,specs,playerFeats,asiSpent,startingClass,screen,day,hours,xp,gold,inv,pots,known,aQ,doneQ,log,milestones,fRep,factionAlign,upgrades,hiredAppr,apprTasks,apprXP,enchQ,potCustQ,clinicPatients,venomContracts,forgedWeapons,shieldCommissions,planarFocus,gadgets,blueprints,fieldJournal,loreFragments,companions,caravans,supplyChains,caravanRuns,trainingSessions,factionHarmony,prestigeLevels,automata,customPatterns,mappedRegions,activeBuffs,debt,disabledUpgrades,shopLocked,injuryPenalty,staffInjuries,shelves,dailyReport,boardQ,activeBQ,doneBQCount,dayFlags,knownEnch,brewCounts,procureItems,constructProgress,selectedSite,lineage,brands,brandOrders,relics,museum,threats,outposts,ingredientContracts,settlementProjects,settlementConstruction,defenseQuests,hollowMarch,legacyFeature,seasonalOverride,wildAlly]);
 
   const restoreState=useCallback((s)=>{
     if(!s)return;
@@ -705,7 +711,7 @@ function CindervaleAlchemistInner(){
     setDailyReport(s.dailyReport||[]);setEnchQ(s.enchQ||[]);setPotCustQ(s.potCustQ||[]);setClinicPatients(s.clinicPatients||[]);setVenomContracts(s.venomContracts||[]);setForgedWeapons(s.forgedWeapons||[]);setShieldCommissions(s.shieldCommissions||[]);setPlanarFocus(s.planarFocus||null);setGadgets(s.gadgets||[]);setBlueprints(s.blueprints||[]);setFieldJournal(s.fieldJournal||[]);setLoreFragments(s.loreFragments||[]);setCompanions(s.companions||[]);setCaravans(s.caravans||[]);setSupplyChains(s.supplyChains||[]);setCaravanRuns(s.caravanRuns||{});setTrainingSessions(s.trainingSessions||{});setFactionHarmony(s.factionHarmony||{});setPrestigeLevels(s.prestigeLevels||{});setAutomata(s.automata||[]);setCustomPatterns(s.customPatterns||[]);setMappedRegions(s.mappedRegions||[]);setActiveBuffs(s.activeBuffs||{});setDebt(s.debt||0);setDisabledUpgrades(s.disabledUpgrades||[]);setShopLocked(s.shopLocked||false);setInjuryPenalty(s.injuryPenalty||0);setStaffInjuries(s.staffInjuries||{});setShelves(s.shelves||{});setLastCheck(null);setNews([]);setMorningReport(null);setCompanionReport(null);
     setBoardQ(s.boardQ||[]);setActiveBQ(s.activeBQ||[]);setDoneBQCount(s.doneBQCount||0);setDayFlags(s.dayFlags||[]);setKnownEnch(s.knownEnch&&s.knownEnch.length>0?s.knownEnch:(LOCATIONS[s.gameLocation||'cindervale']?.startEnch||['e_sharp','e_glow','e_ironbark','e_feather','e_windwalk','e_rootbind']));
     setBrewCounts(s.brewCounts||{});setProcureItems(s.procureItems||[]);setPubPapers(s.pubPapers||[]);setConstructProgress(s.constructProgress||{});
-    setSelHex(null);setVBuild('workshop');setDlgNpc(null);setShowShop(false);setQuestDlg(null);setPendingLevelUp(null);setSelectedSite(s.selectedSite||null);setLineage(s.lineage||null);setBrands(s.brands||[]);setBrandOrders(s.brandOrders||[]);setRelics(s.relics||[]);setMuseum(s.museum||{pottery:0,tablets:0,jewelry:0,mechanisms:0,weapons:0});setThreats(s.threats||Object.fromEntries(locThreatIds.map(t=>[t,0])));setOutposts(s.outposts||[]);setIngredientContracts(s.ingredientContracts||[]);setSettlementProjects(s.settlementProjects||[]);setSettlementConstruction(s.settlementConstruction||null);setDefenseQuests(s.defenseQuests||[]);setHollowMarch(s.hollowMarch||DEF?.hollowMarch||{active:false,wave:0,nextWaveDay:0,demands:[],history:[],finalStandAvailable:false,finalStandComplete:false,marchRecipesUnlocked:[]});setLegacyFeature(s.legacyFeature||null);
+    setSelHex(null);setVBuild('workshop');setDlgNpc(null);setShowShop(false);setQuestDlg(null);setPendingLevelUp(null);setSelectedSite(s.selectedSite||null);setLineage(s.lineage||null);setBrands(s.brands||[]);setBrandOrders(s.brandOrders||[]);setRelics(s.relics||[]);setMuseum(s.museum||{pottery:0,tablets:0,jewelry:0,mechanisms:0,weapons:0});setThreats(s.threats||Object.fromEntries(locThreatIds.map(t=>[t,0])));setOutposts(s.outposts||[]);setIngredientContracts(s.ingredientContracts||[]);setSettlementProjects(s.settlementProjects||[]);setSettlementConstruction(s.settlementConstruction||null);setDefenseQuests(s.defenseQuests||[]);setHollowMarch(s.hollowMarch||DEF?.hollowMarch||{active:false,wave:0,nextWaveDay:0,demands:[],history:[],finalStandAvailable:false,finalStandComplete:false,marchRecipesUnlocked:[]});setLegacyFeature(s.legacyFeature||null);setSeasonalOverride(s.seasonalOverride||null);setWildAlly(s.wildAlly||null);
   },[]);
 
   // ─── ALL EFFECTS (before any return!) ───
@@ -1435,8 +1441,12 @@ function CindervaleAlchemistInner(){
       // Targeting yield penalty (-25% unless Tracker)
       const tgtPenalty=(targetIngr&&reg.ingr.includes(targetIngr)&&!getFeatureVal('targetNoYieldPenalty'))?0.75:1;
       const yieldMult=(1+Math.min(getFeatureVal('yieldMultiplier'),2))*tgtPenalty;
-      // Seasonal yield modifier
-      const fSeason=getSeason(day,gameLocation);
+      // Seasonal yield modifier (Wildcraft Seasonal Bypass override)
+      let fSeason=getSeason(day,gameLocation);
+      if(seasonalOverride&&seasonalOverride.region===reg.id){
+        const overrideSeason=SEASONS[gameLocation]?.find(s=>s.id===seasonalOverride.season);
+        if(overrideSeason){fSeason=overrideSeason;if(h===0)addLog('🍃 Seasonal Bypass active — foraging as if it\'s '+overrideSeason.name+'.','craft');}
+      }
       const seasonYieldMod=(fSeason.yieldMod||0)+(fSeason.floraYieldBonus&&reg.ingr.some(id=>INGR[id]?.icon==='🌿'||INGR[id]?.icon==='🌸'||INGR[id]?.icon==='🌻'||INGR[id]?.icon==='🍄')?(fSeason.floraYieldBonus||0):0);
       const critMult=isCrit?(1+getFeatureVal('critExtractionMulti')):1;
       if(ext.success){
@@ -1825,6 +1835,8 @@ function CindervaleAlchemistInner(){
       if(hr.event?.effectRep)addRep(hr.event.effectRep.faction,hr.event.effectRep.amount);
     });
     addLog(`⛏️ Expedition complete: ${last.totalHours}h at ${last.regIcon}${last.regName}.`,'harvest');
+    // Clear Wildcraft seasonal override after use
+    if(seasonalOverride&&seasonalOverride.region===last.regId)setSeasonalOverride(null);
     setExpQ([]);setLastCheck(last.ext);
     // Trigger Field Brew phase (Wildcrafter)
     if((prestigeLevels.wildcrafter||0)>=1){
@@ -2250,6 +2262,44 @@ function CindervaleAlchemistInner(){
     }
     addLog('🌿 Field brewed '+r.icon+r.name+'! (Fresh '+freshMult+'× sell value)'+(qty>1?' ×'+qty+' batch!':''),'craft');
     showResult('🌿 '+r.icon+r.name+' — Field Brewed!','craft','Fresh ingredients bind perfectly in the open air!\n+'+xpE+' XP'+(qty>1?'\nDouble batch!':''),ch);
+  };
+
+  // ═══ WILDCRAFTS (Wildcrafter Prestige) ═══
+  const getWildcraftSlots=()=>{const wcLv=prestigeLevels.wildcrafter||0;return wcLv>=5?3:wcLv>=4?2:wcLv>=3?2:wcLv>=2?1:0;};
+
+  const brewWildcraft=(craftId,opts)=>{
+    const wcLv=prestigeLevels.wildcrafter||0;
+    const wc=WILDCRAFTS[craftId];if(!wc||wcLv<wc.unlockLv)return;
+    const maxSlots=getWildcraftSlots();
+    if(wildcraftsUsedToday>=maxSlots){addLog('🌿 Daily wildcraft limit reached ('+maxSlots+'/day). Rest to reset.','error');return;}
+    // Check ingredient cost: need X unique ingredients with at least 1 each
+    const availIngr=Object.entries(inv).filter(([,q])=>q>0);
+    if(availIngr.length<wc.ingrCost){addLog('🌿 Need '+wc.ingrCost+' unique ingredients in inventory. Have '+availIngr.length+'.','error');return;}
+    // Consume cheapest unique ingredients
+    const sorted=availIngr.sort((a,b)=>(INGR[a[0]]?.val||0)-(INGR[b[0]]?.val||0));
+    const consumed=sorted.slice(0,wc.ingrCost);
+    consumed.forEach(([id])=>modInv(id,-1));
+    setWildcraftsUsedToday(n=>n+1);
+    const ingrNames=consumed.map(([id])=>(INGR[id]?.icon||'')+INGR[id]?.name).join(', ');
+
+    if(craftId==='seasonal_bypass'){
+      if(!opts?.region||!opts?.season){addLog('🌿 Select a region and season.','error');return;}
+      setSeasonalOverride({region:opts.region,season:opts.season});
+      const sName=SEASONS[gameLocation]?.find(s=>s.id===opts.season)?.name||opts.season;
+      addLog('🍃 Seasonal Bypass: '+sName+' conditions set for your next forage. (Used: '+ingrNames+')','craft');
+    } else if(craftId==='wild_ally'){
+      if(!opts?.compId){addLog('🌿 Select a creature.','error');return;}
+      const comp=RANGER_COMPANIONS.find(c=>c.id===opts.compId);if(!comp)return;
+      const dur=WILDCRAFTS.wild_ally.duration(wcLv);
+      setWildAlly({compId:comp.id,daysLeft:dur,name:comp.name,icon:comp.icon,role:comp.role,primary:comp.primary,passive:comp.passive||{},secondary:null,img:comp.img||null});
+      addLog('🐾 Wild Ally: '+comp.icon+' '+comp.name+' joins you for '+dur+' day'+(dur>1?'s':'')+'! (Used: '+ingrNames+')','craft');
+    } else if(craftId==='threat_suppression'){
+      const tid=opts?.threatId||locThreatIds[0];
+      const tf=THREAT_FACTIONS[tid];
+      const reduction=WILDCRAFTS.threat_suppression.reduction(wcLv);
+      setThreats(prev=>{const n={...prev};n[tid]=Math.max(0,(n[tid]||0)-reduction);return n;});
+      addLog('🛡️ Threat Suppression: '+(tf?.icon||'')+' '+(tf?.name||tid)+' reduced by '+reduction+'. (Used: '+ingrNames+')','craft');
+    }
   };
 
     const doCraft=(r,quality='std')=>{
@@ -3867,7 +3917,7 @@ function CindervaleAlchemistInner(){
     snapshot();
     const enduranceBonus=0; // Endurance no longer grants flat energy — pure save chance now
     const injPen=injuryPenalty||0;
-    if(injPen>0)setInjuryPenalty(0);setInfusionsUsedToday(0); // Clear after applying
+    if(injPen>0)setInjuryPenalty(0);setInfusionsUsedToday(0);setWildcraftsUsedToday(0); // Clear after applying
     const conduitE=blueprints.some(b=>b.bpId==='bp_conduit'&&b.complete)?2:0;
     const baseH=Math.max(3,4+upEff('bonusEnergy')+getFeatureVal('bonusEnergyPerDay')+getFeatureVal('bonusEnergy')+conduitE+enduranceBonus+(getFeatureVal('freeAction')?1:0)-injPen);
     setDay(d=>d+1);setHours(baseH);setLastCheck(null);setWsOpen({});const report=[];let totalSal=0;
@@ -5291,6 +5341,33 @@ function CindervaleAlchemistInner(){
       if(compReportEntries.length>0)setCompanionReport({dayNum:day+1,companions:compReportEntries});
       else setCompanionReport(null);
     } else { setCompanionReport(null); }
+    // ─── WILD ALLY (Wildcrafter) morning phase ───
+    if(wildAlly){
+      const wa=wildAlly;
+      const comp=RANGER_COMPANIONS.find(c=>c.id===wa.compId);
+      if(wa.daysLeft<=1){
+        // Wild Ally departs
+        setWildAlly(null);
+        addLog('🐾 '+wa.icon+' '+wa.name+' (Wild Ally) departs into the wilderness. Farewell!','story');
+        report.push({n:'Wild Ally',i:'🐾',r:wa.name+' departed',t:'dim'});
+      } else {
+        // Wild Ally daily action
+        setWildAlly(prev=>prev?{...prev,daysLeft:prev.daysLeft-1}:null);
+        const waLines=[];
+        if(comp?.primary?.type==='gather'&&comp.primary.ingr){
+          const yld=Math.min(3,comp.primary.baseYield?comp.primary.baseYield[0]:3);
+          for(let i=0;i<yld;i++){const iid=comp.primary.ingr[Math.floor(Math.random()*comp.primary.ingr.length)];modInv(iid,1);}
+          waLines.push({icon:wa.icon,label:wa.name+' gathered '+yld+' ingredients',val:'',color:'#60a040'});
+        } else if(comp?.primary?.type==='shop'&&comp.primary.baseGold){
+          const g=comp.primary.baseGold[0]||5;goldIn+=g;
+          waLines.push({icon:wa.icon,label:wa.name+' earned '+g+'g',val:'+'+g+'g',color:TH.gold});
+        } else if(comp?.primary?.type==='staff_morale'){
+          waLines.push({icon:wa.icon,label:wa.name+' boosted morale',val:'',color:'#60a040'});
+        }
+        if(waLines.length>0)mrSections.push({title:'🐾 Wild Ally ('+wa.daysLeft+'d left)',lines:waLines});
+        report.push({n:'Wild Ally',i:'🐾',r:wa.name+' — '+wa.daysLeft+' day'+(wa.daysLeft>1?'s':'')+' left',t:'ok'});
+      }
+    }
     // Always show morning report
     const MR_FLAVOR=gameLocation==='tidecrest'
       ?['Dawn breaks over Tidecrest Harbor. Gulls wheel above the fishing boats.','The tide horn sounds across the docks. Another day at sea.','Another day begins — the scent of salt and kelp fills the workshop.','Fishermen haul their catch as the harbor market stirs to life.','Morning fog rolls off the cliffs as Tidecrest wakes.','The sun glitters on the harbor. Ships rock gently at their moorings.','A salt breeze carries the cry of gulls through the open window.','You wake to the creak of rigging and the splash of the first divers.']
@@ -8689,6 +8766,57 @@ function CindervaleAlchemistInner(){
           })()}
         </div>}
 
+        {/* ═══ WILDCRAFTER — WILDCRAFTS ═══ */}
+        {(prestigeLevels.wildcrafter||0)>=2&&<div style={{...S.card,borderColor:'#60a040',background:'#60a04008'}} className={isWsOpen('ws_wc')?'':'ws-closed'}>
+          <div style={{...S.cT,cursor:'pointer',userSelect:'none'}} onClick={()=>toggleWs('ws_wc')}><span style={{display:'flex',justifyContent:'space-between',width:'100%'}}><span>🌿 Wildcrafts — {wildcraftsUsedToday}/{getWildcraftSlots()}/day</span><span style={{fontSize:13,color:TH.textDim}}>{isWsOpen('ws_wc')?'▲':'▼'}</span></span></div>
+          {(()=>{
+            const wcLv=prestigeLevels.wildcrafter||0;const maxSlots=getWildcraftSlots();const canBrew=wildcraftsUsedToday<maxSlots;
+            const availIngr=Object.entries(inv).filter(([,q])=>q>0);const hasIngr=availIngr.length>=3;
+            const locRegs=(LOCATIONS[gameLocation]?.regions||[]);const seasons=SEASONS[gameLocation]||[];
+            const zoneComps=RANGER_COMPANIONS.filter(c=>(!c.loc||c.loc===gameLocation)&&!c.legendary_only);
+            return <div style={{padding:'6px 8px'}}>
+              {/* Seasonal Bypass */}
+              {wcLv>=2&&<div style={{marginBottom:8,padding:'6px 8px',background:'#60a04010',borderRadius:4,border:'1px solid #60a04022'}}>
+                <div style={{fontSize:14,color:'#60a040',fontWeight:'bold'}}>🍃 Seasonal Bypass</div>
+                <div style={{fontSize:12,color:TH.textDim}}>Override season for one forage trip. Cost: 3 unique ingredients.</div>
+                {seasonalOverride?<div style={{fontSize:13,color:'#60a040',marginTop:4}}>Active: {seasons.find(s=>s.id===seasonalOverride.season)?.icon} {seasons.find(s=>s.id===seasonalOverride.season)?.name} → {locRegs.find(r=>r.id===seasonalOverride.region)?.name||seasonalOverride.region} <button style={{...S.btn('dim'),fontSize:11,padding:'1px 4px'}} onClick={()=>setSeasonalOverride(null)}>Cancel</button></div>
+                :<div style={{marginTop:4}}>
+                  <div style={{fontSize:12,color:TH.textDim,marginBottom:3}}>1. Pick region:</div>
+                  <div style={{display:'flex',gap:3,flexWrap:'wrap',marginBottom:6}}>
+                    {locRegs.filter(r=>level>=regUnlock(r)).map(r=>{const sel=wcPickRegion===r.id;return <button key={r.id} style={{...S.btn(sel?'green':'def'),fontSize:12,padding:'2px 6px'}} onClick={()=>setWcPickRegion(sel?null:r.id)}>{r.icon||''}{r.name}</button>;})}
+                  </div>
+                  {wcPickRegion&&<><div style={{fontSize:12,color:TH.textDim,marginBottom:3}}>2. Pick season:</div>
+                  <div style={{display:'flex',gap:3,flexWrap:'wrap'}}>
+                    {seasons.map(s=><button key={s.id} style={{...S.btn(canBrew&&hasIngr?'def':'dim'),fontSize:12,padding:'2px 6px',borderColor:'#60a04044'}} disabled={!canBrew||!hasIngr}
+                      onClick={()=>{brewWildcraft('seasonal_bypass',{region:wcPickRegion,season:s.id});setWcPickRegion(null);}}>{s.icon} {s.name}</button>)}
+                  </div></>}
+                </div>}
+              </div>}
+              {/* Wild Ally */}
+              {wcLv>=3&&<div style={{marginBottom:8,padding:'6px 8px',background:'#40a06010',borderRadius:4,border:'1px solid #40a06022'}}>
+                <div style={{fontSize:14,color:'#40a060',fontWeight:'bold'}}>🐾 Wild Ally</div>
+                <div style={{fontSize:12,color:TH.textDim}}>Attract a temporary companion for {WILDCRAFTS.wild_ally.duration(wcLv)} day{WILDCRAFTS.wild_ally.duration(wcLv)>1?'s':''}. Cost: 3 unique ingredients.</div>
+                {wildAlly?<div style={{fontSize:13,color:'#40a060',marginTop:4,padding:'4px 6px',background:'#40a06015',borderRadius:3}}>{wildAlly.icon} {wildAlly.name} — {wildAlly.role} — {wildAlly.daysLeft} day{wildAlly.daysLeft>1?'s':''} left</div>
+                :<div style={{display:'flex',gap:3,flexWrap:'wrap',marginTop:4}}>
+                  {zoneComps.slice(0,7).map(c=><button key={c.id} style={{...S.btn(canBrew&&hasIngr?'def':'dim'),fontSize:12,padding:'2px 6px',borderColor:'#40a06044'}} disabled={!canBrew||!hasIngr}
+                    onClick={()=>brewWildcraft('wild_ally',{compId:c.id})}>{c.icon} {c.name}</button>)}
+                </div>}
+              </div>}
+              {/* Threat Suppression */}
+              {wcLv>=4&&<div style={{padding:'6px 8px',background:'#4080a010',borderRadius:4,border:'1px solid #4080a022'}}>
+                <div style={{fontSize:14,color:'#4080a0',fontWeight:'bold'}}>🛡️ Threat Suppression</div>
+                <div style={{fontSize:12,color:TH.textDim}}>Reduce a threat by {WILDCRAFTS.threat_suppression.reduction(wcLv)}. Cost: 3 unique ingredients.</div>
+                <div style={{display:'flex',gap:4,marginTop:4}}>
+                  {locThreatIds.map(tid=>{const tf=THREAT_FACTIONS[tid];const tLv=threats[tid]||0;return <button key={tid} style={{...S.btn(canBrew&&hasIngr&&tLv>0?'def':'dim'),fontSize:12,padding:'2px 6px',borderColor:'#4080a044'}} disabled={!canBrew||!hasIngr||tLv<=0}
+                    onClick={()=>brewWildcraft('threat_suppression',{threatId:tid})}>{tf?.icon} {tf?.name} ({tLv})</button>;})}
+                </div>
+              </div>}
+              {!canBrew&&<div style={{fontSize:12,color:TH.textDim,marginTop:4}}>Daily wildcrafts used ({wildcraftsUsedToday}/{maxSlots}). Rest to reset.</div>}
+              {!hasIngr&&canBrew&&<div style={{fontSize:12,color:TH.textDim,marginTop:4}}>Need 3+ unique ingredients in inventory.</div>}
+            </div>;
+          })()}
+        </div>}
+
         {/* ═══ CARTOGRAPHER — ATLAS ═══ */}
         {(prestigeLevels.cartographer||0)>=1&&<div style={{...S.card,borderColor:'#50a0a0',background:'linear-gradient(135deg,#1a2828,#1e2e30)'}} className={isWsOpen('ws22')?'':'ws-closed'}>
           <div style={{...S.cT,cursor:'pointer',userSelect:'none'}} onClick={()=>toggleWs('ws22')}><span style={{display:'flex',justifyContent:'space-between',width:'100%'}}><span>🗺️ Cartographer Atlas — {mappedRegions.length}/{HIDDEN_REGIONS.filter(hr=>!hr.legendary||(prestigeLevels.cartographer||0)>=5).length} hidden areas mapped</span><span style={{fontSize:13,color:TH.textDim}}>{isWsOpen('ws22')?'▲':'▼'}</span></span></div>
@@ -10767,6 +10895,18 @@ function CindervaleAlchemistInner(){
               <span style={{color:cat?.color}}>{f.icon}</span> <b>{f.name}</b> — {f.desc}
             </div>
           );})}
+        </div>}
+        {/* Wild Ally Display (Wildcrafter temporary companion) */}
+        {wildAlly&&<div style={{...S.card,borderColor:'#40a06044',background:'#40a06008'}}>
+          <div style={S.cT}>🐾 Wild Ally</div>
+          <div style={{display:'flex',alignItems:'center',gap:8,padding:'4px 8px'}}>
+            {wildAlly.img&&<img src={wildAlly.img} style={{width:40,height:40,borderRadius:6,objectFit:'cover'}} alt={wildAlly.name}/>}
+            <div>
+              <div style={{fontSize:14,color:'#40a060',fontWeight:'bold'}}>{wildAlly.icon} {wildAlly.name}</div>
+              <div style={{fontSize:12,color:TH.textDim}}>{wildAlly.role} — {wildAlly.daysLeft} day{wildAlly.daysLeft>1?'s':''} remaining</div>
+            </div>
+          </div>
+          {Object.entries(wildAlly.passive||{}).filter(([,v])=>v).length>0&&<div style={{fontSize:12,color:TH.textDim,padding:'2px 8px'}}>Passive: {Object.entries(wildAlly.passive).filter(([,v])=>v).map(([k,v])=>k.replace(/([A-Z])/g,' $1').trim()+': +'+(typeof v==='number'?v:'')).join(', ')}</div>}
         </div>}
         {/* Legacy Feature Display (inherited via Pass the Torch) */}
         {/* Active Effects Summary */}
