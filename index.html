@@ -4550,7 +4550,7 @@ function CindervaleAlchemistInner(){
       // Expire old orders
       setBrandOrders(prev=>prev.filter(o=>o.expires>day));
     }
-        if(shelfGold>0&&!shopLocked){setGold(g=>g+shelfGold);const items=Object.entries(shelfSold).map(([id,q])=>{const r=RECIPES.find(x=>x.id===getBaseRecipeId(id));const _inf=getInfusion(id);return(r?.icon||'')+(_inf?INFUSIONS[_inf]?.icon:'')+r?.name+(getPotQuality(id)!=='std'?' '+QUALITY[getPotQuality(id)].icon:'')+(_inf?' ['+INFUSIONS[_inf]?.name+']':'')+' ×'+q;}).join(', ');
+        if(shelfGold>0&&!shopLocked){setGold(g=>g+shelfGold);const items=Object.entries(shelfSold).map(([id,q])=>{const r=RECIPES.find(x=>x.id===getBaseRecipeId(id));const _inf=getInfusion(id);const _fr=isFreshPot(id);return(r?.icon||'')+(_inf?INFUSIONS[_inf]?.icon:'')+(_fr?'🌿':'')+r?.name+(getPotQuality(id)!=='std'?' '+QUALITY[getPotQuality(id)].icon:'')+(_inf?' ['+INFUSIONS[_inf]?.name+']':'')+(_fr?' [Fresh]':'')+' ×'+q;}).join(', ');
       report.push({n:'Shelf Sales',i:'🏪',r:'+'+shelfGold+'g ('+items+')',t:'ok'});
       Object.entries(shelfSold).forEach(([pid,q])=>{recordBrandSale(getBaseRecipeId(pid),q);});}
     // Overnight Craft: auto-brew 1 potion while sleeping
@@ -4706,10 +4706,11 @@ function CindervaleAlchemistInner(){
     if(goldLines.length>0)mrSections.push({title:'💰 Gold',net:goldIn-goldOut,lines:goldLines});
     // Shelf Sales detail
     if(Object.keys(shelfSold).length>0){
-      const sLines=Object.entries(shelfSold).map(([id,q])=>{const r=RECIPES.find(x=>x.id===getBaseRecipeId(id));
+      const sLines=Object.entries(shelfSold).map(([id,q])=>{const r=RECIPES.find(x=>x.id===getBaseRecipeId(id));const _fr=isFreshPot(id);
         const basePrice=r?r.xp+getFeatureVal('potionSaleBonus')+Math.floor(upEff('sellBonus')*r.xp):0;
-        const price=Math.floor(basePrice*(1+getFeatureVal('sellBonus')+getFeatureVal('customerPayBonus')+getFeatureVal('potionValueBonus'))*GOLD_MULT);
-        return{icon:r?.icon||'🧪',label:(r?.name||id)+' ×'+q,val:'+'+price*q+'g',color:TH.gold};});
+        const _frM=_fr?getFreshMult(prestigeLevels.wildcrafter||0):1;
+        const price=Math.floor(basePrice*(1+getFeatureVal('sellBonus')+getFeatureVal('customerPayBonus')+getFeatureVal('potionValueBonus'))*_frM*GOLD_MULT);
+        return{icon:(r?.icon||'🧪')+(_fr?'🌿':''),label:(r?.name||id)+(_fr?' (Fresh '+_frM+'×)':'')+' ×'+q,val:'+'+price*q+'g',color:_fr?'#60a040':TH.gold};});
       mrSections.push({title:'🏪 Shelf Sales',lines:sLines});}
     // Staff injury recovery
     const updatedInjuries={...staffInjuries};
@@ -7538,10 +7539,10 @@ function CindervaleAlchemistInner(){
               const brandMult=getBrandSellMult(getBaseRecipeId(id));
               const bmLv=prestigeLevels.brandmaster||0;
               const brandMWExtra=(bmLv>=4&&getBrandForRecipe(getBaseRecipeId(id))&&(pq==='mw'||pq==='gm'))?0.25:0;
-              const freshMult=id.includes('_fresh')?(prestigeLevels.wildcrafter>=4?1.5:prestigeLevels.wildcrafter>=3?1.4:prestigeLevels.wildcrafter>=2?1.3:1.2):1;
+              const _isFresh=isFreshPot(id);const freshMult=_isFresh?getFreshMult(prestigeLevels.wildcrafter||0):1;
               const sp=Math.floor(baseSp*(1+getFeatureVal('sellBonus')+brandMWExtra)*qT.sellMult*infSellMult*freshMult*brandMult);return(
               <div key={id} style={{display:'flex',alignItems:'center',gap:6,padding:'3px 0',fontSize:16}}>
-                <span>{r.icon}{r.name}{qT.icon?' '+qT.icon:''} ×{qty}</span><span style={{color:TH.gold,marginLeft:'auto'}}>{sp}g ea</span>
+                <span>{r.icon}{r.name}{qT.icon?' '+qT.icon:''}{_isFresh?' 🌿':''} ×{qty}</span>{_isFresh&&<span style={{fontSize:11,color:'#60a040',fontWeight:'bold'}}>Fresh {freshMult}×</span>}<span style={{color:TH.gold,marginLeft:'auto'}}>{sp}g ea</span>
                 <button style={S.btn()} onClick={()=>sellPotion(id,1,sp,r)}>Sell 1</button>
                 {qty>1&&<button style={S.btn()} onClick={()=>sellPotion(id,qty,sp,r)}>All ({sp*qty}g)</button>}
               </div>);})}
@@ -9277,12 +9278,12 @@ function CindervaleAlchemistInner(){
         {(Object.entries(pots).some(([,q])=>q>0)||Object.entries(inv).some(([,q])=>q>0))&&<div style={S.card} className={isWsOpen('ws26')?'':'ws-closed'}>
           <div style={{...S.cT,cursor:'pointer',userSelect:'none'}} onClick={()=>toggleWs('ws26')}><span style={{display:'flex',justifyContent:'space-between',width:'100%'}}><span>💰 Sell</span><span style={{fontSize:13,color:TH.textDim}}>{isWsOpen('ws26')?'▲':'▼'}</span></span></div>
           {Object.entries(pots).filter(([,q])=>q>0).length>0&&<div style={{fontSize:15,color:TH.gold,marginBottom:4}}>Potions</div>}
-          {Object.entries(pots).filter(([,q])=>q>0).map(([id,qty])=>{const baseId=getBaseRecipeId(id);const r=RECIPES.find(r=>r.id===baseId);if(!r)return null;const pq=getPotQuality(id);const qT=QUALITY[pq]||QUALITY.std;
+          {Object.entries(pots).filter(([,q])=>q>0).map(([id,qty])=>{const baseId=getBaseRecipeId(id);const r=RECIPES.find(r=>r.id===baseId);if(!r)return null;const pq=getPotQuality(id);const qT=QUALITY[pq]||QUALITY.std;const _isFresh=isFreshPot(id);
             const sp=Math.floor((r.xp+getFeatureVal('potionSaleBonus')+Math.floor(upEff('sellBonus')*r.xp))*qT.sellMult);
             const hasBuff=r.buff&&ELIXIR_BUFFS[r.buff];
             const buffActive=hasBuff&&activeBuffs[r.buff]?.daysLeft>0;
             return(<div key={id} style={{display:'flex',alignItems:'center',gap:6,padding:'3px 0',fontSize:16}}>
-              <span>{r.icon}{r.name}{qT.icon?' '+qT.icon:''} ×{qty}</span><span style={{color:TH.gold,marginLeft:'auto'}}>{sp}g ea</span>
+              <span>{r.icon}{r.name}{qT.icon?' '+qT.icon:''}{_isFresh?' 🌿':''} ×{qty}</span>{_isFresh&&<span style={{fontSize:11,color:'#60a040',fontWeight:'bold'}}>Fresh</span>}<span style={{color:TH.gold,marginLeft:'auto'}}>{sp}g ea</span>
               {hasBuff&&<button style={{...S.btn(buffActive?'dim':'green'),fontSize:14,padding:'2px 8px'}} disabled={buffActive}
                 onClick={()=>consumeElixir(r.buff)} title={ELIXIR_BUFFS[r.buff].buffDesc}>
                 {buffActive?'✓ Active':'🧪 Drink'}
@@ -9520,19 +9521,20 @@ function CindervaleAlchemistInner(){
           <div style={{fontSize:14,color:TH.textDim,marginBottom:6}}>Stock potions for townsfolk to browse. Shelved potions sell passively overnight.</div>
           {Object.entries(shelves).filter(([,q])=>q>0).length>0?
             <div style={{marginBottom:6}}>{Object.entries(shelves).filter(([,q])=>q>0).map(([id,qty])=>{const baseId=getBaseRecipeId(id);const r=RECIPES.find(x=>x.id===baseId);if(!r)return null;const _inf=getInfusion(id);const _infObj=_inf?INFUSIONS[_inf]:null;
-              const pq=getPotQuality(id);const sqT=QUALITY[pq]||QUALITY.std;
-              const sp=Math.floor((r.xp+getFeatureVal('potionSaleBonus')+Math.floor(upEff('sellBonus')*r.xp))*sqT.sellMult);
-              return(<div key={id} style={{display:'flex',alignItems:'center',gap:6,padding:'3px 6px',background:TH.panelLight,borderRadius:3,marginBottom:2,fontSize:15}}>
-                <span style={{flex:1}}>{r.icon} {r.name}{sqT.icon?' '+sqT.icon:''} ×{qty}</span><span style={{color:TH.gold,fontSize:14}}>{sp}g ea</span>
+              const pq=getPotQuality(id);const sqT=QUALITY[pq]||QUALITY.std;const _isFresh=isFreshPot(id);
+              const _frM=_isFresh?getFreshMult(prestigeLevels.wildcrafter||0):1;
+              const sp=Math.floor((r.xp+getFeatureVal('potionSaleBonus')+Math.floor(upEff('sellBonus')*r.xp))*sqT.sellMult*_frM);
+              return(<div key={id} style={{display:'flex',alignItems:'center',gap:6,padding:'3px 6px',background:_isFresh?'#60a04010':TH.panelLight,borderRadius:3,marginBottom:2,fontSize:15,border:_isFresh?'1px solid #60a04030':'none'}}>
+                <span style={{flex:1}}>{r.icon} {r.name}{sqT.icon?' '+sqT.icon:''}{_isFresh?' 🌿':''} ×{qty}</span>{_isFresh&&<span style={{fontSize:11,color:'#60a040',fontWeight:'bold'}}>{_frM}×</span>}<span style={{color:TH.gold,fontSize:14}}>{sp}g ea</span>
                 <button style={{...S.btn('def'),fontSize:13,padding:'1px 5px'}} onClick={()=>unstockShelf(id,1)}>−1</button>
               </div>);})}</div>:
             <div style={{fontSize:14,color:TH.textDim,textAlign:'center',padding:4,marginBottom:6}}>Shelves empty — stock potions below.</div>}
           {Object.entries(pots).filter(([,q])=>q>0).length>0&&<>
             <div style={{fontSize:14,color:TH.gold,marginBottom:3}}>Stock from inventory:</div>
             <div style={{display:'flex',flexWrap:'wrap',gap:3}}>{Object.entries(pots).filter(([,q])=>q>0).map(([id,qty])=>{const baseId=getBaseRecipeId(id);const r=RECIPES.find(x=>x.id===baseId);if(!r)return null;
-              const pq=getPotQuality(id);const sqT=QUALITY[pq]||QUALITY.std;
-              return(<button key={id} style={{...S.btn(shelfTotal<SHELF_MAX?'gold':'dim'),fontSize:14,padding:'2px 6px'}} disabled={shelfTotal>=SHELF_MAX||qty<1}
-                onClick={()=>stockShelf(id,1)}>{r.icon}{sqT.icon?sqT.icon:''}+1 ({qty})</button>);
+              const pq=getPotQuality(id);const sqT=QUALITY[pq]||QUALITY.std;const _isFresh=isFreshPot(id);
+              return(<button key={id} style={{...S.btn(shelfTotal<SHELF_MAX?'gold':'dim'),fontSize:14,padding:'2px 6px',borderColor:_isFresh?'#60a040':undefined}} disabled={shelfTotal>=SHELF_MAX||qty<1}
+                onClick={()=>stockShelf(id,1)}>{r.icon}{_isFresh?'🌿':''}{sqT.icon?sqT.icon:''}+1 ({qty})</button>);
             })}</div>
           </>}
         </div>
@@ -10914,7 +10916,7 @@ function CindervaleAlchemistInner(){
           </div>
           {Object.entries(pots).filter(([,q])=>q>0).length>0&&<><div style={{fontSize:15,color:TH.gold,marginTop:6,marginBottom:4}}>Potions</div>
           <div style={{display:'flex',flexWrap:'wrap',gap:3}}>
-            {Object.entries(pots).filter(([,q])=>q>0).map(([id,qty])=>{const baseId=getBaseRecipeId(id);const r=RECIPES.find(r=>r.id===baseId);if(!r)return null;const _inf=getInfusion(id);const pq=getPotQuality(id);const qI=(QUALITY[pq]||QUALITY.std).icon;return <span key={id} style={{...S.tag,borderColor:_inf?INFUSIONS[_inf]?.color||TH.borderGold:TH.borderGold}}>{r.icon}{_inf?INFUSIONS[_inf]?.icon:''}{r.name}{qI?' '+qI:''} <b style={{color:TH.goldBright}}>×{qty}</b></span>;})}
+            {Object.entries(pots).filter(([,q])=>q>0).map(([id,qty])=>{const baseId=getBaseRecipeId(id);const r=RECIPES.find(r=>r.id===baseId);if(!r)return null;const _inf=getInfusion(id);const pq=getPotQuality(id);const qI=(QUALITY[pq]||QUALITY.std).icon;const _isFresh=isFreshPot(id);return <span key={id} style={{...S.tag,borderColor:_isFresh?'#60a040':_inf?INFUSIONS[_inf]?.color||TH.borderGold:TH.borderGold}}>{r.icon}{_inf?INFUSIONS[_inf]?.icon:''}{_isFresh?'🌿':''}{r.name}{qI?' '+qI:''} <b style={{color:TH.goldBright}}>×{qty}</b></span>;})}
           </div></>}
         </div>
       </>}

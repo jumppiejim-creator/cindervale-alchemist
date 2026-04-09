@@ -1938,6 +1938,8 @@ var QUALITY={
 };
 var getBaseRecipeId=(potId)=>{let id=potId.replace(/_fresh/,'');for(const s of INFUSION_SUFFIXES)id=id.replace(s,'');return id.replace(/_[FMG]$/,'');};
 var getPotQuality=(potId)=>{const stripped=stripInfusion(potId);return stripped.endsWith('_G')?'gm':stripped.endsWith('_M')?'mw':stripped.endsWith('_F')?'fine':'std';};
+var isFreshPot=(potId)=>potId.includes('_fresh');
+var getFreshMult=(wcLv)=>wcLv>=4?1.5:wcLv>=3?1.4:wcLv>=2?1.3:1.2;
 var qualPotId=(recipeId,q)=>q==='fine'?recipeId+'_F':q==='mw'?recipeId+'_M':q==='gm'?recipeId+'_G':recipeId;
 var getMasteryDiscount=(brewCounts,recipeId,bonusCap)=>{const bc=brewCounts[recipeId]||0;const base=bc>=25?2:bc>=10?1:0;const extra=bonusCap>0?(bc>=50?Math.min(bonusCap,2):bc>=35?Math.min(bonusCap,1):0):0;return base+extra;};
 
