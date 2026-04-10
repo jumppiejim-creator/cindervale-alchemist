@@ -1370,6 +1370,7 @@ function CindervaleAlchemistInner(){
   const getExpeditionInfo=(reg)=>{
     if(!reg)return null;
     let travelTime=Math.max(0,reg.time-getFeatureVal('travelReduction'));
+    if(dayFlags.includes('trailblazer_tonic'))travelTime=Math.max(0,travelTime-1);
     const weatherReduc=getFeatureVal('weatherReduction');
     if(dayFlags.includes('ash_storm'))travelTime+=Math.max(0,Math.ceil(1*(1-weatherReduc)));
     // Seasonal travel modifier
@@ -2251,6 +2252,20 @@ function CindervaleAlchemistInner(){
     const potId=r.id+'_fresh';
     let qty=1;
     if(wcLv>=4&&Math.random()<0.15)qty=2;
+    // Field-only immediate effects (not stored as potions — applied at brew time)
+    if(r.id==='vitality_draught'){
+      const injuredStaff=Object.entries(staffInjuries).filter(([,inj])=>inj.daysLeft>0);
+      if(injuredStaff.length>0){const [apId]=injuredStaff[0];setStaffInjuries(prev=>{const n={...prev};delete n[apId];return n;});addLog('🌿 '+r.icon+' Vitality Draught heals '+hiredAppr.find(a=>a.id===apId)?.name+'\'s injury!','craft');}
+      else addLog('🌿 '+r.icon+' Vitality Draught brewed — no injured staff to heal. Stored for later.','craft');
+      if(injuredStaff.length>0){setBrewCounts(p=>({...p,[r.id]:(p[r.id]||0)+1}));const xpE=Math.floor(r.xp*1.1);gainXP(xpE);
+        showResult('🌿 '+r.icon+' Vitality Draught — Staff Healed!','craft','The potion mends wounds instantly in the field air.\n+'+xpE+' XP',ch);return;}
+    }
+    if(r.id==='trailblazer_tonic'){
+      setDayFlags(f=>[...f,'trailblazer_tonic']);
+      setBrewCounts(p=>({...p,[r.id]:(p[r.id]||0)+1}));const xpE=Math.floor(r.xp*1.1);gainXP(xpE);
+      addLog('🌿 '+r.icon+' Trailblazer Tonic! Next expedition travel time -1 hour.','craft');
+      showResult('🌿 '+r.icon+' Trailblazer Tonic — Pathways Revealed!','craft','The tonic sharpens your sense of the trails. -1h travel on next expedition.\n+'+xpE+' XP',ch);return;
+    }
     modPot(potId,qty);
     setBrewCounts(p=>({...p,[r.id]:(p[r.id]||0)+1}));
     const xpE=Math.floor(r.xp*1.1);gainXP(xpE);
@@ -11120,10 +11135,12 @@ function CindervaleAlchemistInner(){
               return Object.entries(cost).every(([id,q])=>(fieldBrewPhase.haul[id]||0)>=q);
             }).map(r=>{
               const masteryD=getMasteryDiscount(brewCounts,r.id,getFeatureVal('masteryDiscountBonus'));const adjDC=Math.max(5,r.dc-masteryD);
+              const _hasBuff=r.buff&&ELIXIR_BUFFS[r.buff];
               return <button key={r.id} style={{display:'block',width:'100%',textAlign:'left',padding:'6px 10px',marginBottom:3,background:TH.panelLight,border:'1px solid '+TH.borderGold,borderRadius:4,color:TH.text,cursor:'pointer',fontFamily:'inherit',fontSize:14}}
                 onClick={()=>doFieldBrew(r.id,fieldBrewPhase.haul)}>
                 {r.icon} {r.name} <span style={{fontSize:12,color:TH.textDim}}>DC{adjDC}</span>
                 <span style={{fontSize:12,color:'#60a040',marginLeft:6}}>🌿 Fresh</span>
+                {r.desc&&<div style={{fontSize:11,color:TH.textDim,marginTop:2}}>{_hasBuff?ELIXIR_BUFFS[r.buff].buffDesc:r.desc}</div>}
               </button>;
             })}
             {/* Field-only recipes (Lv3+) */}
@@ -11133,11 +11150,14 @@ function CindervaleAlchemistInner(){
                 const haulKeys=Object.keys(fieldBrewPhase.haul).filter(k=>fieldBrewPhase.haul[k]>0);
                 const canBrew=haulKeys.length>=r.ingr.length;
                 const needsDiff4=r.fieldLegendary&&(fieldBrewPhase.regDiff||0)<4;
+                const _fBuff=r.buff&&ELIXIR_BUFFS[r.buff];
                 return <button key={r.id} style={{display:'block',width:'100%',textAlign:'left',padding:'6px 10px',marginBottom:3,background:canBrew&&!needsDiff4?'#60a04015':TH.panel,border:'1px solid '+(canBrew&&!needsDiff4?'#60a040':TH.border),borderRadius:4,color:canBrew&&!needsDiff4?TH.text:TH.textDim,cursor:canBrew&&!needsDiff4?'pointer':'not-allowed',fontFamily:'inherit',fontSize:14,opacity:canBrew&&!needsDiff4?1:.5}}
                   onClick={()=>canBrew&&!needsDiff4&&doFieldBrew(r.id,fieldBrewPhase.haul)} disabled={!canBrew||needsDiff4}>
                   {r.icon} {r.name} <span style={{fontSize:12,color:TH.textDim}}>DC{r.dc} · {r.ingr.length} unique ingr.</span>
+                  {r.fieldLegendary&&<span style={{fontSize:11,color:TH.gold}}> ★ Legendary</span>}
                   {needsDiff4&&<span style={{fontSize:11,color:TH.red}}> (needs diff 4+ region)</span>}
                   {!canBrew&&!needsDiff4&&<span style={{fontSize:11,color:TH.textDim}}> (need {r.ingr.length} unique, have {haulKeys.length})</span>}
+                  {r.desc&&<div style={{fontSize:11,color:canBrew?'#60a040':TH.textDim,marginTop:2}}>{_fBuff?'🧪 '+_fBuff.buffDesc:r.desc}</div>}
                 </button>;
               })}
             </>}
