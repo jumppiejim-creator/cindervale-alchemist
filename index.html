@@ -8768,22 +8768,23 @@ function CindervaleAlchemistInner(){
 
         {/* ═══ WILDCRAFTER — WILDCRAFTS ═══ */}
         {(prestigeLevels.wildcrafter||0)>=2&&<div style={{...S.card,borderColor:'#60a040',background:'#60a04008'}} className={isWsOpen('ws_wc')?'':'ws-closed'}>
-          <div style={{...S.cT,cursor:'pointer',userSelect:'none'}} onClick={()=>toggleWs('ws_wc')}><span style={{display:'flex',justifyContent:'space-between',width:'100%'}}><span>🌿 Wildcrafts — {wildcraftsUsedToday}/{getWildcraftSlots()}/day</span><span style={{fontSize:13,color:TH.textDim}}>{isWsOpen('ws_wc')?'▲':'▼'}</span></span></div>
+          <div style={{...S.cT,cursor:'pointer',userSelect:'none'}} onClick={()=>toggleWs('ws_wc')}><span style={{display:'flex',justifyContent:'space-between',width:'100%'}}><span>🌿 Wildcrafts — {getWildcraftSlots()-wildcraftsUsedToday}/{getWildcraftSlots()} remaining</span><span style={{fontSize:13,color:TH.textDim}}>{isWsOpen('ws_wc')?'▲':'▼'}</span></span></div>
           {(()=>{
             const wcLv=prestigeLevels.wildcrafter||0;const maxSlots=getWildcraftSlots();const canBrew=wildcraftsUsedToday<maxSlots;
             const availIngr=Object.entries(inv).filter(([,q])=>q>0);const hasIngr=availIngr.length>=3;
-            const locRegs=(LOCATIONS[gameLocation]?.regions||[]);const seasons=SEASONS[gameLocation]||[];
+            const seasons=SEASONS[gameLocation]||[];
             const zoneComps=RANGER_COMPANIONS.filter(c=>(!c.loc||c.loc===gameLocation)&&!c.legendary_only);
+            const ROLE_DESC={gatherer:'Brings bonus ingredients each morning',gather:'Brings bonus ingredients each morning',shopkeeper:'Earns bonus gold from sales',scout:'Reduces expedition danger',guardian:'Boosts staff morale and blocks threat events',greeter:'Attracts extra customers',muse:'Boosts research discovery chance',research:'Boosts research discovery chance',combat:'Reduces expedition danger',trade:'Earns gold and boosts yield',legendary:'Unique legendary abilities'};
             return <div style={{padding:'6px 8px'}}>
               {/* Seasonal Bypass */}
-              {wcLv>=2&&<div style={{marginBottom:8,padding:'6px 8px',background:'#60a04010',borderRadius:4,border:'1px solid #60a04022'}}>
+              <div style={{marginBottom:8,padding:'6px 8px',background:'#60a04010',borderRadius:4,border:'1px solid #60a04022'}}>
                 <div style={{fontSize:14,color:'#60a040',fontWeight:'bold'}}>🍃 Seasonal Bypass</div>
-                <div style={{fontSize:12,color:TH.textDim}}>Override season for one forage trip. Cost: 3 unique ingredients.</div>
-                {seasonalOverride?<div style={{fontSize:13,color:'#60a040',marginTop:4}}>Active: {seasons.find(s=>s.id===seasonalOverride.season)?.icon} {seasons.find(s=>s.id===seasonalOverride.season)?.name} → {locRegs.find(r=>r.id===seasonalOverride.region)?.name||seasonalOverride.region} <button style={{...S.btn('dim'),fontSize:11,padding:'1px 4px'}} onClick={()=>setSeasonalOverride(null)}>Cancel</button></div>
+                <div style={{fontSize:12,color:TH.textDim}}>Access any season's ingredients on your next forage trip. Cost: 3 unique ingredients.</div>
+                {seasonalOverride?<div style={{fontSize:13,color:'#60a040',marginTop:4}}>Active: {seasons.find(s=>s.id===seasonalOverride.season)?.icon} {seasons.find(s=>s.id===seasonalOverride.season)?.name} → {locRegions.find(r=>r.id===seasonalOverride.region)?.name||seasonalOverride.region} <button style={{...S.btn('dim'),fontSize:11,padding:'1px 4px'}} onClick={()=>setSeasonalOverride(null)}>Cancel</button></div>
                 :<div style={{marginTop:4}}>
                   <div style={{fontSize:12,color:TH.textDim,marginBottom:3}}>1. Pick region:</div>
                   <div style={{display:'flex',gap:3,flexWrap:'wrap',marginBottom:6}}>
-                    {locRegs.filter(r=>level>=regUnlock(r)).map(r=>{const sel=wcPickRegion===r.id;return <button key={r.id} style={{...S.btn(sel?'green':'def'),fontSize:12,padding:'2px 6px'}} onClick={()=>setWcPickRegion(sel?null:r.id)}>{r.icon||''}{r.name}</button>;})}
+                    {locRegions.filter(r=>level>=regUnlock(r)).map(r=>{const sel=wcPickRegion===r.id;return <button key={r.id} style={{...S.btn(sel?'green':'def'),fontSize:12,padding:'2px 6px'}} onClick={()=>setWcPickRegion(sel?null:r.id)}>{r.icon} {r.name}</button>;})}
                   </div>
                   {wcPickRegion&&<><div style={{fontSize:12,color:TH.textDim,marginBottom:3}}>2. Pick season:</div>
                   <div style={{display:'flex',gap:3,flexWrap:'wrap'}}>
@@ -8791,28 +8792,55 @@ function CindervaleAlchemistInner(){
                       onClick={()=>{brewWildcraft('seasonal_bypass',{region:wcPickRegion,season:s.id});setWcPickRegion(null);}}>{s.icon} {s.name}</button>)}
                   </div></>}
                 </div>}
-              </div>}
+              </div>
               {/* Wild Ally */}
-              {wcLv>=3&&<div style={{marginBottom:8,padding:'6px 8px',background:'#40a06010',borderRadius:4,border:'1px solid #40a06022'}}>
+              {wcLv>=3?<div style={{marginBottom:8,padding:'6px 8px',background:'#40a06010',borderRadius:4,border:'1px solid #40a06022'}}>
                 <div style={{fontSize:14,color:'#40a060',fontWeight:'bold'}}>🐾 Wild Ally</div>
-                <div style={{fontSize:12,color:TH.textDim}}>Attract a temporary companion for {WILDCRAFTS.wild_ally.duration(wcLv)} day{WILDCRAFTS.wild_ally.duration(wcLv)>1?'s':''}. Cost: 3 unique ingredients.</div>
-                {wildAlly?<div style={{fontSize:13,color:'#40a060',marginTop:4,padding:'4px 6px',background:'#40a06015',borderRadius:3}}>{wildAlly.icon} {wildAlly.name} — {wildAlly.role} — {wildAlly.daysLeft} day{wildAlly.daysLeft>1?'s':''} left</div>
-                :<div style={{display:'flex',gap:3,flexWrap:'wrap',marginTop:4}}>
-                  {zoneComps.slice(0,7).map(c=><button key={c.id} style={{...S.btn(canBrew&&hasIngr?'def':'dim'),fontSize:12,padding:'2px 6px',borderColor:'#40a06044'}} disabled={!canBrew||!hasIngr}
-                    onClick={()=>brewWildcraft('wild_ally',{compId:c.id})}>{c.icon} {c.name}</button>)}
+                <div style={{fontSize:12,color:TH.textDim}}>Attract a temporary companion for {WILDCRAFTS.wild_ally.duration(wcLv)} day{WILDCRAFTS.wild_ally.duration(wcLv)>1?'s':''}. No loyalty, no legendary. Cost: 3 unique ingredients.</div>
+                {wildAlly?<div style={{marginTop:6,padding:'6px 8px',background:'#40a06015',borderRadius:4,border:'1px solid #40a06033'}}>
+                  <div style={{display:'flex',alignItems:'center',gap:8}}>
+                    {(()=>{const comp=RANGER_COMPANIONS.find(c=>c.id===wildAlly.compId);return comp?.img?<img src={comp.img} style={{width:44,height:44,borderRadius:6,objectFit:'cover',border:'2px solid #40a060'}} alt={wildAlly.name}/>:null;})()}
+                    <div>
+                      <div style={{fontSize:14,color:'#40a060',fontWeight:'bold'}}>{wildAlly.icon} {wildAlly.name} <span style={{fontSize:11,color:TH.textDim,fontWeight:'normal'}}>Wild Ally</span></div>
+                      <div style={{fontSize:12,color:TH.textDim}}>{wildAlly.role} — {ROLE_DESC[wildAlly.role]||wildAlly.role}</div>
+                      <div style={{fontSize:12,color:'#40a060'}}>{wildAlly.daysLeft} day{wildAlly.daysLeft>1?'s':''} remaining</div>
+                    </div>
+                  </div>
+                </div>
+                :<div style={{display:'flex',flexDirection:'column',gap:4,marginTop:6}}>
+                  {zoneComps.slice(0,7).map(c=>{
+                    const comp=RANGER_COMPANIONS.find(rc=>rc.id===c.id);
+                    return <div key={c.id} style={{display:'flex',alignItems:'center',gap:8,padding:'6px 8px',background:TH.panelLight,borderRadius:4,border:'1px solid '+(canBrew&&hasIngr?'#40a06033':TH.border),cursor:canBrew&&hasIngr?'pointer':'default',opacity:canBrew&&hasIngr?1:0.5}}
+                      onClick={()=>canBrew&&hasIngr&&brewWildcraft('wild_ally',{compId:c.id})}>
+                      {comp?.img?<img src={comp.img} style={{width:36,height:36,borderRadius:5,objectFit:'cover'}} alt={c.name}/>:<span style={{fontSize:24,width:36,textAlign:'center'}}>{c.icon}</span>}
+                      <div style={{flex:1,minWidth:0}}>
+                        <div style={{fontSize:13,fontWeight:'bold',color:'#40a060'}}>{c.icon} {c.name}</div>
+                        <div style={{fontSize:11,color:TH.textDim}}>{c.role} — {ROLE_DESC[c.role]||c.role}</div>
+                      </div>
+                      {canBrew&&hasIngr&&<span style={{fontSize:11,color:'#40a060',whiteSpace:'nowrap'}}>Summon</span>}
+                    </div>;
+                  })}
                 </div>}
+              </div>
+              :<div style={{marginBottom:8,padding:'6px 8px',background:'#40a06008',borderRadius:4,border:'1px solid #40a06015',opacity:0.6}}>
+                <div style={{fontSize:14,color:'#40a060'}}>🐾 Wild Ally <span style={{fontSize:11,color:TH.textDim}}>— Unlocks at Wildcrafter Lv3</span></div>
+                <div style={{fontSize:12,color:TH.textDim}}>Attract a temporary companion creature.</div>
               </div>}
               {/* Threat Suppression */}
-              {wcLv>=4&&<div style={{padding:'6px 8px',background:'#4080a010',borderRadius:4,border:'1px solid #4080a022'}}>
+              {wcLv>=4?<div style={{padding:'6px 8px',background:'#4080a010',borderRadius:4,border:'1px solid #4080a022'}}>
                 <div style={{fontSize:14,color:'#4080a0',fontWeight:'bold'}}>🛡️ Threat Suppression</div>
                 <div style={{fontSize:12,color:TH.textDim}}>Reduce a threat by {WILDCRAFTS.threat_suppression.reduction(wcLv)}. Cost: 3 unique ingredients.</div>
                 <div style={{display:'flex',gap:4,marginTop:4}}>
                   {locThreatIds.map(tid=>{const tf=THREAT_FACTIONS[tid];const tLv=threats[tid]||0;return <button key={tid} style={{...S.btn(canBrew&&hasIngr&&tLv>0?'def':'dim'),fontSize:12,padding:'2px 6px',borderColor:'#4080a044'}} disabled={!canBrew||!hasIngr||tLv<=0}
                     onClick={()=>brewWildcraft('threat_suppression',{threatId:tid})}>{tf?.icon} {tf?.name} ({tLv})</button>;})}
                 </div>
+              </div>
+              :<div style={{padding:'6px 8px',background:'#4080a008',borderRadius:4,border:'1px solid #4080a015',opacity:0.6}}>
+                <div style={{fontSize:14,color:'#4080a0'}}>🛡️ Threat Suppression <span style={{fontSize:11,color:TH.textDim}}>— Unlocks at Wildcrafter Lv4</span></div>
+                <div style={{fontSize:12,color:TH.textDim}}>Directly reduce a zone threat level.</div>
               </div>}
-              {!canBrew&&<div style={{fontSize:12,color:TH.textDim,marginTop:4}}>Daily wildcrafts used ({wildcraftsUsedToday}/{maxSlots}). Rest to reset.</div>}
-              {!hasIngr&&canBrew&&<div style={{fontSize:12,color:TH.textDim,marginTop:4}}>Need 3+ unique ingredients in inventory.</div>}
+              {!canBrew&&<div style={{fontSize:12,color:TH.textDim,marginTop:6}}>Daily wildcrafts used ({wildcraftsUsedToday}/{maxSlots}). Rest to reset.</div>}
+              {!hasIngr&&canBrew&&<div style={{fontSize:12,color:TH.textDim,marginTop:6}}>Need 3+ unique ingredients in inventory.</div>}
             </div>;
           })()}
         </div>}
@@ -10897,17 +10925,22 @@ function CindervaleAlchemistInner(){
           );})}
         </div>}
         {/* Wild Ally Display (Wildcrafter temporary companion) */}
-        {wildAlly&&<div style={{...S.card,borderColor:'#40a06044',background:'#40a06008'}}>
-          <div style={S.cT}>🐾 Wild Ally</div>
-          <div style={{display:'flex',alignItems:'center',gap:8,padding:'4px 8px'}}>
-            {wildAlly.img&&<img src={wildAlly.img} style={{width:40,height:40,borderRadius:6,objectFit:'cover'}} alt={wildAlly.name}/>}
-            <div>
-              <div style={{fontSize:14,color:'#40a060',fontWeight:'bold'}}>{wildAlly.icon} {wildAlly.name}</div>
-              <div style={{fontSize:12,color:TH.textDim}}>{wildAlly.role} — {wildAlly.daysLeft} day{wildAlly.daysLeft>1?'s':''} remaining</div>
+        {wildAlly&&(()=>{
+          const waComp=RANGER_COMPANIONS.find(c=>c.id===wildAlly.compId);
+          const WA_ROLE_DESC={gatherer:'Brings bonus ingredients each morning',gather:'Brings bonus ingredients each morning',shopkeeper:'Earns bonus gold',scout:'Reduces danger',guardian:'Boosts staff morale',greeter:'Attracts customers',muse:'Boosts discovery',research:'Boosts discovery',combat:'Reduces danger',trade:'Earns gold + yield'};
+          return <div style={{...S.card,borderColor:'#40a06044',background:'#40a06008'}}>
+            <div style={S.cT}>🐾 Wild Ally <span style={{fontSize:12,fontWeight:'normal',color:TH.textDim}}>(temporary)</span></div>
+            <div style={{display:'flex',alignItems:'center',gap:10,padding:'4px 8px'}}>
+              {waComp?.img?<img src={waComp.img} style={{width:48,height:48,borderRadius:6,objectFit:'cover',border:'2px solid #40a060'}} alt={wildAlly.name}/>:<span style={{fontSize:32}}>{wildAlly.icon}</span>}
+              <div>
+                <div style={{fontSize:14,color:'#40a060',fontWeight:'bold'}}>{wildAlly.icon} {wildAlly.name}</div>
+                <div style={{fontSize:12,color:TH.textDim}}>{wildAlly.role} — {WA_ROLE_DESC[wildAlly.role]||wildAlly.role}</div>
+                <div style={{fontSize:12,color:'#40a060'}}>{wildAlly.daysLeft} day{wildAlly.daysLeft>1?'s':''} remaining</div>
+              </div>
             </div>
-          </div>
-          {Object.entries(wildAlly.passive||{}).filter(([,v])=>v).length>0&&<div style={{fontSize:12,color:TH.textDim,padding:'2px 8px'}}>Passive: {Object.entries(wildAlly.passive).filter(([,v])=>v).map(([k,v])=>k.replace(/([A-Z])/g,' $1').trim()+': +'+(typeof v==='number'?v:'')).join(', ')}</div>}
-        </div>}
+            {Object.entries(wildAlly.passive||{}).filter(([,v])=>v).length>0&&<div style={{fontSize:12,color:TH.textDim,padding:'2px 8px',marginTop:2}}>Passive bonuses: {Object.entries(wildAlly.passive).filter(([,v])=>v).map(([k,v])=>{const label=k.replace(/([A-Z])/g,' $1').toLowerCase().trim();return label+(typeof v==='number'?' +'+v:'');}).join(', ')}</div>}
+          </div>;
+        })()}
         {/* Legacy Feature Display (inherited via Pass the Torch) */}
         {/* Active Effects Summary */}
         {Object.keys(classLevels).length>0&&<div style={S.card}><div style={S.cT}>⚡ Active Bonuses</div>
