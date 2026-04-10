@@ -8042,9 +8042,11 @@ function CindervaleAlchemistInner(){
                   {/* Ingredients */}
                   <div style={{display:'flex',flexWrap:'wrap',gap:2,marginBottom:6}}>
                     {Object.entries(cost).map(([id,q])=>{
-                      const have=(inv[id]||0)>=q;const srcs=getIngrSource(id);const srcTip=srcs.length?srcs.map(s=>s.text).join('\n'):'Source unknown';
-                      return <span key={id} title={srcTip} style={{...S.tag,fontSize:13,borderColor:have?TH.green+'88':TH.red+'88',cursor:'help'}}>
+                      const have=(inv[id]||0)>=q;const srcs=getIngrSource(id);const _ek='elix_'+r.id+'_'+id;const _eo=tapInfo===_ek;
+                      return <span key={id} style={{...S.tag,fontSize:13,borderColor:have?TH.green+'88':TH.red+'88',cursor:'pointer',background:_eo?TH.panel:'transparent'}}
+                        onClick={()=>setTapInfo(_eo?null:_ek)}>
                         {INGR[id]?.icon}{INGR[id]?.name} <b style={{color:have?TH.green:TH.red}}>{inv[id]||0}/{q}</b>
+                        {_eo&&<div style={{fontSize:11,color:TH.textDim,marginTop:2}} onClick={e=>e.stopPropagation()}>{srcs.length>0?srcs.map((s,i)=><div key={i}>{s.text}</div>):'Source unknown'}</div>}
                       </span>;
                     })}
                     <span style={{fontSize:12,color:TH.textDim,alignSelf:'center',marginLeft:4}}>DC{adjDC}{masteryD>0?' (-'+masteryD+')':''} · {successPct}%</span>
@@ -9232,9 +9234,11 @@ function CindervaleAlchemistInner(){
               <div style={{display:'flex',flexWrap:'wrap',gap:4}}>
                 {enchEntries.map(([id,qty])=>{
                   const have=inv[id]||0;const ok=have>=qty;
-                  const srcs=getIngrSource(id);const srcTip=srcs.length?srcs.map(s=>s.text).join('\n'):'Source unknown';
-                  return <span key={id} title={srcTip} style={{fontSize:13,padding:'2px 6px',background:ok?TH.green+'10':TH.panel,border:'1px solid '+(ok?TH.green+'44':TH.border),borderRadius:4,color:ok?TH.green:'#c06040',cursor:'help'}}>
+                  const srcs=getIngrSource(id);const _ek2='ench_'+id;const _eo2=tapInfo===_ek2;
+                  return <span key={id} style={{fontSize:13,padding:'2px 6px',background:_eo2?TH.panel:(ok?TH.green+'10':TH.panel),border:'1px solid '+(ok?TH.green+'44':TH.border),borderRadius:4,color:ok?TH.green:'#c06040',cursor:'pointer'}}
+                    onClick={()=>setTapInfo(_eo2?null:_ek2)}>
                     {INGR[id]?.icon||''}{INGR[id]?.name||id} {have}/{qty}
+                    {_eo2&&<div style={{fontSize:11,color:TH.textDim,marginTop:2}} onClick={e=>e.stopPropagation()}>{srcs.length>0?srcs.map((s,i)=><div key={i}>{s.text}</div>):'Source unknown'}</div>}
                   </span>;
                 })}
               </div>
@@ -9375,10 +9379,14 @@ function CindervaleAlchemistInner(){
               const iQty=inv[id]||0;const iHid=HIDDEN_INGR&&HIDDEN_INGR[id];const iThresh=(iHid?12:8)+getFeatureVal('spoilThreshold')+upEff('spoilThreshold')+0;
               const iWarn=iQty>iThresh;
               const srcs=getIngrSource(id);const srcTip=srcs.length?srcs.map(s=>s.text).join('\n'):'Source unknown';
-              const sWarn=getIngrSeasonWarn(id);
-              return <span key={id} title={srcTip} style={{...S.tag,borderColor:have?TH.green:TH.red,cursor:'help',position:'relative'}}>
+              const sWarn=getIngrSeasonWarn(id);const _tipKey='ingr_'+r.id+'_'+id;const _tipOpen=tapInfo===_tipKey;
+              return <span key={id} style={{...S.tag,borderColor:have?TH.green:TH.red,cursor:'pointer',position:'relative',background:_tipOpen?(have?TH.green:TH.red)+'15':'transparent'}}
+                onClick={()=>setTapInfo(_tipOpen?null:_tipKey)}>
                 {INGR[id]?.icon}{INGR[id]?.name} <b style={{color:have?TH.green:TH.red}}>{iQty}/{q}</b>{iWarn&&<span style={{fontSize:10,color:'#c0a040'}}> ⚠️</span>}
-                {sWarn&&<span style={{fontSize:10,color:'#d09030',marginLeft:2}} title={'Available during '+sWarn.season}>⏳</span>}
+                {sWarn&&<span style={{fontSize:10,color:'#d09030',marginLeft:2}}>⏳</span>}
+                {_tipOpen&&<div style={{fontSize:11,color:TH.text,marginTop:3,lineHeight:1.4,whiteSpace:'pre-line'}} onClick={e=>e.stopPropagation()}>
+                  {srcs.length>0?srcs.map((s,i)=><div key={i} style={{color:s.type==='seasonal'?'#d09030':s.type==='hidden'?'#70c0c0':TH.textDim}}>{s.text}</div>):<div style={{color:TH.textDim}}>Source unknown</div>}
+                </div>}
               </span>;})}
             </div>
             {(()=>{const seasonWarns=Object.keys(cost).filter(id=>getIngrSeasonWarn(id));return seasonWarns.length>0?<div style={{fontSize:12,color:'#d09030',marginTop:2}}>{seasonWarns.map(id=>{const w=getIngrSeasonWarn(id);return <span key={id} style={{marginRight:8}}>⏳ {INGR[id]?.icon}{INGR[id]?.name} — seasonal, available during {w.icon} {w.season}</span>;})}</div>:null;})()}
@@ -9515,14 +9523,20 @@ function CindervaleAlchemistInner(){
           {Object.entries(inv).filter(([,q])=>q>0).map(([id,qty])=>{const ig=INGR[id];if(!ig)return null;const sp=Math.max(1,Math.floor(((ig.val||5)*0.4)+getFeatureVal('ingrSellBonus'))*GOLD_MULT);
             const isHid=HIDDEN_INGR&&HIDDEN_INGR[id];const spThresh=(isHid?12:8)+getFeatureVal('spoilThreshold')+upEff('spoilThreshold')+0;
             const spColor=qty>spThresh+8?'#c04040':qty>spThresh+4?'#d08030':qty>spThresh?'#c0a040':'';
-            const srcs=getIngrSource(id);const srcTip=srcs.length?srcs.map(s=>s.text).join('\n'):'Source unknown';
-            const sWarn=getIngrSeasonWarn(id);
+            const srcs=getIngrSource(id);
+            const sWarn=getIngrSeasonWarn(id);const _ik='inv_'+id;const _io=tapInfo===_ik;
             return(
-            <div key={id} style={{display:'flex',alignItems:'center',gap:6,padding:'3px 0',fontSize:16}} title={srcTip}>
-              <span style={{color:spColor||TH.text,cursor:'help'}}>{ig.icon}{ig.name} ×{qty}{spColor&&<span style={{fontSize:11,marginLeft:4,color:spColor}}>⚠️</span>}{sWarn&&<span style={{fontSize:11,color:'#d09030',marginLeft:4}}>⏳ {sWarn.icon} {sWarn.season}</span>}</span><span style={{color:TH.gold,marginLeft:'auto'}}>{sp}g ea</span>
-              <button style={S.btn()} onClick={()=>{modInv(id,-1);setGold(g=>g+sp);addLog(`Sold ${ig.icon}${ig.name} for ${sp}g.`,'info');}}>Sell 1</button>
-              {qty>spThresh&&<button style={{...S.btn('green'),fontSize:13}} onClick={()=>{const excess=qty-spThresh;modInv(id,-excess);setGold(g=>g+sp*excess);addLog(`Sold ${excess}× ${ig.icon}${ig.name} for ${sp*excess}g (trimmed to safe storage).`,'info');}}>Sell to Safe ({qty-spThresh}×{sp}g)</button>}
-              {qty>1&&<button style={S.btn()} onClick={()=>{modInv(id,-qty);setGold(g=>g+sp*qty);addLog(`Sold ${qty}× ${ig.icon}${ig.name} for ${sp*qty}g.`,'info');}}>Sell All ({sp*qty}g)</button>}
+            <div key={id} style={{padding:'3px 0',fontSize:16}}>
+              <div style={{display:'flex',alignItems:'center',gap:6,cursor:'pointer'}} onClick={()=>setTapInfo(_io?null:_ik)}>
+                <span style={{color:spColor||TH.text}}>{ig.icon}{ig.name} ×{qty}{spColor&&<span style={{fontSize:11,marginLeft:4,color:spColor}}>⚠️</span>}{sWarn&&<span style={{fontSize:11,color:'#d09030',marginLeft:4}}>⏳ {sWarn.icon} {sWarn.season}</span>}</span><span style={{color:TH.gold,marginLeft:'auto'}}>{sp}g ea</span>
+              <button style={S.btn()} onClick={e=>{e.stopPropagation();modInv(id,-1);setGold(g=>g+sp);addLog(`Sold ${ig.icon}${ig.name} for ${sp}g.`,'info');}}>Sell 1</button>
+              {qty>spThresh&&<button style={{...S.btn('green'),fontSize:13}} onClick={e=>{e.stopPropagation();const excess=qty-spThresh;modInv(id,-excess);setGold(g=>g+sp*excess);addLog(`Sold ${excess}× ${ig.icon}${ig.name} for ${sp*excess}g (trimmed to safe storage).`,'info');}}>Sell to Safe ({qty-spThresh}×{sp}g)</button>}
+              {qty>1&&<button style={S.btn()} onClick={e=>{e.stopPropagation();modInv(id,-qty);setGold(g=>g+sp*qty);addLog(`Sold ${qty}× ${ig.icon}${ig.name} for ${sp*qty}g.`,'info');}}>Sell All ({sp*qty}g)</button>}
+              </div>
+              {_io&&<div style={{fontSize:12,color:TH.textDim,padding:'2px 8px 4px',lineHeight:1.4}}>
+                {srcs.length>0?srcs.map((s,i)=><div key={i} style={{color:s.type==='seasonal'?'#d09030':s.type==='hidden'?'#70c0c0':TH.textDim}}>{s.text}</div>):<div>Source unknown</div>}
+                <div style={{color:TH.textDim}}>Base value: {ig.val||5}g</div>
+              </div>}
             </div>);})}
         </div>}
       </>}
@@ -11148,7 +11162,7 @@ function CindervaleAlchemistInner(){
         <div style={S.card}><div style={S.cT}>🎒 Pack</div>
           <div style={{fontSize:15,color:TH.gold,marginBottom:4}}>Ingredients</div>
           <div style={{display:'flex',flexWrap:'wrap',gap:3}}>
-            {Object.entries(inv).filter(([,q])=>q>0).map(([id,qty])=>{const srcs=getIngrSource(id);const srcTip=srcs.length?srcs.map(s=>s.text).join('\n'):'';return <span key={id} title={srcTip} style={{...S.tag,padding:'3px 6px',cursor:srcTip?'help':'default'}}>{INGR[id]?.icon||'?'}{INGR[id]?.name||id} <b style={{color:TH.gold}}>×{qty}</b></span>;})}
+            {Object.entries(inv).filter(([,q])=>q>0).map(([id,qty])=>{const srcs=getIngrSource(id);const _ck='cs_'+id;const _co=tapInfo===_ck;return <span key={id} style={{...S.tag,padding:'3px 6px',cursor:'pointer',background:_co?TH.panel:'transparent'}} onClick={()=>setTapInfo(_co?null:_ck)}>{INGR[id]?.icon||'?'}{INGR[id]?.name||id} <b style={{color:TH.gold}}>×{qty}</b>{_co&&<div style={{fontSize:11,color:TH.textDim,marginTop:2}} onClick={e=>e.stopPropagation()}>{srcs.length>0?srcs.map((s,i)=><div key={i}>{s.text}</div>):'Source unknown'}</div>}</span>;})}
             {Object.keys(inv).filter(id=>inv[id]>0).length===0&&<span style={{color:TH.textDim}}>Empty</span>}
           </div>
           {Object.entries(pots).filter(([,q])=>q>0).length>0&&<><div style={{fontSize:15,color:TH.gold,marginTop:6,marginBottom:4}}>Potions</div>
