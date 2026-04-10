@@ -2660,8 +2660,8 @@ function CindervaleAlchemistInner(){
 
   const consumeElixir=(potionId)=>{
     const buff=ELIXIR_BUFFS[potionId];if(!buff)return;
-    // Find any quality version of this potion
-    const availPot=[potionId,potionId+'_F',potionId+'_M',potionId+'_G'].find(pid=>(pots[pid]||0)>=1);
+    // Find any quality/fresh version of this potion
+    const availPot=[potionId,potionId+'_fresh',potionId+'_F',potionId+'_M',potionId+'_G',potionId+'_fresh_F',potionId+'_fresh_M',potionId+'_fresh_G'].find(pid=>(pots[pid]||0)>=1);
     if(!availPot){addLog('You don\'t have any '+buff.name+' to drink.','error');return;}
     if(activeBuffs[potionId]&&activeBuffs[potionId].daysLeft>0){addLog(buff.name+' is already active ('+activeBuffs[potionId].daysLeft+' days remaining).','error');return;}
     snapshot();
@@ -7978,10 +7978,38 @@ function CindervaleAlchemistInner(){
         {/* ═══ ELIXIR CABINET — Full brew & drink interface for personal buff potions ═══ */}
         {(()=>{
           const elixirRecipes=RECIPES.filter(r=>known.includes(r.id)&&r.buff&&ELIXIR_BUFFS[r.buff]);
-          if(elixirRecipes.length===0)return null;
+          // Also find owned consumable potions from field-only recipes (not in known)
+          const ownedFieldElixirs=RECIPES.filter(r=>r.fieldOnly&&r.buff&&ELIXIR_BUFFS[r.buff]&&!known.includes(r.id))
+            .filter(r=>Object.entries(pots).some(([pid,q])=>q>0&&getBaseRecipeId(pid)===r.id));
+          if(elixirRecipes.length===0&&ownedFieldElixirs.length===0)return null;
           return <div style={{...S.card,borderColor:'#50a0a044',background:'linear-gradient(135deg,#14110c,#0e1418)'}} className={isWsOpen('ws7')?'':'ws-closed'}>
             <div style={{...S.cT,cursor:'pointer',userSelect:'none'}} onClick={()=>toggleWs('ws7')}><span style={{display:'flex',justifyContent:'space-between',width:'100%'}}><span>🧪 Elixir Cabinet <span style={{fontSize:13,color:TH.textDim,fontWeight:'normal'}}>— personal buff potions (brew & drink)</span></span><span style={{fontSize:13,color:TH.textDim}}>{isWsOpen('ws7')?'▲':'▼'}</span></span></div>
             <div style={{display:'flex',flexDirection:'column',gap:8}}>
+              {/* Field-brewed consumables (drink only — can't brew in workshop) */}
+              {ownedFieldElixirs.map(r=>{
+                const buff=ELIXIR_BUFFS[r.buff];if(!buff)return null;
+                const ownedPots=Object.entries(pots).filter(([id,q])=>q>0&&getBaseRecipeId(id)===r.id);
+                const totalOwned=ownedPots.reduce((s,[,q])=>s+q,0);
+                const isActive=activeBuffs[r.buff]?.daysLeft>0;
+                return <div key={r.id} style={{padding:'10px 12px',background:isActive?TH.green+'06':TH.panel,borderRadius:6,border:'1px solid '+(isActive?TH.green+'33':'#60a04033')}}>
+                  <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:4}}>
+                    <span style={{fontSize:28}}>{buff.icon}</span>
+                    <div style={{flex:1}}>
+                      <div style={{fontSize:16,color:isActive?TH.green:'#60a040',fontWeight:'bold'}}>
+                        {buff.name} <span style={{fontSize:12,color:TH.textDim,fontWeight:'normal'}}>🌿 Field-brewed</span>
+                        {totalOwned>0&&<span style={{fontSize:13,color:TH.textDim,fontWeight:'normal',marginLeft:6}}>×{totalOwned} in stock</span>}
+                        {isActive&&<span style={{fontSize:12,color:TH.green,marginLeft:6}}>✓ Active ({activeBuffs[r.buff].daysLeft}d)</span>}
+                      </div>
+                      <div style={{fontSize:13,color:'#60a040'}}>{buff.buffDesc} ({buff.duration}d)</div>
+                    </div>
+                  </div>
+                  <div style={{fontSize:13,color:TH.textDim,fontStyle:'italic',marginBottom:6}}>{r.desc}</div>
+                  {totalOwned>0&&<button style={{...S.btn(isActive?'dim':'green'),fontSize:14,padding:'5px 14px'}}
+                    disabled={isActive} onClick={()=>consumeElixir(r.buff)}>
+                    {isActive?'✓ Active':'🧪 Drink'}
+                  </button>}
+                </div>;
+              })}
               {elixirRecipes.map(r=>{
                 const buff=ELIXIR_BUFFS[r.buff];if(!buff)return null;
                 const cost={};r.ingr.forEach(id=>{const lid=li(id);cost[lid]=(cost[lid]||0)+1;});
