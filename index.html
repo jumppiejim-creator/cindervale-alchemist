@@ -558,6 +558,7 @@ function CindervaleAlchemistInner(){
   const [procureItems,setProcureItems]=useState([]); // daily rare shop items from procurement
   const [constructProgress,setConstructProgress]=useState({}); // {upgradeId: 0-100} progress from engineer task
   const [skillTip,setSkillTip]=useState(null); // skill id for info overlay
+  const [tapInfo,setTapInfo]=useState(null); // global tap-to-reveal: string key of currently open info panel
   const [showDoneQ,setShowDoneQ]=useState(false);
   const [showTaskGuide,setShowTaskGuide]=useState(true);
   const [selectedUpgrade,setSelectedUpgrade]=useState(null);
@@ -7058,9 +7059,11 @@ function CindervaleAlchemistInner(){
               return <div style={{marginTop:8}}>
                 <div style={{fontSize:13,color:TH.textDim,marginBottom:4}}>Locked Prestige Classes:</div>
                 <div style={{display:'flex',flexWrap:'wrap',gap:3}}>
-                  {locked.map(pc=><span key={pc.id} style={{padding:'2px 6px',fontSize:11,borderRadius:3,background:TH.bg,border:'1px solid '+TH.border,color:TH.textDim}}
-                    title={pc.desc+' | Requires: '+formatPrestigeReq(pc.req)}>
-                    {pc.icon} {pc.name} ({formatPrestigeReqShort(pc.req)})</span>
+                  {locked.map(pc=><span key={pc.id} style={{padding:'2px 6px',fontSize:11,borderRadius:3,background:tapInfo==='pc_'+pc.id?pc.color+'15':TH.bg,border:'1px solid '+(tapInfo==='pc_'+pc.id?pc.color+'44':TH.border),color:TH.textDim,cursor:'pointer'}}
+                    onClick={()=>setTapInfo(tapInfo==='pc_'+pc.id?null:'pc_'+pc.id)}>
+                    {pc.icon} {pc.name} ({formatPrestigeReqShort(pc.req)})
+                    {tapInfo==='pc_'+pc.id&&<div style={{fontSize:11,color:TH.text,marginTop:3,fontStyle:'italic'}}>{pc.desc}<br/><span style={{color:pc.color}}>Requires: {formatPrestigeReq(pc.req)}</span></div>}
+                  </span>
                   )}
                 </div>
               </div>;
@@ -7518,7 +7521,9 @@ function CindervaleAlchemistInner(){
                 <div style={{fontSize:14,color:TH.green,marginBottom:4}}>✅ Completed ({completed.length}/{SETTLEMENT_PROJECTS.length})</div>
                 <div style={{display:'flex',flexWrap:'wrap',gap:4}}>
                   {completed.map(pid=>{const p=SETTLEMENT_PROJECTS.find(x=>x.id===pid);return p?
-                    <span key={pid} style={{...S.tag,borderColor:TH.green+'66',background:TH.green+'10',fontSize:13}} title={p.effectDesc}>{p.icon} {p.name}</span>:null;})}
+                    <span key={pid} style={{...S.tag,borderColor:TH.green+'66',background:tapInfo==='sp_'+pid?TH.green+'20':TH.green+'10',fontSize:13,cursor:'pointer'}} onClick={()=>setTapInfo(tapInfo==='sp_'+pid?null:'sp_'+pid)}>
+                      {p.icon} {p.name}{tapInfo==='sp_'+pid&&<div style={{fontSize:11,color:TH.textDim,marginTop:2}}>{p.effectDesc}</div>}
+                    </span>:null;})}
                 </div>
                 <div style={{fontSize:12,color:TH.textDim,marginTop:2}}>Total invested: {totalInvested}g</div>
               </div>}
@@ -7961,8 +7966,11 @@ function CindervaleAlchemistInner(){
           <span style={{fontSize:13,color:'#50c070',fontWeight:'bold',alignSelf:'center'}}>🧪 Active:</span>
           {Object.entries(activeBuffs).filter(([,b])=>b.daysLeft>0).map(([buffId,buff])=>{
             const eb=ELIXIR_BUFFS[buffId];if(!eb)return null;
-            return <span key={buffId} style={{padding:'2px 8px',fontSize:12,borderRadius:10,background:'#50c07018',border:'1px solid #50c07044',color:'#50c070'}}
-              title={eb.buffDesc}>{eb.icon} {eb.name} ({buff.daysLeft}d)</span>;
+            return <span key={buffId} style={{padding:'2px 8px',fontSize:12,borderRadius:10,background:tapInfo==='buff_'+buffId?'#50c07028':'#50c07018',border:'1px solid #50c07044',color:'#50c070',cursor:'pointer'}}
+              onClick={()=>setTapInfo(tapInfo==='buff_'+buffId?null:'buff_'+buffId)}>
+              {eb.icon} {eb.name} ({buff.daysLeft}d)
+              {tapInfo==='buff_'+buffId&&<div style={{fontSize:11,color:TH.text,marginTop:2}}>{eb.buffDesc}</div>}
+            </span>;
           })}
         </div>}
 
@@ -8801,11 +8809,23 @@ function CindervaleAlchemistInner(){
                   <div style={{display:'flex',gap:3,flexWrap:'wrap',marginBottom:6}}>
                     {locRegions.filter(r=>level>=regUnlock(r)).map(r=>{const sel=wcPickRegion===r.id;return <button key={r.id} style={{...S.btn(sel?'green':'def'),fontSize:12,padding:'2px 6px'}} onClick={()=>setWcPickRegion(sel?null:r.id)}>{r.icon} {r.name}</button>;})}
                   </div>
-                  {wcPickRegion&&<><div style={{fontSize:12,color:TH.textDim,marginBottom:3}}>2. Pick season:</div>
-                  <div style={{display:'flex',gap:3,flexWrap:'wrap'}}>
-                    {seasons.map(s=><button key={s.id} style={{...S.btn(canBrew&&hasIngr?'def':'dim'),fontSize:12,padding:'2px 6px',borderColor:'#60a04044'}} disabled={!canBrew||!hasIngr}
-                      onClick={()=>{brewWildcraft('seasonal_bypass',{region:wcPickRegion,season:s.id});setWcPickRegion(null);}}>{s.icon} {s.name}</button>)}
-                  </div></>}
+                  {wcPickRegion&&(()=>{
+                    const curSeason=getSeason(day,gameLocation);
+                    return <><div style={{fontSize:12,color:TH.textDim,marginBottom:3}}>2. Pick season (current: {curSeason.icon} {curSeason.name}):</div>
+                    <div style={{display:'flex',flexDirection:'column',gap:4}}>
+                      {seasons.map(s=>{const sIngr=getSeasonalIngr(s,gameLocation,false);const isCur=s.id===curSeason.id;
+                        return <div key={s.id} style={{padding:'5px 8px',background:isCur?'#60a04018':TH.panelLight,borderRadius:4,border:'1px solid '+(isCur?'#60a04044':TH.border),opacity:canBrew&&hasIngr?1:0.5,cursor:canBrew&&hasIngr?'pointer':'default'}}
+                          onClick={()=>{if(canBrew&&hasIngr){brewWildcraft('seasonal_bypass',{region:wcPickRegion,season:s.id});setWcPickRegion(null);}}}>
+                          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                            <span style={{fontSize:13,fontWeight:'bold',color:s.color||'#60a040'}}>{s.icon} {s.name}{isCur?' (current)':''}</span>
+                            {canBrew&&hasIngr&&!isCur&&<span style={{fontSize:11,color:'#60a040'}}>Bypass →</span>}
+                          </div>
+                          {sIngr.length>0?<div style={{fontSize:11,color:TH.textDim,marginTop:2}}>
+                            {sIngr.map(id=><span key={id} style={{marginRight:5}}>{INGR[id]?.icon||''}{INGR[id]?.name||id}</span>)}
+                          </div>:<div style={{fontSize:11,color:TH.textDim,marginTop:2,fontStyle:'italic'}}>No seasonal ingredients</div>}
+                        </div>;})}
+                    </div></>;
+                  })()}
                 </div>}
               </div>
               {/* Wild Ally */}
