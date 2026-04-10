@@ -1447,7 +1447,7 @@ function CindervaleAlchemistInner(){
       let fSeason=getSeason(day,gameLocation);
       if(seasonalOverride&&seasonalOverride.region===reg.id){
         const overrideSeason=SEASONS[gameLocation]?.find(s=>s.id===seasonalOverride.season);
-        if(overrideSeason){fSeason=overrideSeason;if(h===0)addLog('🍃 Seasonal Bypass active — foraging as if it\'s '+overrideSeason.name+'.','craft');}
+        if(overrideSeason){fSeason=overrideSeason;if(h===1)addLog('🍃 Seasonal Bypass active — foraging as if it\'s '+overrideSeason.name+'.','craft');}
       }
       const seasonYieldMod=(fSeason.yieldMod||0)+(fSeason.floraYieldBonus&&reg.ingr.some(id=>INGR[id]?.icon==='🌿'||INGR[id]?.icon==='🌸'||INGR[id]?.icon==='🌻'||INGR[id]?.icon==='🍄')?(fSeason.floraYieldBonus||0):0);
       const critMult=isCrit?(1+getFeatureVal('critExtractionMulti')):1;
@@ -1458,9 +1458,10 @@ function CindervaleAlchemistInner(){
         const minDistinct=Math.min(3,picked.length);
         for(let d=0;d<minDistinct;d++){hourG[picked[d]]=(hourG[picked[d]]||0)+1;}
         for(let t=0;t<total-minDistinct;t++){const id=picked[Math.floor(Math.random()*picked.length)];hourG[id]=(hourG[id]||0)+1;}
-        // Seasonal ingredient drops (15% chance per hour)
+        // Seasonal ingredient drops (15% chance per hour, boosted to 40% with Seasonal Bypass override)
         const seasonalIngr=getSeasonalIngr(fSeason,gameLocation,!!getFeatureVal('allSeasonIngr'));
-        if(seasonalIngr.length>0&&Math.random()<0.15){const sid=seasonalIngr[Math.floor(Math.random()*seasonalIngr.length)];hourG[sid]=(hourG[sid]||0)+1;}
+        const _seasonDropChance=(seasonalOverride&&seasonalOverride.region===reg.id)?0.40:0.15;
+        if(seasonalIngr.length>0&&Math.random()<_seasonDropChance){const sid=seasonalIngr[Math.floor(Math.random()*seasonalIngr.length)];hourG[sid]=(hourG[sid]||0)+1;}
         // Field Journal discovery bonuses — permanent extra yields from documented flora/geological
         const regDiscs=FIELD_DISCOVERIES[reg.id]||[];
         regDiscs.forEach(d=>{if(fieldJournal.includes(d.id)&&d.bonus.extraYield&&d.bonus.ingredient){
@@ -1725,7 +1726,7 @@ function CindervaleAlchemistInner(){
         if(!canLegendary&&foundRelic.rarity==='legendary')foundRelic.rarity='rare';
       }
       queue.push({
-        hourNum:h,totalHours:hoursLeft,regName:curHiddenSite?reg.name+' — 🗺️ '+curHiddenSite.name:curSite?reg.name+' — '+curSite.name:reg.name,regIcon:reg.icon,travelTime:info.travelTime,diff:reg.diff||1,
+        hourNum:h,totalHours:hoursLeft,regId:reg.id,regName:curHiddenSite?reg.name+' — 🗺️ '+curHiddenSite.name:curSite?reg.name+' — '+curSite.name:reg.name,regIcon:reg.icon,travelTime:info.travelTime,diff:reg.diff||1,
         ext,gathered:{...hourG},xp:hxp+(event?.effectXp||0),event,
         cumGathered:{...cumG},cumXp,isFinal:false,divBonus,effBonus,luckyBonus,attuneBonus,discovery,companionEnc,hiddenDisc,
       });
@@ -3864,7 +3865,7 @@ function CindervaleAlchemistInner(){
       Object.entries(hourG).forEach(([id,q])=>{cumG[id]=(cumG[id]||0)+q;});
       cumXp+=hxp+(event?.effectXp||0);
       queue.push({
-        hourNum:h,totalHours:hoursLeft,regName:'🌙 '+reg.name+' (Night)',regIcon:reg.icon,travelTime:0,
+        hourNum:h,totalHours:hoursLeft,regId:reg.id,regName:'🌙 '+reg.name+' (Night)',regIcon:reg.icon,travelTime:0,
         ext,gathered:{...hourG},xp:hxp+(event?.effectXp||0),event,
         cumGathered:{...cumG},cumXp,isFinal:false,diff:reg.diff||1,foundRelic,divBonus,effBonus:false,luckyBonus,attuneBonus:null,
       });
