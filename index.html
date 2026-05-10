@@ -260,6 +260,7 @@ function CindervaleAlchemistInner(){
   const [torchStep,setTorchStep]=useState(0); // 0=closed, 1=apprentice, 2=heirloom, 3=legacy, 4=location
   const [torchHeirloom,setTorchHeirloom]=useState(null);
   const [torchLegacy,setTorchLegacy]=useState(null);
+  const [showHandbookIntro,setShowHandbookIntro]=useState(false);
 
   // ═══ LINEAGE PERSISTENCE ═══
   const LINEAGE_KEY='cindervale_lineage';
@@ -5471,7 +5472,7 @@ function CindervaleAlchemistInner(){
           <div style={{fontSize:32,color:TH.gold,letterSpacing:3,marginBottom:2}}>Cindervale Alchemist</div>
           <div style={{fontSize:14,color:'#d4a420',marginTop:4}}>Build {BUILD_VERSION}</div>
           <div style={{color:TH.textDim,fontSize:16,marginBottom:16}}>Crafting · Enchanting · Community</div>
-          <a href="cindervale_handbook.pdf" target="_blank" rel="noopener noreferrer" style={{display:'inline-block',padding:'6px 16px',background:TH.panel,color:TH.gold,border:'1px solid '+TH.borderGold,borderRadius:6,fontSize:14,textDecoration:'none',marginBottom:12,cursor:'pointer'}}>📖 Player's Handbook</a>
+          <a href="cindervale_handbook.html" target="_blank" rel="noopener noreferrer" style={{display:'inline-block',padding:'6px 16px',background:TH.panel,color:TH.gold,border:'1px solid '+TH.borderGold,borderRadius:6,fontSize:14,textDecoration:'none',marginBottom:12,cursor:'pointer'}}>📖 Player's Handbook</a>
           {/* Firebase Sign-In */}
           <div style={{marginBottom:16,textAlign:'center'}}>
             {fbUser?<div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:8,padding:'6px 12px',background:'#1a2a1a',borderRadius:8,border:'1px solid #2a4a2a'}}>
@@ -5868,6 +5869,7 @@ function CindervaleAlchemistInner(){
               };
               addLog(CLASS_INTROS[startingClass]||`${charName} the ${c.name} arrives at ${locN} for the first time.`,'story');
               addLog('💡 You have 4 skill points to spend! Visit Your Quarters on the map.','level');setPhase('play');
+              try{if(localStorage.getItem('cindervale_seenIntro')!=='1')setShowHandbookIntro(true);}catch(e){setShowHandbookIntro(true);}
               const initBQ=genBoardQuests(0,1,0,gameLocation,known);setBoardQ(initBQ);
               const initCust=genCust();
               const firstNPC=isTc?{icon:'🛒',text:'Finn at the Harbor Market has work for you.',to:'market',label:'🛒 Meet Finn',color:TH.gold,npc:'finn'}
@@ -6134,6 +6136,29 @@ function CindervaleAlchemistInner(){
   return(
     <div style={S.app}><link href="https://fonts.googleapis.com/css2?family=Almendra:wght@400;700&display=swap" rel="stylesheet"/>
       <SaveOverlay/>
+      {/* ═══ FIRST-LAUNCH HANDBOOK INTRO ═══ */}
+      {showHandbookIntro&&(()=>{
+        const dismiss=()=>{try{localStorage.setItem('cindervale_seenIntro','1');}catch(e){}setShowHandbookIntro(false);};
+        return(<div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'#000000dd',display:'flex',alignItems:'center',justifyContent:'center',zIndex:10000,padding:16}}
+          onClick={dismiss}>
+          <div style={{background:TH.bg,border:'2px solid '+TH.borderGold,borderRadius:12,padding:24,maxWidth:520,width:'100%',maxHeight:'90vh',overflowY:'auto'}} onClick={e=>e.stopPropagation()}>
+            <div style={{fontSize:22,color:TH.gold,textAlign:'center',marginBottom:6}}>Welcome to Cindervale</div>
+            <div style={{fontSize:14,color:TH.textBright,lineHeight:1.55,marginBottom:14}}>
+              Your workshop is yours to build, but the world has its own rules — five stats, seventeen skills, classes, prestige paths, foraging, brewing, factions, and more. The <strong style={{color:TH.gold}}>Player's Handbook</strong> is the complete reference for everything you can do here. It's worth a skim before your first day.
+            </div>
+            <div style={{fontSize:13,color:TH.textDim,marginBottom:16,fontStyle:'italic'}}>
+              You can re-open the handbook any time from the 📖 Handbook button at the top of the screen.
+            </div>
+            <div style={{display:'flex',flexDirection:'column',gap:8}}>
+              <a href="cindervale_handbook.html" target="_blank" rel="noopener noreferrer"
+                style={{...S.btn('gold'),fontSize:15,padding:'10px 16px',textAlign:'center',textDecoration:'none',display:'block'}}
+                onClick={dismiss}>📖 Open the Player's Handbook</a>
+              <button style={{...S.btn('dim'),fontSize:14,padding:'8px 16px'}}
+                onClick={dismiss}>I'll Explore on My Own</button>
+            </div>
+          </div>
+        </div>);
+      })()}
       {/* ═══ PASS THE TORCH — Stepped Modal ═══ */}
       {torchStep>0&&<div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'#000000dd',display:'flex',alignItems:'center',justifyContent:'center',zIndex:10000,padding:16}}
         onClick={()=>setTorchStep(0)}>
@@ -6359,7 +6384,7 @@ function CindervaleAlchemistInner(){
             <button style={{...S.btn('gold'),fontSize:14,padding:'3px 10px'}} onClick={()=>setConfirmRest(true)}>🌙 Rest (⚡{hours})</button>
             {undoStack.length>0&&<button style={{...S.btn('def'),fontSize:14,padding:'3px 8px'}} onClick={undo}>↩️ Undo</button>}
             <button style={{...S.btn('dim'),fontSize:14,padding:'3px 8px'}} onClick={()=>setShowSaveMenu(true)}>💾</button>
-            <a href="cindervale_handbook.pdf" target="_blank" rel="noopener noreferrer" style={{...S.btn('dim'),fontSize:14,padding:'3px 8px',textDecoration:'none',display:'inline-flex',alignItems:'center'}}>📖</a>
+            <a href="cindervale_handbook.html" target="_blank" rel="noopener noreferrer" style={{...S.btn('def'),fontSize:14,padding:'3px 8px',textDecoration:'none',display:'inline-flex',alignItems:'center'}}>📖 Handbook</a>
             <button style={{...S.btn((musicOn||sfxOn)?'gold':'dim'),fontSize:14,padding:'3px 8px'}} onClick={()=>setShowAudioPanel(p=>!p)} title="Audio Settings">🎵</button>
           </div>
         </div>
