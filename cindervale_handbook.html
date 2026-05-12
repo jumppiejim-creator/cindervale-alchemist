@@ -450,7 +450,7 @@
   <tr><td>7</td><td>Master Brewer</td><td>+2 to all craft checks (stacks). Unlock one legendary recipe.</td></tr>
   <tr><td>8</td><td>Reagent Attunement</td><td>Foraging may yield bonus ingredients attuned to your most-brewed recipe. +15% ingredient efficiency on all crafts.</td></tr>
   <tr><td>9</td><td>Perfected Art</td><td>Craft failures on recipes brewed 10+ times produce a lesser version. Once per day, reroll a failed craft.</td></tr>
-  <tr><td>10</td><td>Magnum Opus</td><td>Your 3 most-brewed recipes auto-succeed at Masterwork quality. Once per day, brew any recipe mastered 20+ times with zero ingredients.</td></tr>
+  <tr><td>10</td><td>Magnum Opus</td><td>Your 3 most-brewed recipes auto-succeed at Masterwork quality. +50% double batch chance. 1 free craft per day. Once you have brewed 20 different recipes 25+ times each, one brew per day costs zero ingredients.</td></tr>
 </table>
 
 <h4>Specializations</h4>
@@ -484,7 +484,7 @@
     <tr><th>Lv</th><th>Feature</th><th>Description</th></tr>
     <tr><td>3</td><td>Volatile Mixtures</td><td>Unlock offensive/volatile recipes. Poisons sell 2x to local guard factions. +2 craft bonus on volatile recipes.</td></tr>
     <tr><td>6</td><td>Concentrated Dose</td><td>+20% double batch chance. +2 craft bonus.</td></tr>
-    <tr><td>10</td><td>Plague Doctor</td><td>Legendary venom recipes. +3 craft. 30% double batch on volatile. Craft failures produce lesser venoms. Venom contracts pay 3x. 2 legendary poisons reduce threat by 15.</td></tr>
+    <tr><td>10</td><td>Plague Doctor</td><td>+3 craft bonus. +30% double batch. Failed craft attempts still produce lesser venoms. Venom contracts pay 3&times; base. Every fulfilled venom contract reduces the buying guard faction's threat by 3 + 2&times; contract tier.</td></tr>
   </table>
 </div>
 
@@ -505,9 +505,9 @@
   <tr><td>4</td><td>Arcane Mastery</td><td>+8% enchant success chance. See customer satisfaction hints.</td></tr>
   <tr><td>5</td><td>Dual Inscription</td><td>Apply 2 enchantments to a single customer item (second at +3 DC).</td></tr>
   <tr><td>6</td><td>Resonance</td><td>Enchanting customers pay 25% more gold. Unlock 2 new enchantment patterns.</td></tr>
-  <tr><td>7</td><td>Overcharge</td><td>Natural 20 inscription = "Masterwork" enchantment worth 3x gold.</td></tr>
+  <tr><td>7</td><td>Overcharge</td><td>Natural 20 on an inscription roll produces a Masterwork enchantment &mdash; double XP and Masterwork-tier pricing.</td></tr>
   <tr><td>8</td><td>Archmage</td><td>DC 12 and below enchantments auto-succeed. +2 inscription (stacks).</td></tr>
-  <tr><td>9</td><td>Rune Library</td><td>Know all enchantment patterns regardless of faction requirements.</td></tr>
+  <tr><td>9</td><td>Rune Library</td><td>A vast personal archive accelerates your research. +25% discovery chance, +10% XP from all sources.</td></tr>
   <tr><td>10</td><td>Reality Weaver</td><td>+12 flat inscription bonus, +50% gold from enchanting. Crits on 17+.</td></tr>
 </table>
 
@@ -519,7 +519,7 @@
   <table>
     <tr><th>Lv</th><th>Feature</th><th>Description</th></tr>
     <tr><td>3</td><td>Battle Runes</td><td>Weapon/martial enchantments +25% value. -1 DC on weapon runes.</td></tr>
-    <tr><td>6</td><td>Runic Mastery</td><td>All enchantment material costs -1. Can re-enchant failed items same day.</td></tr>
+    <tr><td>6</td><td>Runic Mastery</td><td>All enchantment material costs &minus;1. Inscription crits on 19+. Once per day, reroll a failed craft or inscription.</td></tr>
     <tr><td>10</td><td>Legendary Arms</td><td>Artifact-grade weapon enchantments. Martial enchants worth 3x gold.</td></tr>
   </table>
 </div>
@@ -530,8 +530,8 @@
   <table>
     <tr><th>Lv</th><th>Feature</th><th>Description</th></tr>
     <tr><td>3</td><td>Wards</td><td>Defensive enchantments +50% value. +2 to defensive inscription checks.</td></tr>
-    <tr><td>6</td><td>Layered Wards</td><td>Apply 3 enchantments to armor items. 40% chance to save materials on enchant success.</td></tr>
-    <tr><td>10</td><td>Unbreakable</td><td>Permanent wards. Defensive enchants auto-succeed DC 15. Shield commissions pay 3x. Once per day, Fortress Ward reduces all threats by 5 for 3 days.</td></tr>
+    <tr><td>6</td><td>Layered Wards</td><td>Apply two enchantments to a single customer item (second at +3 DC). 40% chance to save materials on a successful inscription.</td></tr>
+    <tr><td>10</td><td>Unbreakable</td><td>Auto-succeed inscriptions at DC 15 or below. +10 flat inscription bonus. 60% material save on successful inscriptions. Shield commissions pay 3&times; gold. A permanent Fortress Ward shields your shelves: bandits cannot steal overnight shelf sales while local bandit threat stays below 75.</td></tr>
   </table>
 </div>
 
@@ -542,7 +542,7 @@
     <tr><th>Lv</th><th>Feature</th><th>Description</th></tr>
     <tr><td>3</td><td>Exotic Inscriptions</td><td>Utility/exotic enchantments unlocked. +2 to exotic inscription checks.</td></tr>
     <tr><td>6</td><td>Planar Weave</td><td>Extraplanar power sources. Exotic enchants worth 2x and attract special customers.</td></tr>
-    <tr><td>10</td><td>Planar Convergence</td><td>Impossible enchantments. Combine two enchant types into one inscription.</td></tr>
+    <tr><td>10</td><td>Planar Convergence</td><td>Inscription crits on 17+. +50% gold from enchanting. +30% gold from potion customers &mdash; planar patronage attracts wealthier clientele.</td></tr>
   </table>
 </div>
 
@@ -557,11 +557,11 @@
 
 <table>
   <tr><th>Lv</th><th>Feature</th><th>Description</th></tr>
-  <tr><td>1</td><td>Technical Crafting</td><td>+1 to TEC-based craft checks. Gain proficiency in Precision and Refinement.</td></tr>
+  <tr><td>1</td><td>Technical Crafting</td><td>+1 to all craft checks. 15% salvage on failures. Gain proficiency in Precision and Refinement.</td></tr>
   <tr><td>2</td><td>Salvage</td><td>Recover 50% of ingredients on craft failure (rounded up).</td></tr>
   <tr><td>3</td><td>Specialization</td><td>Choose a specialization path. +10% salvage on failures.</td></tr>
-  <tr><td>4</td><td>Calibration</td><td>-1 DC for recipes you've brewed 3+ times. Auto-succeed DC 8 and below.</td></tr>
-  <tr><td>5</td><td>Overclock</td><td>Workshop upgrades provide 50% more of their numerical bonuses.</td></tr>
+  <tr><td>4</td><td>Calibration</td><td>+1 to all craft checks. Your d20 craft rolls cannot land below 4 &mdash; tightly calibrated technique.</td></tr>
+  <tr><td>5</td><td>Overclock</td><td>Workshop upgrade costs reduced by 20%. Batch brew capacity +1.</td></tr>
   <tr><td>6</td><td>Production Line</td><td>Batch brew: +10% success rate per item after the first.</td></tr>
   <tr><td>7</td><td>Prototype</td><td>Once per day, reroll a failed craft. +15% discovery chance from research.</td></tr>
   <tr><td>8</td><td>Grand Artificer</td><td>Unlock legendary device recipes. Workshop upgrade costs -25%.</td></tr>
@@ -587,7 +587,7 @@
   <p>Master workshop builder. Upgrades cost less, staff work harder, and legendary blueprints reshape production.</p>
   <table>
     <tr><th>Lv</th><th>Feature</th><th>Description</th></tr>
-    <tr><td>3</td><td>Workshop Pro</td><td>Workshop upgrades cost 50% less gold. +2 to DIS checks.</td></tr>
+    <tr><td>3</td><td>Workshop Pro</td><td>Workshop upgrades cost 50% less gold. Staff efficiency +15%.</td></tr>
     <tr><td>6</td><td>Assembly Floor</td><td>Batch brewing capacity +2 (brew up to 7 at once). Staff efficiency +20%.</td></tr>
     <tr><td>10</td><td>Master Builder</td><td>3 legendary blueprints: Alchemical Forge (auto-brews most profitable recipe), Crystal Greenhouse (1 random rare ingredient daily), Arcane Conduit (+2 Energy permanently). Half construction time.</td></tr>
   </table>
@@ -598,9 +598,9 @@
   <p>Waste nothing. Salvage failed brews, break down items for materials, and turn spoilage into profit.</p>
   <table>
     <tr><th>Lv</th><th>Feature</th><th>Description</th></tr>
-    <tr><td>3</td><td>Zero Waste</td><td>75% salvage on failure. Break down potions. 50% of spoiled ingredients become Alchemical Residue.</td></tr>
-    <tr><td>6</td><td>Deconstruct</td><td>Break any item into components. Failed enchants return all materials.</td></tr>
-    <tr><td>10</td><td>Perfect Reclamation</td><td>One free craft per day (no ingredients consumed). Deconstruction yields 150%.</td></tr>
+    <tr><td>3</td><td>Zero Waste</td><td>75% salvage on craft failure. +25% ingredient efficiency. 50% of spoiled ingredients are reclaimed as Alchemical Residue.</td></tr>
+    <tr><td>6</td><td>Deconstruct</td><td>Failed enchantments return 100% of their materials. 30% chance to save an ingredient on any successful brew.</td></tr>
+    <tr><td>10</td><td>Perfect Reclamation</td><td>One free craft per day (no ingredients consumed). 100% salvage on craft failures &mdash; nothing is ever wasted.</td></tr>
   </table>
 </div>
 
@@ -621,10 +621,10 @@
   <tr><td>4</td><td>Eureka!</td><td>Experiments: +15% discovery chance. On discovery, show recipe stat/DC info.</td></tr>
   <tr><td>5</td><td>Academic Network</td><td>+15% XP from all sources. +1 free research study per day (2 total).</td></tr>
   <tr><td>6</td><td>Cross-Reference</td><td>Experiment Bench shows hints based on how close your combination is.</td></tr>
-  <tr><td>7</td><td>Thesis Defense</td><td>+3 to all ACU-based checks. Research can discover enchantment patterns too. +15% discovery. +10% XP.</td></tr>
+  <tr><td>7</td><td>Thesis Defense</td><td>+3 craft bonus, +15% discovery chance, +10% XP from all sources.</td></tr>
   <tr><td>8</td><td>Grand Theorem</td><td>+25% discovery from all sources. See full ingredient tables for explored regions.</td></tr>
   <tr><td>9</td><td>Polymath</td><td>+2 to all craft, inscription, and extraction checks. +10% XP from all sources.</td></tr>
-  <tr><td>10</td><td>Omniscience</td><td>Know all recipes. Experiment Bench shows exact results. +2 craft. +30% XP. Publish papers for passive gold.</td></tr>
+  <tr><td>10</td><td>Omniscience</td><td>+40% discovery chance. +2 craft from deep knowledge. +30% XP from all sources. Publish theoretical papers for passive gold.</td></tr>
 </table>
 
 <h4>Specializations</h4>
@@ -636,7 +636,7 @@
     <tr><th>Lv</th><th>Feature</th><th>Description</th></tr>
     <tr><td>3</td><td>Published Research</td><td>2x XP from research and experiments. Can publish papers for passive gold.</td></tr>
     <tr><td>6</td><td>Peer Review</td><td>Research studies have +20% discovery chance. Papers earn more over time.</td></tr>
-    <tr><td>10</td><td>Grand Unified Theory</td><td>Research produces 2 discoveries instead of 1. Papers earn faction rep. Scaling craft bonus from paper count (+1/+2/+3).</td></tr>
+    <tr><td>10</td><td>Grand Unified Theory</td><td>Research sessions produce 2 discoveries instead of 1. +35% discovery chance. Papers earn faction rep. Published papers grant a scaling permanent craft bonus (+1 every 2 papers, capped at +4).</td></tr>
   </table>
 </div>
 
@@ -656,8 +656,8 @@
   <p>Pursue lore fragments and quest chains. Board quests refresh faster, and deep knowledge grants permanent stats.</p>
   <table>
     <tr><th>Lv</th><th>Feature</th><th>Description</th></tr>
-    <tr><td>3</td><td>Deep Records</td><td>Quest log shows hidden objectives. +30% quest XP.</td></tr>
-    <tr><td>6</td><td>Master Index</td><td>Board quests refresh twice daily. Quest chains unlock earlier.</td></tr>
+    <tr><td>3</td><td>Deep Records</td><td>+30% XP from quest turn-ins. Quest faction-rep payouts are boosted by +5&times; the standard amount.</td></tr>
+    <tr><td>6</td><td>Master Index</td><td>The notice board refreshes twice as often, producing more quests per cycle. +25% gold from quest turn-ins.</td></tr>
     <tr><td>10</td><td>Living Archive</td><td>Completed lore chains grant permanent +1 to a stat (up to 3). 25% quest lore fragment chance. Board quests 3x daily with rare-ingredient quest. Faction alignment bonuses 50% stronger.</td></tr>
   </table>
 </div>
@@ -678,10 +678,10 @@
   <tr><td>3</td><td>Specialization</td><td>Choose a specialization path. +1 extraction bonus.</td></tr>
   <tr><td>4</td><td>Iron Constitution</td><td>Immune to expedition events that cost time.</td></tr>
   <tr><td>5</td><td>Expert Forager</td><td>Critical extraction (nat 20) yields 3x ingredients. Successes yield +1 bonus.</td></tr>
-  <tr><td>6</td><td>Deep Mapping</td><td>Forage a second region in same expedition at -2 hours.</td></tr>
+  <tr><td>6</td><td>Deep Mapping</td><td>Your charts open paths others can't reach. Region level requirements are reduced by 1 &mdash; access regions one level earlier than normal.</td></tr>
   <tr><td>7</td><td>Wilderness Mastery</td><td>+2 extraction bonus. Positive expedition events 2x more likely. 15% bonus rare find per hour.</td></tr>
   <tr><td>8</td><td>Expedition Commander</td><td>Staff foraging yields +40%. Staff gain XP 25% faster.</td></tr>
-  <tr><td>9</td><td>Indomitable</td><td>+3 extraction bonus. +1 bonus ingredient per success. Failed extractions still yield 1 common ingredient.</td></tr>
+  <tr><td>9</td><td>Indomitable</td><td>+3 extraction bonus. +1 bonus ingredient per successful extraction.</td></tr>
   <tr><td>10</td><td>Legend of the Wild</td><td>All travel times become 0. +50% foraging yields. Overnight foraging.</td></tr>
 </table>
 
@@ -693,7 +693,7 @@
   <table>
     <tr><th>Lv</th><th>Feature</th><th>Description</th></tr>
     <tr><td>3</td><td>Tracker</td><td>Target ingredients without yield penalty. Befriend wild creatures.</td></tr>
-    <tr><td>6</td><td>Pathfinder</td><td>Discover hidden sub-regions with unique ingredients. Creature bonuses grow.</td></tr>
+    <tr><td>6</td><td>Pathfinder</td><td>+50% foraging yield. Critical extractions (nat 20) yield an additional +2&times; ingredients on top of the base crit multiplier.</td></tr>
     <tr><td>10</td><td>Apex Predator</td><td>Companions perform all actions twice per day. Highest-loyalty companion gains Legendary ability unique to its role. Solo expeditions from companion card (1/day, 0 Energy).</td></tr>
   </table>
 </div>
@@ -704,7 +704,7 @@
   <table>
     <tr><th>Lv</th><th>Feature</th><th>Description</th></tr>
     <tr><td>3</td><td>Supply Chain</td><td>Workshop storage doubled. Ingredient efficiency +25%. Spoilage threshold +4.</td></tr>
-    <tr><td>6</td><td>Logistics Master</td><td>Staff foraging +25%. +25% personal yield. +4 spoilage threshold. Caravans always fresh.</td></tr>
+    <tr><td>6</td><td>Logistics Master</td><td>Staff foraging +25%. +25% personal foraging yield. Spoilage threshold +4 &mdash; ingredients last longer before going bad.</td></tr>
     <tr><td>10</td><td>War Room</td><td>Fully automated ingredient management. Foraging yield +100%. Spoilage threshold +8.</td></tr>
   </table>
 </div>

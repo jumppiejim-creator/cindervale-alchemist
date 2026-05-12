@@ -879,7 +879,7 @@ function CindervaleAlchemistInner(){
   const gainXP=(base)=>{const mult=1+getFeatureVal('xpMultiplier');setXp(x=>x+Math.floor(base*mult));};
   const getBuyPrice=(basePrice)=>{const disc=getFeatureVal('buyDiscount')+getFeatureVal('shopDiscount');return Math.max(1,Math.floor(basePrice*(1-disc)));};
   const regUnlock=(reg)=>Math.max(0,reg.unlock-getFeatureVal('bonusRegionSlot'));
-  const addRep=(fid,a)=>{const repB=1+getFeatureVal('repGainBonus');const dblRep=getFeatureVal('doubleRep')?2:1;const persRank=skRanks['persuasion']||0;const persMod=Math.min(0.30,persRank*0.06+getMod(eStat('inu'))*0.01);const repSpill=getFeatureVal('repSpillover');const gain=Math.floor(a*repB*dblRep*(1+persMod));setFRep(p=>{const n={...p};const oldRep=n[fid]||0;const newRep=Math.max(0,oldRep+gain);const oldLvl=getRepLvl(oldRep);const newLvl=getRepLvl(newRep);if(newLvl>oldLvl){const f=FACTIONS[fid];const tb=f?.tierBonuses?.[newLvl-1];if(tb)addLog(`🏛️ ${f.icon} ${f.name}: ${REP_LVS[newLvl]} unlocked — ${tb.name}!`,'quest');}n[fid]=newRep;if(repSpill>0||persRank>0){const spillChance=repSpill>0?repSpill:Math.min(0.10,persRank*0.02);if(Math.random()<spillChance){const others=Object.keys(n).filter(f=>f!==fid&&FACTIONS[f]);if(others.length>0){const spillFid=others[Math.floor(Math.random()*others.length)];n[spillFid]=(n[spillFid]||0)+1;}}}return n;});};
+  const addRep=(fid,a)=>{const dipLv=prestigeLevels?.diplomat||0;const repB=1+getFeatureVal('repGainBonus');const dblRep=(getFeatureVal('doubleRep')||dipLv>=1)?2:1;const persRank=skRanks['persuasion']||0;const persMod=Math.min(0.30,persRank*0.06+getMod(eStat('inu'))*0.01);const repSpill=getFeatureVal('repSpillover')+(dipLv>=5?0.25:0);const gain=Math.floor(a*repB*dblRep*(1+persMod));setFRep(p=>{const n={...p};const oldRep=n[fid]||0;const newRep=Math.max(0,oldRep+gain);const oldLvl=getRepLvl(oldRep);const newLvl=getRepLvl(newRep);if(newLvl>oldLvl){const f=FACTIONS[fid];const tb=f?.tierBonuses?.[newLvl-1];if(tb)addLog(`🏛️ ${f.icon} ${f.name}: ${REP_LVS[newLvl]} unlocked — ${tb.name}!`,'quest');}n[fid]=newRep;if(repSpill>0||persRank>0){const spillChance=repSpill>0?repSpill:Math.min(0.10,persRank*0.02);if(Math.random()<spillChance){const others=Object.keys(n).filter(f=>f!==fid&&FACTIONS[f]);if(others.length>0){const spillFid=others[Math.floor(Math.random()*others.length)];n[spillFid]=(n[spillFid]||0)+1;}}}return n;});};
   const getRL=fid=>getRepLvl(fRep[fid]||0);
 
   const genCust=useCallback(()=>{
@@ -3243,8 +3243,8 @@ function CindervaleAlchemistInner(){
         '\n\n'+pair.rewards[newHarmony-1]+
         (dLv>=6?'\n+5 rep with both factions':''),ch);
       addLog(`🤝 ${pair.name} Harmony → ${newHarmony}. ${pair.rewards[newHarmony-1]}`,'quest');
-      // Check for Grand Alliance
-      if(dLv>=10){
+      // Check for Grand Alliance (Diplomat Lv4)
+      if(dLv>=4){
         const allMax=FACTION_PAIRS.filter(fp=>(!fp.loc||fp.loc===gameLocation)).every(fp=>(fp.id===pairId?newHarmony:(factionHarmony[fp.id]||0))>=3);
         if(allMax){
           showResult('🏛️ Grand Alliance Achieved!','craft',
@@ -3273,6 +3273,8 @@ function CindervaleAlchemistInner(){
       if(effectKey==='repGainBonus')total+=0.50;
       if(effectKey==='sellBonus')total+=0.25;
     }
+    // Diplomat Lv5 Ambassador: harmony bonuses doubled
+    if((prestigeLevels?.diplomat||0)>=5)total*=2;
     return total;
   };
 
@@ -3697,7 +3699,7 @@ function CindervaleAlchemistInner(){
     else if(q.type==='multi')q.targets.forEach(t=>{const c=consumePots(t,1);Object.keys(c).forEach(k=>{qConsumed[k]+=c[k];});});
     const qQB=qualityBonusMult(qConsumed);
     setAQ(p=>p.filter(a=>a.id!==q.id));setDoneQ(p=>[...p,q.id]);const loreXp=getFeatureVal('questXPFlat');
-    const qGoldB=1+getFeatureVal('questGoldBonus')+(getSeason(day,gameLocation).questGoldMod||0);const qRepB=1+getFeatureVal('questRepBonus');const qXpB=1+getFeatureVal('questXPBonus');
+    const _dipLvQ=prestigeLevels?.diplomat||0;const qGoldB=1+getFeatureVal('questGoldBonus')+(_dipLvQ>=2?0.30:0)+(getSeason(day,gameLocation).questGoldMod||0);const qRepB=1+getFeatureVal('questRepBonus')+(_dipLvQ>=1?10:0);const qXpB=1+getFeatureVal('questXPBonus');
     const qGold=Math.floor(q.gold*qGoldB*qQB.mult*GOLD_MULT);
     gainXP(Math.floor((q.xp+loreXp)*qXpB*qQB.mult));setGold(g=>g+qGold);
     if(q.items?.length)q.items.forEach(id=>modInv(id,1));if(q.faction&&q.fRep)addRep(q.faction,Math.floor(q.fRep*qRepB));
@@ -3764,7 +3766,7 @@ function CindervaleAlchemistInner(){
     setActiveBQ(p=>p.filter(q=>q.id!==bq.id));
     setDoneBQCount(c=>c+1);
     const bqLoreXp=getFeatureVal('questXPFlat');
-    const bqGoldB=1+getFeatureVal('questGoldBonus');const bqRepB=1+getFeatureVal('questRepBonus');const bqXpB=1+getFeatureVal('questXPBonus');
+    const _dipLvBQ=prestigeLevels?.diplomat||0;const bqGoldB=1+getFeatureVal('questGoldBonus')+(_dipLvBQ>=2?0.30:0);const bqRepB=1+getFeatureVal('questRepBonus')+(_dipLvBQ>=1?10:0);const bqXpB=1+getFeatureVal('questXPBonus');
     const bqGold=Math.floor(bq.gold*bqGoldB*bqQB.mult*GOLD_MULT);
     gainXP(Math.floor((bq.xp+bqLoreXp)*bqXpB*bqQB.mult));setGold(g=>g+bqGold);
     if(bq.faction&&bq.fRep)addRep(bq.faction,Math.floor(bq.fRep*bqRepB));
@@ -4636,7 +4638,7 @@ function CindervaleAlchemistInner(){
     }
     // Procurement: rare/mid-tier ingredients appear in shop
     const procChance=0;const procList=[];
-    const restockB=getFeatureVal('shopRestockBonus');
+    const restockB=getFeatureVal('shopRestockBonus')+((prestigeLevels?.diplomat||0)>=2?3:0);
     const rareIngr=new Set();locRegions.filter(r=>r.diff>=2&&level>=regUnlock(r)).forEach(r=>r.ingr.forEach(id=>rareIngr.add(id)));
     const alreadyInShop=new Set(SHOP_I.filter(s=>!s.loc||s.loc===gameLocation).map(s=>s.id));
     const rarePool=[...rareIngr].filter(id=>!alreadyInShop.has(id));
