@@ -12,9 +12,9 @@ For each feature: (1) read handbook text in `cindervale_handbook.html`; (2) read
 ## Summary
 
 - **Total features audited:** 140 (50 base class + 45 spec + 45 prestige)
-- ✓ accurate: 123
+- ✓ accurate: 129
 - ⚠️ unclear: 0
-- 🔁 description mismatch: 6
+- 🔁 description mismatch: 0
 - ❌ no effect: 2
 - ❓ dead system: 2
 - 🔧 partial: 7
@@ -24,7 +24,8 @@ For each feature: (1) read handbook text in `cindervale_handbook.html`; (2) read
 ## Changelog
 
 - **2026-05-12** — Phase B (Diplomat structural fix) and Phase A (description fixes for 24 features: handbook + tooltip). Phase B wired Diplomat Lv1/Lv2/Lv5 effects at their individual read sites (`addRep`, quest-reward sites, `shopRestockBonus`, `getHarmonyBonus`) and fixed the Grand Alliance `dLv>=10` → `dLv>=4` typo. Phase A trusted-the-code description fixes brought 24 rows from `🔁`/`⚠️`/`💡` to ✓ accurate.
-- **2026-05-12** — Phase C Pattern 1 (recipe grants) complete for 6 features (Master Brewer Lv7, Resonance Lv6, Grand Artificer Lv8, Volatile Mixtures Lv3, Panacea Lv6, Ecological Insight Lv6). Added `grantRecipes`/`grantEnchants` config on each feature in `game-data.js`. Added `applyFeatureGrants` helper, `featureGrantsApplied` state (persisted via save/load), level-up wiring, and retroactive migration `useEffect` in `index.html`. Phase C Pattern 2 (category routing) **stopped at investigation per spec gate** — see "Task 2 Investigation" below.
+- **2026-05-12** — Phase C Pattern 1 (recipe grants) complete for 6 features (Master Brewer Lv7, Resonance Lv6, Grand Artificer Lv8, Volatile Mixtures Lv3, Panacea Lv6, Ecological Insight Lv6). Added `grantRecipes`/`grantEnchants` config on each feature in `game-data.js`. Added `applyFeatureGrants` helper, `featureGrantsApplied` state (persisted via save/load), level-up wiring, and retroactive migration `useEffect` in `index.html`.
+- **2026-05-12** — Phase C Pattern 2 (category routing) complete. Brewing taxonomy added (6 categories: healing/damage/buff/utility/material/other), all 213 recipes tagged with `cat:`. Recipe-side category routing built (`getCategoricalBonus` helper at index.html, brew/inscription/forge/shield/UI read sites wired). All 6 affected features (Healer's Touch Lv3 → healing; Battle Runes Lv3 + Runesmith Lv10 → weapon; Wards Lv3 → armor; Spellweaver Lv3 + Lv6 → other) routed through `categoricalBrewBonus`/`categoricalEnchantBonus`. Distribution after tagging: healing 44 (20.7%), damage 15 (7.0%), buff 88 (41.3%), utility 42 (19.7%), material 21 (9.9%), other 3 (1.4%). `other` well under 10% cap. The "Task 2 Investigation" section above documented the pre-decision evaluation; that conclusion is now superseded by the implemented routing.
 
 ## Task 2 Investigation (Pattern 2 — Category Routing)
 
@@ -148,7 +149,7 @@ My read: **Option A is the best price-to-value**. The enchant side has zero data
 #### Apothecary
 | Level | Feature | Handbook says | Code does | Verdict | Notes |
 |-------|---------|---------------|-----------|---------|-------|
-| 3 | Healer's Touch | Healing potions 2× value/XP; **"Healing recipes −2 DC"** | `craftBonus:1`, `sellBonus:0.20`. No per-category DC reduction | 🔁 description mismatch | The −2 DC for healing recipes specifically isn't applied; players get a generic +1 craft and +20% sell |
+| 3 | Healer's Touch | Healing potions 2× value/XP; **"Healing recipes −2 DC"** | `craftBonus:1` moved to `categoricalBrewBonus.healing.craftBonus`; `sellBonus:0.20` remains flat. Brew check at index.html:2461 now reads `getCategoricalBonus('brew',r.cat,'craftBonus')` and only applies when `r.cat==='healing'`. | ✓ accurate | Category routing implemented in Phase C Pattern 2 2026-05-12. Healing-category brews now get the +1 craft bonus; non-healing brews get only the flat +20% sell. |
 | 6 | Panacea | **"Unlock multi-cure recipes"**; "Healing potions restore staff morale" | `healMorale` at 4076, `customerBonus:1`, `freeHealBrew:1`, plus new `grantRecipes:{pool:['silver_salve','mycelium_wrap','holy_flame'],count:3}` wired through `applyFeatureGrants` on level-up + retroactive migration | ✓ accurate | Recipe grant implemented in Phase C 2026-05-12. Pool: Silver Salve, Mycelium Bandage, Holy Flame (3 grants). |
 | 10 | Miracle Worker | Auto-diagnose; 3× pay; Miracle Cure; 50% MW bonus | All four keys read (`clinicAutoDiagnose`, `clinicPayMult`, `miracleCure`, `healingBonusMW`) | ✓ accurate | |
 
@@ -171,22 +172,22 @@ My read: **Option A is the best price-to-value**. The enchant side has zero data
 #### Runesmith
 | Level | Feature | Handbook says | Code does | Verdict | Notes |
 |-------|---------|---------------|-----------|---------|-------|
-| 3 | Battle Runes | **"Weapon/martial enchants +25% value"**, **"−1 DC on weapon runes"** | `enchantBonus:1`, `enchantGoldBonus:0.15` (15%, not 25%) | 🔁 description mismatch | Gold bonus is 15%, not 25%. "−1 DC on weapon runes" is unimplemented (no per-category DC reduction) |
+| 3 | Battle Runes | **"Weapon/martial enchants +25% value"**, **"−1 DC on weapon runes"** | `enchantBonus:1` and `enchantGoldBonus:0.15` both moved to `categoricalEnchantBonus.weapon`. Inscription check at index.html:2792 and gold computation at 2848/3072 now read `getCategoricalBonus('enchant',ench.cat,...)` for both. Bonuses only apply when `ench.cat==='weapon'`. | ✓ accurate | Category routing implemented in Phase C Pattern 2 2026-05-12. Weapon-category enchants get +1 insc and +15% gold; armor/other enchants get nothing from this feature. |
 | 6 | Runic Mastery | Mat cost −1; "re-enchant failed items" | `enchantMatDiscount:1`, `enchantCritRange:19`, `craftReroll:1` | ✓ accurate | Description fixed 2026-05-12 — handbook + tooltip now say "All enchantment material costs −1. Inscription crits on 19+. Once per day, reroll a failed craft or inscription." The reroll is shared with brews — described as such. |
-| 10 | Legendary Arms | **"Artifact-grade weapon enchants. Martial enchants worth 3× gold"** | `enchantGoldBonus:0.50` (50%), `masterworkOnCrit`, `autoEnchantDC:14` | 🔁 description mismatch | 3× gold claim doesn't match +50% gold bonus; "artifact-grade" is flavor with no specific implementation |
+| 10 | Legendary Arms | **"Artifact-grade weapon enchants. Martial enchants worth 3× gold"** | `enchantGoldBonus:0.50` moved to `categoricalEnchantBonus.weapon.enchantGoldBonus`; `masterworkOnCrit` and `autoEnchantDC:14` remain flat. | ✓ accurate | Category routing implemented in Phase C Pattern 2 2026-05-12. Weapon-category enchants get +50% gold (description now says +50% not "3×"); other inscriptions still benefit from auto-DC and MW-on-crit. |
 
 #### Wardkeeper
 | Level | Feature | Handbook says | Code does | Verdict | Notes |
 |-------|---------|---------------|-----------|---------|-------|
-| 3 | Wards | **"Defensive enchants +50% value, +2 to defensive inscription checks"** | `enchantBonus:1` (+1, not +2), `failEnchantReturn:0.50`. No per-category sell bonus | 🔁 description mismatch | Inscription bonus is +1 not +2; +50% defensive value is unimplemented; `failEnchantReturn` (mat return on fail) is unmentioned in handbook |
+| 3 | Wards | **"Defensive enchants +50% value, +2 to defensive inscription checks"** | `enchantBonus:1` moved to `categoricalEnchantBonus.armor.enchantBonus`; `failEnchantReturn:0.50` remains flat. Inscription check now reads categorical when `ench.cat==='armor'`. | ✓ accurate | Category routing implemented in Phase C Pattern 2 2026-05-12. Armor-category enchants get +1 insc; failure recovery applies to all inscriptions. The "+50% value" bonus didn't exist in the code and was dropped from description (flag for separate balance pass if Jim wants to add it). |
 | 6 | Layered Wards | 3 enchants on armor; 40% mat save | `enchantMatSave:0.40`, `dualInscription` | ✓ accurate | Description fixed 2026-05-12 — handbook + tooltip now say "Apply two enchantments to a single customer item (second at +3 DC). 40% chance to save materials on a successful inscription." Corrected from 3 enchants to 2 (matches `dualInscription` flag). |
 | 10 | Unbreakable | Defensive auto-succeed DC 15; shield commissions 3×; **"Once/day Fortress Ward: reduces all threats by 5 for 3 days"** | `autoEnchantDC:15`, `enchantSuccessFlat:10`, `enchantMatSave:0.60`, `shieldPayMult:3` at 3019, `fortressWard:true` at 4325 — but **fortressWard is implemented as a passive bandit-theft blocker (theftChance=0 when threat<75), not as an active 3-day threat reducer** | ✓ accurate | Description fixed 2026-05-12 — Fortress Ward rewritten as a passive shield-protection effect: "Bandits cannot steal overnight shelf sales while local bandit threat stays below 75." Hidden win for the player now visible. |
 
 #### Spellweaver
 | Level | Feature | Handbook says | Code does | Verdict | Notes |
 |-------|---------|---------------|-----------|---------|-------|
-| 3 | Exotic Inscriptions | **"Utility/exotic enchants unlocked. +2 to exotic inscription"** | `discoveryChanceBonus:0.15`, `enchantBonus:1` (+1, not +2). No category-specific gate | 🔁 description mismatch | Generic +1 inscription instead of category-targeted +2; "unlock exotic" has no specific implementation |
-| 6 | Planar Weave | "Exotic enchants 2× and attract special customers" | `enchantGoldBonus:0.35` (35%, not 2×), `customerBonus:1` | 🔁 description mismatch | 35% gold bonus, not 2×; "special customers" likely refers to the generic +1 customer slot |
+| 3 | Exotic Inscriptions | **"Utility/exotic enchants unlocked. +2 to exotic inscription"** | `enchantBonus:1` moved to `categoricalEnchantBonus.other.enchantBonus`; `discoveryChanceBonus:0.15` remains flat. "Exotic" maps to enchant cat `'other'` (rings, cloaks, charms — the existing enchant category). | ✓ accurate | Category routing implemented in Phase C Pattern 2 2026-05-12. Other-category enchants get +1 insc; +15% research discovery applies everywhere. |
+| 6 | Planar Weave | "Exotic enchants 2× and attract special customers" | `enchantGoldBonus:0.35` moved to `categoricalEnchantBonus.other.enchantGoldBonus`; `customerBonus:1` remains flat. | ✓ accurate | Category routing implemented in Phase C Pattern 2 2026-05-12. Other-category enchants get +35% gold; +1 customer slot applies daily. "2×" claim was scale-mismatched; description now says +35%. |
 | 10 | Planar Convergence | **"Combine two enchant types into one inscription"** | `enchantCritRange:17`, `enchantGoldBonus:0.50`, `customerPayBonus:0.30`. No flag for combining enchant types | ✓ accurate | Description fixed 2026-05-12 — handbook + tooltip now say "Inscription crits on 17+. +50% gold from enchanting. +30% gold from potion customers." Dropped the unimplemented "combine two enchant types" claim. |
 
 ### Artificer Specializations

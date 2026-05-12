@@ -655,6 +655,30 @@ function CindervaleAlchemistInner(){
     if(settlementProjects?.length>0&&typeof SETTLEMENT_PROJECTS!=='undefined'){settlementProjects.forEach(pid=>{const proj=SETTLEMENT_PROJECTS.find(p=>p.id===pid);if(proj?.effect?.[effectKey]!=null){const v=proj.effect[effectKey];total+=typeof v==='number'?v:v===true?1:0;}});}
     return total;
   },[classLevels,specs,playerFeats,fRep,factionAlign,loreFragments,activeBuffs,mentorBonuses,museumBonuses,legacyFeature,pubPapers,fieldJournal,companions,wildAlly,settlementProjects]);
+  // Category-scoped bonus aggregator. kind is 'brew' (reads categoricalBrewBonus) or 'enchant' (reads categoricalEnchantBonus).
+  // activeCat is the recipe's or enchant's `cat` field (e.g. 'healing', 'weapon', 'armor', 'other').
+  // Returns sum of matching values from base-class + spec features.
+  const getCategoricalBonus=useCallback((kind,activeCat,effectKey)=>{
+    if(!activeCat)return 0;
+    const fieldName=kind==='brew'?'categoricalBrewBonus':'categoricalEnchantBonus';
+    let total=0;
+    for(const [cid,lv] of Object.entries(classLevels)){
+      const cls=CLASSES[cid];if(!cls)continue;
+      for(const f of cls.features){
+        const cb=f[fieldName]?.[activeCat]?.[effectKey];
+        if(f.classLv<=lv&&cb!=null)total+=typeof cb==='number'?cb:cb===true?1:0;
+      }
+      const specId=specs[cid];
+      if(specId&&cls.specs?.[specId]){
+        for(const sf of cls.specs[specId].features){
+          const cb=sf[fieldName]?.[activeCat]?.[effectKey];
+          if(sf.classLv<=lv&&cb!=null)total+=typeof cb==='number'?cb:cb===true?1:0;
+        }
+      }
+    }
+    return total;
+  },[classLevels,specs]);
+
   const hasFeature=useCallback((effectKey)=>{
     for(const [cid,lv] of Object.entries(classLevels)){
       const cls=CLASSES[cid];if(!cls)continue;
@@ -2432,6 +2456,9 @@ function CindervaleAlchemistInner(){
     const ch=autoSucc?{roll:20,mod:0,rb:0,total:99,dc:adjDC,success:true,name:'Analysis',icon:'🧮',statName:'',extras:[{label:'🧮 Analysis',val:'Auto'}]}:doCheck(sk,adjDC);
     const csb=upEff('craftSkillBonus');if(csb){ch.total+=csb;ch.extras.push({label:'Upgrades',val:csb});}
     const cfb=getFeatureVal('craftBonus');if(cfb){ch.total+=cfb;ch.extras.push({label:'Class Mastery',val:cfb});}
+    // Category-scoped craft bonus (e.g. Apothecary Healer's Touch on healing recipes)
+    const ccfb=getCategoricalBonus('brew',r.cat,'craftBonus');
+    if(ccfb){ch.total+=ccfb;ch.extras.push({label:(r.cat||'')+' specialty',val:ccfb});}
     if(masteryDisc>0)ch.extras.push({label:'📖 Mastery',val:'-'+masteryDisc+' DC'});
     if(qualDCMod!==qT.dcMod)ch.extras.push({label:'🫕 Cauldron',val:qualDCMod-qT.dcMod+' DC'});
     // craftFloor: minimum roll result (capped at 10)
@@ -2567,6 +2594,9 @@ function CindervaleAlchemistInner(){
       const sk=match.stat==='inu'?'attunement':match.stat==='tec'?'precision':match.stat==='acu'?'research':'improvisation';
       const ch=doCheck(sk,adjDC);const csb=upEff('craftSkillBonus');if(csb){ch.total+=csb;ch.extras.push({label:'Upgrades',val:csb});}
       const cfb=getFeatureVal('craftBonus');if(cfb){ch.total+=cfb;ch.extras.push({label:'Class Mastery',val:cfb});}
+      // Category-scoped craft bonus (matches active recipe's cat — e.g. Apothecary on healing experiments)
+      const ccfb=getCategoricalBonus('brew',match.cat,'craftBonus');
+      if(ccfb){ch.total+=ccfb;ch.extras.push({label:(match.cat||'')+' specialty',val:ccfb});}
       const adaptMod=getSkMod('adaptation');if(adaptMod>0){ch.total+=adaptMod;ch.extras.push({label:'🔄 Adaptation',val:adaptMod});}
       ch.success=ch.roll===1?false:ch.roll===20?true:ch.total>=adjDC;
       if(ch.success){
@@ -2787,7 +2817,12 @@ function CindervaleAlchemistInner(){
     const ch=doCheck('inscription',adjDC);
     const arcB=getSkMod('arcane_sense');const focB=getSkMod('focus');const csb=upEff('craftSkillBonus');
     const efb=getFeatureVal('enchantBonus');const esf=Math.min(getFeatureVal('enchantSuccessFlat'),20);
+    // Category-scoped inscription bonus (e.g. Runesmith Battle Runes on weapon enchants, Wardkeeper Wards on armor enchants)
+    const cefb=getCategoricalBonus('enchant',ench.cat,'enchantBonus');
+    const cesf=Math.min(getCategoricalBonus('enchant',ench.cat,'enchantSuccessFlat'),10);
     if(arcB)ch.extras.push({label:'Arcane Sense',val:arcB});if(focB)ch.extras.push({label:'Focus',val:focB});if(csb)ch.extras.push({label:'Upgrades',val:csb});if(efb)ch.extras.push({label:'Inscription Mastery',val:efb});if(esf)ch.extras.push({label:'Enchant Mastery',val:esf});
+    if(cefb)ch.extras.push({label:(ench.cat||'')+' specialty',val:cefb});
+    if(cesf)ch.extras.push({label:(ench.cat||'')+' mastery',val:cesf});
     const autoEnchDC=getFeatureVal('autoEnchantDC');
     const critRange=20-getFeatureVal('enchantCritRange');
     const isCrit=ch.roll>=critRange;
@@ -2796,13 +2831,13 @@ function CindervaleAlchemistInner(){
     const isMW=isCrit||focusMW;
     const arcPatternB=isCustomEnch?getPatternInscBonus():0;
     if(arcPatternB){ch.total+=arcPatternB;ch.extras.push({label:'\u2728 Arcanist',val:arcPatternB});}
-    const adj=ch.total+arcB+focB+csb+efb+esf+arcPatternB;ch.total=adj;ch.success=ch.roll===1?false:(ch.roll===20?true:(adj>=adjDC||(autoEnchDC>0&&adjDC<=autoEnchDC)||isCrit));
+    const adj=ch.total+arcB+focB+csb+efb+esf+arcPatternB+cefb+cesf;ch.total=adj;ch.success=ch.roll===1?false:(ch.roll===20?true:(adj>=adjDC||(autoEnchDC>0&&adjDC<=autoEnchDC)||isCrit));
     if(!ch.success){
       const crCharges=getFeatureVal('checkReroll')+dayFlags.filter(f=>f==='companion_reroll').length;
       const crUsed=dayFlags.filter(f=>f==='check_rerolled').length;
       if(crCharges>crUsed){
         const rr=doCheck('inscription',adjDC);
-        const rrAdj=rr.total+arcB+focB+csb+efb+esf;rr.total=rrAdj;rr.success=rr.roll===1?false:(rr.roll===20?true:(rrAdj>=adjDC||(autoEnchDC>0&&adjDC<=autoEnchDC)));
+        const rrAdj=rr.total+arcB+focB+csb+efb+esf+cefb+cesf;rr.total=rrAdj;rr.success=rr.roll===1?false:(rr.roll===20?true:(rrAdj>=adjDC||(autoEnchDC>0&&adjDC<=autoEnchDC)));
         rr.extras.push({label:'🔄 Reroll',val:'1/day'});
         setDayFlags(f=>[...f,'check_rerolled']);
         if(rr.success){Object.assign(ch,rr);ch.success=true;}
@@ -2810,7 +2845,7 @@ function CindervaleAlchemistInner(){
     }
     if(ch.success){const baseGR=20+ench.dc*3+cust.tier*12+getFeatureVal('enchantGoldFlat')+getFeatureVal('potionSaleBonus');
       const critGold=isMW?Math.floor(baseGR*0.5):0;
-      const enchGoldB=getFeatureVal('enchantGoldBonus');const custPayB=getFeatureVal('customerPayBonus');
+      const enchGoldB=getFeatureVal('enchantGoldBonus')+getCategoricalBonus('enchant',ench.cat,'enchantGoldBonus');const custPayB=getFeatureVal('customerPayBonus');
       const debtPenalty=debt>50?-0.20:0;
       const gR=Math.floor((baseGR+critGold)*(1+enchGoldB+custPayB+debtPenalty)*customSellMult*eqT.sellMult*GOLD_MULT);const enchXpEarned=Math.floor(ench.xp*eqT.xpMult);gainXP(enchXpEarned);setGold(g=>g+gR);
       showResult(ench.icon+' '+(quality!=='std'?QUALITY[quality].icon+' ':'')+ench.name+' \u2014 Enchanted!','craft',cust.customer+"'s "+cust.icon+cust.name+'\\n+'+enchXpEarned+' XP  +'+gR+'g'+(isCustomEnch&&customSellMult>1?'\\n\u2728 Custom pattern: '+customSellMult+'\u00d7 premium!':'')+(matSaved?'\\n\u2728 Materials preserved!':'')+(isCrit?'\\n🎯 Critical inscription!':'')+(focusMW?'\\n🧘 Focus: Masterwork quality!':'')+(discounted?'\\n🏷\ufe0f Discount materials!':'')+(debtPenalty<0?'\\n\u26a0\ufe0f Debt penalty: -20% pay':''),ch);
@@ -3034,7 +3069,7 @@ function CindervaleAlchemistInner(){
     }
     // Both succeeded! Create a Named Weapon
     const wName=genWeaponName();
-    const goldValue=Math.floor((weapon.tier*20+enchant.tier*15)*(1+getFeatureVal('sellBonus')+getFeatureVal('enchantGoldBonus'))*GOLD_MULT);
+    const goldValue=Math.floor((weapon.tier*20+enchant.tier*15)*(1+getFeatureVal('sellBonus')+getFeatureVal('enchantGoldBonus')+getCategoricalBonus('enchant',enchant.cat,'enchantGoldBonus'))*GOLD_MULT);
     const xpReward=Math.floor(weapon.tier*15+enchant.tier*12);
     gainXP(xpReward);
     const newWeapon={id:'fw_'+Math.random().toString(36).slice(2),name:wName,weaponType:weapon.name,weaponIcon:weapon.icon,
@@ -3074,7 +3109,7 @@ function CindervaleAlchemistInner(){
         const ratio=newCompleted/totalLayers;
         const payMult=ratio>=1?1.0:ratio>=0.66?0.75:0.4;
         const shieldMult=Math.max(1,getFeatureVal('shieldPayMult')||1);
-        const goldReward=Math.floor(comm.baseGold*payMult*(1+getFeatureVal('sellBonus')+getFeatureVal('enchantGoldBonus'))*GOLD_MULT*shieldMult);
+        const goldReward=Math.floor(comm.baseGold*payMult*(1+getFeatureVal('sellBonus')+getFeatureVal('enchantGoldBonus')+getCategoricalBonus('enchant','armor','enchantGoldBonus'))*GOLD_MULT*shieldMult);
         const xpReward=Math.floor(comm.baseXp*payMult);
         const repReward=ratio>=1?12+comm.tier*5:ratio>=0.66?6:0;
         // Bonus referral for perfect completion
@@ -9932,7 +9967,7 @@ function CindervaleAlchemistInner(){
               const showHints=getFeatureVal('showCustHints');
               const hintMod=getSkMod('inscription')+getSkMod('arcane_sense')+getSkMod('focus')+upEff('craftSkillBonus')+getFeatureVal('enchantBonus')+getFeatureVal('enchantSuccessFlat');
               const hintPct=Math.min(95,Math.max(5,Math.floor((21-(adjDC-hintMod))/20*100)));
-              const fullReward=Math.floor(reward*(1+getFeatureVal('enchantGoldBonus')+getFeatureVal('customerPayBonus')));
+              const fullReward=Math.floor(reward*(1+getFeatureVal('enchantGoldBonus')+getCategoricalBonus('enchant',ench.cat,'enchantGoldBonus')+getFeatureVal('customerPayBonus')));
               return(
               <div key={ench.id} style={{padding:'8px 10px',background:can?TH.gold+'08':TH.panel,borderRadius:6,marginBottom:6,border:'1px solid '+(can?TH.borderGold:TH.border),opacity:can?1:0.75}}>
                 {cust.reqQuality&&cust.reqQuality!=='std'&&<div style={{fontSize:12,padding:'2px 8px',background:QUALITY[cust.reqQuality]?.color+'20',border:'1px solid '+QUALITY[cust.reqQuality]?.color+'44',borderRadius:10,display:'inline-block',marginBottom:4,color:QUALITY[cust.reqQuality]?.color}}>
