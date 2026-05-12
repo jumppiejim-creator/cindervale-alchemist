@@ -698,7 +698,7 @@ function CindervaleAlchemistInner(){
   // Apply a feature's one-time recipe/enchant grants. featureKey is "<classOrSpecId>:<level>" (e.g. "alchemist:7", "apothecary:6").
   // No-op if already applied. Marks applied even if 0 picks were granted (player already knew everything in the pool).
   const applyFeatureGrants=useCallback((feature,featureKey,featureLabel)=>{
-    if(!feature||(!feature.grantRecipes&&!feature.grantEnchants))return;
+    if(!feature||(!feature.grantRecipes&&!feature.grantEnchants&&!feature.grantUpgrades))return;
     if(featureGrantsApplied.includes(featureKey))return;
     if(feature.grantRecipes){
       const cfg=feature.grantRecipes;
@@ -722,6 +722,19 @@ function CindervaleAlchemistInner(){
         if(picks.length>0){
           const names=picks.map(id=>{const e=ENCHANTMENTS.find(ex=>ex.id===id);return e?e.icon+' '+e.name:id;}).join(', ');
           addLog(`📖 ${featureLabel}: ${names}`,'quest');
+        }
+        return n;
+      });
+    }
+    if(feature.grantUpgrades){
+      const cfg=feature.grantUpgrades;
+      setUpgrades(prev=>{
+        const n=[...prev];
+        const picks=cfg.pool.filter(id=>!n.includes(id)&&UPGRADES[id]).slice(0,cfg.count);
+        picks.forEach(id=>n.push(id));
+        if(picks.length>0){
+          const names=picks.map(id=>{const u=UPGRADES[id];return u?u.icon+' '+u.name:id;}).join(', ');
+          addLog(`🏗️ ${featureLabel}: ${names}`,'quest');
         }
         return n;
       });
@@ -786,14 +799,14 @@ function CindervaleAlchemistInner(){
     Object.entries(classLevels).forEach(([cid,lv])=>{
       const cls=CLASSES[cid];if(!cls)return;
       cls.features.forEach(f=>{
-        if(f.classLv<=lv&&(f.grantRecipes||f.grantEnchants)){
+        if(f.classLv<=lv&&(f.grantRecipes||f.grantEnchants||f.grantUpgrades)){
           applyFeatureGrants(f,cid+':'+f.classLv,cls.name+' Lv'+f.classLv);
         }
       });
       const specId=specs[cid];
       if(specId&&cls.specs?.[specId]){
         cls.specs[specId].features.forEach(sf=>{
-          if(sf.classLv<=lv&&(sf.grantRecipes||sf.grantEnchants)){
+          if(sf.classLv<=lv&&(sf.grantRecipes||sf.grantEnchants||sf.grantUpgrades)){
             applyFeatureGrants(sf,specId+':'+sf.classLv,cls.specs[specId].name+' Lv'+sf.classLv);
           }
         });
@@ -957,7 +970,7 @@ function CindervaleAlchemistInner(){
     const parts=[];if(consumed.fine)parts.push(consumed.fine+'× Fine');if(consumed.mw)parts.push(consumed.mw+'× Masterwork');if(consumed.gm)parts.push(consumed.gm+'× Grandmaster');
     return{mult:avg,label:parts.length>0?' | ✨ Quality bonus ('+parts.join(', ')+'): ×'+avg.toFixed(1):''};
   };
-  const gainXP=(base)=>{const mult=1+getFeatureVal('xpMultiplier');setXp(x=>x+Math.floor(base*mult));};
+  const gainXP=(base)=>{const cartoXp=(prestigeLevels?.cartographer||0)>=3?0.10:0;const mult=1+getFeatureVal('xpMultiplier')+getFeatureVal('xpBonus')+cartoXp;setXp(x=>x+Math.floor(base*mult));};
   const getBuyPrice=(basePrice)=>{const disc=getFeatureVal('buyDiscount')+getFeatureVal('shopDiscount');return Math.max(1,Math.floor(basePrice*(1-disc)));};
   const regUnlock=(reg)=>Math.max(0,reg.unlock-getFeatureVal('bonusRegionSlot'));
   const addRep=(fid,a)=>{const dipLv=prestigeLevels?.diplomat||0;const repB=1+getFeatureVal('repGainBonus');const dblRep=(getFeatureVal('doubleRep')||dipLv>=1)?2:1;const persRank=skRanks['persuasion']||0;const persMod=Math.min(0.30,persRank*0.06+getMod(eStat('inu'))*0.01);const repSpill=getFeatureVal('repSpillover')+(dipLv>=5?0.25:0);const gain=Math.floor(a*repB*dblRep*(1+persMod));setFRep(p=>{const n={...p};const oldRep=n[fid]||0;const newRep=Math.max(0,oldRep+gain);const oldLvl=getRepLvl(oldRep);const newLvl=getRepLvl(newRep);if(newLvl>oldLvl){const f=FACTIONS[fid];const tb=f?.tierBonuses?.[newLvl-1];if(tb)addLog(`🏛️ ${f.icon} ${f.name}: ${REP_LVS[newLvl]} unlocked — ${tb.name}!`,'quest');}n[fid]=newRep;if(repSpill>0||persRank>0){const spillChance=repSpill>0?repSpill:Math.min(0.10,persRank*0.02);if(Math.random()<spillChance){const others=Object.keys(n).filter(f=>f!==fid&&FACTIONS[f]);if(others.length>0){const spillFid=others[Math.floor(Math.random()*others.length)];n[spillFid]=(n[spillFid]||0)+1;}}}return n;});};
@@ -1567,6 +1580,13 @@ function CindervaleAlchemistInner(){
       if(luckyFind>0&&Math.random()<luckyFind){
         const luckyId=reg.ingr[Math.floor(Math.random()*reg.ingr.length)];
         hourG[luckyId]=(hourG[luckyId]||0)+1;luckyBonus={id:luckyId,icon:INGR[luckyId]?.icon||'',name:INGR[luckyId]?.name||luckyId};
+      }
+      // Naturalist Field Guide: bonus forage chance, drawn from region's pool
+      const bonusForageChance=getFeatureVal('bonusForageChance');
+      if(ext.success&&bonusForageChance>0&&Math.random()<bonusForageChance){
+        const bId=reg.ingr[Math.floor(Math.random()*reg.ingr.length)];
+        hourG[bId]=(hourG[bId]||0)+1;
+        if(!luckyBonus)luckyBonus={id:bId,icon:INGR[bId]?.icon||'',name:INGR[bId]?.name||bId};
       }
       // Attuned Foraging: bonus ingredient from most-brewed recipe
       let attuneBonus=null;
@@ -2245,7 +2265,9 @@ function CindervaleAlchemistInner(){
     const bmLv=prestigeLevels.brandmaster||0;
     // Famous tier only available at Lv4+
     const effectiveBl=bl>=3&&bmLv<4?2:bl;
-    return 1+BRAND_LEVELS[effectiveBl].sellBonus;
+    // Legendary Brand (Lv5): +25% sell on any branded item
+    const lv5Bonus=bmLv>=5?0.25:0;
+    return 1+BRAND_LEVELS[effectiveBl].sellBonus+lv5Bonus;
   };
   const createBrand=(name,icon)=>{
     const bmLv=prestigeLevels.brandmaster||0;
@@ -2495,6 +2517,14 @@ function CindervaleAlchemistInner(){
     if(!ch.success){
       const salvagePct=getFeatureVal('salvagePercent');
       Object.entries(cost).forEach(([id,q])=>modInv(id,salvagePct>0?-Math.ceil(q*(1-salvagePct)):-q));
+      // Spellbrewer Lv3+: chance to save the catalyst on a failed infusion (Lv4 raises chance for MW+ attempts)
+      if(selInf&&catalystId){
+        const failSaveChance=sbLv>=4&&(quality==='mw'||quality==='gm')?0.40:(sbLv>=3?0.25:0);
+        if(failSaveChance>0&&Math.random()<failSaveChance){
+          modInv(catalystId,catalystQty);
+          addLog('✨ Catalyst preserved despite failure! '+(INGR[catalystId]?.icon||'')+(INGR[catalystId]?.name||catalystId)+' returned.','craft');
+        }
+      }
       const lesserChance=getFeatureVal('lesserOnFail');
       let lesserResult=null;
       if(lesserChance>0&&Math.random()<lesserChance){
@@ -2652,7 +2682,7 @@ function CindervaleAlchemistInner(){
   const doResearch=(type)=>{
     const loreMod=getFeatureVal('researchTimeReduction');const scholarReduc=getFeatureVal('researchCostReduction');
     const resCost=Math.max(1,(loreMod>=4?1:2)-scholarReduc);
-    const freeResPerDay=getFeatureVal('freeResearchPerDay')+upEff('freeResearchPerDay');
+    const freeResPerDay=getFeatureVal('freeResearchPerDay')+upEff('freeResearchPerDay')+getFeatureVal('researchSlotBonus');
     const freeUsed=dayFlags.filter(f=>f==='free_research_used').length;
     const isFree=freeResPerDay>freeUsed;
     if(!isFree&&hours<resCost){addLog(`Research takes ⚡${resCost} Energy.${freeResPerDay>0?' (free attempts used today)':''}`,'error');return;}
@@ -2813,7 +2843,10 @@ function CindervaleAlchemistInner(){
     if(quality==='fine')enchQualDCMod+=upEff('fineEnchDC');
     if(quality==='mw'){enchQualDCMod+=upEff('fineEnchDC');enchQualDCMod+=upEff('mwEnchDC');}
     if(quality==='gm'){enchQualDCMod+=upEff('fineEnchDC');enchQualDCMod+=upEff('mwEnchDC');}
-    const adjDC=Math.max(5,ench.dc+enchQualDCMod);
+    // Arcanist Lv4 Pattern Library: 15% inscription DC reduction on custom patterns
+    const _arcLv=prestigeLevels?.arcanist||0;
+    const _customLibDCReduc=(ench.isCustom&&_arcLv>=4)?Math.floor(ench.dc*0.15):0;
+    const adjDC=Math.max(5,ench.dc+enchQualDCMod-_customLibDCReduc);
     const ch=doCheck('inscription',adjDC);
     const arcB=getSkMod('arcane_sense');const focB=getSkMod('focus');const csb=upEff('craftSkillBonus');
     const efb=getFeatureVal('enchantBonus');const esf=Math.min(getFeatureVal('enchantSuccessFlat'),20);
@@ -4044,7 +4077,7 @@ function CindervaleAlchemistInner(){
     const staffEffBonus=getFeatureVal('staffEfficiencyBonus');
     const payrollDisc=getFeatureVal('payrollDiscount');
     const halfPay=getFeatureVal('halfPayroll')?0.5:1;
-    const sfBonus=1+getFeatureVal('staffForageBonus');
+    const sfBonus=1+getFeatureVal('staffForageBonus')+getFeatureVal('staffForageYield')+((prestigeLevels?.cartographer||0)>=4?0.25:0);
     const sxpMult=1+getFeatureVal('staffXPBonus');
     const _xpAdded={}; // Track XP gains for level-up detection
     const dualTask=getFeatureVal('dualStaffTasks');
@@ -4292,19 +4325,25 @@ function CindervaleAlchemistInner(){
         if(qty<=0)return;
         const r=RECIPES.find(x=>x.id===getBaseRecipeId(potId));if(!r)return;
         const pq=getPotQuality(potId);const qMult=(QUALITY[pq]||QUALITY.std).sellMult;
-        const infId=getInfusion(potId);const infMult=infId?(INFUSIONS[infId]?.sellMult||1):1;
+        const infId=getInfusion(potId);
+        const _sbLv=prestigeLevels.spellbrewer||0;
+        // Spellbrewer Lv5 (Grand Spellbrewer): infusions 50% more potent (5a fallback — applies to sell multiplier)
+        const _baseInfMult=infId?(INFUSIONS[infId]?.sellMult||1):1;
+        const infMult=infId&&_sbLv>=5?(_baseInfMult-1)*1.5+1:_baseInfMult;
+        // Spellbrewer Lv5: customers pay +30% more for infused items (5b — additive)
+        const infusedSellBonus=infId&&_sbLv>=5?0.30:0;
         const brandMult=getBrandSellMult(getBaseRecipeId(potId));
         const bmLv2=prestigeLevels.brandmaster||0;
         const brandShelfBonus=getBrandForRecipe(getBaseRecipeId(potId))&&bmLv2>=3?0.10:0;
         const freshMult=potId.includes('_fresh')?(prestigeLevels.wildcrafter>=4?1.5:prestigeLevels.wildcrafter>=3?1.4:prestigeLevels.wildcrafter>=2?1.3:1.2):1;
         // Infused potions attract extra customers (Spellbrewer Lv5)
-        const infCustBonus=infId&&(prestigeLevels.spellbrewer||0)>=5?0.15:0;
+        const infCustBonus=infId&&_sbLv>=5?0.15:0;
         // Each stocked potion has a 30-60% chance to sell overnight + class/feat bonuses
         let sold=0;
         for(let i=0;i<qty;i++){if(Math.random()<0.3+level*0.02+shelfSaleB+infCustBonus+brandShelfBonus)sold++;}
         if(sold>0){
           const basePrice=r.xp+getFeatureVal('potionSaleBonus')+Math.floor(upEff('sellBonus')*r.xp);
-          const price=Math.floor(basePrice*(1+sellB+custPayB+pvb)*qMult*infMult*freshMult*brandMult*GOLD_MULT);
+          const price=Math.floor(basePrice*(1+sellB+custPayB+pvb+infusedSellBonus)*qMult*infMult*freshMult*brandMult*GOLD_MULT);
           shelfGold+=price*sold;shelfSold[potId]=(shelfSold[potId]||0)+sold;
           next[potId]=qty-sold;if(next[potId]<=0)delete next[potId];
         }
@@ -6630,7 +6669,7 @@ function CindervaleAlchemistInner(){
         {/* Unused free actions warning */}
         {(()=>{
           const unused=[];
-          const freeRes=getFeatureVal('freeResearchPerDay')+upEff('freeResearchPerDay');const freeResUsed=dayFlags.filter(f=>f==='free_research_used').length;
+          const freeRes=getFeatureVal('freeResearchPerDay')+upEff('freeResearchPerDay')+getFeatureVal('researchSlotBonus');const freeResUsed=dayFlags.filter(f=>f==='free_research_used').length;
           if(freeRes>freeResUsed)unused.push({icon:'📖',name:'Free Research',remaining:freeRes-freeResUsed,nav:'research'});
           const freeCraftVal=getFeatureVal('freeCraft')+upEff('freeCraft');
           if(freeCraftVal>0&&!dayFlags.includes('free_craft_used'))unused.push({icon:'✨',name:'Free Craft (no ingredients)',remaining:1,nav:'workshop'});
@@ -7760,12 +7799,17 @@ function CindervaleAlchemistInner(){
                   <span style={{color:TH.purple,marginLeft:'auto'}}>{bp}g</span>
                   <button style={S.btn(gold>=bp?'def':'dim')} onClick={()=>{if(gold>=bp){setGold(g=>g-bp);modInv(item.id,1);}}} disabled={gold<bp}>+1</button>
                 </div>);})}</>}            {Object.entries(pots).filter(([,q])=>q>0).length>0&&<div style={{fontSize:16,color:TH.gold,marginTop:8,marginBottom:4}}>Sell Potions</div>}
-            {Object.entries(pots).filter(([,q])=>q>0).map(([id,qty])=>{const baseId=getBaseRecipeId(id);const r=RECIPES.find(r=>r.id===baseId);if(!r)return null;const pq=getPotQuality(id);const qT=QUALITY[pq]||QUALITY.std;const _mInf=getInfusion(id);const _mInfObj=_mInf?INFUSIONS[_mInf]:null;const baseSp=r.xp+getFeatureVal('potionSaleBonus')+Math.floor(upEff('sellBonus')*r.xp);const infSellMult=getInfusion(id)?INFUSIONS[getInfusion(id)]?.sellMult||1:1;
+            {Object.entries(pots).filter(([,q])=>q>0).map(([id,qty])=>{const baseId=getBaseRecipeId(id);const r=RECIPES.find(r=>r.id===baseId);if(!r)return null;const pq=getPotQuality(id);const qT=QUALITY[pq]||QUALITY.std;const _mInf=getInfusion(id);const _mInfObj=_mInf?INFUSIONS[_mInf]:null;const baseSp=r.xp+getFeatureVal('potionSaleBonus')+Math.floor(upEff('sellBonus')*r.xp);
+              const _sbLvSell=prestigeLevels.spellbrewer||0;
+              const _baseInfSellMult=getInfusion(id)?(INFUSIONS[getInfusion(id)]?.sellMult||1):1;
+              // Spellbrewer Lv5: 5a fallback (50% more potent infusion sellMult) + 5b (+30% sell on infused)
+              const infSellMult=getInfusion(id)&&_sbLvSell>=5?(_baseInfSellMult-1)*1.5+1:_baseInfSellMult;
+              const infusedSellBonus=getInfusion(id)&&_sbLvSell>=5?0.30:0;
               const brandMult=getBrandSellMult(getBaseRecipeId(id));
               const bmLv=prestigeLevels.brandmaster||0;
               const brandMWExtra=(bmLv>=4&&getBrandForRecipe(getBaseRecipeId(id))&&(pq==='mw'||pq==='gm'))?0.25:0;
               const _isFresh=isFreshPot(id);const freshMult=_isFresh?getFreshMult(prestigeLevels.wildcrafter||0):1;
-              const sp=Math.floor(baseSp*(1+getFeatureVal('sellBonus')+brandMWExtra)*qT.sellMult*infSellMult*freshMult*brandMult);return(
+              const sp=Math.floor(baseSp*(1+getFeatureVal('sellBonus')+brandMWExtra+infusedSellBonus)*qT.sellMult*infSellMult*freshMult*brandMult);return(
               <div key={id} style={{display:'flex',alignItems:'center',gap:6,padding:'3px 0',fontSize:16}}>
                 <span>{r.icon}{r.name}{qT.icon?' '+qT.icon:''}{_isFresh?' 🌿':''} ×{qty}</span>{_isFresh&&<span style={{fontSize:11,color:'#60a040',fontWeight:'bold'}}>Fresh {freshMult}×</span>}<span style={{color:TH.gold,marginLeft:'auto'}}>{sp}g ea</span>
                 <button style={S.btn()} onClick={()=>sellPotion(id,1,sp,r)}>Sell 1</button>
@@ -7987,15 +8031,35 @@ function CindervaleAlchemistInner(){
           {dayFlags.includes('clear_sky')&&<div style={{fontSize:14,color:TH.green,marginBottom:4,padding:'3px 6px',background:`${TH.green}10`,borderRadius:3}}>☀️ Clear Skies — extraction DCs reduced by 2 today</div>}
           <div style={{fontSize:14,color:TH.textDim,marginBottom:6}}>Expeditions use your remaining hours. Travel takes time — leave earlier to gather more.</div>
           <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(130px,1fr))',gap:5}}>
-            {locRegions.map(reg=>{const locked=level<regUnlock(reg)||(reg.faction&&getRL(reg.faction)<(reg.fReq||0));const sel=selHex===reg.id;
+            {(()=>{
+              // Naturalist L10: highlight the region with the currently-highest yield (matches the picker's own
+              // estPerHr × gatherHours formula at the detail panel; estPerHr is constant so highest gatherHours wins).
+              // Ties resolve to the first region by definition order — deterministic, no flicker.
+              const showBest=getFeatureVal('revealHighestYieldRegion');
+              let _bestRegId=null;
+              if(showBest){
+                let bestScore=-1;
+                for(const r of locRegions){
+                  if(level<regUnlock(r)||(r.faction&&getRL(r.faction)<(r.fReq||0)))continue;
+                  const _info=getExpeditionInfo(r);
+                  if(!_info||_info.gatherHours<1)continue;
+                  if(_info.gatherHours>bestScore){bestScore=_info.gatherHours;_bestRegId=r.id;}
+                }
+              }
+              return locRegions.map(reg=>{const locked=level<regUnlock(reg)||(reg.faction&&getRL(reg.faction)<(reg.fReq||0));const sel=selHex===reg.id;
               const info=getExpeditionInfo(reg);const canGo=!locked&&info&&info.gatherHours>=1;
+              const showReg=((prestigeLevels?.cartographer||0)>=3||getFeatureVal('revealRegionIngredients'))&&!locked;
+              const isBest=_bestRegId===reg.id;
               return(
-              <div key={reg.id} onClick={()=>!locked&&pickHex(reg.id)} style={{padding:6,borderRadius:4,background:sel?`${reg.color}44`:TH.panelLight,border:`1px solid ${sel?TH.goldBright:TH.border}`,cursor:locked?'not-allowed':'pointer',opacity:locked?.4:canGo?1:.6,textAlign:'center'}}>
+              <div key={reg.id} onClick={()=>!locked&&pickHex(reg.id)} style={{padding:6,borderRadius:4,background:sel?`${reg.color}44`:TH.panelLight,border:`1px solid ${sel?TH.goldBright:isBest?'#60a060':TH.border}`,cursor:locked?'not-allowed':'pointer',opacity:locked?.4:canGo?1:.6,textAlign:'center',boxShadow:isBest&&!sel?'0 0 6px #60a06066':'none'}}>
                 <div style={{fontSize:20}}>{locked?'🔒':reg.icon}</div>
                 <div style={{fontSize:15,color:sel?TH.goldBright:TH.textBright}}>{reg.name}</div>
                 <div style={{fontSize:13,color:TH.textDim}}>{locked?`Lv${reg.unlock+1}`:canGo?`${info.travelTime}h travel · ${info.gatherHours}h gather`:`Need ${reg.time+1}h+`}</div>
                 <div style={{fontSize:13,color:locked?TH.textDim:TH.gold}}>DC{reg.dc}</div>
-              </div>);})}
+                {showReg&&<div style={{fontSize:12,color:TH.textDim,marginTop:2,lineHeight:1.2}} title={reg.ingr.map(id=>INGR[id]?.name||id).join(', ')}>{reg.ingr.slice(0,5).map(id=>INGR[id]?.icon||'').join(' ')}{reg.ingr.length>5?'…':''}</div>}
+                {isBest&&<div style={{fontSize:12,color:'#60a060',fontWeight:'bold',marginTop:2}} title="Naturalist's Library: currently the highest-yield region.">🌿 Best yield</div>}
+              </div>);});
+            })()}
           </div>
         </div>
         {/* Night Expeditions — info card when warden sentinel unlocked */}
@@ -9681,7 +9745,7 @@ function CindervaleAlchemistInner(){
             {(()=>{const undiscP=RECIPES.filter(r=>!known.includes(r.id)&&level>=r.unlock&&canCraftAtLocation(r.ingr)&&(!r.faction||getRL(r.faction)>=(r.fReq||0)));
               const undiscE=ENCHANTMENTS.filter(e=>!knownEnch.includes(e.id)&&(!e.faction||getRL(e.faction)>=(e.fReq||0))&&canCraftAtLocation(e.ingr));
               const resCost=Math.max(1,2-getFeatureVal('researchTimeReduction')-getFeatureVal('researchCostReduction'));
-              const freeRes=getFeatureVal('freeResearchPerDay')+upEff('freeResearchPerDay');
+              const freeRes=getFeatureVal('freeResearchPerDay')+upEff('freeResearchPerDay')+getFeatureVal('researchSlotBonus');
               const freeUsed=dayFlags.filter(f=>f==='free_research_used').length;
               const hasFree=freeRes>freeUsed;
               const canAct=hasFree||hours>=resCost;

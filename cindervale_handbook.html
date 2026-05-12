@@ -589,7 +589,7 @@
     <tr><th>Lv</th><th>Feature</th><th>Description</th></tr>
     <tr><td>3</td><td>Workshop Pro</td><td>Workshop upgrades cost 50% less gold. Staff efficiency +15%.</td></tr>
     <tr><td>6</td><td>Assembly Floor</td><td>Batch brewing capacity +2 (brew up to 7 at once). Staff efficiency +20%.</td></tr>
-    <tr><td>10</td><td>Master Builder</td><td>3 legendary blueprints: Alchemical Forge (auto-brews most profitable recipe), Crystal Greenhouse (1 random rare ingredient daily), Arcane Conduit (+2 Energy permanently). Half construction time.</td></tr>
+    <tr><td>10</td><td>Master Builder</td><td>+2 Energy per day, +3&times; passive income from your shopfront, overnight auto-brewing of your most profitable recipe, and all construction completes in half time. Reaching this level grants three high-tier workshop upgrades drawn from a curated pool (Forge, Greenhouse, Ley Line Tap, Master's Cauldron, Arcane Nexus, Vault, Library) &mdash; you start with whichever three you don't already own.</td></tr>
   </table>
 </div>
 
@@ -622,7 +622,7 @@
   <tr><td>5</td><td>Academic Network</td><td>+15% XP from all sources. +1 free research study per day (2 total).</td></tr>
   <tr><td>6</td><td>Cross-Reference</td><td>Experiment Bench shows hints based on how close your combination is.</td></tr>
   <tr><td>7</td><td>Thesis Defense</td><td>+3 craft bonus, +15% discovery chance, +10% XP from all sources.</td></tr>
-  <tr><td>8</td><td>Grand Theorem</td><td>+25% discovery from all sources. See full ingredient tables for explored regions.</td></tr>
+  <tr><td>8</td><td>Grand Theorem</td><td>+25% discovery chance from all sources. +1 free research action per day on top of all other sources.</td></tr>
   <tr><td>9</td><td>Polymath</td><td>+2 to all craft, inscription, and extraction checks. +10% XP from all sources.</td></tr>
   <tr><td>10</td><td>Omniscience</td><td>+40% discovery chance. +2 craft from deep knowledge. +30% XP from all sources. Publish theoretical papers for passive gold.</td></tr>
 </table>
@@ -645,9 +645,9 @@
   <p>Document flora and geology in a Field Journal. Unlock permanent yield bonuses and seasonal mastery.</p>
   <table>
     <tr><th>Lv</th><th>Feature</th><th>Description</th></tr>
-    <tr><td>3</td><td>Field Guide</td><td>See full ingredient tables for explored regions. Experiments with foraged ingredients +15% discovery.</td></tr>
+    <tr><td>3</td><td>Field Guide</td><td>+10% chance to find a bonus ingredient on each successful forage hour, drawn from the region's pool. Experiments with foraged ingredients +15% discovery.</td></tr>
     <tr><td>6</td><td>Ecological Insight</td><td>+20% XP from all sources. +15% research discovery chance. Reaching this level grants two nature-themed recipes from your field studies: Moonmist Elixir and Dream Dust.</td></tr>
-    <tr><td>10</td><td>Nature's Library</td><td>Every expedition yields 1 bonus hidden-area ingredient. Seasonal ingredients available all seasons. Once/day commune reveals highest-yield region. Journal craft bonus +2 for documented ingredients.</td></tr>
+    <tr><td>10</td><td>Nature's Library</td><td>Every expedition yields 1 bonus hidden-area ingredient (even unmapped). Seasonal ingredients available year-round. Your attunement to the land reveals the most bountiful region at all times &mdash; the region with the currently-highest yield is highlighted on the picker with a 🌿 Best yield badge, helping you target your forage trips for maximum return. Field Journal entries grant a permanent +2 craft bonus for documented ingredients.</td></tr>
   </table>
 </div>
 
@@ -753,8 +753,8 @@
   <tr><th>Lv</th><th>Feature</th><th>Description</th></tr>
   <tr><td>1</td><td>Hidden Paths</td><td>Discover secret sub-areas within known regions with unique ingredients. 25% chance per forage hour.</td></tr>
   <tr><td>2</td><td>Detailed Maps</td><td>Hidden area discovery chance +15%. Mapped areas yield +1 bonus ingredient.</td></tr>
-  <tr><td>3</td><td>Cartographer's Insight</td><td>See all ingredients in a region before committing to forage. +10% XP from foraging.</td></tr>
-  <tr><td>4</td><td>Pathfinder's Network</td><td>Staff foraging uses your mapped paths: +25% staff forage yield.</td></tr>
+  <tr><td>3</td><td>Cartographer's Insight</td><td>The region picker shows each region's ingredient pool at a glance &mdash; hover or tap the row to see the full list. +10% XP from all sources.</td></tr>
+  <tr><td>4</td><td>Pathfinder's Network</td><td>Your charts are shared with your apprentices: +25% to all staff foraging yields.</td></tr>
   <tr><td>5</td><td>Legendary Atlas</td><td>Discover the Heartforge's hidden chambers. Unique legendary ingredients only you can access.</td></tr>
 </table>
 
@@ -765,9 +765,9 @@
   <tr><th>Lv</th><th>Feature</th><th>Description</th></tr>
   <tr><td>1</td><td>Infusion Novice</td><td>Unlock Vigor and Clarity infusions. 2 infusions per day. Catalyst: any ingredient with 5+ stock.</td></tr>
   <tr><td>2</td><td>Resonant Brew</td><td>Unlock Fortify infusion. Infusion DC penalty reduced by 1. 3 infusions per day.</td></tr>
-  <tr><td>3</td><td>Essence Weaver</td><td>Unlock Prosperity infusion. 25% chance catalyst is preserved. 4 infusions per day.</td></tr>
-  <tr><td>4</td><td>Arcane Distiller</td><td>Unlock Lingering infusion. Catalyst always preserved on Masterwork+ brews. 5 infusions per day.</td></tr>
-  <tr><td>5</td><td>Grand Spellbrewer</td><td>Stack two infusions on one brew (double catalyst). Infused shelf potions attract +1 daily customer.</td></tr>
+  <tr><td>3</td><td>Essence Weaver</td><td>Unlock Prosperity infusion. 4 infusions per day. 25% chance to preserve the catalyst on any infusion brew &mdash; success or failure.</td></tr>
+  <tr><td>4</td><td>Arcane Distiller</td><td>Unlock Lingering infusion. 5 infusions per day. Catalyst always preserved on a successful Masterwork (or higher) brew; failed Masterwork attempts have a 40% save chance.</td></tr>
+  <tr><td>5</td><td>Grand Spellbrewer</td><td>6 infusions per day. Infusion sale-multipliers are 50% more potent (e.g. Vigor 1.2&times; becomes 1.3&times;, Prosperity 1.5&times; becomes 1.75&times;) and infused items pay +30% gold. Infused shelf potions also attract +15% extra sell chance.</td></tr>
 </table>
 
 <!-- Magitech Engineer -->
@@ -793,7 +793,7 @@
   <tr><td>2</td><td>Brand Recognition</td><td>Brands hold 3 recipes. +5 aligned faction rep per 10 branded sales. Sales tracker UI.</td></tr>
   <tr><td>3</td><td>Product Line</td><td>2nd brand slot. Brand orders appear (2x price). Branded shelf potions +10% sell chance.</td></tr>
   <tr><td>4</td><td>Premium Label</td><td>Brands hold 4 recipes. Famous tier unlocks (+60% sell). Branded MW+ potions extra +25%.</td></tr>
-  <tr><td>5</td><td>Legendary Brand</td><td>3rd brand slot. Famous brands attract collectors trading rare ingredients. 25% brand rep carries through Torch.</td></tr>
+  <tr><td>5</td><td>Legendary Brand</td><td>3rd brand slot. Every branded item sells for an additional +25% gold on top of the brand-level multipliers. 25% brand rep carries through Torch.</td></tr>
 </table>
 
 <!-- Wildcrafter -->
@@ -851,7 +851,7 @@
   <tr><td>1</td><td>Pattern Research</td><td>Spend 2h to research a new enchantment pattern. Choose effect type and power level.</td></tr>
   <tr><td>2</td><td>Refined Patterns</td><td>Custom enchantments get +2 inscription bonus. Can name your creations.</td></tr>
   <tr><td>3</td><td>Dual-Effect Patterns</td><td>Design enchantments with two effects. Custom patterns sell at 2x value.</td></tr>
-  <tr><td>4</td><td>Pattern Library</td><td>Store up to 10 custom patterns. Share patterns with staff for automated inscribing.</td></tr>
+  <tr><td>4</td><td>Pattern Library</td><td>Store up to 10 custom patterns. Every custom-pattern inscription has its DC reduced by 15% (rounded down) &mdash; mastered Arcanist patterns become noticeably easier to inscribe than freshly-researched ones.</td></tr>
   <tr><td>5</td><td>Grand Theorem</td><td>Design legendary enchantments. Custom patterns can have 3 effects. Named masterworks.</td></tr>
 </table>
 

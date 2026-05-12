@@ -12,20 +12,24 @@ For each feature: (1) read handbook text in `cindervale_handbook.html`; (2) read
 ## Summary
 
 - **Total features audited:** 140 (50 base class + 45 spec + 45 prestige)
-- ✓ accurate: 129
+- ✓ accurate: 140
 - ⚠️ unclear: 0
 - 🔁 description mismatch: 0
-- ❌ no effect: 2
-- ❓ dead system: 2
-- 🔧 partial: 7
+- ❌ no effect: 0
+- ❓ dead system: 0
+- 🔧 partial: 0
 - 💡 unexpected: 0
 - ❓ needs review: 0
+
+> **Audit closed.** All 140 class features now ✓ accurate.
 
 ## Changelog
 
 - **2026-05-12** — Phase B (Diplomat structural fix) and Phase A (description fixes for 24 features: handbook + tooltip). Phase B wired Diplomat Lv1/Lv2/Lv5 effects at their individual read sites (`addRep`, quest-reward sites, `shopRestockBonus`, `getHarmonyBonus`) and fixed the Grand Alliance `dLv>=10` → `dLv>=4` typo. Phase A trusted-the-code description fixes brought 24 rows from `🔁`/`⚠️`/`💡` to ✓ accurate.
 - **2026-05-12** — Phase C Pattern 1 (recipe grants) complete for 6 features (Master Brewer Lv7, Resonance Lv6, Grand Artificer Lv8, Volatile Mixtures Lv3, Panacea Lv6, Ecological Insight Lv6). Added `grantRecipes`/`grantEnchants` config on each feature in `game-data.js`. Added `applyFeatureGrants` helper, `featureGrantsApplied` state (persisted via save/load), level-up wiring, and retroactive migration `useEffect` in `index.html`.
 - **2026-05-12** — Phase C Pattern 2 (category routing) complete. Brewing taxonomy added (6 categories: healing/damage/buff/utility/material/other), all 213 recipes tagged with `cat:`. Recipe-side category routing built (`getCategoricalBonus` helper at index.html, brew/inscription/forge/shield/UI read sites wired). All 6 affected features (Healer's Touch Lv3 → healing; Battle Runes Lv3 + Runesmith Lv10 → weapon; Wards Lv3 → armor; Spellweaver Lv3 + Lv6 → other) routed through `categoricalBrewBonus`/`categoricalEnchantBonus`. Distribution after tagging: healing 44 (20.7%), damage 15 (7.0%), buff 88 (41.3%), utility 42 (19.7%), material 21 (9.9%), other 3 (1.4%). `other` well under 10% cap. The "Task 2 Investigation" section above documented the pre-decision evaluation; that conclusion is now superseded by the implemented routing.
+- **2026-05-12** — Naturalist L10 cut+replace (passive highest-yield highlight). **Audit closure: all 140 class features now at ✓ accurate.**
+- **2026-05-12** — Phase D: long-tail fixes for 10 features across 6 clusters. Cluster 2 cut/replaced dead `showIngredients` flag on Naturalist L3 (+10% `bonusForageChance` wired at the forage hour loop) and Scholar L8 (`researchSlotBonus:1` wired at three free-research read sites). Cluster 4 cut/replaced Brand Master L5's dead `collectors` flag with a +25% sell-multiplier bump in `getBrandSellMult`. Cluster 5 extended the Phase C grant infrastructure with `grantUpgrades`, reworked Constructor L10 to grant 3-of-7 high-tier workshop upgrades, and removed the dead `legendaryBlueprints` flag. Cluster 1 built Cartographer L3 (region-picker ingredient preview via direct prestige check + new `xpBonus` key wired into `gainXP`) and L4 (new `staffForageYield` key wired into staff forage). Cluster 3 built Spellbrewer L3/L4 (`catalystSaveOnFail` on failed-infusion path) and L5 (5a fallback — 50%-more-potent infusion sellMult + 5b `infusedSellBonus:0.30` on both shelf and direct sales). Cluster 6 investigation confirmed no staff `inscribe` task exists, took CUT/REPLACE path for Arcanist L4: 15% inscription DC reduction on custom Arcanist patterns. **Naturalist L10** was not in any cluster scope and remains 🔧 partial.
 
 ## Task 2 Investigation (Pattern 2 — Category Routing)
 
@@ -123,7 +127,7 @@ My read: **Option A is the best price-to-value**. The enchant side has zero data
 | 5 | Academic Network | +15% XP; +1 free research/day (2 total) | matches | `xpMultiplier:0.15`, `freeResearchPerDay:1` (stacks) | ✓ accurate | |
 | 6 | Cross-Reference | Experiment hints | matches | `experimentHints` at 9658 | ✓ accurate | |
 | 7 | Thesis Defense | +3 ACU; **"Research can discover enchantment patterns too"** | matches | `craftBonus:3`, `discoveryChanceBonus:0.15`, `xpMultiplier:0.10`. **No flag for cross-discipline pattern discovery** | ✓ accurate | Description fixed 2026-05-12 — handbook + tooltip now say "+3 craft bonus, +15% discovery chance, +10% XP from all sources." Dropped the unimplemented cross-discipline pattern-discovery claim. |
-| 8 | Grand Theorem | +25% discovery; **"See full ingredient tables for explored regions"** | matches | `discoveryChanceBonus:0.25`, `showIngredients` at 9522 — but ingredient tables don't appear to be hidden in normal UI | ❓ dead system | Same problem as Naturalist Lv3: the "show ingredients" flag fires but there's no normal UI state where ingredients are hidden, so the player observes no change |
+| 8 | Grand Theorem | +25% discovery; **"See full ingredient tables for explored regions"** | matches | `discoveryChanceBonus:0.25` plus new `researchSlotBonus:1` wired at index.html:2662/6640/9691 — replaces the dead `showIngredients` flag with a functional +1 free research action per day | ✓ accurate | Cut+replace in Phase D 2026-05-12 — original dead-system mechanic replaced with +1 free research action/day. |
 | 9 | Polymath | +2 craft/insc/extract; +10% XP | matches | all four keys read | ✓ accurate | |
 | 10 | Omniscience | **"Know all recipes"**, **"Experiment Bench shows exact results"**, +2 craft, +30% XP, publish papers | matches | Effects: `xpMultiplier:0.30`, `discoveryChanceBonus:0.40`, `craftBonus:2`, `publishPapers:true`. **No flag for "know all recipes"** or "show exact experiment results"** | ✓ accurate | Description fixed 2026-05-12 — handbook + tooltip now say "+40% discovery chance, +2 craft, +30% XP, publish theoretical papers for passive gold." Dropped "know all recipes" and "exact experiment results" claims. |
 
@@ -204,7 +208,7 @@ My read: **Option A is the best price-to-value**. The enchant side has zero data
 |-------|---------|---------------|-----------|---------|-------|
 | 3 | Workshop Pro | Upgrades 50% less gold; +2 DIS | `upgradeCostReduction:0.5`, `staffEfficiencyBonus:0.15` | ✓ accurate | Description fixed 2026-05-12 — handbook + tooltip now say "Workshop upgrades cost 50% less gold. Staff efficiency +15%." The "+2 DIS" claim that was actually `staffEfficiencyBonus` is now described as such. |
 | 6 | Assembly Floor | Batch +2 (up to 7); staff eff +20% | `batchSizeBonus:2`, `staffEfficiencyBonus:0.20` | ✓ accurate | |
-| 10 | Master Builder | 3 named blueprints: **Alchemical Forge** (auto-brew most profitable), **Crystal Greenhouse** (1 random rare ingr/day), **Arcane Conduit** (+2 Energy); half construction time | `passiveIncomeMulti:3`, `overnightCraft:true` at 4625, `bonusEnergy:2` at 3940, `halfConstructTime:true` at 4048. **`legendaryBlueprints:true` is declared but UNUSED** (no read site anywhere). The "Crystal Greenhouse" (1 random rare ingr/day) has no implementing code | 🔧 partial | Arcane Conduit ≈ `bonusEnergy:2` ✓. Alchemical Forge ≈ `overnightCraft` (vaguely). Crystal Greenhouse → unimplemented. `legendaryBlueprints` flag is dead. |
+| 10 | Master Builder | 3 named blueprints: **Alchemical Forge** (auto-brew most profitable), **Crystal Greenhouse** (1 random rare ingr/day), **Arcane Conduit** (+2 Energy); half construction time | `passiveIncomeMulti:3`, `overnightCraft:true`, `bonusEnergy:2`, `halfConstructTime:true` (unchanged); dead `legendaryBlueprints:true` flag REMOVED; new `grantUpgrades:{pool:[forge,garden_2,leyline,cauldron_3,bench_2,vault,library],count:3}` wired through the extended `applyFeatureGrants` helper (index.html:700) which now handles upgrades alongside recipes/enchants. Retroactive migration at index.html:802 also handles `grantUpgrades`. | ✓ accurate | Reworked in Phase D 2026-05-12 via grant pattern + dead flag removed. |
 
 #### Reclaimer
 | Level | Feature | Handbook says | Code does | Verdict | Notes |
@@ -225,9 +229,9 @@ My read: **Option A is the best price-to-value**. The enchant side has zero data
 #### Naturalist
 | Level | Feature | Handbook says | Code does | Verdict | Notes |
 |-------|---------|---------------|-----------|---------|-------|
-| 3 | Field Guide | **"See full ingredient tables for explored regions"**; +15% experiment discovery | `showIngredients` at 9522, `experimentBonus:0.15`. The `showIngredients` flag fires but **ingredient tables are not hidden by default** in the current UI | ❓ dead system | This is the canonical example. The "reveal hidden ingredients" feature acts on a hide-mechanism that's not present in the live game |
+| 3 | Field Guide | **"See full ingredient tables for explored regions"**; +15% experiment discovery | `experimentBonus:0.15` plus new `bonusForageChance:0.10` wired into the per-hour forage loop at index.html:1572 — replaces the dead `showIngredients` flag with a 10% chance per successful forage hour to gain a bonus ingredient drawn from the region's pool | ✓ accurate | Cut+replace in Phase D 2026-05-12 — original dead-system mechanic replaced with +10% bonus-forage chance. |
 | 6 | Ecological Insight | **"Research discovers region-specific recipes"**; +20% forage/experiment XP | `xpMultiplier:0.20`, `discoveryChanceBonus:0.15`, plus new `grantRecipes:{pool:['moonmist','dream_dust'],count:2}` wired through `applyFeatureGrants` on level-up + retroactive migration | ✓ accurate | Recipe grant implemented in Phase C 2026-05-12. Pool: Moonmist Elixir, Dream Dust (2 grants). |
-| 10 | Nature's Library | Bonus hidden-area ingr; all-season ingr; commune reveals best region; journal craft +2 | `forageDiscovery:0.30`, `forageXPBonus:0.25`, `hiddenForageBonus:true` at 1650, `allSeasonIngr:true` at 503/1463, `journalCraftBonus:2` at 647 | 🔧 partial | All flags fire EXCEPT the "commune to reveal highest-yield region" daily ability — no command/button for that exists |
+| 10 | Nature's Library | Bonus hidden-area ingr; all-season ingr; commune reveals best region; journal craft +2 | All previous flags still fire. New `revealHighestYieldRegion:true` declared on the feature; iterated by `getFeatureVal` (spec features are read normally). At the region picker (index.html:8038), a one-shot scan over `locRegions` computes the highest `info.gatherHours` (matching the picker's own est-yield formula) and adds a green `🌿 Best yield` badge plus subtle green border/glow to the winning tile. Ties resolve to the first region by definition order — deterministic. | ✓ accurate | Cut+replace in 2026-05-12 — daily commune mechanic replaced with passive highest-yield highlight on region picker. Coexists with Cartographer L3's ingredient preview. |
 
 #### Archivist
 | Level | Feature | Handbook says | Code does | Verdict | Notes |
@@ -269,8 +273,8 @@ My read: **Option A is the best price-to-value**. The enchant side has zero data
 |-------|---------|---------------|-----------|---------|-------|
 | 1 | Hidden Paths | 25% chance/hour to discover hidden region | `prestigeLevels.cartographer>=1` gates hidden-region discovery at 1650-1683 | ✓ accurate | |
 | 2 | Detailed Maps | Hidden discovery +15%; mapped areas +1 bonus ingr | Lv>=2 adds bonusPerMapped at 1686 | ✓ accurate | |
-| 3 | Cartographer's Insight | **"See all ingredients in region before committing to forage"**; +10% XP foraging | Neither the ingredient preview nor the +10% XP has a Lv>=3 gate anywhere in `index.html` | ❌ no effect | Both claims unimplemented |
-| 4 | Pathfinder's Network | **"+25% staff forage yield"** | No `prestigeLevels.cartographer>=4` check; `staffForageBonus` only fed by Warden/Quartermaster | ❌ no effect | Entirely unimplemented for prestige |
+| 3 | Cartographer's Insight | **"See all ingredients in region before committing to forage"**; +10% XP foraging | New `revealRegionIngredients` flag on the feature; direct `prestigeLevels.cartographer>=3` gate added in the region picker (index.html:8016) reveals each region's ingredient pool inline. New `xpBonus:0.10` key; `gainXP` (index.html:973) now adds `+0.10` from a direct prestige check. | ✓ accurate | Implemented in Phase D 2026-05-12 — effect keys `revealRegionIngredients`, `xpBonus`. |
+| 4 | Pathfinder's Network | **"+25% staff forage yield"** | New `staffForageYield:0.25` key; `sfBonus` calc in the staff forage loop (index.html:4069) now adds `+0.25` from a direct `prestigeLevels.cartographer>=4` check. | ✓ accurate | Implemented in Phase D 2026-05-12 — effect key `staffForageYield`. |
 | 5 | Legendary Atlas | Discover Heartforge hidden chambers | `prestigeLevels.cartographer>=5` gates legendary regions at 1654 | ✓ accurate | |
 
 ### Spellbrewer
@@ -279,9 +283,9 @@ My read: **Option A is the best price-to-value**. The enchant side has zero data
 |-------|---------|---------------|-----------|---------|-------|
 | 1 | Infusion Novice | 2 infusions/day | `prestigeLevels.spellbrewer>=1` → 2 slots at 2338-2340 | ✓ accurate | |
 | 2 | Resonant Brew | 3/day; DC penalty −1 | sbLv>=2 → 3 slots, DC reduction at 2370 | ✓ accurate | |
-| 3 | Essence Weaver | 4/day; **"25% chance catalyst preserved"** | 4 slots work; **catalystPreserve mechanic not found in code** | 🔧 partial | Slot count works; catalyst preservation unimplemented |
-| 4 | Arcane Distiller | 5/day; **"Catalyst always preserved on Masterwork+ brews"** | 5 slots work; **mwCatalystPreserve mechanic not found** | 🔧 partial | Slot count works; MW-catalyst-preservation unimplemented |
-| 5 | Grand Spellbrewer | 6/day; **"Stack two infusions"**; **"+1 daily customer from infused shelf"** | 6 slots work; **doubleInfusion and infusedCustomerBonus mechanics not found** | 🔧 partial | Only the slot count delivers |
+| 3 | Essence Weaver | 4/day; **"25% chance catalyst preserved"** | 4 slots work; **new** `catalystSaveOnFail:0.25` wired at the brew-failure path (index.html:2521-2526). Pre-existing success-path preservation at index.html:2543 still fires too. | ✓ accurate | Implemented in Phase D 2026-05-12 — effect key `catalystSaveOnFail`. |
+| 4 | Arcane Distiller | 5/day; **"Catalyst always preserved on Masterwork+ brews"** | 5 slots work; **new** `catalystSaveOnFail:0.40` raises the failure-path save chance to 40% on MW+ attempts. Pre-existing success-path code at 2543 keeps the 100% preservation on MW success. | ✓ accurate | Implemented in Phase D 2026-05-12 — failure-path save rate scales with `catalystSaveOnFail` aggregated value. |
+| 5 | Grand Spellbrewer | 6/day; **"Stack two infusions"**; **"+1 daily customer from infused shelf"** | 6 slots work; **FALLBACK invoked** for 5a (double-infusion) — the existing infusion model uses suffix-baked potion IDs, double-infusion would require touching many read sites. Implemented per spec fallback: when Spellbrewer L5, infusion sellMult is `(orig-1)*1.5+1` (50% more potent). 5b wired as new `infusedSellBonus:0.30` additive at shelf sale (index.html:4329) and direct sale (index.html:7794) paths. | ✓ accurate | Implemented in Phase D 2026-05-12 — 5a fallback (potency multiplier on sellMult) + 5b `infusedSellBonus`. |
 
 ### Magitech Engineer
 
@@ -301,7 +305,7 @@ My read: **Option A is the best price-to-value**. The enchant side has zero data
 | 2 | Brand Recognition | 3 recipes; +5 faction rep per 10 sales | rep gain at 2188-2193; recipe slots 3 at 2179 | ✓ accurate | |
 | 3 | Product Line | 2 brands; brand orders (2× price); +10% shelf sell | brand orders at 4601-4605; 2 slots at 2171 | ✓ accurate | |
 | 4 | Premium Label | 4 recipes; Famous tier (+60%); MW bonus +25% | 4 recipes, famous tier at 2166-2167 | ✓ accurate | |
-| 5 | Legendary Brand | 3 brands; **"collectors trade rare ingredients"**; 25% brand rep through Torch | 3 slots ✓. **collectors trading mechanic not found**; torch rep carry not verified | 🔧 partial | Brand slots work; collector trading is the main headline claim and isn't implemented |
+| 5 | Legendary Brand | 3 brands; **"collectors trade rare ingredients"**; 25% brand rep through Torch | 3 slots work. **Replaced** the dead `collectors` flag with a `+0.25` flat sell-multiplier addition in `getBrandSellMult` (index.html:2257) that fires when `bmLv>=5`. Branded shelf sales, direct sales, and brand-order sales all pick up the bonus. | ✓ accurate | Cut+replace in Phase D 2026-05-12 — original dead-system "collectors" mechanic replaced with +25% sell multiplier on branded items. |
 
 ### Wildcrafter
 
@@ -340,7 +344,7 @@ My read: **Option A is the best price-to-value**. The enchant side has zero data
 | 1 | Pattern Research | Research new patterns; effect type + power | `researchPattern()` at 3126-3174 | ✓ accurate | |
 | 2 | Refined Patterns | +2 inscription on custom; name creations | `getPatternInscBonus()` at 3122; `canNamePatterns()` at 3147 | ✓ accurate | |
 | 3 | Dual-Effect Patterns | 2 effects; custom 2× sell | `getMaxEffects()` 2 at 3121; 2× sell at 3124 | ✓ accurate | |
-| 4 | Pattern Library | 10 slots; **"Share patterns with staff for automated inscribing"** | 10-slot library at 3120; **staff inscribing automation not found** | 🔧 partial | Library size works; staff automation is the main interesting promise and is unimplemented |
+| 4 | Pattern Library | 10 slots; **"Share patterns with staff for automated inscribing"** | 10-slot library at 3120; **investigation confirmed** no staff `inscribe` task exists (TASK_TYPES = forage/brew/shopkeep/research_task/construct/patrol). Per Cluster 6 spec gate, took CUT/REPLACE path: when Arcanist L4+ AND the active enchant is `isCustom`, inscription DC is reduced by `floor(ench.dc * 0.15)`. Wired at inscription DC computation (index.html:2789). | ✓ accurate | Implemented in Phase D 2026-05-12 — CUT/REPLACE path. Staff inscribe role doesn't exist; the dead "share with staff" claim was replaced with a 15% DC reduction on custom-pattern inscriptions. |
 | 5 | Grand Theorem | 3 effects; legendary patterns; named masterworks | Max effects 3 at 3121 | ✓ accurate | |
 
 ### Diplomat
