@@ -435,7 +435,7 @@
 <div class="class-block no-break">
   <img class="class-portrait" src="handbook_portrait_alchemist.jpg" alt="Alchemist">
   <div class="class-name">Alchemist &#9876;&#65039;</div>
-  <p><em>Primary Stat: CRE &mdash; Proficient Skills: Attunement, Improvisation</em></p>
+  <p><em>Primary Stat: INU &mdash; Proficient Skills: Attunement, Improvisation</em></p>
   <p>Sense ingredient harmony intuitively, producing better potions more reliably. The Alchemist is the core brewing class &mdash; brew potions, the fundamental craft loop of the game.</p>
 </div>
 
@@ -493,7 +493,7 @@
 <div class="class-block no-break">
   <img class="class-portrait" src="handbook_portrait_enchanter.jpg" alt="Enchanter">
   <div class="class-name">Enchanter &#10024;</div>
-  <p><em>Primary Stat: ACU &mdash; Proficient Skills: Inscription, Arcane Sensitivity</em></p>
+  <p><em>Primary Stat: TEC &mdash; Proficient Skills: Inscription, Arcane Sensitivity</em></p>
   <p>Turn mundane items into treasures with runes and inscriptions. Inscribe runes for premium gold from customers.</p>
 </div>
 
@@ -1400,6 +1400,10 @@
   <tr><td>Ley Line Tap</td><td>Advanced</td><td>+1 free research/day, daily veil shard.</td><td>300g + mats</td></tr>
 </table>
 
+<div class="note">
+  <strong>Tip:</strong> Some class features grant high-tier upgrades from this pool automatically &mdash; most notably Constructor's <em>Master Builder</em> (Artificer Lv10), which starts you with three you don't already own (drawn from Forge, Greenhouse, Ley Line Tap, Master's Cauldron, Arcane Nexus, Vault, and Library). See Chapter 11's <em>Feature Grants</em> for the full list.
+</div>
+
 <h3>Workshop Rooms (Foundation Upgrades)</h3>
 <p>Three of your workshop's exterior rooms &mdash; the <strong>Storefront</strong>, <strong>Quarters</strong>, and <strong>Grounds</strong> &mdash; begin as rough, unfinished spaces. Each has a single <em>foundation</em> upgrade that visibly transforms the room's scene art, provides the room's first benefit, and unlocks the rest of that room's upgrade tree. Until built, the foundation appears as a buy prompt at the bottom of the scene.</p>
 
@@ -1435,14 +1439,33 @@
 </ul>
 <p>Each recipe is associated with a primary stat (CRE, INU, ACU, or TEC). Your craft bonus comes from that stat's modifier plus your rank in the matching craft skill (Improvisation, Attunement, Research, or Precision).</p>
 
+<div class="callout">
+  <div class="callout-title">Recipe Categories</div>
+  <p>Every recipe carries one of six category tags. The category is mostly invisible day-to-day &mdash; brewing works the same regardless &mdash; but a handful of class features grant their bonus only when the active recipe matches their preferred category.</p>
+  <table>
+    <tr><th>Category</th><th>What it covers</th></tr>
+    <tr><td><strong>Healing</strong></td><td>Restores HP, mends wounds, cures status ailments and toxins (salves, antidotes, cleansing brews).</td></tr>
+    <tr><td><strong>Damage</strong></td><td>Bombs, flasks, and reactive brews intended to harm enemies directly.</td></tr>
+    <tr><td><strong>Buff</strong></td><td>Temporary positive enhancement &mdash; stat boosts, regen, perception, multi-day elixirs.</td></tr>
+    <tr><td><strong>Utility</strong></td><td>Non-combat practical effects: light, breathing, vision, fog, stealth, threat-reduction.</td></tr>
+    <tr><td><strong>Material</strong></td><td>Augments other crafting rather than being consumed for effect &mdash; catalysts, weapon oils, inks, polishes.</td></tr>
+    <tr><td><strong>Other</strong></td><td>Catch-all for ceremonial or one-off brews that don't fit elsewhere (alliance brews, festival drinks).</td></tr>
+  </table>
+  <p>Most class features apply flat bonuses to <em>all</em> brewing. Only specific features are category-scoped &mdash; for example, Apothecary's <em>Healer's Touch</em> grants its +1 craft bonus only on healing recipes. Each spec entry in Chapter 4 states this explicitly when it applies.</p>
+</div>
+
 <h3>Foraging (Extraction)</h3>
 <p>Travel to a region (costs travel time in hours), then spend remaining hours extracting ingredients. Each hour, roll d20 + Extraction skill vs. the region's DC.</p>
 <ul>
   <li><strong>Success</strong> &mdash; Gain ingredients from the region's loot table.</li>
-  <li><strong>Failure</strong> &mdash; Gain nothing for that hour (or 1 common ingredient at Warden 9+).</li>
+  <li><strong>Failure</strong> &mdash; Gain nothing for that hour.</li>
   <li><strong>Natural 20</strong> &mdash; Critical extraction: bonus rare ingredients.</li>
 </ul>
 <p>Different foraging sites within a region weight ingredients differently, allowing you to target specific materials.</p>
+
+<div class="note">
+  <strong>Region picker affordances:</strong> A few class features add information directly to the region selection UI. <strong>Cartographer Lv3</strong> shows each region's ingredient pool inline on its tile (so you can compare reagent options at a glance). <strong>Naturalist Lv10</strong> highlights the currently-highest-yield region with a 🌿 badge and a soft green glow, so the best forage target is always one look away.
+</div>
 
 <h3>Enchanting (Inscription)</h3>
 <p>Customers bring items for enchantment. Roll d20 + Inscription skill vs. the enchantment pattern's DC. Requires materials (reduced by Enchanter features and workshop upgrades).</p>
@@ -1450,6 +1473,18 @@
   <li><strong>Success</strong> &mdash; Earn gold from the customer. Beat DC by 5+ for Fine quality (1.5x gold). Beat by 10+ for Masterwork (2x gold).</li>
   <li><strong>Failure</strong> &mdash; No payment. Materials consumed (unless recycler effects apply).</li>
 </ul>
+
+<div class="callout">
+  <div class="callout-title">Enchantment Categories</div>
+  <p>Every enchantment pattern carries one of three category tags:</p>
+  <table>
+    <tr><th>Category</th><th>What it covers</th></tr>
+    <tr><td><strong>Weapon</strong></td><td>Inscribed onto blades, bows, and martial gear &mdash; offensive applications.</td></tr>
+    <tr><td><strong>Armor</strong></td><td>Inscribed onto armor or shields &mdash; defensive applications, including the Wardkeeper's shield commissions.</td></tr>
+    <tr><td><strong>Other</strong></td><td>Accessory and utility enchantments &mdash; rings, cloaks, charms, planar/exotic inscriptions.</td></tr>
+  </table>
+  <p>Some Enchanter specs apply their inscription bonus only to a specific category &mdash; Runesmith's <em>Battle Runes</em> on weapon enchants, Wardkeeper's <em>Wards</em> on armor, Spellweaver's <em>Exotic Inscriptions</em> on other. The spec entries in Chapter 4 state which category each feature targets.</p>
+</div>
 
 <h3>Research</h3>
 <p>Spend hours in research studies to discover new recipes and enchantment patterns. Discovery chance is based on your Research skill rank, Innovation skill, and various bonuses. Scholar class features dramatically increase discovery rates.</p>
@@ -1481,10 +1516,26 @@
 </ul>
 
 <h3>Staff Management</h3>
-<p>Hire apprentices to delegate tasks. Staff can brew, forage, shopkeep, or research. They have their own stats, traits, and efficiency that improve with XP. Some traits are positive (Quick Learner, Keen Senses) and some negative (Clumsy, Shy). Staff morale affects efficiency.</p>
+<p>Hire apprentices to delegate tasks. Staff can be assigned to brew, forage, shopkeep, research, construct (prep a workshop upgrade for a discounted final build), or patrol (reduce a rival faction's threat overnight). They have their own stats, traits, and efficiency that improve with XP. Some traits are positive (Quick Learner, Keen Senses) and some negative (Clumsy, Shy). Staff morale affects efficiency.</p>
 
 <h3>Shelving &amp; Sales</h3>
 <p>Place brewed potions on shelves for passive sales. Each morning, customers may purchase shelved potions. Sale chance depends on shelf capacity, potion quality, and various bonuses. Unsold potions remain on shelves until they spoil or sell.</p>
+
+<h3>Feature Grants</h3>
+<p>A handful of class, specialization, and prestige features hand you something concrete the moment they unlock &mdash; a bundle of recipes, enchantment patterns, or workshop upgrades drawn from a curated pool. Each grant fires <strong>once</strong>, at the level it's tied to, and is permanent: you keep what you've been given even if you respec or pass the torch.</p>
+<table>
+  <tr><th>Feature</th><th>What you receive</th></tr>
+  <tr><td>Master Brewer (Alchemist Lv7)</td><td>3 legendary alchemy recipes</td></tr>
+  <tr><td>Resonance (Enchanter Lv6)</td><td>2 advanced enchantment patterns</td></tr>
+  <tr><td>Grand Artificer (Artificer Lv8)</td><td>3 high-tier precision-craft recipes</td></tr>
+  <tr><td>Volatile Mixtures (Venomist Lv3)</td><td>2 unstable/reactive recipes</td></tr>
+  <tr><td>Panacea (Apothecary Lv6)</td><td>3 healing recipes</td></tr>
+  <tr><td>Ecological Insight (Naturalist Lv6)</td><td>2 herbal/nature recipes</td></tr>
+  <tr><td>Master Builder (Constructor Lv10)</td><td>3 high-tier workshop upgrades from a curated pool</td></tr>
+</table>
+<div class="note">
+  <strong>Retroactive:</strong> Characters who already had a grant-bearing feature before this system existed receive their grants the next time they load a save. If the pool overlaps something you already own, that slot is skipped &mdash; you only ever gain what you don't already have.
+</div>
 
 <!-- ═══════════════════════════════════════ -->
 <!-- CHAPTER 12: THE HOLLOW MARCH -->

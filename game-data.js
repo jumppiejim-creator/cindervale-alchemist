@@ -118,7 +118,7 @@ var CLASSES={
           {classLv:10,name:'Plague Doctor',desc:'+3 craft bonus, +30% double batch, lesser venoms produced on failure, venom contracts pay 3× base. Every fulfilled venom contract also reduces the buying guard faction\'s threat by 3 + 2× contract tier.',effects:{craftBonus:3,doubleBatchChance:0.30,lesserOnFail:true,venomContractMult:3,threatPoisons:true}},
         ]},
     }},
-  enchanter:{id:'enchanter',name:'Enchanter',icon:'✨',color:TH.purple,primaryStat:'cre',
+  enchanter:{id:'enchanter',name:'Enchanter',icon:'✨',color:TH.purple,primaryStat:'tec',
     profSkills:['inscription','arcane_sense'],
     desc:'Turn mundane items into treasures with runes and inscriptions.',
     shortDesc:'Inscribe runes, premium gold from customers',
