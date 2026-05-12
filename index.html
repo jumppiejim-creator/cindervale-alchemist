@@ -336,6 +336,7 @@ function CindervaleAlchemistInner(){
   const [classPreview,setClassPreview]=useState(null);    // hover preview during class select
   const [classDetail,setClassDetail]=useState(null);      // full class info popup
   const [pendingLevelUp,setPendingLevelUp]=useState(null);// level-up wizard state
+  const [featureGrantsApplied,setFeatureGrantsApplied]=useState([]); // keys like "alchemist:7" or "apothecary:6" — tracks one-time recipe/enchant grants
   const [screen,setScreen]=useState('map');
   const [day,setDay]=useState(1);
   const [hours,setHours]=useState(4);
@@ -670,12 +671,46 @@ function CindervaleAlchemistInner(){
   const addLog=useCallback((t,type='info')=>setLog(p=>[...p.slice(-60),{text:t,type}]),[]);
   const showResult=useCallback((title,type='info',detail='',check=null)=>{addLog(title,type);setResultPopup({title,type,detail,check,t:Date.now()});},[addLog]);
 
+  // Apply a feature's one-time recipe/enchant grants. featureKey is "<classOrSpecId>:<level>" (e.g. "alchemist:7", "apothecary:6").
+  // No-op if already applied. Marks applied even if 0 picks were granted (player already knew everything in the pool).
+  const applyFeatureGrants=useCallback((feature,featureKey,featureLabel)=>{
+    if(!feature||(!feature.grantRecipes&&!feature.grantEnchants))return;
+    if(featureGrantsApplied.includes(featureKey))return;
+    if(feature.grantRecipes){
+      const cfg=feature.grantRecipes;
+      setKnown(prev=>{
+        const n=[...prev];
+        const picks=cfg.pool.filter(id=>!n.includes(id)&&RECIPES.find(r=>r.id===id)).slice(0,cfg.count);
+        picks.forEach(id=>n.push(id));
+        if(picks.length>0){
+          const names=picks.map(id=>{const r=RECIPES.find(rx=>rx.id===id);return r?r.icon+' '+r.name:id;}).join(', ');
+          addLog(`📖 ${featureLabel}: ${names}`,'quest');
+        }
+        return n;
+      });
+    }
+    if(feature.grantEnchants){
+      const cfg=feature.grantEnchants;
+      setKnownEnch(prev=>{
+        const n=[...prev];
+        const picks=cfg.pool.filter(id=>!n.includes(id)&&ENCHANTMENTS.find(e=>e.id===id)).slice(0,cfg.count);
+        picks.forEach(id=>n.push(id));
+        if(picks.length>0){
+          const names=picks.map(id=>{const e=ENCHANTMENTS.find(ex=>ex.id===id);return e?e.icon+' '+e.name:id;}).join(', ');
+          addLog(`📖 ${featureLabel}: ${names}`,'quest');
+        }
+        return n;
+      });
+    }
+    setFeatureGrantsApplied(prev=>prev.includes(featureKey)?prev:[...prev,featureKey]);
+  },[featureGrantsApplied,addLog]);
+
   const gatherState=useCallback(()=>({
     phase,charName,charRace,charGender,stats,ptsLeft,skRanks,skPts,skProgress,classLevels,specs,playerFeats,asiSpent,startingClass,
     screen,day,hours,gameLocation,xp,gold,inv,pots,known,aQ,doneQ,
     log:log.slice(-30),milestones,fRep,factionAlign,upgrades,hiredAppr,apprTasks,apprXP,enchQ,potCustQ,clinicPatients,venomContracts,forgedWeapons,shieldCommissions,planarFocus,gadgets,blueprints,fieldJournal,loreFragments,companions,caravans,supplyChains,caravanRuns,trainingSessions,factionHarmony,prestigeLevels,automata,customPatterns,mappedRegions,activeBuffs,debt,disabledUpgrades,shopLocked,injuryPenalty,staffInjuries,shelves,dailyReport,
-    boardQ,activeBQ,doneBQCount,dayFlags,knownEnch,brewCounts,procureItems,pubPapers,selectedSite,constructProgress,lineage,brands,brandOrders,relics,museum,threats,outposts,ingredientContracts,settlementProjects,settlementConstruction,defenseQuests,hollowMarch,legacyFeature,seasonalOverride,wildAlly,
-  }),[phase,charName,charRace,charGender,stats,ptsLeft,skRanks,skPts,skProgress,classLevels,specs,playerFeats,asiSpent,startingClass,screen,day,hours,xp,gold,inv,pots,known,aQ,doneQ,log,milestones,fRep,factionAlign,upgrades,hiredAppr,apprTasks,apprXP,enchQ,potCustQ,clinicPatients,venomContracts,forgedWeapons,shieldCommissions,planarFocus,gadgets,blueprints,fieldJournal,loreFragments,companions,caravans,supplyChains,caravanRuns,trainingSessions,factionHarmony,prestigeLevels,automata,customPatterns,mappedRegions,activeBuffs,debt,disabledUpgrades,shopLocked,injuryPenalty,staffInjuries,shelves,dailyReport,boardQ,activeBQ,doneBQCount,dayFlags,knownEnch,brewCounts,procureItems,constructProgress,selectedSite,lineage,brands,brandOrders,relics,museum,threats,outposts,ingredientContracts,settlementProjects,settlementConstruction,defenseQuests,hollowMarch,legacyFeature,seasonalOverride,wildAlly]);
+    boardQ,activeBQ,doneBQCount,dayFlags,knownEnch,brewCounts,procureItems,pubPapers,selectedSite,constructProgress,lineage,brands,brandOrders,relics,museum,threats,outposts,ingredientContracts,settlementProjects,settlementConstruction,defenseQuests,hollowMarch,legacyFeature,seasonalOverride,wildAlly,featureGrantsApplied,
+  }),[phase,charName,charRace,charGender,stats,ptsLeft,skRanks,skPts,skProgress,classLevels,specs,playerFeats,asiSpent,startingClass,screen,day,hours,xp,gold,inv,pots,known,aQ,doneQ,log,milestones,fRep,factionAlign,upgrades,hiredAppr,apprTasks,apprXP,enchQ,potCustQ,clinicPatients,venomContracts,forgedWeapons,shieldCommissions,planarFocus,gadgets,blueprints,fieldJournal,loreFragments,companions,caravans,supplyChains,caravanRuns,trainingSessions,factionHarmony,prestigeLevels,automata,customPatterns,mappedRegions,activeBuffs,debt,disabledUpgrades,shopLocked,injuryPenalty,staffInjuries,shelves,dailyReport,boardQ,activeBQ,doneBQCount,dayFlags,knownEnch,brewCounts,procureItems,constructProgress,selectedSite,lineage,brands,brandOrders,relics,museum,threats,outposts,ingredientContracts,settlementProjects,settlementConstruction,defenseQuests,hollowMarch,legacyFeature,seasonalOverride,wildAlly,featureGrantsApplied]);
 
   const restoreState=useCallback((s)=>{
     if(!s)return;
@@ -713,12 +748,34 @@ function CindervaleAlchemistInner(){
     setDailyReport(s.dailyReport||[]);setEnchQ(s.enchQ||[]);setPotCustQ(s.potCustQ||[]);setClinicPatients(s.clinicPatients||[]);setVenomContracts(s.venomContracts||[]);setForgedWeapons(s.forgedWeapons||[]);setShieldCommissions(s.shieldCommissions||[]);setPlanarFocus(s.planarFocus||null);setGadgets(s.gadgets||[]);setBlueprints(s.blueprints||[]);setFieldJournal(s.fieldJournal||[]);setLoreFragments(s.loreFragments||[]);setCompanions(s.companions||[]);setCaravans(s.caravans||[]);setSupplyChains(s.supplyChains||[]);setCaravanRuns(s.caravanRuns||{});setTrainingSessions(s.trainingSessions||{});setFactionHarmony(s.factionHarmony||{});setPrestigeLevels(s.prestigeLevels||{});setAutomata(s.automata||[]);setCustomPatterns(s.customPatterns||[]);setMappedRegions(s.mappedRegions||[]);setActiveBuffs(s.activeBuffs||{});setDebt(s.debt||0);setDisabledUpgrades(s.disabledUpgrades||[]);setShopLocked(s.shopLocked||false);setInjuryPenalty(s.injuryPenalty||0);setStaffInjuries(s.staffInjuries||{});setShelves(s.shelves||{});setLastCheck(null);setNews([]);setMorningReport(null);setCompanionReport(null);
     setBoardQ(s.boardQ||[]);setActiveBQ(s.activeBQ||[]);setDoneBQCount(s.doneBQCount||0);setDayFlags(s.dayFlags||[]);setKnownEnch(s.knownEnch&&s.knownEnch.length>0?s.knownEnch:(LOCATIONS[s.gameLocation||'cindervale']?.startEnch||['e_sharp','e_glow','e_ironbark','e_feather','e_windwalk','e_rootbind']));
     setBrewCounts(s.brewCounts||{});setProcureItems(s.procureItems||[]);setPubPapers(s.pubPapers||[]);setConstructProgress(s.constructProgress||{});
-    setSelHex(null);setVBuild('workshop');setDlgNpc(null);setShowShop(false);setQuestDlg(null);setPendingLevelUp(null);setSelectedSite(s.selectedSite||null);setLineage(s.lineage||null);setBrands(s.brands||[]);setBrandOrders(s.brandOrders||[]);setRelics(s.relics||[]);setMuseum(s.museum||{pottery:0,tablets:0,jewelry:0,mechanisms:0,weapons:0});setThreats(s.threats||Object.fromEntries(locThreatIds.map(t=>[t,0])));setOutposts(s.outposts||[]);setIngredientContracts(s.ingredientContracts||[]);setSettlementProjects(s.settlementProjects||[]);setSettlementConstruction(s.settlementConstruction||null);setDefenseQuests(s.defenseQuests||[]);setHollowMarch(s.hollowMarch||DEF?.hollowMarch||{active:false,wave:0,nextWaveDay:0,demands:[],history:[],finalStandAvailable:false,finalStandComplete:false,marchRecipesUnlocked:[]});setLegacyFeature(s.legacyFeature||null);setSeasonalOverride(s.seasonalOverride||null);setWildAlly(s.wildAlly||null);
+    setSelHex(null);setVBuild('workshop');setDlgNpc(null);setShowShop(false);setQuestDlg(null);setPendingLevelUp(null);setSelectedSite(s.selectedSite||null);setLineage(s.lineage||null);setBrands(s.brands||[]);setBrandOrders(s.brandOrders||[]);setRelics(s.relics||[]);setMuseum(s.museum||{pottery:0,tablets:0,jewelry:0,mechanisms:0,weapons:0});setThreats(s.threats||Object.fromEntries(locThreatIds.map(t=>[t,0])));setOutposts(s.outposts||[]);setIngredientContracts(s.ingredientContracts||[]);setSettlementProjects(s.settlementProjects||[]);setSettlementConstruction(s.settlementConstruction||null);setDefenseQuests(s.defenseQuests||[]);setHollowMarch(s.hollowMarch||DEF?.hollowMarch||{active:false,wave:0,nextWaveDay:0,demands:[],history:[],finalStandAvailable:false,finalStandComplete:false,marchRecipesUnlocked:[]});setLegacyFeature(s.legacyFeature||null);setSeasonalOverride(s.seasonalOverride||null);setWildAlly(s.wildAlly||null);setFeatureGrantsApplied(s.featureGrantsApplied||[]);
   },[]);
 
   // ─── ALL EFFECTS (before any return!) ───
   // (scroll removed — was jarring during multi-action sequences)
 
+
+  // Retroactive sync: existing characters who already reached a class/spec level with grantRecipes/grantEnchants
+  // never received their grant. On first eligible render (game running, classes loaded), scan and apply any missing grants.
+  useEffect(()=>{
+    if(!gameStarted||!classLevels||Object.keys(classLevels).length===0)return;
+    Object.entries(classLevels).forEach(([cid,lv])=>{
+      const cls=CLASSES[cid];if(!cls)return;
+      cls.features.forEach(f=>{
+        if(f.classLv<=lv&&(f.grantRecipes||f.grantEnchants)){
+          applyFeatureGrants(f,cid+':'+f.classLv,cls.name+' Lv'+f.classLv);
+        }
+      });
+      const specId=specs[cid];
+      if(specId&&cls.specs?.[specId]){
+        cls.specs[specId].features.forEach(sf=>{
+          if(sf.classLv<=lv&&(sf.grantRecipes||sf.grantEnchants)){
+            applyFeatureGrants(sf,specId+':'+sf.classLv,cls.specs[specId].name+' Lv'+sf.classLv);
+          }
+        });
+      }
+    });
+  },[gameStarted,classLevels,specs,applyFeatureGrants]);
 
   // Retroactive sync: ensure all mapped hidden areas have their recipes/enchantments in known lists
   useEffect(()=>{
@@ -7397,6 +7454,14 @@ function CindervaleAlchemistInner(){
                 // Log and close
                 const feat=c.features.find(f=>f.classLv===newClassLv);
                 addLog(`⬆ Advanced ${c.name} to Level ${newClassLv}!${feat?' Gained: '+feat.name:''}`,'level');
+                // Apply one-time recipe/enchant grants tied to this class feature
+                if(feat)applyFeatureGrants(feat,cid+':'+newClassLv,c.name+' Lv'+newClassLv);
+                // Apply one-time grants tied to a spec feature at the same level (e.g. Apothecary Lv6 Panacea)
+                const _activeSpecId=pendingLevelUp.chosenSpec||specs[cid];
+                if(_activeSpecId&&c.specs?.[_activeSpecId]){
+                  const _specFeat=c.specs[_activeSpecId].features.find(f=>f.classLv===newClassLv);
+                  if(_specFeat)applyFeatureGrants(_specFeat,_activeSpecId+':'+newClassLv,c.specs[_activeSpecId].name+' Lv'+newClassLv);
+                }
                 setPendingLevelUp(null);
               }}>✨ Confirm Advancement</button>
             </div>

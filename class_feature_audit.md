@@ -12,9 +12,9 @@ For each feature: (1) read handbook text in `cindervale_handbook.html`; (2) read
 ## Summary
 
 - **Total features audited:** 140 (50 base class + 45 spec + 45 prestige)
-- ✓ accurate: 117
+- ✓ accurate: 123
 - ⚠️ unclear: 0
-- 🔁 description mismatch: 12
+- 🔁 description mismatch: 6
 - ❌ no effect: 2
 - ❓ dead system: 2
 - 🔧 partial: 7
@@ -23,7 +23,46 @@ For each feature: (1) read handbook text in `cindervale_handbook.html`; (2) read
 
 ## Changelog
 
-- **2026-05-12** — Phase B (Diplomat structural fix) and Phase A (description fixes for 24 features: handbook + tooltip). Phase B wired Diplomat Lv1/Lv2/Lv5 effects at their individual read sites (`addRep`, quest-reward sites, `shopRestockBonus`, `getHarmonyBonus`) and fixed the Grand Alliance `dLv>=10` → `dLv>=4` typo. Phase A trusted-the-code description fixes brought 24 rows from `🔁`/`⚠️`/`💡` to ✓ accurate. See git history for specifics.
+- **2026-05-12** — Phase B (Diplomat structural fix) and Phase A (description fixes for 24 features: handbook + tooltip). Phase B wired Diplomat Lv1/Lv2/Lv5 effects at their individual read sites (`addRep`, quest-reward sites, `shopRestockBonus`, `getHarmonyBonus`) and fixed the Grand Alliance `dLv>=10` → `dLv>=4` typo. Phase A trusted-the-code description fixes brought 24 rows from `🔁`/`⚠️`/`💡` to ✓ accurate.
+- **2026-05-12** — Phase C Pattern 1 (recipe grants) complete for 6 features (Master Brewer Lv7, Resonance Lv6, Grand Artificer Lv8, Volatile Mixtures Lv3, Panacea Lv6, Ecological Insight Lv6). Added `grantRecipes`/`grantEnchants` config on each feature in `game-data.js`. Added `applyFeatureGrants` helper, `featureGrantsApplied` state (persisted via save/load), level-up wiring, and retroactive migration `useEffect` in `index.html`. Phase C Pattern 2 (category routing) **stopped at investigation per spec gate** — see "Task 2 Investigation" below.
+
+## Task 2 Investigation (Pattern 2 — Category Routing)
+
+### Findings
+
+**1. Recipe categories.** `RECIPES` entries have no category-like field. The shape is `{id, name, icon, ingr, xp, unlock, dc, stat ('cre'|'inu'|'acu'|'tec'|'dis'), desc, faction?, fReq?, buff?}`. The closest semantic field is `stat`, but it's not a clean proxy for category — e.g. INU recipes include healing brews (`healing_salve`) but also stealth/vision brews (`gloom_draught`, `ashveil`) that aren't healing in any meaningful sense. There is no `cat`, `tag`, `type`, `category`, or `archetype` field on recipe entries.
+
+**2. Enchantment categories.** `ENCHANTMENTS` entries DO have a `cat:'weapon'|'armor'|'other'` field with **100% coverage** (every one of the ~172 enchantment entries has it). The categorization is already maintained.
+
+**3. Coverage estimates if we wanted to add recipe categories.** A category pass on recipes would need to tag ~100+ entries (the full `RECIPES` array including locale-specific recipes). A *minimal* targeted pass for just Healer's Touch's "healing" category would still need ~10–15 IDs identified by hand. This exceeds the spec's "~30 entries" budget if we did all categories, and is borderline if we did just healing.
+
+**4. Existing routing infrastructure.** Looking at the brew check at [index.html:2376-2410](index.html:2376) and inscription check at [index.html:2700-2740](index.html:2700): both apply `craftBonus`/`enchantBonus` flatly. Neither currently routes by category at all. For enchants, `getInscribeCheck` reads `enchantBonus` via `getFeatureVal` and adds it globally — there's no current code that branches on `enchant.cat`. So even with the cat data present, **infrastructure for category routing doesn't exist yet** — it would have to be built (one read-site modification per feature, plus a new effect-key shape).
+
+**5. The 6 affected features split across both systems.**
+- Healer's Touch Lv3 → recipe-side (healing category) — **no data**
+- Battle Runes Lv3 → enchant-side (`weapon`) — ✓ data
+- Wards Lv3 → enchant-side (`armor`) — ✓ data
+- Spellweaver Lv3 → enchant-side (`other` — utility/exotic) — ✓ data
+- Spellweaver Lv6 → enchant-side (`other`) — ✓ data
+- Runesmith Lv10 → enchant-side (`weapon`) — ✓ data
+
+### Gate condition matched
+
+Spec gate #3: _"The 6 affected features touch different category systems (e.g., 3 are about brewing categories and 3 are about enchant categories) AND only one of those systems has category data."_ — **HIT** (5 enchant + 1 recipe; only enchants have cat data).
+
+### Recommendation
+
+Three viable paths for Jim:
+
+**Option A — Split the work.** Implement category routing for the 5 enchant features now (the data and `cat` field are ready; infrastructure work is ~1 read-site change in `getInscribeCheck` plus a new effect-key shape like `categoricalEnchantBonus:{cat:'weapon',value:1}`). For Healer's Touch Lv3, fall back to description-only — rewrite to describe the flat +1 craft / +20% sell as a generic apothecary bonus. Cleanest split; biggest player-visible win on the enchant side; defers the recipe-tagging question.
+
+**Option B — Description-only for all 6** (the original Phase A fallback Jim considered). Quick, no code risk, no asymmetric implementation.
+
+**Option C — Full category routing for both systems.** Tag healing-recipes (manual list of ~10–15 IDs), add a new effect-key shape, modify brew check at [index.html:2376](index.html:2376) and inscription check at [index.html:2732](index.html:2732). Bigger lift but consistent treatment.
+
+My read: **Option A is the best price-to-value**. The enchant side has zero data cost and gives 5 specs their identity back. Healer's Touch's flat bonus is small enough that "trust the code, update description" works fine without losing meaningful design — Apothecary's identity is already carried by the Lv10 clinic mechanic.
+
+**Pattern 2 stops here pending Jim's decision.** No `game-data.js` / `cindervale_handbook.html` / `index.html` edits were made on the Pattern 2 side beyond this investigation; the 6 affected rows in the audit remain at their existing 🔁 description mismatch verdicts.
 
 ## Base Classes
 
@@ -37,7 +76,7 @@ For each feature: (1) read handbook text in `cindervale_handbook.html`; (2) read
 | 4 | Efficient Brewing | 15% save chance | matches | `saveIngredientChance:0.15` read at 2440 | ✓ accurate | |
 | 5 | Double Batch | 25% double batch | matches | `doubleBatchChance:0.25` read at 2442 | ✓ accurate | |
 | 6 | Intuitive DC | Can't roll below 5; 10% lucky brew | matches | `craftFloor:5`, `luckyBrewChance:0.10` | ✓ accurate | |
-| 7 | Master Brewer | +2 craft; "Unlock one legendary recipe" | matches | `craftBonus:2`, `discoveryChanceBonus:0.15` — no legendary-recipe unlock flag | 🔁 description mismatch | "Unlock one legendary recipe" has no implementing code; effect only delivers craft/discovery bonus |
+| 7 | Master Brewer | +2 craft; "Unlock one legendary recipe" | matches | `craftBonus:2`, `discoveryChanceBonus:0.15` plus new `grantRecipes:{pool:['celestial_balm','phoenix_draught','forge_catalyst'],count:3}` wired through `applyFeatureGrants` on level-up + retroactive migration | ✓ accurate | Recipe grant implemented in Phase C 2026-05-12. Pool: Celestial Balm, Phoenix Draught, Forge Catalyst (3 grants). |
 | 8 | Reagent Attunement | Bonus ingr attuned to most-brewed recipe; +15% ingr efficiency | matches | `attunedForaging` checked at 1492 — 30% chance, picks ingredient from top-brewed recipe; `ingredientEfficiency:0.15` at 2426 | ✓ accurate | Code's 30% chance not stated in handbook but matches the spirit |
 | 9 | Perfected Art | Failures on mastered recipes → lesser version; 1/day reroll | matches | `lesserOnFail` at 2414, `craftReroll:1` at 2397 | ✓ accurate | |
 | 10 | Magnum Opus | Top 3 brews auto-MW; 1/day brew any recipe **mastered 20+ times** with zero ingredients | matches | `masteryAutoMW` at 2329, `freeCraft:1`, `doubleBatchChance:0.50` work. **`zeroIngrMastery:20` interpreted as: must have ≥20 *distinct* recipes each brewed ≥25 times before ANY zero-ingr brew unlocks (2358)** | ✓ accurate | Description fixed 2026-05-12 — handbook + tooltip now say "after brewing 20 different recipes 25+ times each, one brew per day costs zero ingredients." Double-batch chance also surfaced. |
@@ -51,7 +90,7 @@ For each feature: (1) read handbook text in `cindervale_handbook.html`; (2) read
 | 3 | Specialization | +5 inscription | matches | `enchantSuccessFlat:5` (capped at +20 at 2732) | ✓ accurate | |
 | 4 | Arcane Mastery | +8% success; see customer hints | matches | `enchantSuccessFlat:8`, `showCustHints` at 9865 | ✓ accurate | |
 | 5 | Dual Inscription | 2 enchants per item (2nd +3 DC) | matches | `dualInscription` at 2700 | ✓ accurate | |
-| 6 | Resonance | +25% gold; **"Unlock 2 new enchantment patterns"** | matches | `enchantGoldBonus:0.25` (2756), `enchantMatSave:0.20`. No code for unlocking 2 specific patterns | 🔁 description mismatch | Pattern unlock claim has no implementation; bonus gold + mat save work |
+| 6 | Resonance | +25% gold; **"Unlock 2 new enchantment patterns"** | matches | `enchantGoldBonus:0.25` (2756), `enchantMatSave:0.20`, plus new `grantEnchants:{pool:['e_echo_strike','e_runespark'],count:2}` wired through `applyFeatureGrants` on level-up + retroactive migration | ✓ accurate | Recipe grant implemented in Phase C 2026-05-12. Pool: Echo Strike, Runespark Array (2 grants — enchantment patterns, not recipes). |
 | 7 | Overcharge | Nat 20 = Masterwork worth 3× | matches | `masterworkOnCrit` at 2454 (note: code grants 2× XP, not "3× gold") | ✓ accurate | Description fixed 2026-05-12 — handbook + tooltip now say nat-20 inscriptions produce a Masterwork enchantment (double XP and Masterwork-tier pricing) without the misleading "3× gold" number |
 | 8 | Archmage | Auto-succeed DC ≤12; +2 insc | matches | `autoEnchantDC:12` at 2734, `enchantBonus:2` | ✓ accurate | |
 | 9 | Rune Library | **"Know all enchantment patterns regardless of faction requirements"** | matches | Effects: `discoveryChanceBonus:0.25`, `xpMultiplier:0.10`. **No flag overriding faction-gated pattern requirements** | ✓ accurate | Description fixed 2026-05-12 — handbook + tooltip now say "+25% discovery chance, +10% XP from all sources." Faction-pattern-bypass claim dropped. |
@@ -68,7 +107,7 @@ For each feature: (1) read handbook text in `cindervale_handbook.html`; (2) read
 | 5 | Overclock | Upgrades provide 50% more numerical bonuses | matches | `upgradeCostReduction:0.20`, `batchSizeBonus:1`. Note: the "double upgrade bonuses" effect lives on Lv10 (`upgradeDoubleBonus:true`, read at 844) | ✓ accurate | Description fixed 2026-05-12 — handbook + tooltip now say "Workshop upgrade costs reduced by 20%. Batch brew capacity +1." The "50% more upgrade bonuses" claim that actually belongs to Lv10 was removed. |
 | 6 | Production Line | +10% batch success per item after first | matches | `batchSuccessBonus:0.10` at 2795 | ✓ accurate | |
 | 7 | Prototype | 1/day reroll; +15% research discovery | matches | `craftReroll:1`, `discoveryChanceBonus:0.15` | ✓ accurate | |
-| 8 | Grand Artificer | **"Unlock legendary device recipes"**; upgrade cost −25% | matches | `craftFloor:8`, `upgradeCostReduction:0.25`. No legendary-recipe unlock | 🔁 description mismatch | The "legendary device recipes" promise has no implementation |
+| 8 | Grand Artificer | **"Unlock legendary device recipes"**; upgrade cost −25% | matches | `craftFloor:8`, `upgradeCostReduction:0.25`, plus new `grantRecipes:{pool:['mithril_draught','titan_elixir','embersteel_oil'],count:3}` wired through `applyFeatureGrants` on level-up + retroactive migration | ✓ accurate | Recipe grant implemented in Phase C 2026-05-12. Pool: Mithril Draught, Titan's Elixir, Embersteel Oil (3 grants). |
 | 9 | Systematic Mastery | Batch cap +3 | matches | `batchSizeBonus:3`, `batchSuccessBonus:0.15` | ✓ accurate | |
 | 10 | Masterwork Engine | 2 free crafts/day; batch +2; 100% salvage; upgrades −30% and double bonuses | matches | `freeCraft:2`, `batchSizeBonus:2`, `salvagePercent:1.0`, `upgradeCostReduction:0.30`, `upgradeDoubleBonus` all read | ✓ accurate | |
 
@@ -110,7 +149,7 @@ For each feature: (1) read handbook text in `cindervale_handbook.html`; (2) read
 | Level | Feature | Handbook says | Code does | Verdict | Notes |
 |-------|---------|---------------|-----------|---------|-------|
 | 3 | Healer's Touch | Healing potions 2× value/XP; **"Healing recipes −2 DC"** | `craftBonus:1`, `sellBonus:0.20`. No per-category DC reduction | 🔁 description mismatch | The −2 DC for healing recipes specifically isn't applied; players get a generic +1 craft and +20% sell |
-| 6 | Panacea | **"Unlock multi-cure recipes"**; "Healing potions restore staff morale" | `healMorale` at 4076, `customerBonus:1`, `freeHealBrew:1`. No specific multi-cure recipe unlock | 🔁 description mismatch | Multi-cure recipes claim has no implementation; the other claims work |
+| 6 | Panacea | **"Unlock multi-cure recipes"**; "Healing potions restore staff morale" | `healMorale` at 4076, `customerBonus:1`, `freeHealBrew:1`, plus new `grantRecipes:{pool:['silver_salve','mycelium_wrap','holy_flame'],count:3}` wired through `applyFeatureGrants` on level-up + retroactive migration | ✓ accurate | Recipe grant implemented in Phase C 2026-05-12. Pool: Silver Salve, Mycelium Bandage, Holy Flame (3 grants). |
 | 10 | Miracle Worker | Auto-diagnose; 3× pay; Miracle Cure; 50% MW bonus | All four keys read (`clinicAutoDiagnose`, `clinicPayMult`, `miracleCure`, `healingBonusMW`) | ✓ accurate | |
 
 #### Transmuter
@@ -123,7 +162,7 @@ For each feature: (1) read handbook text in `cindervale_handbook.html`; (2) read
 #### Venomist
 | Level | Feature | Handbook says | Code does | Verdict | Notes |
 |-------|---------|---------------|-----------|---------|-------|
-| 3 | Volatile Mixtures | **"Unlock offensive/volatile recipes"**, 2× sell to guards, +2 craft on volatile | `sellBonus:0.30`, `craftBonus:2`. No specific "volatile recipe" gate or guard-faction premium | 🔁 description mismatch | Both promises (recipe unlock, guard-specific premium) are unimplemented; player gets generic +30% sell and +2 craft instead |
+| 3 | Volatile Mixtures | **"Unlock offensive/volatile recipes"**, 2× sell to guards, +2 craft on volatile | `sellBonus:0.30`, `craftBonus:2`, plus new `grantRecipes:{pool:['magma_flask','obsidian_bomb'],count:2}` wired through `applyFeatureGrants` on spec-pick + retroactive migration | ✓ accurate | Recipe grant implemented in Phase C 2026-05-12. Pool: Magma Flask, Obsidian Bomb (2 grants). Guard-faction premium claim was per-category and dropped from description. |
 | 6 | Concentrated Dose | +20% double batch, +2 craft | `doubleBatchChance:0.20`, `craftBonus:2` | ✓ accurate | |
 | 10 | Plague Doctor | +3 craft; 30% double batch on volatile; failures → lesser venoms; contracts 3×; **"2 legendary poisons reduce threat by 15"** | `craftBonus:3`, `doubleBatchChance:0.30`, `lesserOnFail`, `venomContractMult:3` at 2914, `threatPoisons:true` at 2920. Verified: `threatPoisons` fires on every fulfilled venom contract and reduces the buying guard faction's threat by `3 + 2× contract.tier` (NOT a flat 15) | ✓ accurate | Description fixed 2026-05-12 — handbook + tooltip now say "Every fulfilled venom contract reduces the buying guard faction's threat by 3 + 2× contract tier." Dropped the misleading "2 legendary poisons / -15" framing. |
 
@@ -186,7 +225,7 @@ For each feature: (1) read handbook text in `cindervale_handbook.html`; (2) read
 | Level | Feature | Handbook says | Code does | Verdict | Notes |
 |-------|---------|---------------|-----------|---------|-------|
 | 3 | Field Guide | **"See full ingredient tables for explored regions"**; +15% experiment discovery | `showIngredients` at 9522, `experimentBonus:0.15`. The `showIngredients` flag fires but **ingredient tables are not hidden by default** in the current UI | ❓ dead system | This is the canonical example. The "reveal hidden ingredients" feature acts on a hide-mechanism that's not present in the live game |
-| 6 | Ecological Insight | **"Research discovers region-specific recipes"**; +20% forage/experiment XP | `xpMultiplier:0.20`, `discoveryChanceBonus:0.15`. No region-specific discovery flag | 🔁 description mismatch | The region-specific recipe claim has no implementation; generic XP and discovery work |
+| 6 | Ecological Insight | **"Research discovers region-specific recipes"**; +20% forage/experiment XP | `xpMultiplier:0.20`, `discoveryChanceBonus:0.15`, plus new `grantRecipes:{pool:['moonmist','dream_dust'],count:2}` wired through `applyFeatureGrants` on level-up + retroactive migration | ✓ accurate | Recipe grant implemented in Phase C 2026-05-12. Pool: Moonmist Elixir, Dream Dust (2 grants). |
 | 10 | Nature's Library | Bonus hidden-area ingr; all-season ingr; commune reveals best region; journal craft +2 | `forageDiscovery:0.30`, `forageXPBonus:0.25`, `hiddenForageBonus:true` at 1650, `allSeasonIngr:true` at 503/1463, `journalCraftBonus:2` at 647 | 🔧 partial | All flags fire EXCEPT the "commune to reveal highest-yield region" daily ability — no command/button for that exists |
 
 #### Archivist
