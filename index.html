@@ -340,6 +340,10 @@ function CindervaleAlchemistInner(){
   const [screen,setScreen]=useState('map');
   const [day,setDay]=useState(1);
   const [energy,setEnergy]=useState(4);
+  // maxEnergy mirrors newDay()'s `baseE` (the day's energy cap) so render-scope JSX can show "current/max".
+  // Updated by newDay() and seeded from save via _computeBaseEFromSave on restore. Pre-Phase-1 saves and
+  // first-launch sessions default to 100.
+  const [maxEnergy,setMaxEnergy]=useState(100);
   const [xp,setXp]=useState(0);
   const [gold,setGold]=useState(15);
   const [inv,setInv]=useState({ashbloom:3,hearthstone:1,embercap:1});
@@ -751,7 +755,7 @@ function CindervaleAlchemistInner(){
 
   const gatherState=useCallback(()=>({
     phase,charName,charRace,charGender,stats,ptsLeft,skRanks,skPts,skProgress,classLevels,specs,playerFeats,asiSpent,startingClass,
-    screen,day,energy,gameLocation,xp,gold,inv,pots,known,aQ,doneQ,
+    screen,day,energy,maxEnergy,gameLocation,xp,gold,inv,pots,known,aQ,doneQ,
     log:log.slice(-30),milestones,fRep,factionAlign,upgrades,hiredAppr,apprTasks,apprXP,enchQ,potCustQ,clinicPatients,venomContracts,forgedWeapons,shieldCommissions,planarFocus,gadgets,blueprints,fieldJournal,loreFragments,companions,caravans,supplyChains,caravanRuns,trainingSessions,factionHarmony,prestigeLevels,automata,customPatterns,mappedRegions,activeBuffs,debt,disabledUpgrades,shopLocked,injuryPenalty,staffInjuries,shelves,dailyReport,
     boardQ,activeBQ,doneBQCount,dayFlags,knownEnch,brewCounts,procureItems,pubPapers,selectedSite,constructProgress,lineage,brands,brandOrders,relics,museum,threats,outposts,ingredientContracts,settlementProjects,settlementConstruction,defenseQuests,hollowMarch,legacyFeature,seasonalOverride,wildAlly,featureGrantsApplied,
     // Phase 1 energy refactor: persist daily counters that were previously losing state on reload.
@@ -759,7 +763,7 @@ function CindervaleAlchemistInner(){
     // Phase 3 expedition crash-recovery: persist only when active (so the player resumes mid-trip if browser dies).
     expedition:expedition.active?expedition:null,
     saveVersion:2,
-  }),[phase,charName,charRace,charGender,stats,ptsLeft,skRanks,skPts,skProgress,classLevels,specs,playerFeats,asiSpent,startingClass,screen,day,energy,xp,gold,inv,pots,known,aQ,doneQ,log,milestones,fRep,factionAlign,upgrades,hiredAppr,apprTasks,apprXP,enchQ,potCustQ,clinicPatients,venomContracts,forgedWeapons,shieldCommissions,planarFocus,gadgets,blueprints,fieldJournal,loreFragments,companions,caravans,supplyChains,caravanRuns,trainingSessions,factionHarmony,prestigeLevels,automata,customPatterns,mappedRegions,activeBuffs,debt,disabledUpgrades,shopLocked,injuryPenalty,staffInjuries,shelves,dailyReport,boardQ,activeBQ,doneBQCount,dayFlags,knownEnch,brewCounts,procureItems,constructProgress,selectedSite,lineage,brands,brandOrders,relics,museum,threats,outposts,ingredientContracts,settlementProjects,settlementConstruction,defenseQuests,hollowMarch,legacyFeature,seasonalOverride,wildAlly,featureGrantsApplied,infusionsUsedToday,wildcraftsUsedToday,expedition]);
+  }),[phase,charName,charRace,charGender,stats,ptsLeft,skRanks,skPts,skProgress,classLevels,specs,playerFeats,asiSpent,startingClass,screen,day,energy,maxEnergy,xp,gold,inv,pots,known,aQ,doneQ,log,milestones,fRep,factionAlign,upgrades,hiredAppr,apprTasks,apprXP,enchQ,potCustQ,clinicPatients,venomContracts,forgedWeapons,shieldCommissions,planarFocus,gadgets,blueprints,fieldJournal,loreFragments,companions,caravans,supplyChains,caravanRuns,trainingSessions,factionHarmony,prestigeLevels,automata,customPatterns,mappedRegions,activeBuffs,debt,disabledUpgrades,shopLocked,injuryPenalty,staffInjuries,shelves,dailyReport,boardQ,activeBQ,doneBQCount,dayFlags,knownEnch,brewCounts,procureItems,constructProgress,selectedSite,lineage,brands,brandOrders,relics,museum,threats,outposts,ingredientContracts,settlementProjects,settlementConstruction,defenseQuests,hollowMarch,legacyFeature,seasonalOverride,wildAlly,featureGrantsApplied,infusionsUsedToday,wildcraftsUsedToday,expedition]);
 
   const restoreState=useCallback((s)=>{
     if(!s)return;
@@ -803,7 +807,11 @@ function CindervaleAlchemistInner(){
       // Floor to base energy; defensive against future refactors that could subtract below 100.
       return Math.max(100,be);
     };
-    setScreen(s.screen||'map');setDay(s.day||1);setEnergy(s.energy!=null?s.energy:_computeBaseEFromSave(s));setGameLocation(s.gameLocation||'cindervale');
+    setScreen(s.screen||'map');setDay(s.day||1);setEnergy(s.energy!=null?s.energy:_computeBaseEFromSave(s));
+    // Seed maxEnergy from save if present (newer saves), else recompute via the same formula newDay() uses so
+    // the expedition view's "current/max" meter renders correctly on crash-recovery loads.
+    setMaxEnergy(s.maxEnergy!=null?s.maxEnergy:_computeBaseEFromSave(s));
+    setGameLocation(s.gameLocation||'cindervale');
     setXp(s.xp!=null?s.xp:0);setGold(s.gold!=null?s.gold:15);setInv(s.inv||{});setPots(s.pots||{});
     setKnown(s.known||['healing_salve']);setAQ(s.aQ||[]);setDoneQ(s.doneQ||[]);
     setLog(s.log||[]);setMilestones(s.milestones||[]);setFRep(s.fRep||DEF.fRep);setFactionAlign(s.factionAlign||null);
@@ -4305,7 +4313,7 @@ function CindervaleAlchemistInner(){
     if(injPen>0)setInjuryPenalty(0);setInfusionsUsedToday(0);setWildcraftsUsedToday(0); // Clear after applying
     const conduitE=blueprints.some(b=>b.bpId==='bp_conduit'&&b.complete)?50:0;
     const baseE=Math.max(75,100+upEff('bonusEnergy')+getFeatureVal('bonusEnergyPerDay')+getFeatureVal('bonusEnergy')+conduitE+enduranceBonus+(getFeatureVal('freeAction')?25:0)-injPen);
-    setDay(d=>d+1);setEnergy(baseE);setLastCheck(null);setWsOpen({});const report=[];let totalSal=0;
+    setDay(d=>d+1);setEnergy(baseE);setMaxEnergy(baseE);setLastCheck(null);setWsOpen({});const report=[];let totalSal=0;
     // ── Season check ──
     const curDay=day+1;
     const curSeason=getSeason(curDay,gameLocation);
@@ -11637,7 +11645,7 @@ function CindervaleAlchemistInner(){
                 <span style={{fontSize:18,color:TH.goldBright,fontWeight:'bold',textShadow:'0 2px 4px #000'}}>{reg.icon} {reg.name}</span>
                 <span style={{fontSize:14,color:curSeason.color,background:'rgba(0,0,0,0.45)',padding:'2px 8px',borderRadius:12,textShadow:'0 1px 2px #000'}}>{curSeason.icon} {curSeason.name}</span>
                 <div style={{flex:1}}/>
-                <span style={{fontSize:15,color:TH.gold,background:'rgba(0,0,0,0.55)',padding:'3px 10px',borderRadius:12,fontWeight:'bold',textShadow:'0 1px 2px #000'}}>⚡ {energy}/{baseE}</span>
+                <span style={{fontSize:15,color:TH.gold,background:'rgba(0,0,0,0.55)',padding:'3px 10px',borderRadius:12,fontWeight:'bold',textShadow:'0 1px 2px #000'}}>⚡ {energy}/{maxEnergy}</span>
               </div>
               {/* Companion badge (top-right, below header strip) */}
               {activeCompanions.length>0&&<div style={{position:'absolute',right:10,bottom:10,
