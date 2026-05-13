@@ -290,11 +290,11 @@ var FEATS={
   overachiever:{id:'overachiever',name:'Overachiever',icon:'💪',cat:'crafting',desc:'+1 to all craft checks.',effects:{craftBonus:1}},
   // ── Exploration ──
   trailblazer_boots:{id:'trailblazer_boots',name:"Trailblazer's Boots",icon:'🥾',cat:'exploration',desc:'Travel Energy cost -25% to all regions.',effects:{energyCostMultiplier:{travel:-0.25}}},
-  lucky_find:{id:'lucky_find',name:'Lucky Find',icon:'🔎',cat:'exploration',desc:'+5% chance for bonus rare ingredient per forage hour.',effects:{luckyFindChance:0.05}},
+  lucky_find:{id:'lucky_find',name:'Lucky Find',icon:'🔎',cat:'exploration',desc:'+5% chance for a bonus rare ingredient per forage roll.',effects:{luckyFindChance:0.05}},
   companion_handler:{id:'companion_handler',name:'Companion Handler',icon:'🐾',cat:'exploration',desc:'Companion actions +50% effectiveness. Companions gain loyalty 2× faster. +15% companion encounter chance.',effects:{companionEffBonus:0.50,companionLoyaltyMult:2,companionEncounterBonus:0.15}},
   seasoned_explorer:{id:'seasoned_explorer',name:'Seasoned Explorer',icon:'🧭',cat:'exploration',desc:'+2 to all extraction checks.',effects:{extractionBonus:2}},
   pack_mule:{id:'pack_mule',name:'Pack Mule',icon:'🎒',cat:'exploration',desc:'Carry +2 extra items from expeditions. +25% ingredient yield.',effects:{yieldMultiplier:0.25,bonusCarry:2}},
-  danger_magnet:{id:'danger_magnet',name:'Danger Magnet',icon:'⚡',cat:'exploration',desc:'Events 2× more likely, positive events 3× more likely. High risk, high reward.',effects:{bonusPerSuccess:1,positiveEventMulti:3}},
+  danger_magnet:{id:'danger_magnet',name:'Danger Magnet',icon:'⚡',cat:'exploration',desc:'Triple the chance of beneficial events during foraging. +1 bonus ingredient on every successful extraction.',effects:{bonusPerSuccess:1,positiveEventMulti:3}},
   night_owl:{id:'night_owl',name:'Night Owl',icon:'🦉',cat:'exploration',desc:'Night expeditions -1 DC penalty.',effects:{nightDCReduction:1}},
   // ── Enchanting ──
   runelord:{id:'runelord',name:'Runelord',icon:'🔮',cat:'enchanting',desc:'+2 to all inscription checks.',effects:{enchantBonus:2}},
@@ -302,7 +302,7 @@ var FEATS={
   arcane_recycler:{id:'arcane_recycler',name:'Arcane Recycler',icon:'♻️',cat:'enchanting',desc:'Failed enchants return 75% of ingredients. Successful enchants have 15% chance to produce a bonus scroll.',effects:{failEnchantReturn:0.75,enchantBonusScroll:0.15}},
   runic_savant:{id:'runic_savant',name:'Runic Savant',icon:'📖',cat:'enchanting',desc:'+5 flat inscription bonus. +1 inscription. On selection, learn 3 undiscovered enchantment patterns.',effects:{enchantSuccessFlat:5,enchantBonus:1,learnEnchOnPick:3}},
   masterwork_focus:{id:'masterwork_focus',name:'Masterwork Focus',icon:'💫',cat:'enchanting',desc:'Natural 18-20 on inscription = critical (3× reward).',effects:{enchantCritRange:18}},
-  glyph_mastery:{id:'glyph_mastery',name:'Glyph Mastery',icon:'✨',cat:'enchanting',desc:'Enchant DC 10 and below auto-succeed.',effects:{autoEnchDC:10},req:{enchanter:3}},
+  glyph_mastery:{id:'glyph_mastery',name:'Glyph Mastery',icon:'✨',cat:'enchanting',desc:'Enchant DC 10 and below auto-succeed.',effects:{autoEnchantDC:10},req:{enchanter:3}},
   // ── Economic (from old passive skills) ──
   shrewd_bargainer:{id:'shrewd_bargainer',name:'Shrewd Bargainer',icon:'🤝',cat:'economic',desc:'+5% sell prices.',effects:{sellBonus:0.05}},
   bulk_buyer:{id:'bulk_buyer',name:'Bulk Buyer',icon:'🛒',cat:'economic',desc:'-10% buy prices.',effects:{buyDiscount:0.10}},
@@ -322,7 +322,7 @@ var FEATS={
   talent_scout:{id:'talent_scout',name:'Talent Scout',icon:'🔍',cat:'economic',desc:'+2 hire candidates. All candidates have +2 to highest stat.',effects:{hireBonusCandidates:2,hireBonusStat:2}},
   patron:{id:'patron',name:'Patron of the Arts',icon:'🎭',cat:'economic',desc:'Customer orders pay 25% more. +1 customer per morning.',effects:{customerPayBonus:0.25,customerBonus:1}},
   supply_lines:{id:'supply_lines',name:'Supply Lines',icon:'🚚',cat:'economic',desc:'Shop buy prices -10%. +2 max shelf capacity.',effects:{buyDiscount:0.10,shelfCapBonus:2}},
-  penny_pincher:{id:'penny_pincher',name:'Penny Pincher',icon:'🪙',cat:'economic',desc:'All gold costs (purchases, upgrades, hiring, payroll) -15%.',effects:{upgradeCostReduction:0.15,buyDiscount:0.15}},
+  penny_pincher:{id:'penny_pincher',name:'Penny Pincher',icon:'🪙',cat:'economic',desc:'Workshop upgrade costs -15%. Shop buy prices -15%.',effects:{upgradeCostReduction:0.15,buyDiscount:0.15}},
   taskmaster:{id:'taskmaster',name:'Taskmaster',icon:'📋',cat:'economic',desc:'Staff brew/forage efficiency +25%. Staff injuries heal 1 day faster.',effects:{staffEfficiencyBonus:0.25,staffInjuryReduction:1}},
   // ── Social/Faction ──
   faction_diplomat:{id:'faction_diplomat',name:'Faction Diplomat',icon:'🤝',cat:'social',desc:'+15% reputation gains from all sources.',effects:{repGainBonus:0.15}},
@@ -330,15 +330,13 @@ var FEATS={
   master_trainer:{id:'master_trainer',name:'Master Trainer',icon:'👨‍🏫',cat:'social',desc:'Apprentices gain 2× XP.',effects:{staffXPBonus:1.0}},
   inspiring_presence:{id:'inspiring_presence',name:'Inspiring Presence',icon:'🌟',cat:'social',desc:'Staff morale +10%.',effects:{healMorale:10}},
   // ── Legacy ──
-  ancestral_wisdom:{id:'ancestral_wisdom',name:'Ancestral Wisdom',icon:'🕯️',cat:'legacy',desc:'Pass the Torch carries 25% gold (up from 15%), 5 recipes (up from 3), 50% rep (up from 33%). +25 Energy.',effects:{torchGoldBonus:0.10,torchRecipeBonus:2,torchRepBonus:0.17,torchEnergyBonus:1}},
-  mentors_gift:{id:'mentors_gift',name:"Mentor's Gift",icon:'🎁',cat:'legacy',desc:'Torch carries 1 additional legacy feature.',effects:{torchExtraLegacy:1},req:{feat:'ancestral_wisdom'}},
+  ancestral_wisdom:{id:'ancestral_wisdom',name:'Ancestral Wisdom',icon:'🕯️',cat:'legacy',desc:'Pass the Torch carries 25% gold (up from 15%), 5 recipes (up from 3), 50% rep (up from 33%). +25 Energy.',effects:{torchGoldBonus:0.10,torchRecipeBonus:2,torchRepBonus:0.17,torchEnergyBonus:25}},
   // ── Combat/Survival ──
   iron_will:{id:'iron_will',name:'Iron Will',icon:'🛡️',cat:'combat',desc:'+2 to all Danger Sense checks.',effects:{dangerSenseBonus:2}},
-  thick_skin:{id:'thick_skin',name:'Thick Skin',icon:'🦎',cat:'combat',desc:'Expedition injuries heal 1 day faster.',effects:{injuryHealBonus:1}},
   ward_of_protection:{id:'ward_of_protection',name:'Ward of Protection',icon:'🔰',cat:'combat',desc:'-5% threat growth rate.',effects:{threatGainReduction:0.05}},
   // ── General ──
-  early_riser:{id:'early_riser',name:'Early Riser',icon:'🌅',cat:'general',desc:'First 1-Energy action each day costs 0 Energy.',effects:{firstActionFree:true}},
-  multitasker:{id:'multitasker',name:'Multitasker',icon:'🔀',cat:'general',desc:'One free action per day (no Energy cost).',effects:{freeAction:1}},
+  early_riser:{id:'early_riser',name:'Early Riser',icon:'🌅',cat:'general',desc:'The first action you take each day costs 0 Energy (any size — brew, forage roll, research, etc.).',effects:{firstActionFree:true}},
+  multitasker:{id:'multitasker',name:'Multitasker',icon:'🔀',cat:'general',desc:'+25 Energy per day — effectively one extra standard action.',effects:{freeAction:1}},
   jack_of_all:{id:'jack_of_all',name:'Jack of All Trades',icon:'🃏',cat:'general',desc:'+1 to all skill checks where you have 0 invested ranks. +1 to your lowest ability score modifier.',effects:{untrainedBonus:1,weakStatBonus:1}},
   prodigy:{id:'prodigy',name:'Prodigy',icon:'⭐',cat:'general',desc:'+1 to two ability scores of your choice (selected on pick, can exceed soft cap). +5% XP.',effects:{asiBonus:2,xpMultiplier:0.05}},
   tough:{id:'tough',name:'Tough',icon:'💪',cat:'general',desc:'Once per day, reroll a failed check. Negative town events halved.',effects:{eventDamageReduction:0.5,checkReroll:1}},

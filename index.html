@@ -965,7 +965,7 @@ function CindervaleAlchemistInner(){
     return v;
   };
   const getRaceSkBonus=skId=>{const r=RACES[charRace];if(!r||!r.skillBonus)return 0;return r.skillBonus[skId]||0;};
-  const getSkMod=skId=>{const sk=SKILLS[skId];if(!sk)return 0;return getMod(eStat(sk.stat))+rankB(skRanks[skId]||0,pb)+getRaceSkBonus(skId);};
+  const getSkMod=skId=>{const sk=SKILLS[skId];if(!sk)return 0;let v=getMod(eStat(sk.stat))+rankB(skRanks[skId]||0,pb)+getRaceSkBonus(skId);if(skId==='danger_sense')v+=getFeatureVal('dangerSenseBonus');return v;};
   const doCheck=(skId,dc)=>{const sk=SKILLS[skId];if(!sk)return{success:false,total:0,roll:0,name:'?',mod:0,rb:0,dc,statName:'',extras:[]};const roll=d20();const mod=getMod(eStat(sk.stat));const rb=rankB(skRanks[skId]||0,pb);let total=roll+mod+rb;const utb=(skRanks[skId]||0)===0?getFeatureVal('untrainedBonus'):0;if(utb)total+=utb;const asb=getFeatureVal('allSkillBonus');if(asb)total+=asb;const r={roll,mod,rb,total,dc,success:roll===1?false:roll===20?true:total>=dc,name:sk.name,icon:sk.icon,statName:STATS[sk.stat]?.name||'',extras:[]};if(utb)r.extras.push({label:'🃏 Untrained',val:utb});if(asb)r.extras.push({label:'🏆 Monument',val:'+'+asb});setLastCheck(r);return r;};
   const hasUp=id=>upgrades.includes(id);
   const upEff=key=>{let v=0;upgrades.filter(uid=>!disabledUpgrades.includes(uid)).forEach(uid=>{const u=UPGRADES[uid];if(u?.effect?.[key])v+=typeof u.effect[key]==='number'?u.effect[key]:(u.effect[key]?1:0);});if(v>0&&getFeatureVal('upgradeDoubleBonus'))v*=2;return v;};
@@ -1773,8 +1773,9 @@ function CindervaleAlchemistInner(){
           event.effect=ev.effect;
           if(ev.faction)event.effectRep={faction:ev.faction,amount:15};
         }
-        // Danger Sense: chance to negate bad effects
-        const dsRank=skRanks['danger_sense']||0;const dsChance=Math.min(0.50,dsRank*0.12+getMod(eStat('inu'))*0.02);
+        // Danger Sense: chance to negate bad effects. Iron Will (`dangerSenseBonus`) feeds in at the same ratio
+        // as a skill rank — +2 from the feat ≈ +12% additional proc chance, still capped at 50% total.
+        const dsRank=skRanks['danger_sense']||0;const dsChance=Math.min(0.50,dsRank*0.12+getMod(eStat('inu'))*0.02+getFeatureVal('dangerSenseBonus')*0.06);
         if(dsChance>0&&(event.effect==='lose_some'||event.effect==='lose_time')&&Math.random()<dsChance){
           event.dangerSensed=true;event.effectDetail='⚠️ Danger Sense! You sensed the threat and avoided the worst.';event.effect='none';event.good=true;
         }
@@ -2310,18 +2311,27 @@ function CindervaleAlchemistInner(){
     const crisis=hm.demands.find(d=>d.id===crisisId);if(!crisis||crisis.resolved)return;
     const solution=crisis.solutions.find(s=>s.id===solutionId);if(!solution)return;
     snapshot();
-    // Check and consume resources
+    // Check and consume resources. Crisis Responder feat reduces item-based cost by `crisisCostReduction`
+    // (floor 1 — you can't pay zero items) and gold cost by `crisisGoldDiscount` percentage.
     const cost=solution.cost;
+    const crisisItemReduc=getFeatureVal('crisisCostReduction');
+    const crisisGoldDisc=getFeatureVal('crisisGoldDiscount');
     if(cost.type==='potion'){
+      const adjQty=Math.max(1,cost.qty-crisisItemReduc);
       const have=Object.entries(pots).filter(([pid])=>getBaseRecipeId(pid)===cost.target).reduce((s,[,c])=>s+c,0);
-      if(have<cost.qty){addLog('Need '+cost.qty+'× '+(cost.targetName||cost.target)+' (have '+have+').','error');return;}
-      consumePots(cost.target,cost.qty);
+      if(have<adjQty){addLog('Need '+adjQty+'× '+(cost.targetName||cost.target)+' (have '+have+').','error');return;}
+      consumePots(cost.target,adjQty);
+      if(crisisItemReduc>0&&adjQty<cost.qty)addLog('🛡️ Crisis Responder: solution needed only '+adjQty+'× (saved '+(cost.qty-adjQty)+').','info');
     } else if(cost.type==='ingredients'){
-      if((inv[cost.target]||0)<cost.qty){addLog('Need '+cost.qty+'× '+(cost.targetName||cost.target)+' (have '+(inv[cost.target]||0)+').','error');return;}
-      modInv(cost.target,-cost.qty);
+      const adjQty=Math.max(1,cost.qty-crisisItemReduc);
+      if((inv[cost.target]||0)<adjQty){addLog('Need '+adjQty+'× '+(cost.targetName||cost.target)+' (have '+(inv[cost.target]||0)+').','error');return;}
+      modInv(cost.target,-adjQty);
+      if(crisisItemReduc>0&&adjQty<cost.qty)addLog('🛡️ Crisis Responder: solution needed only '+adjQty+'× (saved '+(cost.qty-adjQty)+').','info');
     } else if(cost.type==='gold'){
-      if(gold<cost.qty){addLog('Need '+cost.qty+'g (have '+gold+'g).','error');return;}
-      setGold(g=>g-cost.qty);
+      const adjGold=Math.max(0,Math.floor(cost.qty*(1-crisisGoldDisc)));
+      if(gold<adjGold){addLog('Need '+adjGold+'g (have '+gold+'g).','error');return;}
+      setGold(g=>g-adjGold);
+      if(crisisGoldDisc>0&&adjGold<cost.qty)addLog('🛡️ Crisis Responder: solution cost only '+adjGold+'g (saved '+(cost.qty-adjGold)+'g).','info');
     } else if(cost.type==='staff'){
       const availStaff=hiredAppr.filter(ap=>!apprTasks[ap.id]||apprTasks[ap.id].type==='idle');
       if(availStaff.length<cost.qty){addLog('Need '+cost.qty+' idle staff (have '+availStaff.length+'). Set staff to 💤 Idle first.','error');return;}
@@ -2333,12 +2343,14 @@ function CindervaleAlchemistInner(){
       // Phase 4: route through spendEnergy so Early Riser / Endurance fire on the first crisis solution of the day.
       spendEnergy(cost.qty);
     }
-    // Skill check (if applicable — gold/staff are auto-success)
+    // Skill check (if applicable — gold/staff are auto-success). Crisis Responder's `crisisCheckBonus` adds
+    // a flat bonus to the resolution roll alongside craftBonus and any upgrade craft-skill bonuses.
     let success=true,mastery=false,rollResult=null;
     if(solution.dc>0&&solution.skill){
       const ch=pureCheck(solution.skill,solution.dc);
       const craftB=getFeatureVal('craftBonus')+upEff('craftSkillBonus');
-      ch.total+=craftB;
+      const crisisB=getFeatureVal('crisisCheckBonus');
+      ch.total+=craftB+crisisB;
       success=ch.roll===1?false:ch.roll===20?true:ch.total>=solution.dc;
       mastery=success&&(ch.total>=solution.dc+HOLLOW_MARCH.masteryThreshold);
       rollResult={roll:ch.natural,total:ch.total,dc:solution.dc,skill:solution.skill};
@@ -2716,6 +2728,17 @@ function CindervaleAlchemistInner(){
     if(!ch.success){
       const salvagePct=getFeatureVal('salvagePercent');
       Object.entries(cost).forEach(([id,q])=>modInv(id,salvagePct>0?-Math.ceil(q*(1-salvagePct)):-q));
+      // Careful Hands (`failSalvage`): on a failed brew, % chance to refund one ingredient from the failed attempt.
+      // Random pick from the recipe's cost map.
+      const failSalvageChance=getFeatureVal('failSalvage');
+      if(failSalvageChance>0&&Math.random()<failSalvageChance){
+        const costKeys=Object.keys(cost).filter(id=>cost[id]>0);
+        if(costKeys.length>0){
+          const savedId=costKeys[Math.floor(Math.random()*costKeys.length)];
+          modInv(savedId,1);
+          addLog('🤲 Careful Hands: saved 1 '+(INGR[savedId]?.icon||'')+(INGR[savedId]?.name||savedId)+' from the failed brew.','info');
+        }
+      }
       // Spellbrewer Lv3+: chance to save the catalyst on a failed infusion (Lv4 raises chance for MW+ attempts)
       if(selInf&&catalystId){
         const failSaveChance=sbLv>=4&&(quality==='mw'||quality==='gm')?0.40:(sbLv>=3?0.25:0);
@@ -2741,6 +2764,18 @@ function CindervaleAlchemistInner(){
         const saved=ingEff>0&&Math.random()<ingEff;
         if(!saved)modInv(id,-q);
       });
+      // Efficient Brewing (`ingrSaveOnSuccess`): % chance per successful brew to refund one ingredient from
+      // those just consumed. Random pick from the cost map. Separate from ingredientEfficiency (which is
+      // a per-ingredient roll); this fires once total at the recipe level for a single bonus refund.
+      const ingSaveChance=getFeatureVal('ingrSaveOnSuccess');
+      if(ingSaveChance>0&&Math.random()<ingSaveChance){
+        const costKeys=Object.keys(cost).filter(id=>cost[id]>0);
+        if(costKeys.length>0){
+          const savedId=costKeys[Math.floor(Math.random()*costKeys.length)];
+          modInv(savedId,1);
+          addLog('♻️ Efficient Brewing: saved 1 '+(INGR[savedId]?.icon||'')+(INGR[savedId]?.name||savedId)+'.','info');
+        }
+      }
     }
     // Catalyst preservation (Spellbrewer Lv3+)
     if(selInf&&catalystId){
@@ -3941,7 +3976,10 @@ function CindervaleAlchemistInner(){
 
   // ─── SHOP SHELVES ───
   const compShelfBonus=(()=>{let b=0;companions.filter(c=>c.active).forEach(c=>{const comp=RANGER_COMPANIONS.find(r=>r.id===c.compId);if(comp?.secondary?.type==='organize'&&c.loyalty>=(comp.secondary.unlockLv||3))b+=c.loyalty;});return b;})();
-  const baseShelf=(hasUp('display')?12:hasUp('shopfront')?8:4)+upEff('displaySlots')+getFeatureVal('shelfCapBonus')+Math.floor(getFeatureVal('shelfCapBonus'))+compShelfBonus;
+  // Phase-4 follow-up fix: previously `getFeatureVal('shelfCapBonus')` was applied twice via an additional
+  // `+ Math.floor(getFeatureVal('shelfCapBonus'))` term, silently doubling Organized Shelves (+4 → +8) and
+  // Supply Lines (+2 → +4). Single-apply restores the intended balance.
+  const baseShelf=(hasUp('display')?12:hasUp('shopfront')?8:4)+upEff('displaySlots')+getFeatureVal('shelfCapBonus')+compShelfBonus;
   const SHELF_MAX=Math.floor(baseShelf*(1+getFeatureVal('shelfCapacityBonus'))*((getFeatureVal('doubleStorage')||hasUp('vault'))?2:1));
   const shelfTotal=Object.values(shelves).reduce((s,v)=>s+v,0);
   const stockShelf=(potId,qty)=>{
