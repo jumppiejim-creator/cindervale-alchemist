@@ -968,10 +968,14 @@ function CindervaleAlchemistInner(){
   const doCheck=(skId,dc)=>{const sk=SKILLS[skId];if(!sk)return{success:false,total:0,roll:0,name:'?',mod:0,rb:0,dc,statName:'',extras:[]};const roll=d20();const mod=getMod(eStat(sk.stat));const rb=rankB(skRanks[skId]||0,pb);let total=roll+mod+rb;const utb=(skRanks[skId]||0)===0?getFeatureVal('untrainedBonus'):0;if(utb)total+=utb;const asb=getFeatureVal('allSkillBonus');if(asb)total+=asb;const r={roll,mod,rb,total,dc,success:roll===1?false:roll===20?true:total>=dc,name:sk.name,icon:sk.icon,statName:STATS[sk.stat]?.name||'',extras:[]};if(utb)r.extras.push({label:'🃏 Untrained',val:utb});if(asb)r.extras.push({label:'🏆 Monument',val:'+'+asb});setLastCheck(r);return r;};
   const hasUp=id=>upgrades.includes(id);
   const upEff=key=>{let v=0;upgrades.filter(uid=>!disabledUpgrades.includes(uid)).forEach(uid=>{const u=UPGRADES[uid];if(u?.effect?.[key])v+=typeof u.effect[key]==='number'?u.effect[key]:(u.effect[key]?1:0);});if(v>0&&getFeatureVal('upgradeDoubleBonus'))v*=2;return v;};
-  // Phase 2 percentage modifier capability. Sums an `energyCostMultiplier[actionType]` (signed decimal) across all owned
-  // upgrades, active class/spec features, prestige features, and feats; applies the percentage to the base cost; rounds;
-  // hard-floors at 1. Caller is responsible for any game-design floors (e.g. research's Math.max(25, ...)) and flat
-  // modifiers (which subtract after the percentage per spec). Valid actionType strings (Phase 2): 'research'.
+  // Percentage modifier capability (Phase 2, expanded in Phase 4). Sums an `energyCostMultiplier[actionType]`
+  // (signed decimal) across all sources that getFeatureVal also walks: upgrades, active class/spec features,
+  // prestige features, feats, active companion passives, active wild ally passive, settlement projects, faction
+  // alignBonus + earned tierBonuses, active elixir buffs, lineage mentor bonuses, and legacyFeature. Applies the
+  // sum to baseCost (additive stacking, capped at −99% so an action never costs 0). Caller is responsible for any
+  // game-design floors (e.g. research's Math.max(25, ...)) and any flat modifiers that still subtract afterwards.
+  // Action types in active use (Phase 4): 'research', 'travel'. The helper accepts any string — features can target
+  // new action types (e.g. 'brew', 'inscribe') without code changes here.
   const getActionEnergyCost=(actionType,baseCost)=>{
     let mult=0;
     upgrades.filter(uid=>!disabledUpgrades.includes(uid)).forEach(uid=>{
@@ -991,6 +995,46 @@ function CindervaleAlchemistInner(){
       for(const pf of pc.features||[]){const m=pf.effects?.energyCostMultiplier?.[actionType];if((pf.lv||pf.classLv)<=plv&&typeof m==='number')mult+=m;}
     }
     for(const fid of playerFeats){const m=FEATS[fid]?.effects?.energyCostMultiplier?.[actionType];if(typeof m==='number')mult+=m;}
+    // Phase 4 extensions — mirror getFeatureVal's source list so e.g. Ranger Hawk's travel reduction is honored.
+    if(companions?.length>0&&typeof RANGER_COMPANIONS!=='undefined'){
+      companions.filter(cc=>cc.active).forEach(cc=>{
+        const comp=RANGER_COMPANIONS.find(r=>r.id===cc.compId);
+        const m=comp?.passive?.energyCostMultiplier?.[actionType];
+        if(typeof m==='number')mult+=m;
+      });
+    }
+    if(wildAlly?.passive?.energyCostMultiplier?.[actionType]!=null){
+      const m=wildAlly.passive.energyCostMultiplier[actionType];if(typeof m==='number')mult+=m;
+    }
+    if(settlementProjects?.length>0&&typeof SETTLEMENT_PROJECTS!=='undefined'){
+      settlementProjects.forEach(pid=>{
+        const proj=SETTLEMENT_PROJECTS.find(p=>p.id===pid);
+        const m=proj?.effect?.energyCostMultiplier?.[actionType];
+        if(typeof m==='number')mult+=m;
+      });
+    }
+    // Faction alignBonus + earned tier bonuses (alignment-locked + per-tier).
+    if(typeof FACTIONS!=='undefined'){
+      for(const [fid,fac] of Object.entries(FACTIONS)){
+        const aligned=factionAlign===fid;
+        if(aligned){const m=fac.alignBonus?.effects?.energyCostMultiplier?.[actionType];if(typeof m==='number')mult+=m;}
+        const tier=Math.min(fac.tierBonuses?.length||0,Math.floor((fRep?.[fid]||0)/25));
+        for(let t=0;t<tier;t++){const m=fac.tierBonuses[t]?.effects?.energyCostMultiplier?.[actionType];if(typeof m==='number')mult+=m;}
+      }
+    }
+    // Active elixir buffs (drink-effect that boosts a single action type, e.g. brew).
+    if(typeof ELIXIR_BUFFS!=='undefined'){
+      for(const [buffId,buff] of Object.entries(activeBuffs||{})){
+        if(buff?.daysLeft>0){const m=ELIXIR_BUFFS[buffId]?.effects?.energyCostMultiplier?.[actionType];if(typeof m==='number')mult+=m;}
+      }
+    }
+    // Lineage mentor bonus (Pass-the-Torch inheritance).
+    if(mentorBonuses?.energyCostMultiplier?.[actionType]!=null){
+      const m=mentorBonuses.energyCostMultiplier[actionType];if(typeof m==='number')mult+=m;
+    }
+    if(legacyFeature?.effects?.energyCostMultiplier?.[actionType]!=null){
+      const m=legacyFeature.effects.energyCostMultiplier[actionType];if(typeof m==='number')mult+=m;
+    }
     if(mult<-0.99)mult=-0.99;
     return Math.max(1,Math.round(baseCost*(1+mult)));
   };
@@ -1524,7 +1568,10 @@ function CindervaleAlchemistInner(){
   const getExpeditionInfo=(reg)=>{
     if(!reg)return null;
     // Travel cost: all values in energy units (25 energy = 1 "hour" equivalent).
-    let travelTime=Math.max(0,reg.time-getFeatureVal('travelReduction'));
+    // Phase 4: percentage travel reductions (Trailblazer, Trailblazer's Boots, Hawk/Vulture/Seahawk/Falcon companions,
+    // Paved Roads, Legend of the Wild) are aggregated via getActionEnergyCost('travel', baseCost). The flat day-flag
+    // and ash_storm/seasonal modifiers still subtract afterwards so they retain their flat character.
+    let travelTime=getActionEnergyCost('travel',reg.time);
     if(dayFlags.includes('trailblazer_tonic'))travelTime=Math.max(0,travelTime-25);
     const weatherReduc=getFeatureVal('weatherReduction');
     if(dayFlags.includes('ash_storm'))travelTime+=Math.max(0,Math.ceil(25*(1-weatherReduc)));
@@ -1810,8 +1857,8 @@ function CindervaleAlchemistInner(){
         }
         break;
       }
-      // Efficiency: travel reduction is handled above; failed extraction salvage handled in harvest
-      const effMod=getFeatureVal('travelReduction');
+      // Phase 4: travel cost is now applied via getActionEnergyCost('travel', ...) in getExpeditionInfo.
+      // `effBonus` survives as a queue-entry field that the legacy ExpeditionHourPopup still reads.
       let effBonus=false;
       // ═══ NATURALIST FIELD DISCOVERY ═══
       let discovery=null;
@@ -2282,7 +2329,8 @@ function CindervaleAlchemistInner(){
       const newTasks={...apprTasks};toAssign.forEach(ap=>{newTasks[ap.id]={type:'patrol',target:worstThreat};});setApprTasks(newTasks);
     } else if(cost.type==='enchant'||cost.type==='combat'){
       if(energy<cost.qty){addLog('Need '+cost.qty+' Energy (have '+energy+').','error');return;}
-      setEnergy(h=>h-cost.qty);
+      // Phase 4: route through spendEnergy so Early Riser / Endurance fire on the first crisis solution of the day.
+      spendEnergy(cost.qty);
     }
     // Skill check (if applicable — gold/staff are auto-success)
     let success=true,mastery=false,rollResult=null;
@@ -2830,10 +2878,11 @@ function CindervaleAlchemistInner(){
 
   // ─── RESEARCH (spend energy to discover recipes/enchantments) ───
   const doResearch=(type)=>{
-    const loreMod=getFeatureVal('researchTimeReduction');const scholarReduc=getFeatureVal('researchCostReduction');
-    // Phase 2: getActionEnergyCost applies percentage modifiers (e.g. Library's -25%) to the base cost. The existing
-    // 25-energy game-design floor and the flat scholarReduc subtraction are preserved in the outer expression.
-    const resCost=Math.max(25,getActionEnergyCost('research',loreMod>=100?25:50)-scholarReduc);
+    // Phase 4: research cost is purely percentage-driven via getActionEnergyCost('research', 50). The legacy
+    // researchTimeReduction "Lore >=4 → costs 25" branch is gone (Quick Study now uses energyCostMultiplier),
+    // and researchCostReduction's flat -25 subtraction is gone (all sources converted to percentage). The
+    // 25-energy game-design floor remains so a successful study still feels meaningful.
+    const resCost=Math.max(25,getActionEnergyCost('research',50));
     const freeResPerDay=getFeatureVal('freeResearchPerDay')+upEff('freeResearchPerDay')+getFeatureVal('researchSlotBonus');
     const freeUsed=dayFlags.filter(f=>f==='free_research_used').length;
     const isFree=freeResPerDay>freeUsed;
@@ -3468,7 +3517,8 @@ function CindervaleAlchemistInner(){
     const matCost=lmc({ironroot_bark:3,hearthstone:2});
     if(!Object.entries(matCost).every(([id,q])=>(inv[id]||0)>=q)){showResult('🤖 Missing Materials','error','Need '+Object.entries(matCost).map(([id,q])=>q+'× '+(INGR[id]?.icon||'')+INGR[id]?.name+' (have '+(inv[id]||0)+')').join(' + '));return;}
     snapshot();
-    setEnergy(e=>e-50);
+    // Phase 4: route through spendEnergy so Early Riser / Endurance fire correctly on the first action of the day.
+    spendEnergy(50);
     Object.entries(matCost).forEach(([id,q])=>modInv(id,-q));
     const ch=doCheck('precision',12);
     const cfb=getFeatureVal('craftBonus');if(cfb){ch.total+=cfb;ch.extras.push({label:'Craft',val:cfb});}
@@ -3558,13 +3608,11 @@ function CindervaleAlchemistInner(){
   // ═══ GUILDMASTER ACADEMY ═══
   const trainApprentice=(apprId,statId)=>{
     const ap=hiredAppr.find(a=>a.id===apprId);if(!ap)return;
-    if(energy<25){addLog('Training takes ⚡25 Energy.','error');return;}
+    // Phase 4: training is a free action. Removed the legacy 1-hour entry gate (a leftover from when
+    // training cost an hour); the comment at the cost line had it as `energyCost=0` already, so the
+    // gate was orphaned. No energy is spent; we still snapshot for undo since training mutates staff state.
     const hasMasterTrainer=playerFeats.includes('master_trainer');
-    // Training: free (feat feature)
-    const energyCost=0;
-    if(energyCost>0&&energy<energyCost){addLog('Training takes ⚡25 Energy.','error');return;}
     snapshot();
-    if(energyCost>0)spendEnergy(energyCost);
     // COM-based instruction check
     const dc=10+Math.floor((ap.baseStat[statId]||10)/3);
     const ch=doCheck('persuasion',dc);
@@ -8138,7 +8186,7 @@ function CindervaleAlchemistInner(){
             <div style={{display:'flex',gap:4,flexWrap:'wrap'}}>
               {locThreatIds.filter(tid=>(threats[tid]||0)>=10).map(tid=>{const tf=THREAT_FACTIONS[tid];
                 return <button key={tid} style={{...S.btn('def'),fontSize:12,padding:'2px 8px',background:'#c0505015',border:'1px solid #c0505044',color:'#c05050'}}
-                  onClick={()=>{snapshot();setEnergy(e=>e-50);const reduc=20;setThreats(p=>{const n={...p};n[tid]=Math.max(0,(n[tid]||0)-reduc);return n;});const strikeXp=40+level*3;const strikeGold=Math.floor(15+level*2);gainXP(strikeXp);setGold(g=>g+strikeGold);addLog(`⚔️ Preemptive Strike: ${tf.icon} ${tf.name} threat reduced by ${reduc}! +${strikeXp} XP +${strikeGold}g`,'quest');showResult('⚔️ Preemptive Strike!','craft',`${tf.icon} ${tf.name} threat -${reduc}\n+${strikeXp} XP  +${strikeGold}g\nYour vigilance keeps the settlement safe.`);}}>{tf.icon} Strike {tf.name}</button>;})}
+                  onClick={()=>{snapshot();spendEnergy(50);/* Phase 4: route through spendEnergy so Early Riser / Endurance fire */ const reduc=20;setThreats(p=>{const n={...p};n[tid]=Math.max(0,(n[tid]||0)-reduc);return n;});const strikeXp=40+level*3;const strikeGold=Math.floor(15+level*2);gainXP(strikeXp);setGold(g=>g+strikeGold);addLog(`⚔️ Preemptive Strike: ${tf.icon} ${tf.name} threat reduced by ${reduc}! +${strikeXp} XP +${strikeGold}g`,'quest');showResult('⚔️ Preemptive Strike!','craft',`${tf.icon} ${tf.name} threat -${reduc}\n+${strikeXp} XP  +${strikeGold}g\nYour vigilance keeps the settlement safe.`);}}>{tf.icon} Strike {tf.name}</button>;})}
             </div>
           </div>}
         </div>}
@@ -9900,7 +9948,7 @@ function CindervaleAlchemistInner(){
           <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
             {(()=>{const undiscP=RECIPES.filter(r=>!known.includes(r.id)&&level>=r.unlock&&canCraftAtLocation(r.ingr)&&(!r.faction||getRL(r.faction)>=(r.fReq||0)));
               const undiscE=ENCHANTMENTS.filter(e=>!knownEnch.includes(e.id)&&(!e.faction||getRL(e.faction)>=(e.fReq||0))&&canCraftAtLocation(e.ingr));
-              const resCost=Math.max(25,getActionEnergyCost('research',getFeatureVal('researchTimeReduction')>=100?25:50)-getFeatureVal('researchCostReduction'));
+              const resCost=Math.max(25,getActionEnergyCost('research',50));
               const freeRes=getFeatureVal('freeResearchPerDay')+upEff('freeResearchPerDay')+getFeatureVal('researchSlotBonus');
               const freeUsed=dayFlags.filter(f=>f==='free_research_used').length;
               const hasFree=freeRes>freeUsed;
@@ -11383,7 +11431,6 @@ function CindervaleAlchemistInner(){
               ['potionValueBonus','🧪 Potion Value','+','% value'],
               ['buyDiscount','🏷️ Buy Discount','','% off'],
               ['shelfSaleBonus','🏪 Shelf Sale','+',' chance'],
-              ['travelReduction','🏕️ Travel','-','h travel'],
               ['bonusEnergyPerDay','⚡ Energy','+','/day'],
               ['questGoldBonus','📜 Quest Gold','+','% bonus'],
               ['repGainBonus','🤝 Rep Bonus','×',' multi'],
@@ -11396,13 +11443,12 @@ function CindervaleAlchemistInner(){
               ['ingredientEfficiency','♻️ Ing. Save','','% chance'],
               ['failStreakBonus','🔥 Fail Streak','+','/fail'],
               ['discoveryChanceBonus','🔍 Discovery','+','% chance'],
-              ['researchCostReduction','📖 Research','-','h cost'],
               ['negativeEventReduction','🏰 Event Shield','','% blocked'],
               ['freeResearchPerDay','📖 Free Research','','/day'],
               ['forageYieldBonus','🌿 Forage Yield','+','extra items'],
               ['rareForageBonus','💎 Rare Finds','+','% chance'],
             ].map(([key,label,pre,suf])=>{const v=getFeatureVal(key);if(!v)return null;
-              const display=(key.includes('Chance')||key.includes('Percent')||(key.includes('Reduction')&&key!=='researchCostReduction'&&key!=='travelReduction')||key.includes('Discount')||key==='sellBonus'||key==='shelfSaleBonus'||key==='questGoldBonus'||key==='potionValueBonus'||key==='ingredientEfficiency'||key==='rareForageBonus')
+              const display=(key.includes('Chance')||key.includes('Percent')||(key.includes('Reduction'))||key.includes('Discount')||key==='sellBonus'||key==='shelfSaleBonus'||key==='questGoldBonus'||key==='potionValueBonus'||key==='ingredientEfficiency'||key==='rareForageBonus')
                 ?Math.round(v*100):key==='xpMultiplier'||key==='repGainBonus'||key==='yieldMultiplier'?+(1+v).toFixed(1):v;
               return(
                 <div key={key} style={{padding:'2px 6px',background:TH.gold+'08',borderRadius:3,border:'1px solid '+TH.gold+'22'}}>
@@ -11876,7 +11922,7 @@ function CindervaleAlchemistInner(){
             <div style={{fontSize:13,color:TH.textDim,marginBottom:2}}>Extraction: +{getSkMod('extraction')}</div>
             <div style={{fontSize:13,color:TH.textDim,marginBottom:2}}>Danger Sense: +{getSkMod('danger_sense')}</div>
             <div style={{fontSize:13,color:TH.textDim,marginBottom:2}}>Divination: +{getSkMod('divination')}</div>
-            <div style={{fontSize:13,color:TH.textDim}}>Travel Reduction: -{getFeatureVal('travelReduction')}h</div>
+            {(()=>{const sampleCost=50;const reduced=getActionEnergyCost('travel',sampleCost);const pct=Math.round((1-reduced/sampleCost)*100);return pct>0?<div style={{fontSize:13,color:TH.textDim}}>Travel Energy: -{pct}%</div>:null;})()}
           </div>
           <div style={S.sideSec}>
             <div style={S.sideHd}>🌿 Carrying</div>

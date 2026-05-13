@@ -673,7 +673,7 @@
 
 <table>
   <tr><th>Lv</th><th>Feature</th><th>Description</th></tr>
-  <tr><td>1</td><td>Trailblazer</td><td>-1 travel time to all regions (min 0). Gain proficiency in Extraction and Endurance.</td></tr>
+  <tr><td>1</td><td>Trailblazer</td><td>Travel Energy cost &minus;25% to all regions. Gain proficiency in Extraction and Endurance.</td></tr>
   <tr><td>2</td><td>Enduring Spirit</td><td>+25 Energy per day. Weather penalties halved.</td></tr>
   <tr><td>3</td><td>Specialization</td><td>Choose a specialization path. +1 extraction bonus.</td></tr>
   <tr><td>4</td><td>Iron Constitution</td><td>Immune to expedition events that cost time.</td></tr>
@@ -682,7 +682,7 @@
   <tr><td>7</td><td>Wilderness Mastery</td><td>+2 extraction bonus. Positive expedition events 2x more likely. 15% bonus rare find per hour.</td></tr>
   <tr><td>8</td><td>Expedition Commander</td><td>Staff foraging yields +40%. Staff gain XP 25% faster.</td></tr>
   <tr><td>9</td><td>Indomitable</td><td>+3 extraction bonus. +1 bonus ingredient per successful extraction.</td></tr>
-  <tr><td>10</td><td>Legend of the Wild</td><td>All travel times become 0. +50% foraging yields. Overnight foraging.</td></tr>
+  <tr><td>10</td><td>Legend of the Wild</td><td>Travel Energy cost &minus;75%. Stacks with Trailblazer and other travel reducers; with multiple sources, travel costs only 1 Energy &mdash; effectively free. +50% foraging yields. Overnight foraging.</td></tr>
 </table>
 
 <h4>Specializations</h4>
@@ -891,7 +891,7 @@
 
 <!-- Exploration Feats -->
 <div class="feat-category">Exploration (7 feats)</div>
-<div class="feat-entry"><span class="feat-name">Trailblazer's Boots</span> &mdash; -1 travel time to all regions.</div>
+<div class="feat-entry"><span class="feat-name">Trailblazer's Boots</span> &mdash; Travel Energy cost &minus;25% to all regions.</div>
 <div class="feat-entry"><span class="feat-name">Lucky Find</span> &mdash; +5% chance for bonus rare ingredient per forage hour.</div>
 <div class="feat-entry"><span class="feat-name">Companion Handler</span> &mdash; Companion actions +50% effectiveness. Companions gain loyalty 2x faster. +15% companion encounter chance.</div>
 <div class="feat-entry"><span class="feat-name">Seasoned Explorer</span> &mdash; +2 to all extraction checks.</div>
@@ -918,7 +918,7 @@
 <div class="feat-entry"><span class="feat-name">Preservation</span> &mdash; +5 spoil threshold.</div>
 <div class="feat-entry"><span class="feat-name">Deep Preservation</span> &mdash; +8 spoil threshold. <span class="feat-req">(Req: Preservation)</span></div>
 <div class="feat-entry"><span class="feat-name">Scholar's Memory</span> &mdash; +8 XP per quest turn-in.</div>
-<div class="feat-entry"><span class="feat-name">Quick Study</span> &mdash; Research costs 1h less. <span class="feat-req">(Req: Scholar's Memory)</span></div>
+<div class="feat-entry"><span class="feat-name">Quick Study</span> &mdash; Research Energy cost &minus;25%. <span class="feat-req">(Req: Scholar's Memory)</span></div>
 <div class="feat-entry"><span class="feat-name">Keen Eye</span> &mdash; +3g per enchant commission.</div>
 <div class="feat-entry"><span class="feat-name">Gem Cutter</span> &mdash; +1g per ingredient sold.</div>
 <div class="feat-entry"><span class="feat-name">Supplier Contacts</span> &mdash; 2 rare ingredients appear in shop daily.</div>
@@ -1098,14 +1098,14 @@
 
 <h4>Veilwalkers</h4>
 <p>Arcane researchers who study the barrier between worlds. They value knowledge above all.</p>
-<p><strong>Alignment Bonus:</strong> +25% enchant success, +20% discovery chance, research -1h.</p>
+<p><strong>Alignment Bonus:</strong> +25% enchant success, +20% discovery chance, research Energy &minus;25%.</p>
 <table>
   <tr><th>Tier</th><th>Name</th><th>Effect</th></tr>
   <tr><td>1</td><td>Arcane ID</td><td>+5% enchantment success chance.</td></tr>
   <tr><td>2</td><td>Rare Formulas</td><td>Unlock Veilwalker rare formulas.</td></tr>
   <tr><td>3</td><td>Veil Shards</td><td>Quests occasionally reward bonus Veil Shards.</td></tr>
   <tr><td>4</td><td>Library</td><td>+15% recipe &amp; enchantment discovery chance.</td></tr>
-  <tr><td>5</td><td>Veilseer</td><td>Research studies cost 25 less Energy. See enchant success %.</td></tr>
+  <tr><td>5</td><td>Veilseer</td><td>Research Energy cost &minus;25%. See enchant success %.</td></tr>
 </table>
 
 <h4>Cinderfolk</h4>
@@ -1145,7 +1145,7 @@
   <tr><td>2</td><td>Sacred Rites</td><td>+2 research, +1 craft.</td></tr>
   <tr><td>3</td><td>Eternal Flame</td><td>All checks +1. +25 Energy on quest.</td></tr>
   <tr><td>4</td><td>Sacred Guardian</td><td>+15% recipe &amp; enchantment discovery.</td></tr>
-  <tr><td>5</td><td>Flamewarden</td><td>Research costs 25 less Energy. +10% XP from all sources.</td></tr>
+  <tr><td>5</td><td>Flamewarden</td><td>Research Energy cost &minus;25%. +10% XP from all sources.</td></tr>
 </table>
 
 <h4>Dustwalkers</h4>
@@ -1197,7 +1197,7 @@
   <tr><td>2</td><td>Sacred Waters</td><td>+2 research, +1 craft.</td></tr>
   <tr><td>3</td><td>Tidekeeper Sigils</td><td>Quests occasionally reward Tidekeeper Sigils.</td></tr>
   <tr><td>4</td><td>Oracle's Sight</td><td>+15% recipe &amp; enchantment discovery.</td></tr>
-  <tr><td>5</td><td>Tidebound</td><td>Research costs 25 less Energy. See enchant success %.</td></tr>
+  <tr><td>5</td><td>Tidebound</td><td>Research Energy cost &minus;25%. See enchant success %.</td></tr>
 </table>
 
 <h4>Merchant Marine</h4>
@@ -1254,14 +1254,14 @@
 
 <h4>Windrunners</h4>
 <p>Swift scouts and pathfinders who navigate the treacherous peak trails. Masters of wind and weather.</p>
-<p><strong>Alignment Bonus:</strong> +25% enchant success, +20% discovery, research -1h.</p>
+<p><strong>Alignment Bonus:</strong> +25% enchant success, +20% discovery, research Energy &minus;25%.</p>
 <table>
   <tr><th>Tier</th><th>Name</th><th>Effect</th></tr>
   <tr><td>1</td><td>Trail Sense</td><td>+5% enchantment success chance.</td></tr>
   <tr><td>2</td><td>Wind Reading</td><td>Unlock Windrunner rare formulas.</td></tr>
   <tr><td>3</td><td>Wayfinder Compasses</td><td>Quests occasionally reward bonus Windrunner Compasses.</td></tr>
   <tr><td>4</td><td>High Routes</td><td>+15% recipe &amp; enchantment discovery chance.</td></tr>
-  <tr><td>5</td><td>Pathfinder</td><td>Research studies cost 25 less Energy. See enchant success %.</td></tr>
+  <tr><td>5</td><td>Pathfinder</td><td>Research Energy cost &minus;25%. See enchant success %.</td></tr>
 </table>
 
 <!-- ═══════════════════════════════════════ -->
@@ -1355,13 +1355,13 @@
 <h3>Settlement Projects</h3>
 <table>
   <tr><th>Project</th><th>Cost</th><th>Build</th><th>Effect</th><th>Req</th></tr>
-  <tr><td>Paved Roads</td><td>300g + mats</td><td>3 days</td><td>-1 travel time to all regions.</td><td>&mdash;</td></tr>
+  <tr><td>Paved Roads</td><td>300g + mats</td><td>3 days</td><td>Travel Energy cost &minus;25% to all regions.</td><td>&mdash;</td></tr>
   <tr><td>Market Square</td><td>500g + mats</td><td>5 days</td><td>+2 customers/morning, +10% shelf sale, weekly Traveling Merchant.</td><td>&mdash;</td></tr>
   <tr><td>Watchtower</td><td>400g + mats</td><td>4 days</td><td>Threats grow 15% slower, warning at 60+.</td><td>&mdash;</td></tr>
   <tr><td>Herbalist Garden</td><td>600g + mats</td><td>5 days</td><td>2 random ingredients/morning, +1 spoilage threshold.</td><td>&mdash;</td></tr>
   <tr><td>Guild Hall</td><td>800g + mats</td><td>6 days</td><td>+1 staff slot, +2 hire candidates, training costs halved.</td><td>&mdash;</td></tr>
   <tr><td>Trade Depot</td><td>1000g + mats</td><td>7 days</td><td>Contract costs -40%, shop prices -15%, +1 customer/morning.</td><td>Market Square</td></tr>
-  <tr><td>Academy</td><td>1200g + mats</td><td>8 days</td><td>+10% XP permanently, research -1 hour, staff specialization.</td><td>&mdash;</td></tr>
+  <tr><td>Academy</td><td>1200g + mats</td><td>8 days</td><td>+10% XP permanently, research Energy cost &minus;25%, staff specialization.</td><td>&mdash;</td></tr>
   <tr><td>Fortified Walls</td><td>1500g + mats</td><td>10 days</td><td>Threats capped at 80, events halved, +50g/morning.</td><td>Watchtower</td></tr>
   <tr><td>Grand Library</td><td>2000g + mats</td><td>12 days</td><td>+25% discovery, +15% lore drops, 2x paper gold.</td><td>Academy</td></tr>
   <tr><td>Monument</td><td>3000g + mats</td><td>15 days</td><td>+1 all stats, +1 all skills, +5 rep/day to all factions. Carries through Torch.</td><td>Fortified Walls</td></tr>
@@ -1499,13 +1499,15 @@
 <p>Traveling to a foraging region costs hours based on the region's distance. Base travel times range from 1h (easy regions) to 4h (legendary regions).</p>
 
 <div class="callout">
-  <div class="callout-title">Reducing Travel Time</div>
-  <p>No skill passively reduces travel time. Travel reduction sources:</p>
+  <div class="callout-title">Reducing Travel Energy</div>
+  <p>No skill passively reduces travel Energy. Sources of travel reduction stack additively as percentage cuts to the base travel cost:</p>
   <ul>
-    <li><strong>Warden class features</strong> &mdash; -1h at Lv 1 (Trailblazer), -3h total at Lv 10 (Legend of the Wild: all travel becomes 0).</li>
-    <li><strong>Trailblazer's Boots feat</strong> &mdash; -1h to all regions.</li>
+    <li><strong>Warden class features</strong> &mdash; &minus;25% at Lv 1 (Trailblazer), &minus;75% at Lv 10 (Legend of the Wild); together they sum to &minus;100% and cap at &minus;99%, so travel costs 1 Energy.</li>
+    <li><strong>Trailblazer's Boots feat</strong> &mdash; &minus;25% to all regions.</li>
+    <li><strong>Ranger companions</strong> &mdash; Hawk, Vulture, Seahawk, and Falcon each contribute a &minus;25% passive while active.</li>
+    <li><strong>Paved Roads settlement project</strong> &mdash; &minus;25% to all regions.</li>
   </ul>
-  <p>Settlement projects (Paved Roads) and faction bonuses (e.g., Dustwalkers Tier 1, Pearl Divers Tier 2) can also reduce travel time in specific locations.</p>
+  <p>Percentage cuts add together and are capped at &minus;99% (so travel always costs at least 1 Energy). For example, Trailblazer + Trailblazer's Boots + Paved Roads = &minus;75% on a base 50-Energy region = 13 Energy of travel.</p>
 </div>
 
 <h3>Energy</h3>
@@ -1519,7 +1521,7 @@
   <li><strong>Wildcrafts / Automaton creation / Preemptive Strike</strong> &mdash; 50 Energy each.</li>
 </ul>
 <p>Energy bonuses from class features, workshop upgrades, and feats add to your daily pool. For instance, the Beds upgrade and Hearth upgrade each grant +25 Energy/day. A Warden Lv2 with both upgrades, Master Builder's +50, and a +25 Energy buff active starts the day with 225 Energy.</p>
-<p>A few upgrades reduce specific action costs by a <em>percentage</em> rather than a flat amount &mdash; for example, Library cuts research Energy cost by 25%, turning a 50-Energy study into a 38-Energy one. Percentage and flat reductions stack: percentage applies to the base cost first, then flat reductions subtract from the result.</p>
+<p>Energy modifiers come in two flavors. <em>Flat</em> modifiers add (or subtract) a fixed number from your daily pool &mdash; "+25 Energy/day" from the Beds upgrade or Enduring Spirit, "+50 from Master Builder", and so on. <em>Percentage</em> modifiers cut the cost of a specific action type &mdash; Library and the Academy each cut research by &minus;25%, Trailblazer cuts travel by &minus;25%, and the various Ranger scout companions (Hawk, Vulture, Seahawk, Falcon) each contribute another &minus;25% to travel while active. Percentage modifiers from multiple sources add together (capped at &minus;99% so an action always costs at least 1 Energy) and apply to the base cost of the action. Flat reductions still subtract from your daily pool the way they always did. A 50-Energy research study with Library + Academy active becomes &minus;50% = 25 Energy.</p>
 
 <h3>Staff Management</h3>
 <p>Hire apprentices to delegate tasks. Staff can be assigned to brew, forage, shopkeep, research, construct (prep a workshop upgrade for a discounted final build), or patrol (reduce a rival faction's threat overnight). They have their own stats, traits, and efficiency that improve with XP. Some traits are positive (Quick Learner, Keen Senses) and some negative (Clumsy, Shy). Staff morale affects efficiency.</p>

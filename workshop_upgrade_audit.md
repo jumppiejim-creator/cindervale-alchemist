@@ -24,6 +24,7 @@ For each upgrade in `UPGRADES` (game-data.js:359-382): (1) read the handbook tab
 ## Changelog
 
 - **2026-05-13** — Phase 2: vault wired, shelves replaced (+1 display slot), library now grants −25% research cost via new percentage modifier system, leyline veil shard now daily. Dead documentation flags removed from garden/garden_2/leyline. **Workshop upgrade audit closed: 22/22 ✓.**
+- **2026-05-13** — Phase 4 close-out: flat cost-reducing modifiers converted to percentage form across all applicable action types (travel, research). The percentage modifier system now walks companion passives, settlement projects, faction alignBonus/tier bonuses, elixir buffs, and lineage/legacy sources in addition to the upgrades/classes/feats it covered in Phase 2. No upgrade rows shifted verdict — the only upgrade actually granting a cost reduction (Library) was already on the percentage system in Phase 2; the dead `researchTimeReduction` branch was retired without touching any upgrade. **Workshop upgrade audit still 22/22 ✓.**
 
 ## Data Structures Audited
 
