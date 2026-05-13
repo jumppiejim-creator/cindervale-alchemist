@@ -7128,12 +7128,12 @@ function CindervaleAlchemistInner(){
                 onError={e=>{e.target.parentElement.style.display='none';}}/>
               <div style={{position:'absolute',bottom:0,left:0,right:0,background:'linear-gradient(transparent,#000000cc)',padding:'30px 16px 10px'}}>
                 <div style={{fontSize:24,color:TH.goldBright,fontWeight:'bold',textShadow:'0 2px 8px #000'}}>{reg.icon} {reg.name}</div>
-                <div style={{fontSize:14,color:'#ffffffcc',textShadow:'0 1px 4px #000'}}>Tier {reg.diff} · DC {reg.dc} · {reg.time}h travel · {reg.ingr.length} ingredient types</div>
+                <div style={{fontSize:14,color:'#ffffffcc',textShadow:'0 1px 4px #000'}}>Tier {reg.diff} · DC {reg.dc} · ⚡{reg.time} travel · {reg.ingr.length} ingredient types</div>
               </div>
             </div>}
             {!imgUrl&&<div style={{padding:'16px 16px 8px'}}>
               <div style={{fontSize:24,color:TH.goldBright,fontWeight:'bold'}}>{reg.icon} {reg.name}</div>
-              <div style={{fontSize:14,color:TH.textDim}}>Tier {reg.diff} · DC {reg.dc} · {reg.time}h travel</div>
+              <div style={{fontSize:14,color:TH.textDim}}>Tier {reg.diff} · DC {reg.dc} · ⚡{reg.time} travel</div>
             </div>}
 
             <div style={{padding:'12px 16px 16px'}}>
@@ -7143,7 +7143,7 @@ function CindervaleAlchemistInner(){
               {/* Expedition info */}
               {canGo&&<div style={{background:TH.bg,borderRadius:6,padding:'8px 10px',marginBottom:12,border:'1px solid '+TH.border}}>
                 <div style={{fontSize:14,color:TH.textDim,lineHeight:1.6}}>
-                  🚶 Travel: <b style={{color:TH.orange}}>⚡{info.travelTime}</b> · ⛏️ Gathering: <b style={{color:TH.green}}>{info.gatherHours}h</b> · 📦 ~{3*info.gatherHours} items ({pickN} types/check)
+                  🚶 Travel: <b style={{color:TH.orange}}>⚡{info.travelTime}</b> · ⛏️ Gathering pool: <b style={{color:TH.green}}>⚡{Math.max(0,energy-info.travelTime)}</b> ({Math.floor(Math.max(0,energy-info.travelTime)/10)} roll{Math.floor(Math.max(0,energy-info.travelTime)/10)===1?'':'s'} at 10⚡ each, ~{pickN} ingredient types/check)
                 </div>
                 {(()=>{const s=getSeason(day,gameLocation);const mods=[];
                   if(s.floraYieldBonus)mods.push(s.icon+' +'+s.floraYieldBonus+' flora yield');
@@ -7274,11 +7274,11 @@ function CindervaleAlchemistInner(){
                   🎲 Random{targetIngr&&reg.ingr.includes(targetIngr)?' 🎯 '+INGR[targetIngr]?.icon:''}
                 </button>}
                 {!canGo&&<div style={{flex:1,fontSize:15,color:TH.red,textAlign:'center',padding:6}}>
-                  {locked?`🔒 Requires Lv${reg.unlock+1}${reg.faction?' + '+FACTIONS[reg.faction]?.name+' rep':''}`:energy<25?'⚡ No Energy':`⚡ Need ${reg.time+25}+ (have ⚡${energy})`}
+                  {locked?`🔒 Requires Lv${reg.unlock+1}${reg.faction?' + '+FACTIONS[reg.faction]?.name+' rep':''}`:`⚡ Need ${(info?.travelTime||reg.time)+25}+ to forage (have ⚡${energy})`}
                 </div>}
                 <button style={S.btn('dim')} onClick={()=>{setZonePopup(null);setTargetIngr(null);}}>Close</button>
               </div>
-              {canGo&&<div style={{fontSize:13,color:TH.textDim,marginTop:4,textAlign:'center'}}>⚠️ This uses all remaining ⚡{energy} Energy</div>}
+              {canGo&&<div style={{fontSize:13,color:TH.textDim,marginTop:4,textAlign:'center'}}>⚡{info.travelTime} paid up front for travel · then ⚡10 per forage roll inside the expedition</div>}
             </div>
           </div>
         </div>);
@@ -8301,11 +8301,14 @@ function CindervaleAlchemistInner(){
               const info=getExpeditionInfo(reg);const canGo=!locked&&info&&info.gatherHours>=1;
               const showReg=((prestigeLevels?.cartographer||0)>=3||getFeatureVal('revealRegionIngredients'))&&!locked;
               const isBest=_bestRegId===reg.id;
+              // Affordability tooltip — unaffordable tiles show needed/have so the player understands the lockout at a glance.
+              const tileTitle=locked?(`Locked — requires Lv${reg.unlock+1}${reg.faction?' + '+FACTIONS[reg.faction]?.name+' rep':''}`):(canGo?(`⚡${info.travelTime} travel + at least ⚡25 to start foraging`):`Need ⚡${(info?.travelTime||reg.time)+25} total (have ⚡${energy})`);
+              const rollsAvail=info?Math.floor(Math.max(0,energy-info.travelTime)/10):0;
               return(
-              <div key={reg.id} onClick={()=>!locked&&pickHex(reg.id)} style={{padding:6,borderRadius:4,background:sel?`${reg.color}44`:TH.panelLight,border:`1px solid ${sel?TH.goldBright:isBest?'#60a060':TH.border}`,cursor:locked?'not-allowed':'pointer',opacity:locked?.4:canGo?1:.6,textAlign:'center',boxShadow:isBest&&!sel?'0 0 6px #60a06066':'none'}}>
+              <div key={reg.id} onClick={()=>!locked&&pickHex(reg.id)} title={tileTitle} style={{padding:6,borderRadius:4,background:sel?`${reg.color}44`:TH.panelLight,border:`1px solid ${sel?TH.goldBright:isBest?'#60a060':TH.border}`,cursor:locked?'not-allowed':canGo?'pointer':'not-allowed',opacity:locked?.35:canGo?1:.5,textAlign:'center',boxShadow:isBest&&!sel?'0 0 6px #60a06066':'none'}}>
                 <div style={{fontSize:20}}>{locked?'🔒':reg.icon}</div>
                 <div style={{fontSize:15,color:sel?TH.goldBright:TH.textBright}}>{reg.name}</div>
-                <div style={{fontSize:13,color:TH.textDim}}>{locked?`Lv${reg.unlock+1}`:canGo?`⚡${info.travelTime} travel · ${info.gatherHours}h gather`:`Need ${reg.time+25}⚡+`}</div>
+                <div style={{fontSize:13,color:TH.textDim}}>{locked?`Lv${reg.unlock+1}`:canGo?`⚡${info.travelTime} travel · ${rollsAvail} roll${rollsAvail===1?'':'s'}`:`Need ⚡${(info?.travelTime||reg.time)+25}+`}</div>
                 <div style={{fontSize:13,color:locked?TH.textDim:TH.gold}}>DC{reg.dc}</div>
                 {showReg&&<div style={{fontSize:12,color:TH.textDim,marginTop:2,lineHeight:1.2}} title={reg.ingr.map(id=>INGR[id]?.name||id).join(', ')}>{reg.ingr.slice(0,5).map(id=>INGR[id]?.icon||'').join(' ')}{reg.ingr.length>5?'…':''}</div>}
                 {isBest&&<div style={{fontSize:12,color:'#60a060',fontWeight:'bold',marginTop:2}} title="Naturalist's Library: currently the highest-yield region.">🌿 Best yield</div>}
@@ -8336,25 +8339,26 @@ function CindervaleAlchemistInner(){
           <div style={S.card} className={isWsOpen('ws6')?'':'ws-closed'}><div style={{...S.cT,cursor:'pointer',userSelect:'none'}} onClick={()=>toggleWs('ws6')}><span style={{display:'flex',justifyContent:'space-between',width:'100%'}}><span>{reg.icon} {reg.name}</span><span style={{fontSize:13,color:TH.textDim}}>{isWsOpen('ws6')?'▲':'▼'}</span></span></div>
             {selFlavor&&<div style={{fontSize:15,color:TH.text,fontStyle:'italic',margin:'0 0 6px',lineHeight:1.5}}>{selFlavor}</div>}
             <div style={{fontSize:14,color:TH.textDim,marginBottom:4}}>Difficulty {reg.diff}/5 · DC{reg.dc} Extraction</div>
-            {canGo&&<div style={{background:TH.bg,borderRadius:4,padding:'6px 8px',marginBottom:6,border:'1px solid '+TH.border}}>
+            {canGo&&(()=>{const rolls=Math.floor(Math.max(0,energy-info.travelTime)/10);return <div style={{background:TH.bg,borderRadius:4,padding:'6px 8px',marginBottom:6,border:'1px solid '+TH.border}}>
               <div style={{fontSize:15,color:TH.textBright,marginBottom:2}}>📊 Expedition Plan</div>
               <div style={{fontSize:14,color:TH.textDim,lineHeight:1.6}}>
-                <div>🚶 Travel: <b style={{color:TH.orange}}>{info.travelTime}h</b></div>
-                <div>⛏️ Gathering: <b style={{color:TH.green}}>{info.gatherHours}h</b></div>
-                <div>📦 Est. yield: <b style={{color:TH.gold}}>~{estTotal} items</b> (~{estPerHr}/hr × {info.gatherHours}h, {pickN} of {reg.ingr.length} types per check)</div>
+                <div>🚶 Travel: <b style={{color:TH.orange}}>⚡{info.travelTime}</b> (one-way)</div>
+                <div>⛏️ Forage budget: <b style={{color:TH.green}}>⚡{Math.max(0,energy-info.travelTime)}</b> ({rolls} roll{rolls===1?'':'s'} at ⚡10 each)</div>
+                <div>📦 Est. yield: <b style={{color:TH.gold}}>~{rolls*estPerHr} items</b> (~{estPerHr}/roll on success · {pickN} of {reg.ingr.length} types per check)</div>
               </div>
-            </div>}
+            </div>;})()}
             <div style={{fontSize:15,color:TH.gold,marginBottom:3}}>Available ingredients ({pickN} types gathered per check):</div>
             <div style={{marginBottom:8}}>{reg.ingr.map(id=><span key={id} title={INGR[id]?.name||id} style={{...S.tag,padding:'3px 6px',cursor:'help'}}>{INGR[id]?.icon} {INGR[id]?.name} <span style={{color:TH.textDim,fontSize:13}}>(have {inv[id]||0})</span></span>)}</div>
             <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
-              <button style={S.btn(canGo?'gold':'dim')} onClick={()=>setZonePopup(reg.id)} disabled={!canGo}>
-                {canGo?`📍 Choose Forage Site in ${reg.name}`:energy<25?'No Energy':`Need ⚡${reg.time+1}+ (have ⚡${energy})`}
+              <button style={{...S.btn(canGo?'gold':'dim'),opacity:canGo?1:0.45,cursor:canGo?'pointer':'not-allowed'}} onClick={()=>setZonePopup(reg.id)} disabled={!canGo}
+                title={canGo?'Open the expedition plan for '+reg.name:`Need ⚡${(info?.travelTime||reg.time)+25}+ to start an expedition (have ⚡${energy})`}>
+                {canGo?`📍 Choose Forage Site in ${reg.name}`:`Need ⚡${(info?.travelTime||reg.time)+25}+ (have ⚡${energy})`}
               </button>
               {canGo&&selectedSite?.regId===reg.id&&<button style={{...S.btn('green'),fontSize:14}} onClick={doHarvest}>
                 ⛏️ Quick Forage ({selectedSite.isHidden?(HIDDEN_REGIONS.find(hr=>hr.id===selectedSite.siteId)?.name||'hidden'):(reg.sites?.find(s=>s.id===selectedSite.siteId)?.name||'selected')})
               </button>}
             </div>
-            {canGo&&<div style={{fontSize:13,color:TH.textDim,marginTop:3,textAlign:'center'}}>⚠️ This will use all remaining ⚡{energy} Energy — plan crafting & shop tasks first!</div>}
+            {canGo&&<div style={{fontSize:13,color:TH.textDim,marginTop:3,textAlign:'center'}}>⚡{info.travelTime} paid up front · then ⚡10 per forage roll · return any time</div>}
             {getFeatureVal('soloExpedition')&&!dayFlags.includes('solo_exp_used')&&(()=>{
               const activeComps=companions.filter(cc=>cc.active);const best=activeComps.sort((a,b)=>b.loyalty-a.loyalty)[0];
               if(!best)return null;const bComp=RANGER_COMPANIONS.find(rc=>rc.id===best.compId);if(!bComp)return null;
@@ -12686,7 +12690,7 @@ function ExpeditionHourPopup({hr,TH,S,LC,INGR,FACTIONS,onOk,onSkipAll,remaining,
 
         {/* Running Totals */}
         {isDone&&<div style={{background:TH.panelLight,borderRadius:6,padding:'6px 10px',border:'1px solid '+TH.border}}>
-          <div style={{fontSize:14,color:TH.gold,marginBottom:3,fontWeight:'bold'}}>📦 Running Total ({hr.hourNum}/{hr.totalHours}h)</div>
+          <div style={{fontSize:14,color:TH.gold,marginBottom:3,fontWeight:'bold'}}>📦 Running Total (roll {hr.hourNum})</div>
           <div style={{display:'flex',flexWrap:'wrap',gap:3}}>
             {Object.entries(hr.cumGathered).filter(([,q])=>q>0).map(([id,q])=>(
               <span key={id} title={INGR[id]?.name||id} style={{fontSize:14,padding:'1px 5px',borderRadius:2,background:TH.bg,color:TH.textBright,border:'1px solid '+TH.border,cursor:'help'}}>
