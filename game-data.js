@@ -1758,6 +1758,19 @@ var FORTRESS_TYPES={
   drowned_ward:{id:'drowned_ward',name:'Drowned Ward',icon:'🔱',threat:'drowned_cult',cap:50,cost:200,loc:'tidecrest',desc:'Permanently caps Cult of the Drowned threat at 50.'},
 };
 
+// ═══ FORAGE FAILURE FLAVOR (Phase 3) ═══
+// Pool of failure messages displayed inline in the expedition view on a missed extraction check.
+// The expedition tracks the last index used and re-rolls if it would repeat, so consecutive
+// failures don't show the same line. Keep the tone terse and evocative.
+var FORAGE_FAILURES=[
+  "You search the area, but find nothing of value.",
+  "A few wilted shoots — nothing worth taking.",
+  "The patch is barren here.",
+  "Tracks lead away, but no ingredient turns up.",
+  "Only thorns and stones for your trouble.",
+  "The ground gives up nothing useful this time."
+];
+
 // ═══ SEASONS ═══
 var SEASON_LENGTH=7; // days per season
 var GOLD_MULT=0.5; // Global gold economy multiplier — applies to all income sources

@@ -551,6 +551,13 @@ function CindervaleAlchemistInner(){
   const [lastCheck,setLastCheck]=useState(null);
   const [resultPopup,setResultPopup]=useState(null); // {title,detail,type}
   const [expQ,setExpQ]=useState([]); // expedition hour popup queue
+  // ─── PHASE 3: IMMERSIVE EXPEDITIONS ───
+  // Tracks an in-progress forage expedition. Player enters expedition mode after travel is paid,
+  // then chooses to Forage Again (10⚡/roll, +1 DC per prior roll) or Return to Town. Save is blocked
+  // while active=true (Task 2). Crash-recovery only — disallowed mid-trip via the disabled save UI.
+  const [expedition,setExpedition]=useState({active:false,regionId:null,siteId:null,siteIsHidden:false,targetIngr:null,
+    rollCount:0,cumG:{},cumXp:0,baseDC:0,travelCost:0,maxDCMet:0,lastRoll:null,lastFlavorIdx:-1,startedDay:0});
+  const [expSummary,setExpSummary]=useState(null); // End-of-expedition summary panel data
   const [boardQ,setBoardQ]=useState([]); // available board quests
   const [activeBQ,setActiveBQ]=useState([]); // accepted board quests
   const [doneBQCount,setDoneBQCount]=useState(0); // total completed
@@ -749,8 +756,10 @@ function CindervaleAlchemistInner(){
     boardQ,activeBQ,doneBQCount,dayFlags,knownEnch,brewCounts,procureItems,pubPapers,selectedSite,constructProgress,lineage,brands,brandOrders,relics,museum,threats,outposts,ingredientContracts,settlementProjects,settlementConstruction,defenseQuests,hollowMarch,legacyFeature,seasonalOverride,wildAlly,featureGrantsApplied,
     // Phase 1 energy refactor: persist daily counters that were previously losing state on reload.
     infusionsUsedToday,wildcraftsUsedToday,
+    // Phase 3 expedition crash-recovery: persist only when active (so the player resumes mid-trip if browser dies).
+    expedition:expedition.active?expedition:null,
     saveVersion:2,
-  }),[phase,charName,charRace,charGender,stats,ptsLeft,skRanks,skPts,skProgress,classLevels,specs,playerFeats,asiSpent,startingClass,screen,day,energy,xp,gold,inv,pots,known,aQ,doneQ,log,milestones,fRep,factionAlign,upgrades,hiredAppr,apprTasks,apprXP,enchQ,potCustQ,clinicPatients,venomContracts,forgedWeapons,shieldCommissions,planarFocus,gadgets,blueprints,fieldJournal,loreFragments,companions,caravans,supplyChains,caravanRuns,trainingSessions,factionHarmony,prestigeLevels,automata,customPatterns,mappedRegions,activeBuffs,debt,disabledUpgrades,shopLocked,injuryPenalty,staffInjuries,shelves,dailyReport,boardQ,activeBQ,doneBQCount,dayFlags,knownEnch,brewCounts,procureItems,constructProgress,selectedSite,lineage,brands,brandOrders,relics,museum,threats,outposts,ingredientContracts,settlementProjects,settlementConstruction,defenseQuests,hollowMarch,legacyFeature,seasonalOverride,wildAlly,featureGrantsApplied,infusionsUsedToday,wildcraftsUsedToday]);
+  }),[phase,charName,charRace,charGender,stats,ptsLeft,skRanks,skPts,skProgress,classLevels,specs,playerFeats,asiSpent,startingClass,screen,day,energy,xp,gold,inv,pots,known,aQ,doneQ,log,milestones,fRep,factionAlign,upgrades,hiredAppr,apprTasks,apprXP,enchQ,potCustQ,clinicPatients,venomContracts,forgedWeapons,shieldCommissions,planarFocus,gadgets,blueprints,fieldJournal,loreFragments,companions,caravans,supplyChains,caravanRuns,trainingSessions,factionHarmony,prestigeLevels,automata,customPatterns,mappedRegions,activeBuffs,debt,disabledUpgrades,shopLocked,injuryPenalty,staffInjuries,shelves,dailyReport,boardQ,activeBQ,doneBQCount,dayFlags,knownEnch,brewCounts,procureItems,constructProgress,selectedSite,lineage,brands,brandOrders,relics,museum,threats,outposts,ingredientContracts,settlementProjects,settlementConstruction,defenseQuests,hollowMarch,legacyFeature,seasonalOverride,wildAlly,featureGrantsApplied,infusionsUsedToday,wildcraftsUsedToday,expedition]);
 
   const restoreState=useCallback((s)=>{
     if(!s)return;
@@ -806,6 +815,9 @@ function CindervaleAlchemistInner(){
     setSelHex(null);setVBuild('workshop');setDlgNpc(null);setShowShop(false);setQuestDlg(null);setPendingLevelUp(null);setSelectedSite(s.selectedSite||null);setLineage(s.lineage||null);setBrands(s.brands||[]);setBrandOrders(s.brandOrders||[]);setRelics(s.relics||[]);setMuseum(s.museum||{pottery:0,tablets:0,jewelry:0,mechanisms:0,weapons:0});setThreats(s.threats||Object.fromEntries(locThreatIds.map(t=>[t,0])));setOutposts(s.outposts||[]);setIngredientContracts(s.ingredientContracts||[]);setSettlementProjects(s.settlementProjects||[]);setSettlementConstruction(s.settlementConstruction||null);setDefenseQuests(s.defenseQuests||[]);setHollowMarch(s.hollowMarch||DEF?.hollowMarch||{active:false,wave:0,nextWaveDay:0,demands:[],history:[],finalStandAvailable:false,finalStandComplete:false,marchRecipesUnlocked:[]});setLegacyFeature(s.legacyFeature||null);setSeasonalOverride(s.seasonalOverride||null);setWildAlly(s.wildAlly||null);setFeatureGrantsApplied(s.featureGrantsApplied||[]);
     // Phase 1 bug fix: persist daily counters across save reloads. Default 0 for pre-v2 saves.
     setInfusionsUsedToday(s.infusionsUsedToday||0);setWildcraftsUsedToday(s.wildcraftsUsedToday||0);
+    // Phase 3: Restore in-progress expedition (crash recovery). Inactive by default for older saves and on fresh chars.
+    setExpedition(s.expedition&&s.expedition.active?s.expedition:{active:false,regionId:null,siteId:null,siteIsHidden:false,targetIngr:null,rollCount:0,cumG:{},cumXp:0,baseDC:0,travelCost:0,maxDCMet:0,lastRoll:null,lastFlavorIdx:-1,startedDay:0});
+    setExpSummary(null);
   },[]);
 
   // ─── ALL EFFECTS (before any return!) ───
@@ -1546,23 +1558,49 @@ function CindervaleAlchemistInner(){
     const extras=[];if(utb)extras.push({label:'🃏 Untrained',val:utb});
     return{roll,mod,rb,total,dc:effDc,dcNote,success:roll===1?false:roll===20?true:total>=effDc,name:sk.name,icon:sk.icon,statName:STATS[sk.stat]?.name||'',extras};
   };
+  // ─── PHASE 3: FAILURE FLAVOR PICKER ───
+  // Picks a random index into FORAGE_FAILURES, avoiding immediate repeats. Falls back to 0 if the pool is missing.
+  const _pickFailureFlavor=(lastIdx)=>{
+    const pool=typeof FORAGE_FAILURES!=='undefined'?FORAGE_FAILURES:['You find nothing.'];
+    if(pool.length<=1)return 0;
+    let idx=lastIdx;let tries=0;
+    while(idx===lastIdx&&tries<6){idx=Math.floor(Math.random()*pool.length);tries++;}
+    return idx;
+  };
+  // ─── PHASE 3: EXPEDITION ENTRY ───
+  // Replaces the legacy `setEnergy(0); pre-compute all rolls` flow. Validates the region, pays only the
+  // one-way travel cost, and enters expedition mode. The first (and every subsequent) roll fires via
+  // _forageAgain() inside the immersive ExpeditionView. Skill-check internals and per-roll perks (Naturalist,
+  // Cartographer, Ranger encounters, Danger Sense, every existing event) are preserved by _executeForageRoll.
   const doHarvest=()=>{
     const reg=locRegions.find(r=>r.id===selHex);if(!reg)return;
     const info=getExpeditionInfo(reg);if(!info||info.gatherHours<1)return;
     if(reg.faction&&getRL(reg.faction)<(reg.fReq||0)){addLog(`The ${FACTIONS[reg.faction]?.name||'locals'} eye you with suspicion. You haven't earned their trust to forage here.`,'error');return;}
     snapshot();
-    setEnergy(0);
+    // Phase 3: pay travel only. The per-roll 10⚡ cost is applied inside _forageAgain().
+    setEnergy(e=>Math.max(0,e-info.travelTime));
     const fl=reg.flavor?reg.flavor[Math.floor(Math.random()*reg.flavor.length)]:'';
     if(fl)addLog(fl,'story');
     const curSiteName=selectedSite?.regId===reg.id?(selectedSite.isHidden?HIDDEN_REGIONS.find(hr=>hr.id===selectedSite.siteId)?.name:reg.sites?.find(s=>s.id===selectedSite.siteId)?.name):null;
     if(curSiteName)addLog(`📍 Foraging at ${curSiteName}.`,'info');
     if(targetIngr&&reg.ingr.includes(targetIngr))addLog(`🎯 Targeting ${INGR[targetIngr]?.icon||''}${INGR[targetIngr]?.name||targetIngr}${getFeatureVal('targetNoYieldPenalty')?' (Tracker: no penalty!)':' (-25% yield)'}.`,'info');
-    // Pre-compute all energy
-    const queue=[];const localNewDiscs=[];const localNewComps=[];
-    const cumG={};let cumXp=0;let cyclesLeft=info.gatherHours;let h=0;
-    while(h<cyclesLeft){
-      h++;
-      const ext=pureCheck('extraction',reg.dc);
+    // Tag expedition difficulty for Blight tracking (was inside the legacy loop with h===0 guard).
+    setDayFlags(f=>[...f,'exp_diff_'+reg.diff]);
+    setExpedition({active:true,regionId:reg.id,
+      siteId:selectedSite?.regId===reg.id?selectedSite.siteId:null,
+      siteIsHidden:!!(selectedSite?.regId===reg.id&&selectedSite?.isHidden),
+      targetIngr:targetIngr||null,rollCount:0,cumG:{},cumXp:0,baseDC:reg.dc,
+      travelCost:info.travelTime,maxDCMet:0,lastRoll:null,lastFlavorIdx:-1,startedDay:day});
+  };
+  // ─── PHASE 3: PER-ROLL FORAGE LOGIC ───
+  // Single-iteration version of the legacy loop body. Effective DC = reg.dc + rollIndex (linear +1 per prior
+  // roll, the "diminishing returns" tension mechanic). Returns the queue-entry shape the ExpeditionHourPopup
+  // expects. The caller (`_forageAgain`) is responsible for pushing to expQ and updating expedition state.
+  const _executeForageRoll=(reg,rollIndex,prevCumG,prevCumXp)=>{
+    const cumG={...prevCumG};let cumXp=prevCumXp;
+    const effectiveDC=reg.dc+rollIndex;
+    const hourNum=rollIndex+1;
+    const ext=pureCheck('extraction',effectiveDC);
       const extB=getFeatureVal('extractionBonus');
       if(extB){ext.total+=extB;ext.success=ext.roll===1?false:ext.roll===20?true:ext.total>=ext.dc;ext.extras.push({label:'🌿 Extraction',val:extB});}
       const isCrit=ext.roll===20;
@@ -1570,6 +1608,10 @@ function CindervaleAlchemistInner(){
       const pickN=reg.pick||reg.ingr.length;
       const curSite=selectedSite?.regId===reg.id&&!selectedSite.isHidden?reg.sites?.find(s=>s.id===selectedSite.siteId):null;
       const curHiddenSite=selectedSite?.regId===reg.id&&selectedSite.isHidden?HIDDEN_REGIONS.find(hr=>hr.id===selectedSite.siteId):null;
+      // Phase 3: track per-roll side effects locally and return them to the caller. The legacy loop
+      // mutated `mappedRegions`/`localNewDiscs`/`localNewComps`/companion-loyalty in-place; we keep
+      // that information in the return value so `_forageAgain` can apply state updates cleanly.
+      const localNewDiscs=[];const localNewComps=[];const localNewMaps=[];const localLoyaltyLoss=[];
       // Targeted foraging: build weighted pick with 2x target, 0.5x others
       let picked;
       if(curHiddenSite){
@@ -1591,7 +1633,7 @@ function CindervaleAlchemistInner(){
       let fSeason=getSeason(day,gameLocation);
       if(seasonalOverride&&seasonalOverride.region===reg.id){
         const overrideSeason=SEASONS[gameLocation]?.find(s=>s.id===seasonalOverride.season);
-        if(overrideSeason){fSeason=overrideSeason;if(h===1)addLog('🍃 Seasonal Bypass active — foraging as if it\'s '+overrideSeason.name+'.','craft');}
+        if(overrideSeason){fSeason=overrideSeason;if(rollIndex===0)addLog('🍃 Seasonal Bypass active — foraging as if it\'s '+overrideSeason.name+'.','craft');}
       }
       const seasonYieldMod=(fSeason.yieldMod||0)+(fSeason.floraYieldBonus&&reg.ingr.some(id=>INGR[id]?.icon==='🌿'||INGR[id]?.icon==='🌸'||INGR[id]?.icon==='🌻'||INGR[id]?.icon==='🍄')?(fSeason.floraYieldBonus||0):0);
       const critMult=isCrit?(1+getFeatureVal('critExtractionMulti')):1;
@@ -1709,8 +1751,10 @@ function CindervaleAlchemistInner(){
           });
           event.effectItems=adj;event.effectDetail='Lost some gathered items';
         } else if(event.effect==='lose_time'){
-          cyclesLeft=Math.max(h,cyclesLeft-1);
-          event.effectDetail='Lost 1 gathering hour';
+          // Phase 3: legacy 'cyclesLeft--' is no longer meaningful (player chooses when to stop).
+          // Translate the time-loss bite into 10⚡ extra (one roll's worth) so the event still stings.
+          setEnergy(en=>Math.max(0,en-10));
+          event.effectDetail='Lost ground — 10 Energy wasted';
         } else if(event.effect==='bonus_xp'){
           event.effectXp=50;event.effectDetail='+50 bonus XP';
         } else if(event.effect==='rep'&&ev.faction){
@@ -1756,7 +1800,9 @@ function CindervaleAlchemistInner(){
             const comp=activeComps[Math.floor(Math.random()*activeComps.length)];
             const compData=RANGER_COMPANIONS.find(r=>r.id===comp.compId);
             if(comp.loyalty>1){
-              comp.loyalty=Math.max(1,comp.loyalty-1);
+              // Phase 3: report the loss to the caller; the legacy code mutated comp.loyalty in-place
+              // which is unreliable because `companions` is React state. Caller applies via setCompanions.
+              localLoyaltyLoss.push({compId:comp.compId});
               event.companionLoss={name:compData?.name||'Companion',icon:compData?.icon||'🐾'};
               event.effectDetail=(event.effectDetail||'')+' | '+compData?.icon+' '+compData?.name+' loyalty -1 (frightened)';
             }
@@ -1809,7 +1855,7 @@ function CindervaleAlchemistInner(){
           const mapCh=pureCheck('research',mapDC);
           const loreB=getSkMod('research');if(loreB>0)mapCh.total+=loreB;
           if(mapCh.roll!==1&&mapCh.total>=mapDC){
-            mappedRegions.push(hr.id);
+            localNewMaps.push(hr.id);
             hiddenDisc={...hr,mapped:true};
             // Grant bonus ingredients from the hidden area immediately
             const yieldN=hr.yieldRange[0]+Math.floor(Math.random()*(hr.yieldRange[1]-hr.yieldRange[0]+1));
@@ -1835,7 +1881,9 @@ function CindervaleAlchemistInner(){
       if(isCartographer){
         const bonusPerMapped=(prestigeLevels.cartographer||0)>=2?1:0;
         if(bonusPerMapped>0){
-          HIDDEN_REGIONS.filter(hr=>hr.region===reg.id&&mappedRegions.includes(hr.id)).forEach(hr=>{
+          // Include this-roll discoveries so the bonus kicks in immediately.
+          const effMapped=[...mappedRegions,...localNewMaps];
+          HIDDEN_REGIONS.filter(hr=>hr.region===reg.id&&effMapped.includes(hr.id)).forEach(hr=>{
             for(let i=0;i<bonusPerMapped;i++){const id=hr.ingr[Math.floor(Math.random()*hr.ingr.length)];hourG[id]=(hourG[id]||0)+1;}
           });
         }
@@ -1862,12 +1910,10 @@ function CindervaleAlchemistInner(){
           }
         }
       }
-      // Accumulate
+      // Accumulate this roll into the running cum totals returned to the caller.
       Object.entries(hourG).forEach(([id,q])=>{cumG[id]=(cumG[id]||0)+q;});
       cumXp+=hxp+(event?.effectXp||0);
-      // Tag expedition difficulty for Blight tracking
-      if(h===0)setDayFlags(f=>[...f,'exp_diff_'+reg.diff]);
-      // Relic discovery (Antiquarian)
+      // Relic discovery (Antiquarian) — per-roll chance, unchanged from legacy.
       const aqLv=prestigeLevels.antiquarian||0;
       const relicChance=aqLv>=4?0.35:aqLv>=2?0.25:aqLv>=1?0.15:0;
       let foundRelic=null;
@@ -1876,48 +1922,44 @@ function CindervaleAlchemistInner(){
         foundRelic=generateRelic(reg.diff,reg.name);
         if(!canLegendary&&foundRelic.rarity==='legendary')foundRelic.rarity='rare';
       }
-      queue.push({
-        hourNum:h,totalHours:cyclesLeft,regId:reg.id,regName:curHiddenSite?reg.name+' — 🗺️ '+curHiddenSite.name:curSite?reg.name+' — '+curSite.name:reg.name,regIcon:reg.icon,travelTime:info.travelTime,diff:reg.diff||1,
-        ext,gathered:{...hourG},xp:hxp+(event?.effectXp||0),event,
-        cumGathered:{...cumG},cumXp,isFinal:false,divBonus,effBonus,luckyBonus,attuneBonus,discovery,companionEnc,hiddenDisc,
-      });
-    }
-    if(queue.length>0){
-      // guaranteedRare: if no rare ingredient found, add one to last hour
-      if(getFeatureVal('guaranteedRare')>0&&reg.diff>=2){
-        const rareIds=reg.ingr.filter(id=>(INGR[id]?.val||0)>=8);
-        if(rareIds.length>0){
-          const hasRare=Object.keys(cumG).some(id=>rareIds.includes(id)&&cumG[id]>0);
-          if(!hasRare){
-            const rId=rareIds[Math.floor(Math.random()*rareIds.length)];
-            const last=queue[queue.length-1];
-            last.gathered[rId]=(last.gathered[rId]||0)+1;
-            cumG[rId]=(cumG[rId]||0)+1;last.cumGathered={...cumG};
-          }
-        }
+      const hr={
+        hourNum,totalHours:hourNum,regId:reg.id,
+        regName:curHiddenSite?reg.name+' — 🗺️ '+curHiddenSite.name:curSite?reg.name+' — '+curSite.name:reg.name,
+        regIcon:reg.icon,travelTime:0,diff:reg.diff||1,
+        ext,gathered:{...hourG},xp:hxp+(event?.effectXp||0),event,foundRelic,
+        cumGathered:{...cumG},cumXp,isFinal:true,divBonus,effBonus:false,luckyBonus,attuneBonus,discovery,companionEnc,hiddenDisc,
+      };
+      return{hr,cumG,cumXp,localNewDiscs,localNewComps,localNewMaps,localLoyaltyLoss};
+  };
+  // ─── PHASE 3: FORAGE AGAIN ───
+  // Pay 10⚡ (with Endurance/Early-Riser refund), run one roll, push to expQ for animation, update expedition state,
+  // and commit per-roll side effects (field journal, mapped regions, injuries, gadget damage, companion loyalty losses).
+  const _forageAgain=()=>{
+    if(!expedition.active)return;
+    const reg=locRegions.find(r=>r.id===expedition.regionId);if(!reg)return;
+    const earlyR=getFeatureVal('firstActionFree')&&!dayFlags.includes('first_action_used');
+    if(energy<10&&!earlyR)return;
+    spendEnergy(10);
+    const result=_executeForageRoll(reg,expedition.rollCount,expedition.cumG,expedition.cumXp);
+    if(!result)return;
+    const {hr,cumG,cumXp,localNewDiscs,localNewComps,localNewMaps,localLoyaltyLoss}=result;
+    // Per-roll side effects (each was previously batched at end-of-expedition).
+    if(hr.discovery?.documented&&localNewDiscs.length>0){setFieldJournal(prev=>[...new Set([...prev,...localNewDiscs])]);}
+    if(hr.companionEnc?.approachable){setPendingCompDec(p=>[...(p||[]),hr.companionEnc]);}
+    if(localNewMaps.length>0){
+      setMappedRegions(prev=>[...new Set([...prev,...localNewMaps])]);
+      // Auto-learn recipes & enchantments from newly mapped hidden areas.
+      const allNewRecipeIds=hr.hiddenDisc?._newRecipeIds||[];
+      const allNewEnchIds=hr.hiddenDisc?._newEnchIds||[];
+      if(allNewRecipeIds.length>0)setKnown(prev=>{const n=[...prev];allNewRecipeIds.forEach(id=>{if(!n.includes(id))n.push(id);});return n;});
+      if(allNewEnchIds.length>0)setKnownEnch(prev=>{const n=[...prev];allNewEnchIds.forEach(id=>{if(!n.includes(id))n.push(id);});return n;});
+      if(allNewRecipeIds.length>0||allNewEnchIds.length>0){
+        const allLearned=[...allNewRecipeIds.map(id=>{const r=RECIPES.find(rx=>rx.id===id);return r?r.icon+' '+r.name:id;}),...allNewEnchIds.map(id=>{const e=ENCHANTMENTS.find(ex=>ex.id===id);return e?e.icon+' '+e.name:id;})];
+        addLog('📜 Hidden area knowledge unlocked: '+allLearned.join(', '),'quest');
       }
-      // Faction rareForageBonus: chance for extra rare on each expedition
-      const rfb=getFeatureVal('rareForageBonus');
-      if(rfb>0&&Math.random()<rfb){
-        const rareIds2=reg.ingr.filter(id=>(INGR[id]?.val||0)>=6);
-        if(rareIds2.length>0){const rId=rareIds2[Math.floor(Math.random()*rareIds2.length)];const last=queue[queue.length-1];last.gathered[rId]=(last.gathered[rId]||0)+1;cumG[rId]=(cumG[rId]||0)+1;last.cumGathered={...cumG};}
-      }
-      queue.forEach(q=>{q.totalHours=queue.length;});
-      queue[queue.length-1].isFinal=true;
     }
-    // Update field journal with any discoveries made during expedition
-    const newDiscs=queue.filter(q=>q.discovery?.documented).map(q=>q.discovery.id);
-    if(newDiscs.length>0)setFieldJournal(prev=>[...new Set([...prev,...newDiscs])]);
-    // Queue companion decisions for post-expedition popup (instead of auto-taming)
-    const approachableComps=queue.filter(q=>q.companionEnc?.approachable).map(q=>q.companionEnc);
-    if(approachableComps.length>0)setPendingCompDec(approachableComps);
-    // Update mapped regions with any hidden areas discovered during expedition
-    // Apply expedition injuries
-    const totalInjury=queue.reduce((s,q)=>s+(q.event?.injuryPenalty||0),0);
-    if(totalInjury>0){setInjuryPenalty(prev=>prev+totalInjury);addLog('🩹 Expedition injury: -'+totalInjury+' Energy tomorrow.','error');}
-    // Gadget damage
-    const hadGadgetDmg=queue.some(q=>q.event?.gadgetDamage);
-    if(hadGadgetDmg&&gadgets.length>0&&!getFeatureVal('infiniteGadgetMarks')){
+    if(hr.event?.injuryPenalty){setInjuryPenalty(prev=>prev+hr.event.injuryPenalty);addLog('🩹 Expedition injury: -'+hr.event.injuryPenalty+' Energy tomorrow.','error');}
+    if(hr.event?.gadgetDamage&&gadgets.length>0&&!getFeatureVal('infiniteGadgetMarks')){
       const activeG=gadgets.filter(g=>g.equipped!==false);
       if(activeG.length>0){
         const victim=activeG[Math.floor(Math.random()*activeG.length)];
@@ -1925,33 +1967,86 @@ function CindervaleAlchemistInner(){
         addLog('🔧 '+victim.name+' was damaged! Unequipped until repaired.','error');
       }
     }
-    // Companion loyalty losses (already applied to local state in loop, need to commit)
-    const compLosses=queue.filter(q=>q.event?.companionLoss);
-    if(compLosses.length>0){
+    if(localLoyaltyLoss.length>0){
       setCompanions(prev=>prev.map(c=>{
-        const loss=compLosses.find(q=>q.event.companionLoss);
-        // The loyalty was already decremented on the local object during the loop
-        return c;
+        const hit=localLoyaltyLoss.find(l=>l.compId===c.compId);
+        return hit?{...c,loyalty:Math.max(1,(c.loyalty||1)-1)}:c;
       }));
     }
-    const newMaps=queue.filter(q=>q.hiddenDisc?.mapped).map(q=>q.hiddenDisc.id);
-    if(newMaps.length>0)setMappedRegions(prev=>[...new Set([...prev,...newMaps])]);
-    // Auto-learn recipes & enchantments from newly mapped hidden areas
-    const allNewRecipeIds=[];const allNewEnchIds=[];
-    queue.forEach(q=>{
-      if(q.hiddenDisc?.mapped&&q.hiddenDisc._newRecipeIds)allNewRecipeIds.push(...q.hiddenDisc._newRecipeIds);
-      if(q.hiddenDisc?.mapped&&q.hiddenDisc._newEnchIds)allNewEnchIds.push(...q.hiddenDisc._newEnchIds);
-    });
-    if(allNewRecipeIds.length>0)setKnown(prev=>{const n=[...prev];allNewRecipeIds.forEach(id=>{if(!n.includes(id))n.push(id);});return n;});
-    if(allNewEnchIds.length>0)setKnownEnch(prev=>{const n=[...prev];allNewEnchIds.forEach(id=>{if(!n.includes(id))n.push(id);});return n;});
-    if(allNewRecipeIds.length>0||allNewEnchIds.length>0){
-      const allLearned=[...allNewRecipeIds.map(id=>{const r=RECIPES.find(rx=>rx.id===id);return r?r.icon+' '+r.name:id;}),...allNewEnchIds.map(id=>{const e=ENCHANTMENTS.find(ex=>ex.id===id);return e?e.icon+' '+e.name:id;})];
-      addLog('📜 Hidden area knowledge unlocked: '+allLearned.join(', '),'quest');
+    // Failure flavor selection — re-roll to avoid repeating the previous message.
+    const newFlavorIdx=hr.ext.success?expedition.lastFlavorIdx:_pickFailureFlavor(expedition.lastFlavorIdx);
+    setExpedition(prev=>({...prev,
+      rollCount:prev.rollCount+1,
+      cumG,cumXp,
+      maxDCMet:hr.ext.success?Math.max(prev.maxDCMet,hr.ext.dc):prev.maxDCMet,
+      lastRoll:{roll:hr.ext.roll,total:hr.ext.total,dc:hr.ext.dc,success:hr.ext.success,
+        ingredients:{...hr.gathered},flavorIdx:newFlavorIdx,xp:hr.xp,
+        eventText:hr.event?.text||null,discovery:hr.discovery||null,companionEnc:hr.companionEnc||null,hiddenDisc:hr.hiddenDisc||null},
+      lastFlavorIdx:newFlavorIdx,
+    }));
+    // Push to expQ so the existing ExpeditionHourPopup animates the d20 reveal.
+    setExpQ([hr]);
+  };
+  // ─── PHASE 3: RETURN TO TOWN ───
+  // Exits expedition mode. Applies per-expedition perks that legacy applied at end-of-queue:
+  // guaranteedRare backstop, faction rareForageBonus, forageDiscovery chance, and Wildcrafter Field Brew phase.
+  // Builds the summary panel (travel + forage breakdown, total rolls, highest DC met).
+  const _returnToTown=()=>{
+    if(!expedition.active)return;
+    const reg=locRegions.find(r=>r.id===expedition.regionId);
+    const cumG={...expedition.cumG};
+    if(reg){
+      // guaranteedRare: backstop if no rare ingredient was found this trip.
+      if(getFeatureVal('guaranteedRare')>0&&reg.diff>=2){
+        const rareIds=reg.ingr.filter(id=>(INGR[id]?.val||0)>=8);
+        if(rareIds.length>0){
+          const hasRare=Object.keys(cumG).some(id=>rareIds.includes(id)&&cumG[id]>0);
+          if(!hasRare){
+            const rId=rareIds[Math.floor(Math.random()*rareIds.length)];
+            cumG[rId]=(cumG[rId]||0)+1;modInv(rId,1);
+            addLog('🌿 Guaranteed Rare: '+(INGR[rId]?.icon||'')+(INGR[rId]?.name||rId)+' surfaced before you left!','craft');
+          }
+        }
+      }
+      // Faction rareForageBonus: per-trip extra-rare chance.
+      const rfb=getFeatureVal('rareForageBonus');
+      if(rfb>0&&Math.random()<rfb){
+        const rareIds2=reg.ingr.filter(id=>(INGR[id]?.val||0)>=6);
+        if(rareIds2.length>0){
+          const rId=rareIds2[Math.floor(Math.random()*rareIds2.length)];
+          cumG[rId]=(cumG[rId]||0)+1;modInv(rId,1);
+          addLog('🌿 Faction contacts smuggled an extra '+(INGR[rId]?.icon||'')+(INGR[rId]?.name||rId)+' into your pack.','craft');
+        }
+      }
+      // forageDiscovery: chance per expedition to discover a new recipe.
+      const fdChance=getFeatureVal('forageDiscovery');
+      if(fdChance>0&&Math.random()<fdChance){
+        const und=RECIPES.filter(r=>!known.includes(r.id)&&level>=r.unlock&&(!r.faction||getRL(r.faction)>=(r.fReq||0))&&canCraftAtLocation(r.ingr)&&!r.fieldOnly);
+        if(und.length>0){const fd=weightedDiscPick(und);setKnown(p=>[...p,fd.id]);addLog(`🌿 Field Discovery: The expedition revealed the secret of ${fd.icon}${fd.name}!`,'quest');}
+      }
+      // Wildcrafter Field Brew phase — only if the trip actually produced a haul.
+      if((prestigeLevels.wildcrafter||0)>=1&&Object.values(cumG).some(q=>q>0)){
+        const wcLv=prestigeLevels.wildcrafter||0;
+        const maxBrews=wcLv>=5?4:wcLv>=3?3:wcLv>=2?2:1;
+        setFieldBrewPhase({haul:{...cumG},brewsLeft:maxBrews,regDiff:reg.diff||1});
+      }
     }
-    // forageDiscovery: chance per expedition to discover a new recipe
-    const fdChance=getFeatureVal('forageDiscovery');
-    if(fdChance>0&&Math.random()<fdChance){const und=RECIPES.filter(r=>!known.includes(r.id)&&level>=r.unlock&&(!r.faction||getRL(r.faction)>=(r.fReq||0))&&canCraftAtLocation(r.ingr)&&!r.fieldOnly);if(und.length>0){const fd=weightedDiscPick(und);setKnown(p=>[...p,fd.id]);addLog(`🌿 Field Discovery: The expedition revealed the secret of ${fd.icon}${fd.name}!`,'quest');}}
-    setExpQ(queue);
+    // Build summary panel.
+    setExpSummary({
+      regionName:reg?.name||'Wilds',regionIcon:reg?.icon||'🌿',
+      rollCount:expedition.rollCount,cumG,
+      travelCost:expedition.travelCost,forageCost:expedition.rollCount*10,
+      totalCost:expedition.travelCost+expedition.rollCount*10,
+      maxDCMet:expedition.maxDCMet,cumXp:expedition.cumXp,
+    });
+    if(expedition.rollCount>0){
+      const haulStr=Object.entries(cumG).filter(([,q])=>q>0).map(([id,q])=>(INGR[id]?.icon||'')+(INGR[id]?.name||id)+' ×'+q).join(', ')||'Nothing usable';
+      addLog(`🏠 Returned from ${reg?.icon||''}${reg?.name||'the wilds'}: ${expedition.rollCount} roll${expedition.rollCount===1?'':'s'}, ${haulStr} (+${expedition.cumXp} XP)`,'harvest');
+    } else {
+      addLog(`🏠 Returned from ${reg?.icon||''}${reg?.name||'the wilds'} without foraging.`,'info');
+    }
+    setExpedition({active:false,regionId:null,siteId:null,siteIsHidden:false,targetIngr:null,
+      rollCount:0,cumG:{},cumXp:0,baseDC:0,travelCost:0,maxDCMet:0,lastRoll:null,lastFlavorIdx:-1,startedDay:0});
   };
   // Advance expedition — apply one hour's effects, shift queue
   const advanceExpedition=()=>{
@@ -1964,17 +2059,23 @@ function CindervaleAlchemistInner(){
     addLog(`⛏️ Hour ${hr.hourNum}: ${hr.ext.success?'✅':'❌'} ${Object.entries(hr.gathered).filter(([,q])=>q>0).map(([id,q])=>INGR[id]?.icon+INGR[id]?.name+' ×'+q).join(', ')||'nothing'}${hr.divBonus?' | 👁️ Divination: +1 '+hr.divBonus.icon+hr.divBonus.name:''}${hr.luckyBonus?' | 🍀 Lucky: +1 '+hr.luckyBonus.icon+hr.luckyBonus.name:''}${hr.attuneBonus?' | 🎯 Attuned: +1 '+hr.attuneBonus.icon+hr.attuneBonus.name:''}${hr.effBonus?' | ⏱️ Efficiency: bonus hour!':''}${hr.discovery?(hr.discovery.documented?' | 🌿 Discovered: '+hr.discovery.icon+' '+hr.discovery.name+'!':' | 🌿 Noticed something, but couldn\'t document it...'):''}${hr.companionEnc?(hr.companionEnc.approachable?' | 🦊 Approached: '+hr.companionEnc.icon+' '+hr.companionEnc.name+'!':' | 🦊 Spotted '+hr.companionEnc.icon+' '+hr.companionEnc.name+' but it fled...'):''}${hr.hiddenDisc?(hr.hiddenDisc.mapped?' | 🗺️ MAPPED: '+hr.hiddenDisc.icon+' '+hr.hiddenDisc.name+'!':' | 🗺️ Glimpsed a hidden path...'):''}${hr.event?(hr.event.dangerSensed?' | ⚠️ Danger Sense saved you!':' | '+hr.event.text):''}`,'harvest');
     const rest=expQ.slice(1);
     setExpQ(rest);
-    // Trigger Field Brew phase (Wildcrafter)
-    if(rest.length===0&&(prestigeLevels.wildcrafter||0)>=1){
-      const wcLv=prestigeLevels.wildcrafter||0;
-      const maxBrews=wcLv>=5?4:wcLv>=3?3:wcLv>=2?2:1;
-      setFieldBrewPhase({haul:{...hr.cumGathered},brewsLeft:maxBrews,regDiff:hr.diff||1});
-    }
-    if(rest.length===0){
+    // Phase 3: when an expedition is active, the player is mid-trip and the "Forage Again" loop will
+    // refill expQ on the next click. We skip the field-brew popup and the "Expedition Complete!" summary
+    // here — both fire instead from _returnToTown() when the player chooses to leave.
+    if(rest.length===0&&!expedition.active){
+      if((prestigeLevels.wildcrafter||0)>=1){
+        const wcLv=prestigeLevels.wildcrafter||0;
+        const maxBrews=wcLv>=5?4:wcLv>=3?3:wcLv>=2?2:1;
+        setFieldBrewPhase({haul:{...hr.cumGathered},brewsLeft:maxBrews,regDiff:hr.diff||1});
+      }
       setLastCheck(hr.ext);
       const totalHaul=Object.entries(hr.cumGathered).filter(([,q])=>q>0).map(([id,q])=>INGR[id]?.icon+INGR[id]?.name+' ×'+q).join(', ')||'Nothing usable';
       showResult(hr.regIcon+hr.regName+' — Expedition Complete!','harvest',
         hr.totalHours+'h gathering (+⚡'+hr.travelTime+' travel)\nTotal haul: '+totalHaul+'\nTotal XP: +'+hr.cumXp);
+    } else if(rest.length===0&&expedition.active){
+      // Animation ended for this roll. Update lastCheck for the worldmap dice readout. The expedition
+      // view stays mounted; the player can Forage Again or Return to Town.
+      setLastCheck(hr.ext);
     }
   };
   // Skip all remaining energy at once
@@ -6568,7 +6669,10 @@ function CindervaleAlchemistInner(){
           <div style={{display:'flex',gap:4}}>
             <button style={{...S.btn('gold'),fontSize:14,padding:'3px 10px'}} onClick={()=>setConfirmRest(true)}>🌙 Rest (⚡{energy})</button>
             {undoStack.length>0&&<button style={{...S.btn('def'),fontSize:14,padding:'3px 8px'}} onClick={undo}>↩️ Undo</button>}
-            <button style={{...S.btn('dim'),fontSize:14,padding:'3px 8px'}} onClick={()=>setShowSaveMenu(true)}>💾</button>
+            <button style={{...S.btn(expedition.active?'dim':'dim'),fontSize:14,padding:'3px 8px',opacity:expedition.active?0.4:1,cursor:expedition.active?'not-allowed':'pointer'}}
+              onClick={()=>{if(!expedition.active)setShowSaveMenu(true);}}
+              title={expedition.active?'Return to town before saving':'Save / Load'}
+              disabled={expedition.active}>💾</button>
             <a href="cindervale_handbook.html" target="_blank" rel="noopener noreferrer" style={{...S.btn('def'),fontSize:14,padding:'3px 8px',textDecoration:'none',display:'inline-flex',alignItems:'center'}}>📖 Handbook</a>
             <button style={{...S.btn((musicOn||sfxOn)?'gold':'dim'),fontSize:14,padding:'3px 8px'}} onClick={()=>setShowAudioPanel(p=>!p)} title="Audio Settings">🎵</button>
           </div>
@@ -11414,6 +11518,171 @@ function CindervaleAlchemistInner(){
           </div></>}
         </div>
       </>}
+
+      {/* ═══ PHASE 3: IMMERSIVE EXPEDITION VIEW ═══ */}
+      {/* Renders an 85vw/85vh overlay covering home view (z-50). ExpeditionHourPopup (z-100) and
+          summary modal (z-9999) sit on top during animations / post-trip. The view stays visible
+          across rolls — the popup is brief, then closes back to this panel. */}
+      {expedition.active&&(()=>{
+        const reg=locRegions.find(r=>r.id===expedition.regionId);if(!reg)return null;
+        // Phase 3 region art lookup: ZONE_IMGS is keyed by region id (location-images.js has no per-region-per-season
+        // composites — investigated and confirmed). Seasonal presentation comes through the header strip's season
+        // chip (icon + name + color) rather than a swapped hero image. If a future seasonal variant convention
+        // emerges (e.g. ZONE_IMGS['ashfields_winter']), this lookup line picks it up automatically.
+        const curSeason=getSeason(day,gameLocation);
+        const heroImg=(typeof ZONE_IMGS!=='undefined'&&(ZONE_IMGS[reg.id+'_'+curSeason.id]||ZONE_IMGS[reg.id]))||curSeason.img||null;
+        const earlyR=getFeatureVal('firstActionFree')&&!dayFlags.includes('first_action_used');
+        const canForage=energy>=10||earlyR;
+        const nextDC=reg.dc+expedition.rollCount;
+        const activeCompanions=(companions||[]).filter(c=>c.active);
+        const lr=expedition.lastRoll;
+        const cumEntries=Object.entries(expedition.cumG||{}).filter(([,q])=>q>0);
+        const failureText=lr&&!lr.success?((typeof FORAGE_FAILURES!=='undefined'?FORAGE_FAILURES:[])[lr.flavorIdx]||'You found nothing.'):'';
+        return(
+        <div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'rgba(0,0,0,0.78)',zIndex:50,display:'flex',alignItems:'center',justifyContent:'center',padding:'2vh 2vw'}}>
+          <div style={{background:TH.panel,border:'2px solid '+TH.borderGold,borderRadius:12,width:'min(900px,96vw)',maxWidth:'96vw',maxHeight:'92vh',display:'flex',flexDirection:'column',boxShadow:'0 6px 40px rgba(0,0,0,0.7)',overflow:'hidden'}}>
+            {/* ─── Region art hero (~28vh) with overlaid header strip ─── */}
+            <div style={{position:'relative',width:'100%',height:'28vh',minHeight:140,maxHeight:280,
+              backgroundImage:heroImg?`url(${heroImg})`:`linear-gradient(135deg,${TH.panelLight},${TH.bg})`,
+              backgroundSize:'cover',backgroundPosition:'center',flexShrink:0}}>
+              {/* Header strip overlay (top) */}
+              <div style={{position:'absolute',top:0,left:0,right:0,padding:'8px 12px',
+                background:'linear-gradient(180deg,rgba(0,0,0,0.85) 0%,rgba(0,0,0,0.55) 60%,transparent 100%)',
+                display:'flex',alignItems:'center',gap:10,flexWrap:'wrap'}}>
+                <span style={{fontSize:18,color:TH.goldBright,fontWeight:'bold',textShadow:'0 2px 4px #000'}}>{reg.icon} {reg.name}</span>
+                <span style={{fontSize:14,color:curSeason.color,background:'rgba(0,0,0,0.45)',padding:'2px 8px',borderRadius:12,textShadow:'0 1px 2px #000'}}>{curSeason.icon} {curSeason.name}</span>
+                <div style={{flex:1}}/>
+                <span style={{fontSize:15,color:TH.gold,background:'rgba(0,0,0,0.55)',padding:'3px 10px',borderRadius:12,fontWeight:'bold',textShadow:'0 1px 2px #000'}}>⚡ {energy}/{baseE}</span>
+              </div>
+              {/* Companion badge (top-right, below header strip) */}
+              {activeCompanions.length>0&&<div style={{position:'absolute',right:10,bottom:10,
+                background:'rgba(20,16,12,0.85)',border:'1px solid '+TH.borderGold,borderRadius:8,padding:'5px 9px',
+                display:'flex',alignItems:'center',gap:6,maxWidth:'min(60%,260px)'}}>
+                {activeCompanions.slice(0,2).map(c=>{const cd=RANGER_COMPANIONS.find(r=>r.id===c.compId);if(!cd)return null;
+                  // Active forage bonus surfaced for the player: gather/yield/danger-reduce/etc per companion role.
+                  let bonusLabel='';
+                  if(cd.primary?.type==='gather'){const yld=cd.primary.baseYield?.[Math.min((c.loyalty||1)-1,4)]||0;if(yld)bonusLabel='+'+yld+' yield';}
+                  else if(cd.primary?.type==='danger_reduce'){const v=cd.primary.values?.[Math.min((c.loyalty||1)-1,4)]||0;if(v)bonusLabel='-'+Math.round(v*100)+'% danger';}
+                  else if(cd.passive?.forageYieldBonus){bonusLabel='+'+Math.round(cd.passive.forageYieldBonus*100)+'% yield';}
+                  return(<div key={c.compId} style={{display:'flex',alignItems:'center',gap:4}}>
+                    <span style={{fontSize:22}}>{cd.icon}</span>
+                    <div style={{fontSize:11,lineHeight:1.2}}>
+                      <div style={{color:TH.gold,fontWeight:'bold'}}>{cd.name}</div>
+                      {bonusLabel&&<div style={{color:TH.green}}>{bonusLabel}</div>}
+                    </div>
+                  </div>);
+                })}
+              </div>}
+              {/* Roll-count chip (bottom-left) */}
+              <div style={{position:'absolute',left:10,bottom:10,
+                background:'rgba(20,16,12,0.85)',border:'1px solid '+TH.borderGold,borderRadius:8,padding:'4px 9px',
+                fontSize:13,color:TH.textBright}}>
+                Rolls: <b style={{color:TH.gold}}>{expedition.rollCount}</b>
+                {expedition.rollCount>0&&<span style={{color:TH.textDim,marginLeft:8}}>· Max DC met: <b style={{color:TH.gold}}>{expedition.maxDCMet||'—'}</b></span>}
+              </div>
+            </div>
+            {/* ─── Scrollable body: last roll + cumulative inventory ─── */}
+            <div style={{flex:1,overflowY:'auto',padding:'10px 14px'}}>
+              {/* Last roll outcome */}
+              {lr?(
+                <div style={{background:lr.success?'rgba(96,160,80,0.10)':'rgba(160,80,80,0.10)',
+                  border:'1px solid '+(lr.success?'#60a050':'#a06060'),borderRadius:8,padding:'8px 12px',marginBottom:10}}>
+                  <div style={{display:'flex',alignItems:'baseline',gap:8,flexWrap:'wrap'}}>
+                    <span style={{fontSize:14,color:TH.textDim}}>Last roll:</span>
+                    <span style={{fontSize:18,fontWeight:'bold',color:lr.roll===20?TH.goldBright:lr.roll===1?TH.red:TH.textBright}}>d20 {lr.roll}</span>
+                    <span style={{fontSize:14,color:TH.textDim}}>→ total {lr.total} vs DC {lr.dc}</span>
+                    <span style={{fontSize:15,fontWeight:'bold',color:lr.success?TH.green:TH.red,marginLeft:'auto'}}>{lr.success?'✓ Success':'✗ Failed'}</span>
+                  </div>
+                  {lr.success?(
+                    Object.entries(lr.ingredients||{}).filter(([,q])=>q>0).length>0?
+                    <div style={{marginTop:5,fontSize:14,color:TH.textBright}}>
+                      Gathered: {Object.entries(lr.ingredients).filter(([,q])=>q>0).map(([id,q])=>(INGR[id]?.icon||'')+(INGR[id]?.name||id)+' ×'+q).join(', ')}
+                      {lr.xp>0&&<span style={{color:TH.gold,marginLeft:8}}>(+{lr.xp} XP)</span>}
+                    </div>
+                    :<div style={{marginTop:5,fontSize:14,color:TH.textDim,fontStyle:'italic'}}>The check passed but nothing usable came up.{lr.xp>0?' (+'+lr.xp+' XP)':''}</div>
+                  ):(
+                    <div style={{marginTop:5,fontSize:14,color:TH.textDim,fontStyle:'italic'}}>{failureText}{lr.xp>0?' (+'+lr.xp+' XP)':''}</div>
+                  )}
+                  {lr.eventText&&<div style={{marginTop:5,fontSize:13,color:TH.orange}}>⚠ {lr.eventText}</div>}
+                  {lr.discovery&&<div style={{marginTop:5,fontSize:13,color:lr.discovery.documented?TH.green:TH.textDim}}>
+                    🌿 {lr.discovery.documented?'Documented':'Noticed'}: {lr.discovery.icon} {lr.discovery.name}
+                  </div>}
+                  {lr.companionEnc&&<div style={{marginTop:5,fontSize:13,color:lr.companionEnc.approachable?TH.green:TH.textDim}}>
+                    🦊 {lr.companionEnc.approachable?'Approached':'Spotted'}: {lr.companionEnc.icon} {lr.companionEnc.name}
+                  </div>}
+                  {lr.hiddenDisc&&<div style={{marginTop:5,fontSize:13,color:lr.hiddenDisc.mapped?TH.gold:TH.textDim}}>
+                    🗺️ {lr.hiddenDisc.mapped?'Mapped':'Glimpsed'}: {lr.hiddenDisc.icon} {lr.hiddenDisc.name}
+                  </div>}
+                </div>
+              ):(
+                <div style={{background:TH.panelLight,border:'1px dashed '+TH.border,borderRadius:8,padding:'10px 14px',marginBottom:10,textAlign:'center',color:TH.textDim,fontStyle:'italic',fontSize:14}}>
+                  You've arrived at {reg.icon}{reg.name}. The next forage check will be DC {nextDC}.
+                </div>
+              )}
+              {/* Cumulative inventory grid */}
+              <div style={{background:TH.bg,border:'1px solid '+TH.border,borderRadius:8,padding:'8px 12px'}}>
+                <div style={{fontSize:14,color:TH.gold,marginBottom:5,fontWeight:'bold'}}>🎒 This Expedition's Haul</div>
+                {cumEntries.length===0?
+                  <div style={{fontSize:13,color:TH.textDim,fontStyle:'italic'}}>No ingredients yet.</div>
+                  :<div style={{display:'flex',flexWrap:'wrap',gap:4}}>
+                    {cumEntries.map(([id,q])=><span key={id} style={{...S.tag,padding:'3px 6px',fontSize:13}}>{INGR[id]?.icon||''}{INGR[id]?.name||id} <b style={{color:TH.gold}}>×{q}</b></span>)}
+                  </div>}
+                {expedition.cumXp>0&&<div style={{fontSize:13,color:TH.gold,marginTop:5}}>Total XP this trip: +{expedition.cumXp}</div>}
+              </div>
+            </div>
+            {/* ─── Action bar (Forage Again / Return to Town) ─── */}
+            <div style={{padding:'10px 14px',borderTop:'1px solid '+TH.border,background:TH.bg,display:'flex',gap:8,flexWrap:'wrap'}}>
+              <button style={{...S.btn(canForage?'gold':'dim'),flex:'1 1 240px',fontSize:15,padding:'8px 12px',opacity:canForage?1:0.55,cursor:canForage?'pointer':'not-allowed'}}
+                disabled={!canForage} onClick={canForage?_forageAgain:undefined}
+                title={canForage?('Next check: DC '+nextDC):'Need 10⚡ to forage (or wait for Early Riser)'}>
+                🌿 Forage Again <span style={{fontSize:12,opacity:0.85}}>(10⚡{earlyR?' — Early Riser free':''}, next DC {nextDC})</span>
+              </button>
+              <button style={{...S.btn('def'),flex:'1 1 160px',fontSize:15,padding:'8px 12px'}} onClick={_returnToTown}>
+                🏠 Return to Town
+              </button>
+            </div>
+          </div>
+        </div>);
+      })()}
+
+      {/* ═══ PHASE 3: END-OF-EXPEDITION SUMMARY ═══ */}
+      {expSummary&&<div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'rgba(0,0,0,0.75)',zIndex:9999,display:'flex',alignItems:'center',justifyContent:'center',padding:12}}>
+        <div style={{background:TH.panel,border:'2px solid '+TH.borderGold,borderRadius:12,padding:'14px 18px',maxWidth:480,width:'100%',maxHeight:'85vh',overflowY:'auto'}}>
+          <div style={{fontSize:20,color:TH.gold,textAlign:'center',marginBottom:8,fontWeight:'bold'}}>
+            {expSummary.regionIcon} {expSummary.regionName} — Expedition Complete
+          </div>
+          {/* Haul */}
+          <div style={{background:TH.bg,borderRadius:6,padding:'8px 12px',marginBottom:8,border:'1px solid '+TH.border}}>
+            <div style={{fontSize:14,color:TH.gold,marginBottom:4,fontWeight:'bold'}}>Total Haul</div>
+            {Object.entries(expSummary.cumG||{}).filter(([,q])=>q>0).length===0?
+              <div style={{fontSize:13,color:TH.textDim,fontStyle:'italic'}}>Nothing usable.</div>
+              :<div style={{display:'flex',flexWrap:'wrap',gap:4}}>
+                {Object.entries(expSummary.cumG).filter(([,q])=>q>0).map(([id,q])=><span key={id} style={{...S.tag,padding:'3px 6px',fontSize:13}}>{INGR[id]?.icon||''}{INGR[id]?.name||id} <b style={{color:TH.gold}}>×{q}</b></span>)}
+              </div>}
+          </div>
+          {/* Energy breakdown */}
+          <div style={{background:TH.bg,borderRadius:6,padding:'8px 12px',marginBottom:8,border:'1px solid '+TH.border}}>
+            <div style={{fontSize:14,color:TH.gold,marginBottom:4,fontWeight:'bold'}}>Energy Spent</div>
+            <div style={{fontSize:13,color:TH.text,lineHeight:1.5}}>
+              Travel: <b>⚡{expSummary.travelCost}</b><br/>
+              Foraging: <b>⚡{expSummary.forageCost}</b> ({expSummary.rollCount} × 10)<br/>
+              <span style={{color:TH.gold}}>Total: ⚡{expSummary.totalCost}</span>
+            </div>
+          </div>
+          {/* Stats */}
+          <div style={{background:TH.bg,borderRadius:6,padding:'8px 12px',marginBottom:10,border:'1px solid '+TH.border}}>
+            <div style={{fontSize:14,color:TH.gold,marginBottom:4,fontWeight:'bold'}}>Trip Stats</div>
+            <div style={{fontSize:13,color:TH.text,lineHeight:1.5}}>
+              Rolls attempted: <b>{expSummary.rollCount}</b><br/>
+              Highest DC met: <b style={{color:TH.green}}>{expSummary.maxDCMet||'—'}</b><br/>
+              XP gained: <b style={{color:TH.gold}}>+{expSummary.cumXp}</b>
+            </div>
+          </div>
+          <button style={{...S.btn('gold'),width:'100%',fontSize:15,padding:'8px 12px'}} onClick={()=>setExpSummary(null)}>
+            🏠 Back to Workshop
+          </button>
+        </div>
+      </div>}
 
       {/* ═══ RESULT POPUP with animated dice ═══ */}
       {resultPopup&&!expQ.length&&<DicePopup key={resultPopup.t} popup={resultPopup} LC={LC} TH={TH} S={S} onClose={()=>{setResultPopup(null);if(deferredNewDay){setDeferredNewDay(false);newDay();}}} playSfx={playSfx}/>}

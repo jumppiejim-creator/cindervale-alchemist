@@ -1455,13 +1455,16 @@
 </div>
 
 <h3>Foraging (Extraction)</h3>
-<p>Travel to a region (costs Energy proportional to distance), then spend all your remaining Energy extracting ingredients. Each gathering hour (25 Energy worth of expedition), roll d20 + Extraction skill vs. the region's DC.</p>
+<p>Foraging is an <strong>active expedition</strong> with player agency at every roll. Pick a region, pay the one-way travel cost, then the immersive expedition view opens &mdash; large region art, the current season, your active companion, and a running tally of what you've gathered. Each forage check is taken one at a time:</p>
 <ul>
+  <li><strong>Cost</strong> &mdash; 10 Energy per roll (Endurance and Early Riser apply normally).</li>
   <li><strong>Success</strong> &mdash; Gain ingredients from the region's loot table.</li>
-  <li><strong>Failure</strong> &mdash; Gain nothing for that hour.</li>
+  <li><strong>Failure</strong> &mdash; Gain nothing; the search yields one of several flavor messages.</li>
   <li><strong>Natural 20</strong> &mdash; Critical extraction: bonus rare ingredients.</li>
+  <li><strong>Diminishing returns</strong> &mdash; Each additional roll within the expedition adds +1 to the DC (the first roll is base DC, the second is base + 1, and so on). The patch gets picked over.</li>
 </ul>
-<p>Different foraging sites within a region weight ingredients differently, allowing you to target specific materials.</p>
+<p>After every roll you choose: <strong>Forage Again</strong> to push deeper at the higher DC, or <strong>Return to Town</strong> to end the trip and collect a summary (haul, total Energy spent broken into travel + foraging, rolls taken, highest DC met). Travel is paid only on the way out &mdash; coming home is free.</p>
+<p>Different foraging sites within a region weight ingredients differently, allowing you to target specific materials. Saving is blocked while an expedition is in progress &mdash; finish the trip (or Return to Town) before saving.</p>
 
 <div class="note">
   <strong>Region picker affordances:</strong> A few class features add information directly to the region selection UI. <strong>Cartographer Lv3</strong> shows each region's ingredient pool inline on its tile (so you can compare reagent options at a glance). <strong>Naturalist Lv10</strong> highlights the currently-highest-yield region with a 🌿 badge and a soft green glow, so the best forage target is always one look away.
@@ -1509,7 +1512,7 @@
 <p>Each day you start with a pool of Energy (base 100). Most actions cost 25 Energy &mdash; one "hour" of work in narrative terms. When Energy reaches 0, your day is done; press Rest to begin the next morning.</p>
 <ul>
   <li><strong>Brewing</strong> &mdash; 25 Energy per recipe (batch brews cost more proportionally).</li>
-  <li><strong>Foraging</strong> &mdash; Travel cost up front (25 Energy per "hour" of distance), then all remaining Energy is spent gathering at the destination.</li>
+  <li><strong>Foraging</strong> &mdash; One-way travel cost up front (25 Energy per "hour" of distance), then 10 Energy per individual forage roll inside the immersive expedition view. Stop whenever you like.</li>
   <li><strong>Enchanting</strong> &mdash; 25 Energy per customer inscription.</li>
   <li><strong>Research</strong> &mdash; 25&ndash;50 Energy per study (reductions from features can lower this).</li>
   <li><strong>Quests</strong> &mdash; 25 Energy to turn in.</li>
