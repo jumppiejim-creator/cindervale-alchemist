@@ -800,7 +800,8 @@ function CindervaleAlchemistInner(){
         cls.features.forEach(f=>{if(f.classLv<=lv&&f.effects){if(f.effects.bonusEnergy)be+=f.effects.bonusEnergy;if(f.effects.bonusEnergyPerDay)be+=f.effects.bonusEnergyPerDay;if(f.effects.freeAction)be+=25;}});
         const specId=sp[cid];if(specId&&cls.specs?.[specId]){cls.specs[specId].features.forEach(sf=>{if(sf.classLv<=lv&&sf.effects){if(sf.effects.bonusEnergy)be+=sf.effects.bonusEnergy;if(sf.effects.bonusEnergyPerDay)be+=sf.effects.bonusEnergyPerDay;}});}
       });
-      return Math.max(75,be);
+      // Floor to base energy; defensive against future refactors that could subtract below 100.
+      return Math.max(100,be);
     };
     setScreen(s.screen||'map');setDay(s.day||1);setEnergy(s.energy!=null?s.energy:_computeBaseEFromSave(s));setGameLocation(s.gameLocation||'cindervale');
     setXp(s.xp!=null?s.xp:0);setGold(s.gold!=null?s.gold:15);setInv(s.inv||{});setPots(s.pots||{});
