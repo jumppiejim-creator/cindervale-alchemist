@@ -2589,7 +2589,7 @@ function CindervaleAlchemistInner(){
       setDayFlags(f=>[...f,'trailblazer_tonic']);
       setBrewCounts(p=>({...p,[r.id]:(p[r.id]||0)+1}));const xpE=Math.floor(r.xp*1.1);gainXP(xpE);
       addLog('🌿 '+r.icon+' Trailblazer Tonic! Next expedition travel cost −25 Energy.','craft');
-      showResult('🌿 '+r.icon+' Trailblazer Tonic — Pathways Revealed!','craft','The tonic sharpens your sense of the trails. -1h travel on next expedition.\n+'+xpE+' XP',ch);return;
+      showResult('🌿 '+r.icon+' Trailblazer Tonic — Pathways Revealed!','craft','The tonic sharpens your sense of the trails. −25 Energy travel on next expedition.\n+'+xpE+' XP',ch);return;
     }
     modPot(potId,qty);
     setBrewCounts(p=>({...p,[r.id]:(p[r.id]||0)+1}));
@@ -5836,7 +5836,7 @@ function CindervaleAlchemistInner(){
   if(readyBQ.length>0)alerts.push({text:readyBQ.length+' board request'+(readyBQ.length>1?'s':'')+' ready to turn in!',to:'quests',label:'📌 Notice Board'});
   if(dayFlags.includes('bargain_day'))alerts.push({text:gameLocation==='tidecrest'?'🏷️ Finn\'s running a sale — shop prices halved today!':gameLocation==='ashfall'?'🏷️ Razak\'s running a sale — shop prices halved today!':'🏷️ Brenna\'s running a sale — shop prices halved today!',to:'market',label:'🛒 Market'});
   if(dayFlags.includes('clear_sky'))alerts.push({text:'☀️ Clear skies — extraction DCs reduced by 2 in the wilds.',to:'worldmap',label:'🗺️ Wilds'});
-  if(dayFlags.includes('ash_storm'))alerts.push({text:'⚠️ Ash storm — expedition travel times +1h today.',to:'worldmap',label:'🗺️ Wilds'});
+  if(dayFlags.includes('ash_storm'))alerts.push({text:'⚠️ Ash storm — expedition travel +25 Energy today.',to:'worldmap',label:'🗺️ Wilds'});
 
   // ═══════════════════════════════════════
   //  RENDERING (all hooks above this line)
@@ -8278,7 +8278,7 @@ function CindervaleAlchemistInner(){
           </div>}
         </div>}
         <div style={S.card} className={isWsOpen('ws4')?'':'ws-closed'}><div style={{...S.cT,cursor:'pointer',userSelect:'none'}} onClick={()=>toggleWs('ws4')}><span style={{display:'flex',justifyContent:'space-between',width:'100%'}}><span>Expeditions — ⚡{energy} Energy remaining</span><span style={{fontSize:13,color:TH.textDim}}>{isWsOpen('ws4')?'▲':'▼'}</span></span></div>
-          {dayFlags.includes('ash_storm')&&<div style={{fontSize:14,color:TH.red,marginBottom:4,padding:'3px 6px',background:`${TH.red}10`,borderRadius:3}}>⚠️ Ash Storm — travel times +1h today</div>}
+          {dayFlags.includes('ash_storm')&&<div style={{fontSize:14,color:TH.red,marginBottom:4,padding:'3px 6px',background:`${TH.red}10`,borderRadius:3}}>⚠️ Ash Storm — travel +25 Energy today</div>}
           {dayFlags.includes('clear_sky')&&<div style={{fontSize:14,color:TH.green,marginBottom:4,padding:'3px 6px',background:`${TH.green}10`,borderRadius:3}}>☀️ Clear Skies — extraction DCs reduced by 2 today</div>}
           <div style={{fontSize:14,color:TH.textDim,marginBottom:6}}>Expeditions use your remaining energy. Travel takes time — leave earlier to gather more.</div>
           <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(130px,1fr))',gap:5}}>
@@ -8320,7 +8320,7 @@ function CindervaleAlchemistInner(){
           return(<div style={{...S.card,borderColor:TH.purple+'66',background:`${TH.purple}08`}}>
             <div style={{...S.cT,cursor:'pointer',userSelect:'none'}} onClick={()=>toggleWs('ws5')}><span style={{display:'flex',justifyContent:'space-between',width:'100%'}}><span>🌙 Night Expeditions</span><span style={{fontSize:13,color:TH.textDim}}>{isWsOpen('ws5')?'▲':'▼'}</span></span></div>
             <div style={{fontSize:14,color:TH.text,lineHeight:1.5,marginBottom:6}}>
-              Your Sentinel training lets you forage after dark for <b style={{color:TH.purple}}>{nightH} bonus gathering hours</b> (DC +{Math.max(1,4-Math.floor(getFeatureVal('nightDCReduction')))}, higher danger{nightDR?' — reduced by Trap Setter':''}).
+              Your Sentinel training lets you forage after dark for <b style={{color:TH.purple}}>{nightH} bonus gathering rounds</b> (DC +{Math.max(1,4-Math.floor(getFeatureVal('nightDCReduction')))}, higher danger{nightDR?' — reduced by Trap Setter':''}).
             </div>
             <div style={{fontSize:14,color:TH.gold,padding:'6px 10px',background:`${TH.gold}10`,borderRadius:4,border:`1px solid ${TH.gold}33`}}>
               💡 Use the <b>🌙 Rest & Night Forage</b> button when you end your day to launch a night expedition.
@@ -8455,7 +8455,11 @@ function CindervaleAlchemistInner(){
               {elixirRecipes.map(r=>{
                 const buff=ELIXIR_BUFFS[r.buff];if(!buff)return null;
                 const cost={};r.ingr.forEach(id=>{const lid=li(id);cost[lid]=(cost[lid]||0)+1;});
-                const canBrew=Object.entries(cost).every(([id,q])=>(inv[id]||0)>=q)&&energy>=25;
+                const elixCost=getActionEnergyCost('brew',25);
+                const elixFreeForFirst=(getFeatureVal('firstBrewFree')&&!dayFlags.includes('first_brew_used'))||(getFeatureVal('firstActionFree')&&!dayFlags.includes('first_action_used'));
+                const elixEffCost=elixFreeForFirst?0:elixCost;
+                const hasIngr=Object.entries(cost).every(([id,q])=>(inv[id]||0)>=q);
+                const canBrew=hasIngr&&energy>=elixEffCost;
                 const fOk=!r.faction||getRL(r.faction)>=(r.fReq||0);
                 const masteryD=getMasteryDiscount(brewCounts,r.id,getFeatureVal('masteryDiscountBonus'));
                 const adjDC=Math.max(5,r.dc-masteryD);
@@ -8495,10 +8499,11 @@ function CindervaleAlchemistInner(){
                   </div>
                   {/* Action buttons */}
                   <div style={{display:'flex',gap:6,flexWrap:'wrap',alignItems:'center'}}>
-                    <button style={{...S.btn(canBrew&&fOk?'gold':'dim'),fontSize:14,padding:'5px 14px'}}
+                    <button style={{...S.btn(canBrew&&fOk?'gold':'dim'),fontSize:14,padding:'5px 14px',opacity:(canBrew&&fOk)?1:0.45,cursor:(canBrew&&fOk)?'pointer':'not-allowed'}}
                       disabled={!canBrew||!fOk}
-                      onClick={()=>doCraft(r,'std')}>
-                      ⚗️ Brew{!canBrew&&energy>=25?' (need ingredients)':!canBrew?' (no energy)':''}
+                      onClick={()=>doCraft(r,'std')}
+                      title={!fOk?'Faction reputation too low':!hasIngr?'Not enough ingredients':energy<elixEffCost?'Need ⚡'+elixEffCost+' Energy (have ⚡'+energy+')':(elixFreeForFirst?'Free this turn':'Cost: ⚡'+elixEffCost)}>
+                      ⚗️ Brew ({elixFreeForFirst?'FREE':'⚡'+elixEffCost})
                     </button>
                     {totalOwned>0&&<button style={{...S.btn(isActive?'dim':'green'),fontSize:14,padding:'5px 14px'}}
                       disabled={isActive}
@@ -8596,7 +8601,8 @@ function CindervaleAlchemistInner(){
             const weaponEnchs=ENCHANTMENTS.filter(e=>e.cat==='weapon'&&knownEnch.includes(e.id));
             const forgesToday=dayFlags.filter(f=>f==='forge_used').length;
             const maxForges=rsLv>=10?3:rsLv>=6?2:1;
-            const canForge=forgesToday<maxForges&&energy>=50;
+            // Forging is free (no spendEnergy in forgeWeapon); the legacy `energy>=50` gate was a Phase 1 sweep miss.
+            const canForge=forgesToday<maxForges;
             return <>
               {available.map(w=>{
                 const hasMats=Object.entries(lmc(w.matCost)).every(([id,q])=>(inv[id]||0)>=q);
@@ -8604,7 +8610,7 @@ function CindervaleAlchemistInner(){
                   <div style={{...S.row,justifyContent:'space-between'}}>
                     <span style={{fontSize:15,color:TH.textBright}}>{w.icon} {w.name} <span style={{fontSize:12,color:TH.textDim}}>T{w.tier} · DC{w.forgeDC}</span></span>
                     <span style={{fontSize:12,color:TH.textDim}}>
-                      {Object.entries(lmc(w.matCost)).map(([id,q])=>{const have=inv[id]||0;return <span key={id} style={{color:have>=q?TH.green:TH.red,marginLeft:4}}>{INGR[id]?.icon||id}{have}/{q}</span>;})}{' · 2h'}
+                      {Object.entries(lmc(w.matCost)).map(([id,q])=>{const have=inv[id]||0;return <span key={id} style={{color:have>=q?TH.green:TH.red,marginLeft:4}}>{INGR[id]?.icon||id}{have}/{q}</span>;})}{' · '+(maxForges-forgesToday)+'/day'}
                     </span>
                   </div>
                   <div style={{...S.row,marginTop:4,flexWrap:'wrap',gap:3}}>
@@ -8747,7 +8753,7 @@ function CindervaleAlchemistInner(){
                     <span style={{color:TH.textBright,fontSize:14}}>{bp.icon} {bp.name} <span style={{color:'#c0a040'}}>Mk {mkLabel}</span></span>
                     <span style={{fontSize:12,color:TH.textDim,flex:1}}>{bp.effectDesc[g.mk-1]}</span>
                     {g.mk<maxMk&&<button style={{...S.btn('gold'),fontSize:11,padding:'1px 6px'}}
-                      onClick={()=>upgradeGadget(g.id)} title={'Upgrade to Mk '+['I','II','III'][g.mk]+' ('+((g.mk+1))+'× materials, 1h)'}>↑ Mk {['I','II','III'][g.mk]}</button>}
+                      onClick={()=>upgradeGadget(g.id)} title={'Upgrade to Mk '+['I','II','III'][g.mk]+' ('+((g.mk+1))+'× materials, free action)'}>↑ Mk {['I','II','III'][g.mk]}</button>}
                   </div>;
                 })}
               </div>}
@@ -8759,8 +8765,9 @@ function CindervaleAlchemistInner(){
                   return <div key={bp.id} style={{padding:'5px 8px',background:TH.panelLight,borderRadius:4,marginBottom:3,border:'1px solid '+TH.border}}>
                     <div style={{...S.row,justifyContent:'space-between'}}>
                       <span style={{fontSize:14,color:TH.textBright}}>{bp.icon} {bp.name} {bp.legendary&&<span style={{color:'#d4a420',fontSize:11}}>★ LEGENDARY</span>}</span>
-                      <button style={{...S.btn(hasMats&&energy>=50?'gold':'dim'),fontSize:12,padding:'2px 8px'}} disabled={!hasMats||energy<50}
-                        onClick={()=>craftGadget(bp.id)}>🔨 Craft (DC{bp.dc} · 2h)</button>
+                      <button style={{...S.btn(hasMats?'gold':'dim'),fontSize:12,padding:'2px 8px',opacity:hasMats?1:0.45,cursor:hasMats?'pointer':'not-allowed'}} disabled={!hasMats}
+                        onClick={()=>craftGadget(bp.id)}
+                        title={hasMats?'Free action':'Not enough materials'}>🔨 Craft (DC{bp.dc})</button>
                     </div>
                     <div style={{fontSize:12,color:TH.textDim}}>{bp.desc}</div>
                     <div style={{fontSize:12,marginTop:2}}>
@@ -8806,8 +8813,9 @@ function CindervaleAlchemistInner(){
                         <div style={{height:'100%',width:pct+'%',background:'#8090a0',borderRadius:3,transition:'width 0.3s'}}/>
                       </div>
                       <div style={{...S.row,gap:4}}>
-                        <button style={{...S.btn(energy>=(cLv>=6?13:25)?'gold':'dim'),fontSize:13}} disabled={energy<(cLv>=6?13:25)}
-                          onClick={()=>buildBlueprint(entry.id)}>🔨 Build ({cLv>=6?'30min':'1h'} · Precision DC{bp.draftDC-2})</button>
+                        {(()=>{const bbCost=cLv>=6?13:25;return <button style={{...S.btn(energy>=bbCost?'gold':'dim'),fontSize:13,opacity:energy>=bbCost?1:0.45,cursor:energy>=bbCost?'pointer':'not-allowed'}} disabled={energy<bbCost}
+                          onClick={()=>buildBlueprint(entry.id)}
+                          title={energy>=bbCost?'Cost: ⚡'+bbCost:'Need ⚡'+bbCost+' Energy (have ⚡'+energy+')'}>🔨 Build (⚡{bbCost} · Precision DC{bp.draftDC-2})</button>;})()}
                         <span style={{fontSize:12,color:TH.textDim}}>Materials/session: {Object.entries(lmc(bp.matCost)).map(([id,q])=>{
                           const perSession=Math.max(1,Math.ceil(q/sessions));const have=inv[id]||0;
                           return <span key={id} style={{color:have>=perSession?TH.green:TH.red,marginRight:3}}>{INGR[id]?.icon||id}{have}/{perSession}</span>;})}</span>
@@ -8824,8 +8832,9 @@ function CindervaleAlchemistInner(){
                     <div style={{...S.row,justifyContent:'space-between'}}>
                       <span style={{fontSize:14,color:TH.textBright}}>{bp.icon} {bp.name} {bp.legendary&&<span style={{color:'#d4a420',fontSize:11}}>★ LEGENDARY</span>}
                         <span style={{fontSize:12,color:TH.textDim,marginLeft:6}}>T{bp.tier} · {sanctum?Math.ceil(bp.buildSessions/2):bp.buildSessions} sessions</span></span>
-                      <button style={{...S.btn(energy>=25?'gold':'dim'),fontSize:12,padding:'2px 8px'}} disabled={energy<25}
-                        onClick={()=>draftBlueprint(bp.id)}>📐 Draft (DC{bp.draftDC} · 1h)</button>
+                      <button style={{...S.btn('gold'),fontSize:12,padding:'2px 8px'}}
+                        onClick={()=>draftBlueprint(bp.id)}
+                        title="Free action">📐 Draft (DC{bp.draftDC})</button>
                     </div>
                     <div style={{fontSize:12,color:TH.textDim}}>{bp.desc}</div>
                     <div style={{fontSize:12,color:'#8090a0'}}>Effect: {bp.effectDesc}</div>
@@ -8851,8 +8860,10 @@ function CindervaleAlchemistInner(){
               <div style={{display:'flex',flexWrap:'wrap',gap:3,marginBottom:8}}>
                 {Object.entries(pots).filter(([id,q])=>q>0).map(([id,q])=>{
                   const r=RECIPES.find(x=>x.id===getBaseRecipeId(id));if(!r)return null;
-                  return <button key={id} style={{...S.btn(energy>=25?'gold':'dim'),fontSize:12,padding:'2px 6px'}} disabled={energy<25}
-                    onClick={()=>breakdownPotion(id)}>{r.icon} {r.name} ({q}) → ingredients</button>;
+                  const bdCost=25;const bdCanAfford=energy>=bdCost;
+                  return <button key={id} style={{...S.btn(bdCanAfford?'gold':'dim'),fontSize:12,padding:'2px 6px',opacity:bdCanAfford?1:0.45,cursor:bdCanAfford?'pointer':'not-allowed'}} disabled={!bdCanAfford}
+                    onClick={()=>breakdownPotion(id)}
+                    title={bdCanAfford?'Cost: ⚡'+bdCost:'Need ⚡'+bdCost+' Energy (have ⚡'+energy+')'}>{r.icon} {r.name} ({q}) → ingredients (⚡{bdCost})</button>;
                 })}
                 {Object.entries(pots).filter(([,q])=>q>0).length===0&&<span style={{fontSize:13,color:TH.textDim}}>No potions to break down</span>}
               </div>
@@ -8874,10 +8885,11 @@ function CindervaleAlchemistInner(){
                     <option value="">To...</option>
                     {Object.entries(INGR).filter(([id])=>id!=='unknown').map(([id,ig])=><option key={id} value={id}>{ig.icon||''} {ig.name||id}</option>)}
                   </select>
-                  <button style={{...S.btn(energy>=25?'gold':'dim'),fontSize:13,padding:'2px 8px'}} disabled={energy<25}
+                  <button style={{...S.btn('gold'),fontSize:13,padding:'2px 8px'}}
                     onClick={()=>{const s=document.getElementById('tx_src')?.value;const t=document.getElementById('tx_tgt')?.value;
-                      if(s&&t&&s!==t)reclaimerTransmute(s,t);else addLog('Select different source and target ingredients.','error');}}>
-                    ♻️ Transmute (1h)</button>
+                      if(s&&t&&s!==t)reclaimerTransmute(s,t);else addLog('Select different source and target ingredients.','error');}}
+                    title="Free action">
+                    ♻️ Transmute</button>
                 </div>;
               })()}
 
@@ -8917,7 +8929,7 @@ function CindervaleAlchemistInner(){
             const regions=locRegions.filter(r=>level>=regUnlock(r));
             return <>
               <div style={{fontSize:13,color:TH.textDim,marginBottom:6}}>
-                Documented: {fieldJournal.length}/{totalPossible} · Discovery chance: {natLv>=10?'40%':natLv>=6?'30%':'20%'}/forage hour
+                Documented: {fieldJournal.length}/{totalPossible} · Discovery chance: {natLv>=10?'40%':natLv>=6?'30%':'20%'}/forage roll
                 {natLv>=10&&' · Auto-document'}
                 {!canGeo&&' · 🔒 Geological at Scholar Lv6'}
               </div>
@@ -8937,7 +8949,7 @@ function CindervaleAlchemistInner(){
                       const found=fieldJournal.includes(d.id);
                       return <div key={d.id} style={{padding:'2px 6px',fontSize:12,borderRadius:3,
                         background:found?'#60b06015':'#33333380',border:'1px solid '+(found?'#60b06044':TH.border),
-                        color:found?'#60b060':TH.textDim}} title={found?d.desc+'\n\nBonus: '+(d.bonus.extraYield?'+'+d.bonus.extraYield+' '+(INGR[d.bonus.ingredient]?.name||d.bonus.ingredient)+'/hour':d.bonus.dangerReduce?'-'+Math.round(d.bonus.dangerReduce*100)+'% danger':''):'Undiscovered — forage this region to find it'}>
+                        color:found?'#60b060':TH.textDim}} title={found?d.desc+'\n\nBonus: '+(d.bonus.extraYield?'+'+d.bonus.extraYield+' '+(INGR[d.bonus.ingredient]?.name||d.bonus.ingredient)+'/roll':d.bonus.dangerReduce?'-'+Math.round(d.bonus.dangerReduce*100)+'% danger':''):'Undiscovered — forage this region to find it'}>
                         {found?d.icon:'❓'} {found?d.name:'???'}
                         {found&&<span style={{marginLeft:3,color:TH.textDim}}>({d.type})</span>}
                       </div>;
@@ -8997,7 +9009,7 @@ function CindervaleAlchemistInner(){
           <div style={{...S.cT,cursor:'pointer',userSelect:'none'}} onClick={()=>toggleWs('ws18')}><span style={{display:'flex',justifyContent:'space-between',width:'100%'}}><span>🦊 Companions — {companions.length}/{eCL('warden')>=10?3:eCL('warden')>=6?2:1} slots</span><span style={{fontSize:13,color:TH.textDim}}>{isWsOpen('ws18')?'▲':'▼'}</span></span></div>
           {companions.length===0&&<div style={{fontSize:14,color:TH.textDim,marginBottom:6}}>
             No companions yet. Forage in the wilds — creatures may appear and can be tamed with an Attunement check.
-            <br/>Encounter chance: {eCL('warden')>=10?'35%':eCL('warden')>=6?'25%':'15%'} per forage hour.
+            <br/>Encounter chance: {eCL('warden')>=10?'35%':eCL('warden')>=6?'25%':'15%'} per forage roll.
           </div>}
           {companions.map(c=>{
             const comp=RANGER_COMPANIONS.find(r=>r.id===c.compId);if(!comp)return null;
@@ -9194,10 +9206,10 @@ function CindervaleAlchemistInner(){
                   {canTeachTraits&&<div style={{display:'flex',flexWrap:'wrap',gap:3}}>
                     <span style={{fontSize:12,color:'#d0a030',alignSelf:'center'}}>✨ Teach:</span>
                     {TEACHABLE_TRAITS.filter(t=>!(ap.traits||[]).includes(t)).slice(0,5).map(t=>
-                      <button key={t} style={{...S.btn(energy>=50?'gold':'dim'),fontSize:11,padding:'2px 5px'}}
-                        disabled={energy<50||(ap.traits||[]).length>=4}
+                      <button key={t} style={{...S.btn((ap.traits||[]).length>=4?'dim':'gold'),fontSize:11,padding:'2px 5px'}}
+                        disabled={(ap.traits||[]).length>=4}
                         onClick={()=>teachTrait(ap.id,t)}
-                        title={t+' — 2h, DC 15 Persuasion check'}>
+                        title={t+' — free action, DC 15 Persuasion check'}>
                         {t}
                       </button>
                     )}
@@ -9237,8 +9249,9 @@ function CindervaleAlchemistInner(){
                       <span style={{color:TH.gold,marginLeft:6,fontSize:13}}>{'★'.repeat(h)}{'☆'.repeat(3-h)}</span>
                     </div>
                     {!atCap&&<button style={{...S.btn(canSend?'gold':'dim'),fontSize:12,padding:'2px 8px'}} disabled={!canSend}
-                      onClick={()=>dispatchEnvoy(pair.id)}>
-                      🕊️ Send Envoy (DC{pair.dc+h*2} · 1h)
+                      onClick={()=>dispatchEnvoy(pair.id)}
+                      title="Free action — daily limit applies">
+                      🕊️ Send Envoy (DC{pair.dc+h*2})
                     </button>}
                     {atCap&&h<3&&<span style={{fontSize:12,color:TH.textDim}}>🔒 Lv{h>=2?10:6} to advance</span>}
                   </div>
@@ -9361,7 +9374,7 @@ function CindervaleAlchemistInner(){
             const discChance=cLv>=2?40:25;
             return <>
               <div style={{fontSize:13,color:TH.textDim,marginBottom:8}}>
-                Discovery chance: {discChance}% per forage hour · {cLv>=2?'+1 bonus ingredient from mapped areas':''} {cLv>=3?'· See region ingredients':''}
+                Discovery chance: {discChance}% per forage roll · {cLv>=2?'+1 bonus ingredient from mapped areas':''} {cLv>=3?'· See region ingredients':''}
                 {cLv>=4&&' · Staff use your maps (+25% yield)'}
               </div>
               {locRegions.filter(r=>level>=regUnlock(r)).map(reg=>{
@@ -9384,7 +9397,7 @@ function CindervaleAlchemistInner(){
                       {mapped&&<div style={{fontSize:13,color:TH.textDim,fontStyle:'italic',margin:'2px 0'}}>{hr.desc}</div>}
                       {mapped&&<div style={{fontSize:13,marginTop:2}}>
                         Yields: {hr.ingr.map(id=><span key={id} style={{color:'#50a0a0',marginRight:6}}>{INGR[id]?.icon||'?'}{INGR[id]?.name||id}</span>)}
-                        <span style={{color:TH.textDim,fontSize:12}}>({hr.yieldRange[0]}-{hr.yieldRange[1]}/hour)</span>
+                        <span style={{color:TH.textDim,fontSize:12}}>({hr.yieldRange[0]}-{hr.yieldRange[1]}/roll)</span>
                       </div>}
                       {!mapped&&<div style={{fontSize:12,color:TH.textDim}}>Forage in {reg.name} to discover</div>}
                     </div>;
@@ -9791,7 +9804,7 @@ function CindervaleAlchemistInner(){
             {Object.keys(RELIC_SETS).every(sid=>(museum[sid]||0)>=RELIC_SETS[sid].needed)&&
               <div style={{fontSize:14,color:'#c050e0',fontWeight:'bold',textAlign:'center',marginTop:4,padding:4,background:'#c050e010',borderRadius:4}}>🏆 Grand Collection Complete! +10g/morning from museum visitors</div>}
           </div>}
-          {relics.length===0&&<div style={{fontSize:14,color:TH.textDim,textAlign:'center',padding:6}}>Go on expeditions to discover relics! (15% chance per hour)</div>}
+          {relics.length===0&&<div style={{fontSize:14,color:TH.textDim,textAlign:'center',padding:6}}>Go on expeditions to discover relics! (15% chance per forage roll)</div>}
         </div>}
 
         <div style={S.card} className={isWsOpen('ws25')?'':'ws-closed'}><div style={{...S.cT,cursor:'pointer',userSelect:'none'}} onClick={()=>toggleWs('ws25')}><span style={{display:'flex',justifyContent:'space-between',width:'100%'}}><span>{'\u2697\ufe0f'} Recipes ({known.filter(id=>{const rx=RECIPES.find(r=>r.id===id);return rx&&!rx.fieldOnly&&!(rx.buff&&ELIXIR_BUFFS[rx.buff]);}).length}/{RECIPES.filter(r=>!r.fieldOnly&&!(r.buff&&ELIXIR_BUFFS[r.buff])&&canCraftAtLocation(r.ingr)).length})</span><span style={{fontSize:13,color:TH.textDim}}>{isWsOpen('ws25')?'▲':'▼'}</span></span></div>
@@ -9897,20 +9910,29 @@ function CindervaleAlchemistInner(){
                   {INFUSIONS[brewInfSel[r.id]]?.desc} · {infusionsUsedToday}/{(prestigeLevels.spellbrewer||0)>=5?6:(prestigeLevels.spellbrewer||0)>=4?5:(prestigeLevels.spellbrewer||0)>=3?4:(prestigeLevels.spellbrewer||0)>=2?3:2}/day
                 </span>}
               </div>}
-              {/* Brew + Batch buttons */}
+              {/* Brew + Batch buttons. Phase-1-sweep-miss fix: batchEC was `n===1?1:Math.ceil(n/2)` (pre-scale
+                  hour values); the actual cost path uses 25⚡ for single and 25*ceil(n/2) for batches. Display + gate
+                  now match the real cost. firstBrewFree (Rapid Infusion) zeroes the n=1 cost when the day's first
+                  brew hasn't fired yet. */}
               <div style={{display:'flex',gap:3,alignItems:'center',flexWrap:'wrap'}}>
                 {(()=>{const maxBatch=5+Math.floor(getFeatureVal('batchSizeBonus')+upEff('batchSizeBonus'));
                   const sizes=[1,2,3,5,...(maxBatch>5?[maxBatch]:[])].filter((v,i,a)=>v<=maxBatch&&a.indexOf(v)===i).sort((a,b)=>a-b);
+                  const fbfNow=getFeatureVal('firstBrewFree')&&!dayFlags.includes('first_brew_used');
+                  const erNow=getFeatureVal('firstActionFree')&&!dayFlags.includes('first_action_used');
                   return sizes.map(n=>{
-                  const batchEC=n===1?1:Math.ceil(n/2);
-                  const canN=fOk&&energy>=batchEC&&Object.entries(selCost).every(([id,q])=>(inv[id]||0)>=q*n);
+                  const baseEC=n===1?getActionEnergyCost('brew',25):getActionEnergyCost('brew',25)*Math.ceil(n/2);
+                  const freeForFirst=(n===1&&fbfNow)||erNow;
+                  const effectiveEC=freeForFirst?0:baseEC;
+                  const hasIngr=Object.entries(selCost).every(([id,q])=>(inv[id]||0)>=q*n);
+                  const canN=fOk&&energy>=effectiveEC&&hasIngr;
                   const bc=selBuyCalc(n);
                   return <span key={n} style={{display:'inline-flex',gap:2,alignItems:'center'}}>
-                    <button style={{...S.btn(canN?n===1?'gold':'def':'dim'),fontSize:13,padding:'3px 8px'}}
-                      onClick={()=>canN&&(n===1?doCraft(r,selTier):doBatchCraft(r,n,selTier))} disabled={!canN||energy<batchEC}>
-                      {n===1?('⚗️ Brew '+selQT.name):('×'+n+' (⚡'+batchEC+')')}
+                    <button style={{...S.btn(canN?n===1?'gold':'def':'dim'),fontSize:13,padding:'3px 8px',opacity:canN?1:0.45,cursor:canN?'pointer':'not-allowed'}}
+                      onClick={()=>canN&&(n===1?doCraft(r,selTier):doBatchCraft(r,n,selTier))} disabled={!canN}
+                      title={!canN?(!fOk?'Faction reputation too low':!hasIngr?'Not enough ingredients':'Need ⚡'+effectiveEC+' Energy (have ⚡'+energy+')'):(freeForFirst?'Free this turn ('+(fbfNow&&n===1?'Rapid Infusion':'Early Riser')+')':'Cost: ⚡'+effectiveEC)}>
+                      {n===1?('⚗️ Brew '+selQT.name+' ('+(freeForFirst?'FREE':'⚡'+effectiveEC)+')'):('×'+n+' ('+(freeForFirst?'FREE':'⚡'+effectiveEC)+')')}
                     </button>
-                    {!canN&&bc.canBuy&&fOk&&energy>=batchEC&&<button style={{fontSize:11,padding:'2px 5px',background:TH.gold,color:TH.bg,border:'none',borderRadius:3,cursor:'pointer',fontFamily:'inherit'}}
+                    {!canN&&bc.canBuy&&fOk&&energy>=effectiveEC&&<button style={{fontSize:11,padding:'2px 5px',background:TH.gold,color:TH.bg,border:'none',borderRadius:3,cursor:'pointer',fontFamily:'inherit'}}
                       onClick={()=>selDoBuy(n)}>🛒 {bc.total}g</button>}
                   </span>;
                 })})()}
@@ -10007,11 +10029,15 @@ function CindervaleAlchemistInner(){
               const craftB=getFeatureVal('craftBonus');
               const totalMod=resMod+resRank+(innovMod>0?innovMod:0)+(craftB||0);
               return <>
-                <button style={S.btn(canAct&&undiscP.length>0?'gold':'dim')} onClick={()=>doResearch('potion')} disabled={!canAct||undiscP.length===0}>
-                  ⚗️ Study Potions ({undiscP.length} unknown) — {hasFree?'FREE':''+resCost+'h'}
+                <button style={{...S.btn(canAct&&undiscP.length>0?'gold':'dim'),opacity:(canAct&&undiscP.length>0)?1:0.45,cursor:(canAct&&undiscP.length>0)?'pointer':'not-allowed'}}
+                  onClick={()=>doResearch('potion')} disabled={!canAct||undiscP.length===0}
+                  title={undiscP.length===0?'Nothing left to research':!canAct?'Need ⚡'+resCost+' Energy (have ⚡'+energy+')':hasFree?'Free study available':'Cost: ⚡'+resCost}>
+                  ⚗️ Study Potions ({undiscP.length} unknown) — {hasFree?'FREE':'⚡'+resCost}
                 </button>
-                <button style={S.btn(canAct&&undiscE.length>0?'gold':'dim')} onClick={()=>doResearch('enchant')} disabled={!canAct||undiscE.length===0}>
-                  ✨ Study Enchantments ({undiscE.length} unknown) — {hasFree?'FREE':''+resCost+'h'}
+                <button style={{...S.btn(canAct&&undiscE.length>0?'gold':'dim'),opacity:(canAct&&undiscE.length>0)?1:0.45,cursor:(canAct&&undiscE.length>0)?'pointer':'not-allowed'}}
+                  onClick={()=>doResearch('enchant')} disabled={!canAct||undiscE.length===0}
+                  title={undiscE.length===0?'Nothing left to research':!canAct?'Need ⚡'+resCost+' Energy (have ⚡'+energy+')':hasFree?'Free study available':'Cost: ⚡'+resCost}>
+                  ✨ Study Enchantments ({undiscE.length} unknown) — {hasFree?'FREE':'⚡'+resCost}
                 </button>
                 <div style={{fontSize:13,color:TH.textDim,width:'100%'}}>
                   🎲 Research DC {resDC} · Your bonus: +{totalMod} ({STATS[SKILLS.research?.stat]?.icon}+{resMod} 🔬+{resRank}{innovMod>0?' 🌟+'+innovMod:''}{craftB?' ⚗️+'+craftB:''})
@@ -10088,8 +10114,10 @@ function CindervaleAlchemistInner(){
             ):null;
           })()}
           <div style={S.row}>
-            <button style={S.btn(expBench.length>=2&&energy>=25?'gold':'dim')} disabled={expBench.length<2||energy<25} onClick={doExperiment}>
-              🧪 {energy<25?'No Energy':'Experiment (⚡25)'}
+            <button style={{...S.btn(expBench.length>=2&&energy>=25?'gold':'dim'),opacity:(expBench.length>=2&&energy>=25)?1:0.45,cursor:(expBench.length>=2&&energy>=25)?'pointer':'not-allowed'}}
+              disabled={expBench.length<2||energy<25} onClick={doExperiment}
+              title={expBench.length<2?'Add at least 2 ingredients to the bench':energy<25?'Need ⚡25 Energy (have ⚡'+energy+')':'Cost: ⚡25'}>
+              🧪 Experiment (⚡25)
             </button>
             {expBench.length>0&&<button style={S.btn('dim')} onClick={()=>setExpBench([])}>Clear</button>}
           </div>
@@ -10314,7 +10342,7 @@ function CindervaleAlchemistInner(){
                     </div>);})}
                   </>:<div style={{fontSize:14,color:'#b090e0'}}>✨ No materials needed — pure arcane knowledge</div>}
                 </div>
-                {energy<25?<div style={{fontSize:14,color:TH.textDim,textAlign:'center',padding:4}}>No Energy</div>
+                {energy<25?<div style={{fontSize:14,color:TH.textDim,textAlign:'center',padding:4}}>⚡25 Energy needed (have ⚡{energy})</div>
                 :!can?<div style={{fontSize:14,color:TH.textDim,textAlign:'center',padding:4}}>Gather Materials First</div>
                 :<div style={{display:'flex',flexDirection:'column',gap:3,marginTop:4}}>
                   {['std','fine','mw','gm'].map(eq=>{
@@ -10338,7 +10366,7 @@ function CindervaleAlchemistInner(){
                         color:canQ?TH.textBright:TH.textDim}}
                         onClick={()=>canQ&&doEnchant(ench.id,cust,eq)} disabled={!canQ}>
                         <span style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-                          <span style={{fontWeight:'bold',color:canQ?eq==='gm'?'#c050e0':eq==='mw'?TH.gold:eq==='fine'?TH.green:TH.textBright:TH.textDim}}>{eq==='std'?'✨':''+eqT.icon} {eqT.name}</span>
+                          <span style={{fontWeight:'bold',color:canQ?eq==='gm'?'#c050e0':eq==='mw'?TH.gold:eq==='fine'?TH.green:TH.textBright:TH.textDim}}>{eq==='std'?'✨':''+eqT.icon} {eqT.name} <span style={{fontSize:10,color:TH.textDim,fontWeight:'normal'}}>(⚡25)</span></span>
                           <span style={{fontSize:11,color:canQ?(eqPct>=60?'#80d080':eqPct>=30?'#d0b060':'#d06060'):TH.textDim}}>DC{eqDC} {eqPct}% · {eqT.sellMult}× pay</span>
                         </span>
                         {!canQ&&missingMats.length>0&&<span style={{display:'block',fontSize:10,color:'#c06040',marginTop:1}}>Need: {missingMats.join(', ')}</span>}
@@ -10605,7 +10633,7 @@ function CindervaleAlchemistInner(){
             <span>📋 Task Guide</span><span style={{fontSize:13,color:TH.textDim}}>{showTaskGuide?'▲ hide':'▼ show'}</span>
           </div>
           {showTaskGuide&&<div style={{fontSize:14,lineHeight:1.5,color:TH.textDim}}>
-            <div style={{marginBottom:3}}><b style={{color:TH.text}}>⛏️ Forage</b> — Staff mount a full-day expedition to gather ingredients. They spend ~6h with travel deducted per region (e.g. Ashfields 1h travel = 5h gathering, Volcanic Vents 3h travel = 3h gathering). Yield per hour scales with <b style={{color:STATS.tec.color}}>Technique</b> and experience. Frees you to craft, enchant, and tend the shop.</div>
+            <div style={{marginBottom:3}}><b style={{color:TH.text}}>⛏️ Forage</b> — Staff mount a full-day expedition to gather ingredients. They allocate their day-budget across travel and gathering (regions cost more travel the further they are). Yield scales with <b style={{color:STATS.tec.color}}>Technique</b> and experience. Frees you to craft, enchant, and tend the shop.</div>
             <div style={{marginBottom:3}}><b style={{color:TH.text}}>⚗️ Brew</b> — Attempts to brew a known recipe overnight using your ingredients. ~50% base success rate, scaling with <b style={{color:STATS.tec.color}}>Technique</b>. Failed brews have a 50% chance to lose ingredients.</div>
             <div style={{marginBottom:3}}><b style={{color:TH.text}}>🏪 Shop</b> — Tends the storefront, earning passive gold each day. Income scales with your level, staff experience, and their <b style={{color:STATS.inu.color}}>Intuition</b> stat. Reliable daily income with no resource cost.</div>
             <div><b style={{color:TH.text}}>📚 Research</b> — Studies texts overnight with a chance to discover new recipes or enchantment inscriptions. Discovery chance scales with <b style={{color:STATS.acu.color}}>Acumen</b>. Great for unlocking formulas while you sleep.</div>
@@ -11268,10 +11296,11 @@ function CindervaleAlchemistInner(){
             <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
               <div>
                 <div style={{fontSize:14,fontWeight:'bold',color:TH.gold}}>🛡️ Reinforce Wards</div>
-                <div style={{fontSize:12,color:TH.textDim}}>2 Energy · Skill check (Inscription/Precision/Discipline) vs DC {10+Math.floor((hollowMarch.wave||1)*0.8)} · Reduces all threats</div>
+                <div style={{fontSize:12,color:TH.textDim}}>⚡50 Energy · Skill check (Inscription/Precision/Discipline) vs DC {10+Math.floor((hollowMarch.wave||1)*0.8)} · Reduces all threats</div>
               </div>
-              <button style={{...S.btn(energy>=50?'gold':'dim'),fontSize:13,padding:'6px 12px'}} disabled={energy<50}
-                onClick={reinforceWards}>⚡2 Reinforce</button>
+              <button style={{...S.btn(energy>=50?'gold':'dim'),fontSize:13,padding:'6px 12px',opacity:energy>=50?1:0.45,cursor:energy>=50?'pointer':'not-allowed'}} disabled={energy<50}
+                onClick={reinforceWards}
+                title={energy>=50?'Cost: ⚡50':'Need ⚡50 Energy (have ⚡'+energy+')'}>⚡50 Reinforce</button>
             </div>
           </div>}
 
@@ -12535,7 +12564,7 @@ function ExpeditionHourPopup({hr,TH,S,LC,INGR,FACTIONS,onOk,onSkipAll,remaining,
         {/* Header */}
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:10}}>
           <div style={{fontSize:19,color:TH.gold,fontWeight:'bold'}}>{hr.regIcon} {hr.regName}</div>
-          <div style={{fontSize:15,color:TH.textDim}}>Hour {hr.hourNum} of {hr.totalHours}</div>
+          <div style={{fontSize:15,color:TH.textDim}}>Roll {hr.hourNum}{hr.totalHours>1?' of '+hr.totalHours:''}</div>
         </div>
         <div style={{width:'100%',height:4,background:TH.bg,borderRadius:2,marginBottom:12}}>
           <div style={{height:'100%',width:Math.round(hr.hourNum/hr.totalHours*100)+'%',background:TH.gold,borderRadius:2,transition:'width 0.3s'}}/>
@@ -12556,7 +12585,7 @@ function ExpeditionHourPopup({hr,TH,S,LC,INGR,FACTIONS,onOk,onSkipAll,remaining,
 
         {/* Items Gathered */}
         {past&&<div style={{background:TH.bg,borderRadius:6,padding:'6px 10px',marginBottom:8,border:'1px solid '+TH.border}}>
-          <div style={{fontSize:14,color:TH.textDim,marginBottom:2}}>Gathered this hour:</div>
+          <div style={{fontSize:14,color:TH.textDim,marginBottom:2}}>Gathered this roll:</div>
           <div style={{display:'flex',flexWrap:'wrap',gap:4}}>
             {Object.entries(hr.gathered).map(([id,q])=>(
               <span key={id} style={{fontSize:15,padding:'2px 6px',borderRadius:3,background:q>0?`${TH.green}15`:TH.panelLight,
@@ -12670,7 +12699,7 @@ function ExpeditionHourPopup({hr,TH,S,LC,INGR,FACTIONS,onOk,onSkipAll,remaining,
         <div style={{textAlign:'center',marginTop:10}}>
           {isDone&&<>
             <button style={{...S.btn('gold'),fontSize:16,padding:'6px 24px'}} onClick={onOk}>
-              {hr.isFinal?'✅ Finish Expedition':'⛏️ Next Hour →'}
+              {hr.isFinal?'✅ Continue':'⛏️ Next →'}
             </button>
             {!hr.isFinal&&remaining>2&&<button style={{...S.btn('dim'),fontSize:14,padding:'4px 14px',marginLeft:6}} onClick={onSkipAll}>
               Skip All ({remaining-1} left)
