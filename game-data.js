@@ -109,7 +109,7 @@ var CLASSES={
         features:[
           {classLv:3,name:'Efficient Transmutation',desc:'Can convert ingredients at 2:1 ratio. Unlock transmutation recipes.',effects:{transmuteRatio:2,canTransmute:true}},
           {classLv:6,name:'Lead to Gold',desc:'Transmute faction-specific ingredients. Convert potions between types.',effects:{factionTransmute:true,ingredientEfficiency:0.25}},
-          {classLv:10,name:"Philosopher's Stone",desc:'1:1 ingredient conversion. Transmutations cost 0 hours.',effects:{transmuteRatio:1,freeTransmute:true}},
+          {classLv:10,name:"Philosopher's Stone",desc:'1:1 ingredient conversion. Transmutations cost 0 Energy.',effects:{transmuteRatio:1,freeTransmute:true}},
         ]},
       venomist:{id:'venomist',name:'Venomist',desc:'Brew volatile poisons and offensive concoctions. Sell deadly wares to guard factions for premium gold.',mechDesc:'Venom Contracts. Shady clients post poison contracts offering premium gold for specific volatile brews. The Venom Lab on your workshop screen shows available contracts with deadlines and rewards. Craft bonuses scale with level, and failures at Lv10 still produce lesser venoms.',icon:'☠️',color:'#a0d040',bStat:'tec',bSkills:['precision','extraction'],
         features:[
@@ -168,7 +168,7 @@ var CLASSES={
       {classLv:7,name:'Prototype',desc:'Once per day, reroll a failed craft. +15% discovery chance from research.',effects:{craftReroll:1,discoveryChanceBonus:0.15}},
       {classLv:8,name:'Grand Artificer',desc:'Workshop upgrade costs -25%. Your d20 craft rolls cannot land below 8. Mastering this level grants three legendary precision-craft recipes.',effects:{craftFloor:8,upgradeCostReduction:0.25},grantRecipes:{pool:['mithril_draught','titan_elixir','embersteel_oil'],count:3}},
       {classLv:9,name:'Systematic Mastery',desc:'Batch brew cap +3. All batch brews show individual roll results.',effects:{batchSizeBonus:3,batchSuccessBonus:0.15}},
-      {classLv:10,name:'Masterwork Engine',desc:'Two free 0-hour crafting actions per day. Batch size +2. 100% salvage on failures. Workshop upgrades cost -30% and provide double their normal bonuses. Your workshop is a precision engine.',effects:{freeCraft:2,batchSizeBonus:2,salvagePercent:1.0,upgradeCostReduction:0.30,upgradeDoubleBonus:true}},
+      {classLv:10,name:'Masterwork Engine',desc:'Two free crafting actions per day (no Energy cost). Batch size +2. 100% salvage on failures. Workshop upgrades cost -30% and provide double their normal bonuses. Your workshop is a precision engine.',effects:{freeCraft:2,batchSizeBonus:2,salvagePercent:1.0,upgradeCostReduction:0.30,upgradeDoubleBonus:true}},
     ],
     specs:{
       tinkerer:{id:'tinkerer',name:'Tinkerer',desc:'Build utility gadgets and experiment with unconventional techniques. Innovation over brute force.',mechDesc:'Gadget Workshop. Craft utility gadgets from blueprints that provide passive bonuses when equipped. Gadgets can be upgraded through marks (Mk I, Mk II, etc.) for stronger effects. The gadget panel shows your active devices and their bonuses to crafting, foraging, and research.',icon:'🔩',color:'#c0a040',bStat:'acu',bSkills:['analysis','research'],
@@ -181,7 +181,7 @@ var CLASSES={
         features:[
           {classLv:3,name:'Workshop Pro',desc:'Workshop upgrades cost 50% less gold. Staff efficiency +15%.',effects:{upgradeCostReduction:0.5,staffEfficiencyBonus:0.15}},
           {classLv:6,name:'Assembly Floor',desc:'Batch brewing capacity +2 (brew up to 7 at once). Staff efficiency +20%.',effects:{batchSizeBonus:2,staffEfficiencyBonus:0.20}},
-          {classLv:10,name:'Master Builder',desc:'+2 Energy per day, overnight auto-brewing of your most-profitable recipe, +3× passive income from your shopfront, and all construction completes in half time. Reaching this level grants three high-tier workshop upgrades from your master\'s portfolio.',effects:{passiveIncomeMulti:3,overnightCraft:true,bonusEnergy:2,halfConstructTime:true},grantUpgrades:{pool:['forge','garden_2','leyline','cauldron_3','bench_2','vault','library'],count:3}},
+          {classLv:10,name:'Master Builder',desc:'+50 Energy per day, overnight auto-brewing of your most-profitable recipe, +3× passive income from your shopfront, and all construction completes in half time. Reaching this level grants three high-tier workshop upgrades from your master\'s portfolio.',effects:{passiveIncomeMulti:3,overnightCraft:true,bonusEnergy:50,halfConstructTime:true},grantUpgrades:{pool:['forge','garden_2','leyline','cauldron_3','bench_2','vault','library'],count:3}},
         ]},
       reclaimer:{id:'reclaimer',name:'Reclaimer',desc:'Waste nothing. Salvage failed brews, break down items for materials, and turn spoilage into profit.',mechDesc:'Salvage System. Failed brews and enchantments return a percentage of ingredients instead of losing everything. The salvage rate increases with level (75% at Lv3, 100% at Lv10). At Lv6 you can deconstruct finished potions back into ingredients. Spoiled ingredients produce Alchemical Residue.',icon:'♻️',color:'#60a080',bStat:'dis',bSkills:['endurance','precision'],
         features:[
@@ -196,7 +196,7 @@ var CLASSES={
     shortDesc:'Research, discovery, XP acceleration',
     features:[
       {classLv:1,name:'Research Study',desc:'Can conduct research studies to discover recipes. Gain proficiency in Research and Lore. +5% discovery chance.',effects:{discoveryChanceBonus:0.05,xpMultiplier:0.05}},
-      {classLv:2,name:'Speed Reader',desc:'One free research study per day (no hour cost). +10% base discovery chance.',effects:{freeResearchPerDay:1,discoveryChanceBonus:0.10}},
+      {classLv:2,name:'Speed Reader',desc:'One free research study per day (no Energy cost). +10% base discovery chance.',effects:{freeResearchPerDay:1,discoveryChanceBonus:0.10}},
       {classLv:3,name:'Specialization',desc:'Choose a specialization path. +5% discovery chance.',effects:{discoveryChanceBonus:0.05}},
       {classLv:4,name:'Eureka!',desc:'Experiments: +15% discovery chance. On discovery, show recipe stat/DC info.',effects:{experimentBonus:0.15,showRecipeInfo:true}},
       {classLv:5,name:'Academic Network',desc:'+15% XP from all sources. +1 free research study per day (2 total).',effects:{xpMultiplier:0.15,freeResearchPerDay:1}},
@@ -232,8 +232,8 @@ var CLASSES={
     desc:'Masters of wilderness and expedition. Make foraging dramatically more productive.',
     shortDesc:'Foraging mastery, energy efficiency, endurance',
     features:[
-      {classLv:1,name:'Trailblazer',desc:'-1 travel time to all regions (min 0). Gain proficiency in Extraction and Endurance.',effects:{travelReduction:1}},
-      {classLv:2,name:'Enduring Spirit',desc:'+1 Energy per day. Weather penalties halved.',effects:{bonusEnergyPerDay:1,weatherReduction:0.5}},
+      {classLv:1,name:'Trailblazer',desc:'-1 travel time to all regions (min 0). Gain proficiency in Extraction and Endurance.',effects:{travelReduction:25}},
+      {classLv:2,name:'Enduring Spirit',desc:'+25 Energy per day. Weather penalties halved.',effects:{bonusEnergyPerDay:25,weatherReduction:0.5}},
       {classLv:3,name:'Specialization',desc:'Choose a specialization path. +1 extraction bonus.',effects:{extractionBonus:1}},
       {classLv:4,name:'Iron Constitution',desc:'Immune to expedition events that cost time. Power through danger.',effects:{immuneTimeLossEvents:true}},
       {classLv:5,name:'Expert Forager',desc:'Critical extraction (nat 20) yields 3× ingredients. Successes yield +1 bonus.',effects:{critExtractionMulti:3,bonusPerSuccess:1}},
@@ -241,7 +241,7 @@ var CLASSES={
       {classLv:7,name:'Wilderness Mastery',desc:'+2 extraction bonus. Positive expedition events 2× more likely. 15% chance of bonus rare find per hour.',effects:{extractionBonus:2,positiveEventMulti:2,luckyFindChance:0.15}},
       {classLv:8,name:'Expedition Commander',desc:'Staff foraging yields +40%. Staff gain XP 25% faster.',effects:{staffForageBonus:0.40,staffXPBonus:0.25}},
       {classLv:9,name:'Indomitable',desc:'+3 extraction bonus. +1 bonus ingredient per successful extraction.',effects:{extractionBonus:3,bonusPerSuccess:1}},
-      {classLv:10,name:'Legend of the Wild',desc:'All travel times become 0. +50% foraging yields. Overnight foraging.',effects:{travelReduction:3,yieldMultiplier:0.5,forageOnRest:true}},
+      {classLv:10,name:'Legend of the Wild',desc:'All travel times become 0. +50% foraging yields. Overnight foraging.',effects:{travelReduction:75,yieldMultiplier:0.5,forageOnRest:true}},
     ],
     specs:{
       ranger:{id:'ranger',name:'Ranger',desc:'Tame wild companions that gather, sell, scout, and fight alongside you. The signature beast-bond spec.',mechDesc:'Wild Companions. Befriend wild creatures during foraging expeditions. Companions perform daily actions: gathering ingredients, earning gold, scouting, greeting customers, guarding, or inspiring research. Loyalty grows over time, unlocking secondary abilities and legendary powers. At Lv10, companions perform all actions twice, gain type-specific legendary abilities, and can be sent on solo expeditions from their card.',icon:'🏹',color:'#40a060',bStat:'inu',bSkills:['danger_sense','divination'],
@@ -258,9 +258,9 @@ var CLASSES={
         ]},
       sentinel:{id:'sentinel',name:'Sentinel',desc:'Night expeditions for bonus foraging after dark. Guard the settlement against rising threats.',mechDesc:'Night Expeditions. After resting, send your character on a bonus night foraging run with extra gathering hours but increased danger. At Lv6, set traps for guaranteed rare finds. At Lv10, build permanent outposts for daily passive ingredient income and threat suppression.',icon:'🗼',color:'#a07040',bStat:'tec',bSkills:['extraction','precision'],
         features:[
-          {classLv:3,name:'Night Watch',desc:'Night expeditions: 2 bonus gathering hours at +4 DC, increased danger.',effects:{nightExpeditions:true,nightBonusHours:2}},
+          {classLv:3,name:'Night Watch',desc:'Night expeditions: 2 bonus gathering hours at +4 DC, increased danger.',effects:{nightExpeditions:true,nightBonusHours:50}},
           {classLv:6,name:'Trap Setter',desc:'Set traps for guaranteed rare ingredient finds. Night danger reduced.',effects:{guaranteedRare:true,nightDangerReduction:true}},
-          {classLv:10,name:'Eternal Vigil',desc:'Night expeditions reach 4 hours total with reduced DC penalty (+3 instead of +4). Drastically reduced danger. All threats passively decay by 3 per day. Once per day, launch a Preemptive Strike: spend 2 Energy to reduce any threat by 20 and earn XP/gold.',effects:{forageOnRest:true,nightBonusHours:2,nightDCReduction:1,staffForageBonus:0.20,passiveThreatDecay:3,preemptiveStrike:true}},
+          {classLv:10,name:'Eternal Vigil',desc:'Night expeditions reach 4 bonus gathering hours total with reduced DC penalty (+3 instead of +4). Drastically reduced danger. All threats passively decay by 3 per day. Once per day, launch a Preemptive Strike: spend 50 Energy to reduce any threat by 20 and earn XP/gold.',effects:{forageOnRest:true,nightBonusHours:50,nightDCReduction:1,staffForageBonus:0.20,passiveThreatDecay:3,preemptiveStrike:true}},
         ]},
     }},
 };
@@ -280,16 +280,16 @@ var FEATS={
   // ── Crafting ──
   careful_hands:{id:'careful_hands',name:'Careful Hands',icon:'🤲',cat:'crafting',desc:'25% ingredient save on failed brews. Once per day, reroll a failed craft check.',effects:{craftReroll:1,failSalvage:0.25}},
   bulk_processor:{id:'bulk_processor',name:'Bulk Processor',icon:'📦',cat:'crafting',desc:'Max batch brew size +2.',effects:{batchSizeBonus:2}},
-  recipe_intuition:{id:'recipe_intuition',name:'Recipe Intuition',icon:'💡',cat:'crafting',desc:'+10% experiment discovery chance. Experiments cost 0 hours on failure.',effects:{experimentBonus:0.10,freeFailExperiment:true}},
+  recipe_intuition:{id:'recipe_intuition',name:'Recipe Intuition',icon:'💡',cat:'crafting',desc:'+10% experiment discovery chance. Failed experiments cost 0 Energy.',effects:{experimentBonus:0.10,freeFailExperiment:true}},
   quality_assurance:{id:'quality_assurance',name:'Quality Assurance',icon:'✅',cat:'crafting',desc:'Brewed potions worth +20% when sold or shelved.',effects:{potionValueBonus:0.20}},
-  rapid_infusion:{id:'rapid_infusion',name:'Rapid Infusion',icon:'⚡',cat:'crafting',desc:'Infusions don\'t cost extra time. First brew each day costs 0 hours.',effects:{firstBrewFree:true},req:{alchemist:3}},
+  rapid_infusion:{id:'rapid_infusion',name:'Rapid Infusion',icon:'⚡',cat:'crafting',desc:'Infusions don\'t cost extra time. First brew each day costs 0 Energy.',effects:{firstBrewFree:true},req:{alchemist:3}},
   lucky_brew:{id:'lucky_brew',name:'Lucky Brew',icon:'🍀',cat:'crafting',desc:'10% chance any craft produces a random bonus potion alongside.',effects:{luckyBrewChance:0.10}},
   methodical_brewer:{id:'methodical_brewer',name:'Methodical Brewer',icon:'📏',cat:'crafting',desc:'Recipes brewed 10+ times get -2 DC permanently. Mastery discount cap +2.',effects:{masteryDiscountBonus:2}},
   efficient_brewing:{id:'efficient_brewing',name:'Efficient Brewing',icon:'♻️',cat:'crafting',desc:'15% chance to save all ingredients on a successful brew.',effects:{ingrSaveOnSuccess:0.15}},
   double_batch:{id:'double_batch',name:'Double Batch',icon:'🔁',cat:'crafting',desc:'+5% double batch chance.',effects:{doubleBatchChance:0.05}},
   overachiever:{id:'overachiever',name:'Overachiever',icon:'💪',cat:'crafting',desc:'+1 to all craft checks.',effects:{craftBonus:1}},
   // ── Exploration ──
-  trailblazer_boots:{id:'trailblazer_boots',name:"Trailblazer's Boots",icon:'🥾',cat:'exploration',desc:'-1 travel time to all regions.',effects:{travelReduction:1}},
+  trailblazer_boots:{id:'trailblazer_boots',name:"Trailblazer's Boots",icon:'🥾',cat:'exploration',desc:'-1 travel time to all regions.',effects:{travelReduction:25}},
   lucky_find:{id:'lucky_find',name:'Lucky Find',icon:'🔎',cat:'exploration',desc:'+5% chance for bonus rare ingredient per forage hour.',effects:{luckyFindChance:0.05}},
   companion_handler:{id:'companion_handler',name:'Companion Handler',icon:'🐾',cat:'exploration',desc:'Companion actions +50% effectiveness. Companions gain loyalty 2× faster. +15% companion encounter chance.',effects:{companionEffBonus:0.50,companionLoyaltyMult:2,companionEncounterBonus:0.15}},
   seasoned_explorer:{id:'seasoned_explorer',name:'Seasoned Explorer',icon:'🧭',cat:'exploration',desc:'+2 to all extraction checks.',effects:{extractionBonus:2}},
@@ -312,7 +312,7 @@ var FEATS={
   preservation:{id:'preservation',name:'Preservation',icon:'🧊',cat:'economic',desc:'+5 spoil threshold.',effects:{spoilThreshold:5}},
   deep_preservation:{id:'deep_preservation',name:'Deep Preservation',icon:'❄️',cat:'economic',desc:'+8 spoil threshold.',effects:{spoilThreshold:8},req:{feat:'preservation'}},
   scholars_memory:{id:'scholars_memory',name:"Scholar's Memory",icon:'📚',cat:'economic',desc:'+8 XP per quest turn-in.',effects:{questXPFlat:8}},
-  quick_study:{id:'quick_study',name:'Quick Study',icon:'⏱️',cat:'economic',desc:'Research costs 1h less.',effects:{researchTimeReduction:1},req:{feat:'scholars_memory'}},
+  quick_study:{id:'quick_study',name:'Quick Study',icon:'⏱️',cat:'economic',desc:'Research costs 1h less.',effects:{researchTimeReduction:25},req:{feat:'scholars_memory'}},
   keen_eye:{id:'keen_eye',name:'Keen Eye',icon:'👁️',cat:'economic',desc:'+3g per enchant commission.',effects:{enchantGoldFlat:3}},
   gem_cutter:{id:'gem_cutter',name:'Gem Cutter',icon:'💠',cat:'economic',desc:'+1g per ingredient sold.',effects:{ingrSellBonus:1}},
   supplier_contacts:{id:'supplier_contacts',name:'Supplier Contacts',icon:'📬',cat:'economic',desc:'2 rare ingredients appear in shop daily.',effects:{shopRestockBonus:2}},
@@ -330,7 +330,7 @@ var FEATS={
   master_trainer:{id:'master_trainer',name:'Master Trainer',icon:'👨‍🏫',cat:'social',desc:'Apprentices gain 2× XP.',effects:{staffXPBonus:1.0}},
   inspiring_presence:{id:'inspiring_presence',name:'Inspiring Presence',icon:'🌟',cat:'social',desc:'Staff morale +10%.',effects:{healMorale:10}},
   // ── Legacy ──
-  ancestral_wisdom:{id:'ancestral_wisdom',name:'Ancestral Wisdom',icon:'🕯️',cat:'legacy',desc:'Pass the Torch carries 25% gold (up from 15%), 5 recipes (up from 3), 50% rep (up from 33%). +1 Energy.',effects:{torchGoldBonus:0.10,torchRecipeBonus:2,torchRepBonus:0.17,torchEnergyBonus:1}},
+  ancestral_wisdom:{id:'ancestral_wisdom',name:'Ancestral Wisdom',icon:'🕯️',cat:'legacy',desc:'Pass the Torch carries 25% gold (up from 15%), 5 recipes (up from 3), 50% rep (up from 33%). +25 Energy.',effects:{torchGoldBonus:0.10,torchRecipeBonus:2,torchRepBonus:0.17,torchEnergyBonus:1}},
   mentors_gift:{id:'mentors_gift',name:"Mentor's Gift",icon:'🎁',cat:'legacy',desc:'Torch carries 1 additional legacy feature.',effects:{torchExtraLegacy:1},req:{feat:'ancestral_wisdom'}},
   // ── Combat/Survival ──
   iron_will:{id:'iron_will',name:'Iron Will',icon:'🛡️',cat:'combat',desc:'+2 to all Danger Sense checks.',effects:{dangerSenseBonus:2}},
@@ -338,7 +338,7 @@ var FEATS={
   ward_of_protection:{id:'ward_of_protection',name:'Ward of Protection',icon:'🔰',cat:'combat',desc:'-5% threat growth rate.',effects:{threatGainReduction:0.05}},
   // ── General ──
   early_riser:{id:'early_riser',name:'Early Riser',icon:'🌅',cat:'general',desc:'First 1-Energy action each day costs 0 Energy.',effects:{firstActionFree:true}},
-  multitasker:{id:'multitasker',name:'Multitasker',icon:'🔀',cat:'general',desc:'One free 0-hour action per day.',effects:{freeAction:1}},
+  multitasker:{id:'multitasker',name:'Multitasker',icon:'🔀',cat:'general',desc:'One free action per day (no Energy cost).',effects:{freeAction:1}},
   jack_of_all:{id:'jack_of_all',name:'Jack of All Trades',icon:'🃏',cat:'general',desc:'+1 to all skill checks where you have 0 invested ranks. +1 to your lowest ability score modifier.',effects:{untrainedBonus:1,weakStatBonus:1}},
   prodigy:{id:'prodigy',name:'Prodigy',icon:'⭐',cat:'general',desc:'+1 to two ability scores of your choice (selected on pick, can exceed soft cap). +5% XP.',effects:{asiBonus:2,xpMultiplier:0.05}},
   tough:{id:'tough',name:'Tough',icon:'💪',cat:'general',desc:'Once per day, reroll a failed check. Negative town events halved.',effects:{eventDamageReduction:0.5,checkReroll:1}},
@@ -372,8 +372,8 @@ var UPGRADES={
   display:{id:'display',name:'Display Cases',icon:'🏪',cat:'Business',desc:'+15% sell.',cost:{gold:70,hearthstone:2},effect:{sellBonus:0.15},tier:1,req:'shopfront'},
   rep_board:{id:'rep_board',name:'Rep Board',icon:'📋',cat:'Business',desc:'+5 all rep/day.',cost:{gold:50},effect:{dailyRep:5},tier:1,req:'signage'},
   ledger:{id:'ledger',name:'Ledger',icon:'📒',cat:'Business',desc:'+1 staff, +20% eff.',cost:{gold:40},effect:{apprenticeEff:0.2},tier:1,req:null},
-  quarters:{id:'quarters',name:'Beds',icon:'🛏️',cat:'Comfort',desc:'+1 Energy/day. Upgrade from bedrolls.',cost:{gold:35,ironroot_bark:3},effect:{bonusEnergy:1},tier:1,req:null},
-  hearth:{id:'hearth',name:'Hearth',icon:'🔥',cat:'Comfort',desc:'+1 Energy, +morale.',cost:{gold:100,hearthstone:3},effect:{bonusEnergy:1,morale:10},tier:2,req:'quarters'},
+  quarters:{id:'quarters',name:'Beds',icon:'🛏️',cat:'Comfort',desc:'+25 Energy/day. Upgrade from bedrolls.',cost:{gold:35,ironroot_bark:3},effect:{bonusEnergy:25},tier:1,req:null},
+  hearth:{id:'hearth',name:'Hearth',icon:'🔥',cat:'Comfort',desc:'+25 Energy, +morale.',cost:{gold:100,hearthstone:3},effect:{bonusEnergy:25,morale:10},tier:2,req:'quarters'},
   garden:{id:'garden',name:'Garden',icon:'🌱',cat:'Comfort',desc:'Free daily herbs.',cost:{gold:45,ashbloom:5},effect:{dailyHerbs:true},tier:1,req:null},
   garden_2:{id:'garden_2',name:'Greenhouse',icon:'🌿',cat:'Comfort',desc:'Free rare herbs.',cost:{gold:150,moonpetal:3,sacred_ember:1},effect:{dailyRareHerbs:true},tier:2,req:'garden'},
   library:{id:'library',name:'Library',icon:'📚',cat:'Advanced',desc:'Research/Lore +2.',cost:{gold:120,veil_shard:1},effect:{researchBonus:2},tier:2,req:null},
@@ -715,7 +715,7 @@ var REGIONS=[
         weights:{ashbloom:7,ironroot_bark:7,ash_salt:7,cinder_moss:7,char_root:7,wind_dust:23,ember_petal:27,soot_crystal:12,warden_sigil:3,spring_dewdrop:10,harvest_root:6}},
       {id:'scorched_basin',name:'Scorched Basin',icon:'🕳️',desc:'A shallow crater where mineral salts and crystals form on the baked surface.',
         weights:{ashbloom:7,ironroot_bark:7,ash_salt:24,cinder_moss:8,char_root:8,wind_dust:7,ember_petal:8,soot_crystal:27,warden_sigil:4,spring_dewdrop:6,harvest_root:8}},
-    ],diff:1,unlock:0,time:1,yield:[2,4],dc:8,
+    ],diff:1,unlock:0,time:25,yield:[2,4],dc:8,
     flavor:['Grey ash crunches underfoot as pale blooms peek through the drifts.','Wind scatters ash like snow across the barren expanse.','A familiar trail — Ashbloom grows thick along the old road.']},
   {id:'ironwood',loc:'cindervale',name:'Ironwood',icon:'🌲',color:'#2a3a2a',ingr:['ironroot_bark','ashbloom','embercap','ironwood_sap','thornvine','bark_resin','moss_amber','amber_sap','beetle_shell','warden_sigil','amber_leaf','canopy_moss','sky_amber'],pick:3,sites:[
       {id:'root_halls',name:'The Root Halls',icon:'🌳',desc:'Massive exposed root systems form natural hallways beneath ancient trees.',
@@ -724,7 +724,7 @@ var REGIONS=[
         weights:{ironroot_bark:6,ashbloom:6,embercap:7,ironwood_sap:8,thornvine:6,bark_resin:8,moss_amber:22,amber_sap:26,beetle_shell:7,warden_sigil:4,amber_leaf:10,canopy_moss:6,sky_amber:8}},
       {id:'thornveil_edge',name:'Thornveil Edge',icon:'🌿',desc:'Dense thorny undergrowth at the forest border — fungi thrive in the decay.',
         weights:{ironroot_bark:7,ashbloom:7,embercap:23,ironwood_sap:6,thornvine:24,bark_resin:7,moss_amber:6,amber_sap:6,beetle_shell:9,warden_sigil:5,amber_leaf:8,canopy_moss:12,sky_amber:6}},
-    ],diff:2,unlock:1,time:1,yield:[2,4],dc:10,
+    ],diff:2,unlock:1,time:25,yield:[2,4],dc:10,
     flavor:['Ancient trees with bark like hammered iron loom overhead.','The forest floor is soft with decay — perfect for Embercap.','Ironwood roots grip stone like fingers. Good harvesting here.']},
   {id:'fungal_caves',loc:'cindervale',name:'Fungal Caves',icon:'🍄',color:'#3a2a3a',ingr:['embercap','gloomcap','spore_dust','cave_lichen','biolumen_gel','mycelium_thread','echo_fungus','ghost_silk','harmonic_crystal','resonance_dust'],pick:3,sites:[
       {id:'spore_gallery',name:'Spore Gallery',icon:'💨',desc:'An open cavern thick with airborne spores and dense mushroom colonies.',
@@ -733,7 +733,7 @@ var REGIONS=[
         weights:{embercap:8,gloomcap:28,spore_dust:8,cave_lichen:9,biolumen_gel:8,mycelium_thread:7,echo_fungus:25,ghost_silk:7,harmonic_crystal:10,resonance_dust:6}},
       {id:'silk_cavern',name:'Silk Cavern',icon:'🕸️',desc:'Gossamer fungal threads hang ceiling to floor like luminous curtains.',
         weights:{embercap:7,gloomcap:7,spore_dust:7,cave_lichen:8,biolumen_gel:12,mycelium_thread:24,echo_fungus:7,ghost_silk:28,harmonic_crystal:6,resonance_dust:8}},
-    ],diff:2,unlock:2,time:2,yield:[2,4],dc:11,
+    ],diff:2,unlock:2,time:50,yield:[2,4],dc:11,
     flavor:['Bioluminescent fungi paint the cave walls in ghostly blue.','The air is thick with spores. You tie a cloth over your nose.','Dripping water echoes off stone — and strange mushrooms glow in the dark.']},
   {id:'crystal_hollow',loc:'cindervale',name:'Crystal Hollows',icon:'💎',color:'#2a3a4a',ingr:['hearthstone','ashite','crystal_shard','mineral_clay','geode_dust','resonance_ore','singing_quartz','copper_vein','crystal_mycelium','deep_pearl'],pick:3,sites:[
       {id:'geode_chamber',name:'Geode Chamber',icon:'🪨',desc:'A hollow dome encrusted with split geodes revealing sparkling crystal interiors.',
@@ -742,7 +742,7 @@ var REGIONS=[
         weights:{hearthstone:7,ashite:8,crystal_shard:8,mineral_clay:7,geode_dust:8,resonance_ore:28,singing_quartz:24,copper_vein:10,crystal_mycelium:6,deep_pearl:4}},
       {id:'copper_grotto',name:'Copper Grotto',icon:'🟤',desc:'Warm-toned cavern rich with copper deposits and hearthstone seams.',
         weights:{hearthstone:24,ashite:9,crystal_shard:7,mineral_clay:10,geode_dust:7,resonance_ore:7,singing_quartz:8,copper_vein:28,crystal_mycelium:8,deep_pearl:10}},
-    ],diff:3,unlock:3,time:2,yield:[2,4],dc:13,
+    ],diff:3,unlock:3,time:50,yield:[2,4],dc:13,
     flavor:['Crystals hum with deep resonance as you descend into the hollow.','Hearthstone veins glitter in your lantern light like trapped stars.','The Cinderfolk carved these paths long ago. Their pick-marks still show.']},
   {id:'moonlit_glade',loc:'cindervale',name:'Moonlit Glade',icon:'🌙',color:'#2a2a4a',ingr:['moonpetal','starwort','nightdew','lunar_moss','dew_crystal','silver_lichen','moth_scale','dream_pollen','veil_shard','silver_lotus','liquid_moonlight','frostbloom'],pick:3,sites:[
       {id:'moonpool',name:'The Moonpool',icon:'🪷',desc:'A still reflecting pool surrounded by luminous moonpetal blooms.',
@@ -751,7 +751,7 @@ var REGIONS=[
         weights:{moonpetal:7,starwort:11,nightdew:7,lunar_moss:22,dew_crystal:7,silver_lichen:25,moth_scale:7,dream_pollen:7,veil_shard:7,silver_lotus:6,liquid_moonlight:4,frostbloom:8}},
       {id:'moth_sanctuary',name:'Moth Sanctuary',icon:'🦋',desc:'Where giant lunar moths gather by thousands, shedding iridescent scales.',
         weights:{moonpetal:7,starwort:8,nightdew:7,lunar_moss:7,dew_crystal:7,silver_lichen:7,moth_scale:27,dream_pollen:23,veil_shard:7,silver_lotus:4,liquid_moonlight:6,frostbloom:6}},
-    ],diff:3,unlock:4,time:2,yield:[2,4],dc:14,
+    ],diff:3,unlock:4,time:50,yield:[2,4],dc:14,
     flavor:['Silver light filters through canopy gaps where Moonpetals bloom.','The glade feels outside of time — quiet, luminous, sacred.','Starwort grows only where moonlight touches earth directly.']},
   {id:'volcanic_vents',loc:'cindervale',name:'Volcanic Vents',icon:'🌋',color:'#4a2a1a',ingr:['volcanic_essence','embervein','sulfur_bloom','magma_salt','obsidian_flake','thermal_clay','lava_pearl','pyrestone','sacred_ember'],pick:3,sites:[
       {id:'sulfur_flats',name:'Sulfur Flats',icon:'🟡',desc:'Flat crusted ground painted yellow with sulfur deposits and steaming clay.',
@@ -760,7 +760,7 @@ var REGIONS=[
         weights:{volcanic_essence:23,embervein:11,sulfur_bloom:7,magma_salt:20,obsidian_flake:7,thermal_clay:7,lava_pearl:9,pyrestone:8,sacred_ember:8}},
       {id:'obsidian_ridge',name:'Obsidian Ridge',icon:'🖤',desc:'Sharp black glass formations with embedded pyrestones glowing like trapped embers.',
         weights:{volcanic_essence:7,embervein:8,sulfur_bloom:7,obsidian_flake:26,thermal_clay:7,magma_salt:7,lava_pearl:7,pyrestone:25,sacred_ember:6}},
-    ],diff:4,unlock:5,time:3,yield:[2,4],dc:15,
+    ],diff:4,unlock:5,time:75,yield:[2,4],dc:15,
     flavor:['Sulfurous heat blasts from cracks in the scorched earth.','Embervein ore glows cherry-red near the active vents.','The ground trembles. You work quickly, gathering what you can.']},
   {id:'deep_mines',loc:'cindervale',name:'Deep Mines',icon:'⛏️',color:'#3a3a40',ingr:['ashite','hearthstone','embervein','deep_iron','shadow_quartz','echo_stone','dark_amber','mithril_dust','void_salt','deep_crystal','ice_crystal','deep_mithril','shadow_ore'],pick:3,sites:[
       {id:'upper_shafts',name:'Upper Shafts',icon:'⛏️',desc:'Well-mapped tunnels near the surface with common but reliable mineral veins.',
@@ -769,7 +769,7 @@ var REGIONS=[
         weights:{ashite:7,hearthstone:7,embervein:7,deep_iron:7,shadow_quartz:26,echo_stone:22,dark_amber:8,mithril_dust:5,void_salt:5,deep_crystal:6,ice_crystal:6,deep_mithril:6,shadow_ore:10}},
       {id:'mithril_seam',name:'Mithril Seam',icon:'💎',desc:'A rare exposed seam of mithril-bearing ore in the deepest accessible shaft.',
         weights:{ashite:6,hearthstone:5,embervein:7,deep_iron:20,shadow_quartz:6,echo_stone:5,dark_amber:7,mithril_dust:26,void_salt:7,deep_crystal:11,ice_crystal:10,deep_mithril:10,shadow_ore:8}},
-    ],diff:4,unlock:6,time:3,yield:[2,4],dc:16,faction:'cinderfolk',fReq:2,
+    ],diff:4,unlock:6,time:75,yield:[2,4],dc:16,faction:'cinderfolk',fReq:2,
     flavor:['Cinderfolk lanterns guide you through forgotten shafts.','The deep mines hold treasures — and dangers — in equal measure.','Pickaxe rings on stone. The miners nod as you pass.']},
   {id:'heartforge_rim',loc:'cindervale',name:'Heartforge Rim',icon:'⚡',color:'#4a3a0a',ingr:['volcanic_essence','hearthstone','embervein','starwort','forge_scale','primordial_ash','phoenix_ash','runespark','heartstone_sliver','titan_bone','moonwell_water','primordial_spark'],pick:3,sites:[
       {id:'titans_boneyard',name:"Titan's Boneyard",icon:'🦴',desc:'Ancient titan remains jut from the caldera wall like petrified mountains.',
@@ -778,7 +778,7 @@ var REGIONS=[
         weights:{volcanic_essence:7,hearthstone:6,embervein:7,starwort:6,forge_scale:6,primordial_ash:7,phoenix_ash:28,runespark:24,heartstone_sliver:5,titan_bone:4,moonwell_water:6,primordial_spark:4}},
       {id:'forge_gate',name:'The Forge Gate',icon:'🚪',desc:'The massive entrance to the Heartforge itself, encrusted with impossibly rare deposits.',
         weights:{volcanic_essence:6,hearthstone:9,embervein:6,starwort:6,forge_scale:24,primordial_ash:6,phoenix_ash:5,runespark:7,heartstone_sliver:26,titan_bone:5,moonwell_water:8,primordial_spark:8}},
-    ],diff:5,unlock:8,time:4,yield:[2,4],dc:18,
+    ],diff:5,unlock:8,time:100,yield:[2,4],dc:18,
     flavor:['The air crackles with dormant power this close to the Heartforge.','Even cold, the Heartforge radiates something ancient and immense.','The rim is treacherous — but the rarest materials gather here.']},
   // ═══ ASHFALL CROSSING REGIONS ═══
   {id:'sunscorch_flats',loc:'ashfall',name:'Sunscorch Flats',icon:'☀️',color:'#8a7a3a',
@@ -789,7 +789,7 @@ var REGIONS=[
         weights:{dustite:33,scorchroot:19,sunpetal:14,wind_dust:14,ash_salt:9,ashbloom:5,sand_merchant_seal:6,dried_cactus:4,sand_glass:6,salt_flake:3,ghost_pepper:3,thermal_bloom:10}},
       {id:'af_cracked_riverbed',name:'Cracked Riverbed',icon:'🏜️',desc:'An ancient river delta, now bone-dry. Salt deposits line the banks.',
         weights:{ash_salt:28,ashbloom:20,sunpetal:15,scorchroot:14,wind_dust:10,dustite:7,sand_merchant_seal:6,dried_cactus:5,sand_glass:4,salt_flake:7,ghost_pepper:4,thermal_bloom:6}},
-    ],diff:1,unlock:0,time:1,yield:[2,4],dc:8,
+    ],diff:1,unlock:0,time:25,yield:[2,4],dc:8,
     flavor:['The relentless sun beats down on cracked earth.','Heat shimmers rise from the flats like liquid glass.']},
   {id:'salt_caverns',loc:'ashfall',name:'Salt Caverns',icon:'🧂',color:'#6a7a8a',
     ingr:['crystal_salt','brine_moss','echo_fungus','gloomcap','ashite','mineral_clay','red_clay','sandstone_dust','sulfur_crystal','desert_rose','singing_salt'],pick:3,sites:[
@@ -799,7 +799,7 @@ var REGIONS=[
         weights:{crystal_salt:22,mineral_clay:24,ashite:20,echo_fungus:14,brine_moss:12,gloomcap:8,red_clay:4,sandstone_dust:6,sulfur_crystal:5,desert_rose:3,singing_salt:8}},
       {id:'af_drip_tunnels',name:'Drip Tunnels',icon:'🕳️',desc:'Narrow passages where mineral-rich water seeps through the ceiling.',
         weights:{brine_moss:30,gloomcap:22,echo_fungus:18,crystal_salt:14,mineral_clay:10,ashite:6,red_clay:6,sandstone_dust:3,sulfur_crystal:3,desert_rose:4,singing_salt:6}},
-    ],diff:2,unlock:1,time:1,yield:[2,4],dc:10,
+    ],diff:2,unlock:1,time:25,yield:[2,4],dc:10,
     flavor:['Salt crystals catch your torchlight, scattering rainbows across damp walls.']},
   {id:'obsidian_wastes',loc:'ashfall',name:'Obsidian Wastes',icon:'🖤',color:'#2a2a3a',
     ingr:['obsidian_shard','ashite','embervein','scorchroot','dustite','volcanic_essence','dustwalker_compass','desert_iron','fire_ant_chitin','heatstone','lava_glass','dust_amber'],pick:3,sites:[
@@ -809,7 +809,7 @@ var REGIONS=[
         weights:{embervein:28,volcanic_essence:22,obsidian_shard:18,ashite:14,dustite:8,scorchroot:5,dustwalker_compass:5,desert_iron:3,fire_ant_chitin:3,heatstone:6,lava_glass:5,dust_amber:6}},
       {id:'af_shatter_ridge',name:'Shatter Ridge',icon:'⛰️',desc:'A jagged ridgeline where obsidian fractures into useful shards.',
         weights:{obsidian_shard:30,dustite:18,scorchroot:16,ashite:13,embervein:9,dustwalker_compass:9,volcanic_essence:5,desert_iron:6,fire_ant_chitin:4,heatstone:3,lava_glass:3,dust_amber:10}},
-    ],diff:2,unlock:2,time:2,yield:[2,4],dc:11,
+    ],diff:2,unlock:2,time:50,yield:[2,4],dc:11,
     flavor:['Black glass crunches underfoot. One wrong step and you bleed.']},
   {id:'sandworm_tunnels',loc:'ashfall',name:'Sandworm Tunnels',icon:'🪱',color:'#7a6a3a',
     ingr:['sandsilk','venomgland','thornvine','scorchroot','brine_moss','obsidian_shard','scarab_shell','venom_silk','worm_tooth','queen_silk','wet_sand_crystal'],pick:3,sites:[
@@ -819,7 +819,7 @@ var REGIONS=[
         weights:{venomgland:30,thornvine:24,sandsilk:16,brine_moss:12,scorchroot:10,obsidian_shard:8,scarab_shell:3,venom_silk:6,worm_tooth:5,queen_silk:2,wet_sand_crystal:8}},
       {id:'af_burrow_depths',name:'Burrow Depths',icon:'🪨',desc:'Deep tunnels carved by ancient sandworms, rich with shed materials.',
         weights:{sandsilk:24,obsidian_shard:20,scorchroot:18,venomgland:15,brine_moss:13,thornvine:10,scarab_shell:5,venom_silk:3,worm_tooth:4,queen_silk:4,wet_sand_crystal:10}},
-    ],diff:3,unlock:3,time:2,yield:[2,4],dc:13,
+    ],diff:3,unlock:3,time:50,yield:[2,4],dc:13,
     flavor:['The tunnels vibrate with distant movement. Something very large lives down here.']},
   {id:'oasis_grove',loc:'ashfall',name:'Oasis Grove',icon:'🌴',color:'#3a6a4a',
     ingr:['dewdrop_lily','moonpetal','flamekeeper_ember','sunpetal','starwort','dream_pollen','palm_resin','spirit_sand','oasis_pearl','desert_bloom','desert_rain_lily'],pick:3,sites:[
@@ -829,7 +829,7 @@ var REGIONS=[
         weights:{sunpetal:28,starwort:24,dewdrop_lily:18,dream_pollen:14,moonpetal:10,flamekeeper_ember:6,palm_resin:7,spirit_sand:3,oasis_pearl:2,desert_bloom:8,desert_rain_lily:6}},
       {id:'af_lotus_pools',name:'Lotus Pools',icon:'🪷',desc:'Shallow warm pools where rare lotus flowers bloom at dawn.',
         weights:{moonpetal:28,dream_pollen:24,dewdrop_lily:18,flamekeeper_ember:14,starwort:10,sunpetal:6,palm_resin:3,spirit_sand:5,oasis_pearl:4,desert_bloom:6,desert_rain_lily:10}},
-    ],diff:3,unlock:4,time:2,yield:[2,4],dc:14,faction:'flamekeepers',fReq:1,
+    ],diff:3,unlock:4,time:50,yield:[2,4],dc:14,faction:'flamekeepers',fReq:1,
     flavor:['Water. Actual flowing water, in the middle of the desert. Impossibly lush.']},
   {id:'molten_vents',loc:'ashfall',name:'Molten Vents',icon:'🌋',color:'#6a2a2a',
     ingr:['magma_diamond','living_ember','forge_heart_shard','volcanic_essence','embervein','obsidian_shard','flamekeeper_ember','fire_opal','molten_pearl','sun_diamond','storm_glass','dragon_ash'],pick:3,sites:[
@@ -839,7 +839,7 @@ var REGIONS=[
         weights:{volcanic_essence:26,embervein:22,living_ember:15,flamekeeper_ember:13,obsidian_shard:9,magma_diamond:5,forge_heart_shard:3,fire_opal:3,molten_pearl:4,sun_diamond:2,storm_glass:5,dragon_ash:6}},
       {id:'af_lava_shore',name:'Lava Shore',icon:'🌊',desc:'Where molten rock meets ancient stone. Crystals form in the cooling crust.',
         weights:{forge_heart_shard:22,magma_diamond:20,living_ember:16,volcanic_essence:13,embervein:9,flamekeeper_ember:7,obsidian_shard:5,fire_opal:5,molten_pearl:5,sun_diamond:4,storm_glass:2,dragon_ash:8}},
-    ],diff:4,unlock:5,time:3,yield:[2,4],dc:15,
+    ],diff:4,unlock:5,time:75,yield:[2,4],dc:15,
     flavor:['The heat is beyond anything you have experienced. Lava glows through cracks.']},
   {id:'mirage_bazaar',loc:'ashfall',name:'Mirage Bazaar',icon:'🏜️',color:'#5a3a6a',
     ingr:['mirage_dust','dustwalker_compass','prismatic_ash','crystal_salt','sandsilk','sand_merchant_seal','gold_dust','glass_bloom','buried_relic','pharaoh_dust'],pick:3,sites:[
@@ -849,7 +849,7 @@ var REGIONS=[
         weights:{prismatic_ash:28,mirage_dust:24,sand_merchant_seal:18,sandsilk:12,dustwalker_compass:10,crystal_salt:8,gold_dust:3,glass_bloom:5,buried_relic:2,pharaoh_dust:3}},
       {id:'af_lost_caravans',name:'Lost Caravans',icon:'📦',desc:'Abandoned trade wagons half-buried in sand, still full of goods.',
         weights:{sand_merchant_seal:28,sandsilk:24,crystal_salt:18,dustwalker_compass:14,mirage_dust:10,prismatic_ash:6,gold_dust:5,glass_bloom:2,buried_relic:5,pharaoh_dust:3}},
-    ],diff:4,unlock:6,time:3,yield:[2,4],dc:16,faction:'dustwalkers',fReq:2,
+    ],diff:4,unlock:6,time:75,yield:[2,4],dc:16,faction:'dustwalkers',fReq:2,
     flavor:['The bazaar shimmers into existence around you.']},
   {id:'buried_temple',loc:'ashfall',name:'Buried Temple',icon:'🏛️',color:'#4a3a2a',
     ingr:['ancient_resin','temple_gold','sand_merchant_seal','mirage_dust','flamekeeper_ember','dustwalker_compass','temple_jade','desert_star','sun_crown_shard','spirit_essence','vault_gold'],pick:3,sites:[
@@ -859,7 +859,7 @@ var REGIONS=[
         weights:{ancient_resin:28,flamekeeper_ember:22,temple_gold:16,dustwalker_compass:11,sand_merchant_seal:9,mirage_dust:5,temple_jade:4,desert_star:2,sun_crown_shard:2,spirit_essence:10,vault_gold:4}},
       {id:'af_crypt_vaults',name:'Crypt Vaults',icon:'💀',desc:'Deep burial chambers where the temple priests interred their greatest works.',
         weights:{temple_gold:28,sand_merchant_seal:20,mirage_dust:16,ancient_resin:12,dustwalker_compass:9,flamekeeper_ember:5,temple_jade:3,desert_star:4,sun_crown_shard:4,spirit_essence:6,vault_gold:10}},
-    ],diff:5,unlock:8,time:4,yield:[2,4],dc:18,
+    ],diff:5,unlock:8,time:100,yield:[2,4],dc:18,
     flavor:['Stone doors grind open on hinges that have not moved in a thousand years.']},
   // ═══ TIDECREST HARBOR ═══
   {id:'driftwood_shores',loc:'tidecrest',name:'Driftwood Shores',icon:'🏖️',color:'#4a6a5a',
@@ -870,7 +870,7 @@ var REGIONS=[
         weights:{sand_dollar:24,sea_glass:22,foam_bloom:18,kelp_frond:12,driftwood:10,tide_moss:6,sea_salt:4,dried_seaweed:8,crab_shell:3,barnacle:3}},
       {id:'tc_dune_pools',name:'Dune Pools',icon:'💧',desc:'Shallow pools behind the dunes where rare specimens collect.',
         weights:{tide_moss:28,foam_bloom:22,dried_seaweed:16,sea_salt:12,kelp_frond:8,sand_dollar:6,driftwood:4,sea_glass:4,crab_shell:5,barnacle:5}},
-    ],diff:1,unlock:0,time:1,yield:[2,4],dc:8,
+    ],diff:1,unlock:0,time:25,yield:[2,4],dc:8,
     flavor:['Salt spray mists your face as waves crash against the rocky shore.','The beach is littered with treasures the sea no longer wants.']},
   {id:'tidal_pools',loc:'tidecrest',name:'Tidal Pools',icon:'🪸',color:'#3a7a6a',
     ingr:['coral_shard','urchin_spine','anemone_extract','sponge_pulp','salt_crystal','barnacle','crab_shell','sea_snail','tide_moss','starfish_arm'],pick:3,sites:[
@@ -880,7 +880,7 @@ var REGIONS=[
         weights:{anemone_extract:28,sponge_pulp:22,coral_shard:14,urchin_spine:12,sea_snail:8,salt_crystal:6,barnacle:4,crab_shell:3,tide_moss:5,starfish_arm:5}},
       {id:'tc_urchin_beds',name:'Urchin Beds',icon:'🦔',desc:'Dense clusters of sea urchins guarding precious materials beneath.',
         weights:{urchin_spine:28,salt_crystal:22,coral_shard:16,anemone_extract:10,sponge_pulp:8,starfish_arm:8,barnacle:4,crab_shell:4,sea_snail:3,tide_moss:3}},
-    ],diff:2,unlock:1,time:2,yield:[2,4],dc:10,
+    ],diff:2,unlock:1,time:50,yield:[2,4],dc:10,
     flavor:['The pools are tiny worlds — each one holding secrets the ocean left behind.']},
   {id:'kelp_forest',loc:'tidecrest',name:'Kelp Forest',icon:'🌊',color:'#2a5a4a',
     ingr:['jellyfish_essence','nautilus_shell','kelp_frond','phosphor_moss','anglerfish_lure','sea_amber','pearl_dust','driftstone'],pick:3,sites:[
@@ -890,7 +890,7 @@ var REGIONS=[
         weights:{jellyfish_essence:30,nautilus_shell:26,phosphor_moss:14,anglerfish_lure:10,sea_amber:6,kelp_frond:6,pearl_dust:5,driftstone:8}},
       {id:'tc_holdfast',name:'The Holdfast',icon:'⚓',desc:'The rocky base where kelp anchors to the seafloor. Dense and dark.',
         weights:{driftstone:28,phosphor_moss:24,anglerfish_lure:18,pearl_dust:12,sea_amber:10,kelp_frond:5,jellyfish_essence:5,nautilus_shell:5}},
-    ],diff:2,unlock:2,time:2,yield:[2,4],dc:12,
+    ],diff:2,unlock:2,time:50,yield:[2,4],dc:12,
     flavor:['You descend into an underwater cathedral of swaying green pillars.']},
   {id:'fog_hollows',loc:'tidecrest',name:'Fog Hollows',icon:'🌫️',color:'#5a5a7a',
     ingr:['cave_pearl','bat_guano','phosphor_moss','brine_crystal','drip_mineral','fog_essence','echo_coral','blind_shrimp','salt_crystal','cave_lichen_tc'],pick:3,sites:[
@@ -900,7 +900,7 @@ var REGIONS=[
         weights:{echo_coral:26,bat_guano:22,fog_essence:16,cave_pearl:12,brine_crystal:8,phosphor_moss:6,drip_mineral:4,blind_shrimp:4,salt_crystal:4,cave_lichen_tc:5}},
       {id:'tc_phosphor_tunnel',name:'Phosphor Tunnel',icon:'✨',desc:'Walls glow with bioluminescent organisms. Beautiful and eerie.',
         weights:{phosphor_moss:28,fog_essence:22,blind_shrimp:14,cave_pearl:10,brine_crystal:8,echo_coral:6,drip_mineral:4,bat_guano:4,salt_crystal:4,cave_lichen_tc:6}},
-    ],diff:3,unlock:3,time:2,yield:[2,4],dc:14,
+    ],diff:3,unlock:3,time:50,yield:[2,4],dc:14,
     flavor:['The fog is thick enough to cut. Every sound echoes back distorted.','Somewhere deep in the cave, water drips in a rhythm that sounds almost like speech.']},
   {id:'coral_labyrinth',loc:'tidecrest',name:'Coral Labyrinth',icon:'🐚',color:'#6a3a5a',
     ingr:['deep_coral','abyssal_pearl','giant_clam','sea_fan','pearl_dust','siren_tear','nautilus_shell','tidal_diamond','coral_shard'],pick:3,sites:[
@@ -910,7 +910,7 @@ var REGIONS=[
         weights:{siren_tear:32,deep_coral:18,sea_fan:14,abyssal_pearl:10,giant_clam:8,pearl_dust:6,nautilus_shell:5,tidal_diamond:4,coral_shard:8}},
       {id:'tc_fan_gallery',name:'Fan Gallery',icon:'🌸',desc:'Towering sea fans filter the current. Rare specimens hide in their shadows.',
         weights:{sea_fan:30,deep_coral:22,giant_clam:12,abyssal_pearl:10,siren_tear:8,pearl_dust:6,nautilus_shell:5,tidal_diamond:4,coral_shard:8}},
-    ],diff:3,unlock:4,time:2,yield:[2,4],dc:15,faction:'pearl_divers',fReq:1,
+    ],diff:3,unlock:4,time:50,yield:[2,4],dc:15,faction:'pearl_divers',fReq:1,
     flavor:['The reef twists and turns like a living maze. Without a diver\'s instinct, you\'d be lost in minutes.']},
   {id:'shipwreck_graveyard',loc:'tidecrest',name:'Shipwreck Graveyard',icon:'⚓',color:'#4a4a3a',
     ingr:['rust_iron','waterlogged_timber','ships_tar','cannon_bronze','sharktooth','barnacle_cluster','ghost_lantern','compass_needle','rusted_anchor'],pick:3,sites:[
@@ -920,7 +920,7 @@ var REGIONS=[
         weights:{rust_iron:24,waterlogged_timber:24,ships_tar:14,barnacle_cluster:12,sharktooth:10,cannon_bronze:6,compass_needle:4,ghost_lantern:4,rusted_anchor:8}},
       {id:'tc_captains_quarters',name:'Captain\'s Quarters',icon:'🗝️',desc:'Sealed cabins where personal effects and alchemical stores survive.',
         weights:{ghost_lantern:28,compass_needle:22,cannon_bronze:14,ships_tar:10,rust_iron:8,waterlogged_timber:6,sharktooth:5,barnacle_cluster:4,rusted_anchor:8}},
-    ],diff:4,unlock:5,time:3,yield:[2,4],dc:16,
+    ],diff:4,unlock:5,time:75,yield:[2,4],dc:16,
     flavor:['Broken masts jut from the water like the ribs of dead giants.','Every wreck holds a story — and usually something valuable.']},
   {id:'abyssal_trench',loc:'tidecrest',name:'Abyssal Trench',icon:'🦑',color:'#1a2a4a',
     ingr:['kraken_ink','leviathan_scale','abyssal_vent_mineral','anglerfish_lure','blind_shrimp','trident_shard','harbor_seal','diver_token'],pick:3,sites:[
@@ -930,7 +930,7 @@ var REGIONS=[
         weights:{leviathan_scale:34,kraken_ink:26,trident_shard:14,abyssal_vent_mineral:10,anglerfish_lure:6,blind_shrimp:4,harbor_seal:4,diver_token:7}},
       {id:'tc_ink_pools',name:'Ink Pools',icon:'🖊️',desc:'Dark pools of concentrated kraken secretion. Valuable but dangerous.',
         weights:{kraken_ink:34,leviathan_scale:22,abyssal_vent_mineral:14,trident_shard:10,anglerfish_lure:8,blind_shrimp:5,harbor_seal:4,diver_token:8}},
-    ],diff:4,unlock:6,time:3,yield:[2,4],dc:17,faction:'harbormasters',fReq:2,
+    ],diff:4,unlock:6,time:75,yield:[2,4],dc:17,faction:'harbormasters',fReq:2,
     flavor:['The pressure is crushing. Only the most prepared divers venture this deep.','Light fades to nothing. Your alchemical lantern is the only star in this abyss.']},
   {id:'drowned_sanctum',loc:'tidecrest',name:'Drowned Sanctum',icon:'🏛️',color:'#2a3a5a',
     ingr:['sea_crown_jewel','drowned_god_relic','leviathan_heart','primordial_brine','tidekeeper_sigil','trident_shard','abyssal_diamond','siren_tear','trade_manifest','oracle_tear'],pick:3,sites:[
@@ -940,7 +940,7 @@ var REGIONS=[
         weights:{sea_crown_jewel:28,abyssal_diamond:22,leviathan_heart:14,drowned_god_relic:10,primordial_brine:8,tidekeeper_sigil:6,trident_shard:4,siren_tear:4,trade_manifest:4,oracle_tear:5}},
       {id:'tc_oracle_pool',name:'Oracle Pool',icon:'🌀',desc:'A still pool where the ancients communed with the deep. It still whispers.',
         weights:{primordial_brine:26,siren_tear:20,oracle_tear:14,leviathan_heart:12,tidekeeper_sigil:10,drowned_god_relic:6,sea_crown_jewel:4,abyssal_diamond:4,trident_shard:4,trade_manifest:5}},
-    ],diff:5,unlock:8,time:4,yield:[2,4],dc:18,
+    ],diff:5,unlock:8,time:100,yield:[2,4],dc:18,
     flavor:['The temple breathes with the tide. Water flows through corridors like blood through veins.','Ancient murals depict a civilization that lived beneath the waves.']},
 
   // ═══ SKYREACH REGIONS ═══
@@ -952,7 +952,7 @@ var REGIONS=[
         weights:{cloud_moss:8,alpine_mint:7,windstone:22,sky_clover:7,eagle_down:8,frost_daisy:25,breeze_seed:8,storm_petal:7,summit_grass:8,skyward_seal:5,drip_fungus:9}},
       {id:'sr_eagle_roost',name:'Eagle Roost',icon:'🦅',desc:'Wind-battered rocks where mountain eagles nest. Feathers and storm petals everywhere.',
         weights:{cloud_moss:7,alpine_mint:7,windstone:7,sky_clover:8,eagle_down:27,frost_daisy:7,breeze_seed:9,storm_petal:23,summit_grass:5,skyward_seal:6,drip_fungus:8}},
-    ],diff:1,unlock:0,time:1,yield:[2,4],dc:8,
+    ],diff:1,unlock:0,time:25,yield:[2,4],dc:8,
     flavor:['Wildflowers carpet the meadow in blues and silvers, trembling in the constant wind.','The air is so thin and clean it almost hurts to breathe.','A familiar path — cloud moss grows thick along the snowmelt channels.']},
   {id:'cloud_forest',loc:'skyreach',name:'Cloud Forest',icon:'🌁',color:'#3a5a4a',
     ingr:['cloud_moss','mistwood_bark','fog_orchid','drip_fungus','vapor_fern','canopy_dew','hanging_lichen','alpine_mint','sky_clover','cloud_berry','mist_silk'],pick:3,sites:[
@@ -962,7 +962,7 @@ var REGIONS=[
         weights:{cloud_moss:8,mistwood_bark:7,fog_orchid:25,drip_fungus:7,vapor_fern:22,canopy_dew:24,hanging_lichen:7,alpine_mint:6,sky_clover:5,cloud_berry:4,mist_silk:3}},
       {id:'sr_silk_grove',name:'Silk Grove',icon:'🕸️',desc:'Gossamer webs span between ancient trunks. The spiders here spin silk stronger than steel.',
         weights:{cloud_moss:6,mistwood_bark:8,fog_orchid:7,drip_fungus:8,vapor_fern:7,canopy_dew:6,hanging_lichen:24,alpine_mint:7,sky_clover:7,cloud_berry:8,mist_silk:26}},
-    ],diff:2,unlock:1,time:1,yield:[2,4],dc:10,
+    ],diff:2,unlock:1,time:25,yield:[2,4],dc:10,
     flavor:['Water condenses on every surface — the forest drinks the clouds.','Visibility drops to arm\'s length. The trees are shapes in the mist.','Something skitters through the canopy above. Probably harmless.']},
   {id:'windcarved_cliffs',loc:'skyreach',name:'Wind-Carved Cliffs',icon:'🪨',color:'#5a5a6a',
     ingr:['windstone','cliff_quartz','raptor_plume','gale_salt','wind_iron','skystone_chip','rime_dust','eagle_down','breeze_seed','skyward_seal','thin_air_lichen'],pick:3,sites:[
@@ -972,7 +972,7 @@ var REGIONS=[
         weights:{windstone:7,cliff_quartz:26,raptor_plume:7,gale_salt:7,wind_iron:20,skystone_chip:9,rime_dust:7,eagle_down:6,breeze_seed:5,skyward_seal:6,thin_air_lichen:7}},
       {id:'sr_raptor_crags',name:'Raptor Crags',icon:'🦅',desc:'Jagged outcrops where raptors circle. Plumes and nesting material everywhere.',
         weights:{windstone:8,cliff_quartz:7,raptor_plume:26,gale_salt:7,wind_iron:7,skystone_chip:7,rime_dust:20,eagle_down:8,breeze_seed:4,skyward_seal:4,thin_air_lichen:9}},
-    ],diff:2,unlock:2,time:2,yield:[2,4],dc:11,
+    ],diff:2,unlock:2,time:50,yield:[2,4],dc:11,
     flavor:['The wind never stops here. It has carved the stone into shapes like frozen waves.','Crystal veins catch the light, making the cliff face shimmer.','Raptors circle above. Their cries echo off the stone.']},
   {id:'crystal_caverns_sr',loc:'skyreach',name:'Crystal Caverns',icon:'💠',color:'#3a4a6a',
     ingr:['altitude_crystal','pressure_quartz','cave_frost_sr','echo_mineral','skystone_chip','crystal_moss_sr','mist_silk','cliff_quartz','starcaller_seal','fog_orchid'],pick:3,sites:[
@@ -982,7 +982,7 @@ var REGIONS=[
         weights:{altitude_crystal:8,pressure_quartz:7,cave_frost_sr:9,echo_mineral:28,skystone_chip:7,crystal_moss_sr:24,mist_silk:7,cliff_quartz:6,starcaller_seal:4,fog_orchid:7}},
       {id:'sr_frost_grotto',name:'Frost Grotto',icon:'🧊',desc:'An ice-crusted cavern where permanent frost formations grow like crystal trees.',
         weights:{altitude_crystal:7,pressure_quartz:8,cave_frost_sr:28,echo_mineral:7,skystone_chip:6,crystal_moss_sr:7,mist_silk:8,cliff_quartz:24,starcaller_seal:5,fog_orchid:8}},
-    ],diff:3,unlock:3,time:2,yield:[2,4],dc:13,
+    ],diff:3,unlock:3,time:50,yield:[2,4],dc:13,
     flavor:['Every surface refracts light into spectral rainbows. You feel the hum in your teeth.','The crystals grow like trees here — some taller than you.','Echoes bounce endlessly between the crystal walls.']},
   {id:'glacial_lake',loc:'skyreach',name:'Glacial Lake',icon:'🧊',color:'#3a5a6a',
     ingr:['glacial_silt','frozen_bloom','meltwater_pearl','ice_moss','summit_coral','aurora_lichen','lake_crystal','coldsnap_root','cloud_trader_token','frost_amber'],pick:3,sites:[
@@ -992,7 +992,7 @@ var REGIONS=[
         weights:{glacial_silt:8,frozen_bloom:8,meltwater_pearl:24,ice_moss:7,summit_coral:7,aurora_lichen:7,lake_crystal:26,coldsnap_root:7,cloud_trader_token:6,frost_amber:5}},
       {id:'sr_aurora_bank',name:'Aurora Bank',icon:'🌈',desc:'Northern shore where the aurora reflects off the lake. Rare lichens glow in response.',
         weights:{glacial_silt:7,frozen_bloom:22,meltwater_pearl:8,ice_moss:8,summit_coral:7,aurora_lichen:26,lake_crystal:7,coldsnap_root:9,cloud_trader_token:6,frost_amber:5}},
-    ],diff:3,unlock:4,time:2,yield:[2,4],dc:14,
+    ],diff:3,unlock:4,time:50,yield:[2,4],dc:14,
     flavor:['The lake is so clear you can see the bottom fifty feet down.','Ice clings to the shore even in summer. Your fingers go numb fast.','Aurora light dances across the water surface.']},
   {id:'stormspire_peaks',loc:'skyreach',name:'Stormspire Peaks',icon:'⛈️',color:'#4a4a6a',
     ingr:['stormglass','lightning_shard','thunder_iron','charged_quartz','storm_pearl_sr','tempest_moss','bolt_crystal','gale_salt','windrunner_compass','frost_amber'],pick:3,sites:[
@@ -1002,7 +1002,7 @@ var REGIONS=[
         weights:{stormglass:8,lightning_shard:7,thunder_iron:26,charged_quartz:24,storm_pearl_sr:8,tempest_moss:9,bolt_crystal:5,gale_salt:6,windrunner_compass:4,frost_amber:6}},
       {id:'sr_tempest_hollow',name:'Tempest Hollow',icon:'🌊',desc:'A sheltered depression where storm-charged moss and pearls accumulate.',
         weights:{stormglass:7,lightning_shard:8,thunder_iron:7,charged_quartz:7,storm_pearl_sr:26,tempest_moss:24,bolt_crystal:6,gale_salt:8,windrunner_compass:5,frost_amber:8}},
-    ],diff:4,unlock:5,time:3,yield:[2,4],dc:15,
+    ],diff:4,unlock:5,time:75,yield:[2,4],dc:15,
     flavor:['Thunder rolls across the peaks like a living thing.','Static prickles your skin. The storm is always coming.','Lightning leaves glass in the stone. Beautiful and deadly.']},
   {id:'sky_ruins',loc:'skyreach',name:'Sky Ruins',icon:'🏯',color:'#5a4a6a',
     ingr:['star_metal','sky_rune_fragment','levitation_dust','celestial_mortar','ruin_crystal','ancient_windstone','void_feather','eclipse_shard','starcaller_seal','aurora_lichen'],pick:3,sites:[
@@ -1012,7 +1012,7 @@ var REGIONS=[
         weights:{star_metal:7,sky_rune_fragment:8,levitation_dust:28,celestial_mortar:7,ruin_crystal:24,ancient_windstone:8,void_feather:7,eclipse_shard:6,starcaller_seal:5,aurora_lichen:6}},
       {id:'sr_eclipse_vault',name:'Eclipse Vault',icon:'🌑',desc:'A sealed chamber that only opens during eclipses. Shadow energy pools here.',
         weights:{star_metal:8,sky_rune_fragment:7,levitation_dust:7,celestial_mortar:8,ruin_crystal:7,ancient_windstone:22,void_feather:9,eclipse_shard:26,starcaller_seal:6,aurora_lichen:5}},
-    ],diff:4,unlock:6,time:3,yield:[2,4],dc:16,faction:'starcallers',fReq:2,
+    ],diff:4,unlock:6,time:75,yield:[2,4],dc:16,faction:'starcallers',fReq:2,
     flavor:['The architecture defies logic — arches that support nothing, stairs that lead into open sky.','Star metal glints in the rubble. Whatever lived here understood forces we\'ve forgotten.','Dust floats upward here. Gravity is only a suggestion.']},
   {id:'observatory_summit',loc:'skyreach',name:'Observatory Summit',icon:'🔭',color:'#3a3a5a',
     ingr:['celestial_essence','starfire_dust','void_crystal','primordial_wind','zenith_stone','void_feather','ruin_crystal','eclipse_shard','ancient_windstone','celestial_mortar'],pick:3,sites:[
@@ -1022,7 +1022,7 @@ var REGIONS=[
         weights:{celestial_essence:7,starfire_dust:7,void_crystal:28,primordial_wind:24,zenith_stone:6,void_feather:8,ruin_crystal:7,eclipse_shard:8,ancient_windstone:6,celestial_mortar:5}},
       {id:'sr_zenith_peak',name:'Zenith Peak',icon:'💫',desc:'The absolute apex. The rarest materials form where earth meets the infinite sky.',
         weights:{celestial_essence:8,starfire_dust:7,void_crystal:7,primordial_wind:7,zenith_stone:26,void_feather:24,ruin_crystal:6,eclipse_shard:5,ancient_windstone:8,celestial_mortar:8}},
-    ],diff:5,unlock:8,time:4,yield:[2,4],dc:18,
+    ],diff:5,unlock:8,time:100,yield:[2,4],dc:18,
     flavor:['The air is so thin you breathe in gasps. The stars are visible even at noon.','Ancient lenses focus starlight onto collection plates. Whatever they were gathering, it\'s still accumulating.','The summit is treacherous — but the rarest materials gather here.']},
 ];
 var RECIPES=[
@@ -1154,11 +1154,11 @@ var RECIPES=[
   {id:'vitality_draught',name:'Vitality Draught',icon:'🌿',ingr:['_any_herb','_any_herb2','_any_herb3'],dc:13,xp:70,stat:'inu',unlock:0,fieldOnly:true,cat:'healing',
     desc:'Heals 1 staff injury immediately. Must be brewed from fresh ingredients in the field.'},
   {id:'trailblazer_tonic',name:'Trailblazer Tonic',icon:'🥾',ingr:['_any_herb','_any_herb2','_any_mineral'],dc:14,xp:80,stat:'tec',unlock:0,fieldOnly:true,cat:'utility',
-    desc:'Next expedition travel time -1 hour. Brewed from whatever the land provides.'},
+    desc:'Next expedition travel cost −25 Energy. Brewed from whatever the land provides.'},
   {id:'wilderness_elixir',name:'Wilderness Elixir',icon:'🍃',ingr:['_any1','_any2','_any3','_any4'],dc:16,xp:100,stat:'inu',unlock:0,fieldOnly:true,cat:'buff',
     desc:'3-day buff: +2 extraction, +1 forage yield. Requires 4 different fresh ingredients.',buff:'wilderness_elixir'},
   {id:'essence_wild',name:'Essence of the Wild',icon:'🌍',ingr:['_any1','_any2','_any3','_any4','_any5'],dc:19,xp:160,stat:'inu',unlock:0,fieldOnly:true,fieldLegendary:true,cat:'buff',
-    desc:'5-day buff: +3 extraction, +2 yield, +1 Energy/day. Requires 5 different ingredients from a dangerous region.',buff:'essence_wild'},
+    desc:'5-day buff: +3 extraction, +2 yield, +25 Energy/day. Requires 5 different ingredients from a dangerous region.',buff:'essence_wild'},
   // ── Seasonal Recipes (Cindervale) ──
   {id:'frostbrew',name:'Frostbrew Tonic',icon:'❄️',ingr:['frostbloom','moonpetal'],xp:55,unlock:3,dc:12,stat:'inu',cat:'buff',
     desc:'A shimmering cold tonic that sharpens the mind. Only brewable in winter when Frostbloom is available.'},
@@ -1632,7 +1632,7 @@ var RELIC_APPRAISE_DC={common:8,uncommon:11,rare:14,legendary:17};
 var RELIC_SETS={
   pottery:{name:'Hearth Collection',icon:'🏺',needed:4,bonus:{customerBonus:1,sellBonus:0.05},desc:'+1 daily customer, +5% sell prices'},
   tablets:{name:'Lore Collection',icon:'📜',needed:4,bonus:{researchBonus:2,xpMultiplier:0.10},desc:'+2 research, +10% XP'},
-  jewelry:{name:'Adornment Collection',icon:'💍',needed:4,bonus:{bonusEnergyPerDay:1,repGainBonus:5},desc:'+1 Energy/day, +5 rep per quest'},
+  jewelry:{name:'Adornment Collection',icon:'💍',needed:4,bonus:{bonusEnergyPerDay:25,repGainBonus:5},desc:'+25 Energy/day, +5 rep per quest'},
   mechanisms:{name:'Artifice Collection',icon:'⚙️',needed:4,bonus:{enchantBonus:1},desc:'+1 enchant bonus'},
   weapons:{name:'Arsenal Collection',icon:'🗡️',needed:4,bonus:{extractionBonus:2},desc:'+2 extraction'},
 };
@@ -1780,14 +1780,14 @@ var SEASONS={
       flavor:['Amber leaves drift across the workshop roof. Time to stockpile.','The air carries the smell of wood smoke and dried herbs.','Frost edges the morning puddles. Winter approaches.']},
     {id:'winter',name:'Winter',img:'https://jumppiejim-creator.github.io/cindervale-alchemist/season-winter.png',icon:'❄️',color:'#6090c0',
       desc:'Survival. High-diff regions cost more Energy. Yields drop. Veilbreakers peak. Unique winter ingredients.',
-      yieldMod:-1,floraYieldBonus:0,travelMod:1,travelMinDiff:4,customerMod:0,spoilMod:0,dangerMod:5,
+      yieldMod:-1,floraYieldBonus:0,travelMod:25,travelMinDiff:4,customerMod:0,spoilMod:0,dangerMod:5,
       threatMod:{veilbreakers:1},moraleMod:-5,
       flavor:['Snow dusts the ash fields. The Heartforge rim glows warmer than ever.','Ice crystals form on the workshop windows. A hard season for foraging.','The village draws together around the hearths. Cindervale endures.']},
   ],
   ashfall:[
     {id:'cool',name:'Cool Season',img:'https://jumppiejim-creator.github.io/cindervale-alchemist/season-cool.png',icon:'🌙',color:'#6090c0',
       desc:'Best travel conditions. Caravans run fast. Trade flourishes.',
-      yieldMod:0,floraYieldBonus:0,travelMod:-1,customerMod:1,spoilMod:0,dangerMod:-5,
+      yieldMod:0,floraYieldBonus:0,travelMod:-25,customerMod:1,spoilMod:0,dangerMod:-5,
       threatMod:{},moraleMod:0,
       flavor:['Cool desert nights make the days bearable. Caravans roll freely.','The stars blaze overhead. Perfect weather for the Crossing.','A welcome respite from the heat. The bazaar overflows with travelers.']},
     {id:'bloom',name:'Bloom Season',img:'https://jumppiejim-creator.github.io/cindervale-alchemist/season-bloom.png',icon:'🌺',color:'#60c060',
@@ -1797,7 +1797,7 @@ var SEASONS={
       flavor:['Rain! Actual rain! The desert transforms overnight into a carpet of flowers.','Puddles form in the dunes. Desert creatures emerge to drink.','The oasis overflows its banks. Herbs grow wild along the waterline.']},
     {id:'scorching',name:'Scorching Season',img:'https://jumppiejim-creator.github.io/cindervale-alchemist/season-scorching.png',icon:'🔥',color:'#d06030',
       desc:'Extreme heat. Surface regions cost more. Underground regions thrive. Reavers raid.',
-      yieldMod:0,floraYieldBonus:0,travelMod:1,travelMinDiff:3,customerMod:0,spoilMod:-1,dangerMod:5,
+      yieldMod:0,floraYieldBonus:0,travelMod:25,travelMinDiff:3,customerMod:0,spoilMod:-1,dangerMod:5,
       threatMod:{sand_raiders:1},moraleMod:-3,
       flavor:['The sand burns through boot leather. Only fools travel at midday.','Heat mirages dance on the horizon. The Molten Vents feel almost cool by comparison.','The Flamekeepers stoke the sacred fire higher. It barely competes with the sun.']},
     {id:'dust',name:'Dust Season',img:'https://jumppiejim-creator.github.io/cindervale-alchemist/season-dust.png',icon:'💨',color:'#a08040',
@@ -1809,12 +1809,12 @@ var SEASONS={
   tidecrest:[
     {id:'calm_seas',name:'Calm Seas',img:'https://jumppiejim-creator.github.io/cindervale-alchemist/season-calm_seas.jpg',icon:'🌤️',color:'#60a0c0',
       desc:'Perfect diving weather. Reef and trench yields surge. Merchants flock to port.',
-      yieldMod:0,floraYieldBonus:1,travelMod:-1,customerMod:1,spoilMod:0,dangerMod:-5,
+      yieldMod:0,floraYieldBonus:1,travelMod:-25,customerMod:1,spoilMod:0,dangerMod:-5,
       threatMod:{},moraleMod:0,
       flavor:['The sea is glass. Perfect weather for diving.','Dolphins arc through the harbor mouth. A good omen.','The whole town smells of salt and fresh fish. Commerce thrives.']},
     {id:'storm_season',name:'Storm Season',img:'https://jumppiejim-creator.github.io/cindervale-alchemist/season-storm_season.jpg',icon:'⛈️',color:'#4060a0',
       desc:'Violent storms. Expeditions more dangerous, but rare storm ingredients wash ashore.',
-      yieldMod:0,floraYieldBonus:0,travelMod:1,customerMod:0,spoilMod:0,dangerMod:10,
+      yieldMod:0,floraYieldBonus:0,travelMod:25,customerMod:0,spoilMod:0,dangerMod:10,
       threatMod:{corsairs:1},moraleMod:-3,
       flavor:['Thunder rolls across the harbor. Ships pull in tight to the docks.','Lightning cracks the sky open. The Tidekeepers pray for mercy.','Waves crash over the sea wall. Only the desperate venture out.']},
     {id:'migration',name:'Migration',img:'https://jumppiejim-creator.github.io/cindervale-alchemist/season-migration.jpg',icon:'🐋',color:'#40a080',
@@ -1841,12 +1841,12 @@ var SEASONS={
       flavor:['The sky is impossibly blue. You can see for a hundred miles.','Starcallers celebrate — the stars are visible even at dusk.','Climbers pour up the Stairway. Business is booming.']},
     {id:'storm_front',name:'Storm Front',img:'https://jumppiejim-creator.github.io/cindervale-alchemist/skyreach-season-storm-front.jpg',icon:'⛈️',color:'#5060a0',
       desc:'Constant storms. Lightning ingredients abundant but expeditions dangerous.',
-      yieldMod:0,floraYieldBonus:0,travelMod:1,travelMinDiff:3,customerMod:0,spoilMod:0,dangerMod:10,
+      yieldMod:0,floraYieldBonus:0,travelMod:25,travelMinDiff:3,customerMod:0,spoilMod:0,dangerMod:10,
       threatMod:{eclipse_covenant:1},moraleMod:-3,
       flavor:['Thunder never stops. The peaks are wrapped in perpetual storm.','Lightning dances from spire to spire.','The Skywardens double their patrols.']},
     {id:'deep_freeze',name:'Deep Freeze',img:'https://jumppiejim-creator.github.io/cindervale-alchemist/skyreach-season-deep-freeze.jpg',icon:'❄️',color:'#8090b0',
       desc:'Bitter cold. High regions cost more Energy. Unique frozen ingredients. The Gale advances.',
-      yieldMod:-1,floraYieldBonus:0,travelMod:1,travelMinDiff:4,customerMod:0,spoilMod:-2,dangerMod:5,
+      yieldMod:-1,floraYieldBonus:0,travelMod:25,travelMinDiff:4,customerMod:0,spoilMod:-2,dangerMod:5,
       threatMod:{the_gale:1},moraleMod:-5,
       flavor:['The cold is absolute. Breath freezes before it leaves your lips.','Ice encases everything. Even the Cloud Traders slow their runs.','The settlement draws together around the hearths. Skyreach endures.']},
   ],
@@ -1908,7 +1908,7 @@ var BRAND_ICONS=['🏷️','🛡️','⚗️','🌿','💎','🔥','⭐','🌙',
 // ═══ INFUSIONS (Spellbrewer) ═══
 var INFUSIONS={
   vigor:{id:'vigor',name:'Vigor',icon:'🔴',color:'#c04040',dcMod:2,suffix:'_iv',unlockLv:1,
-    desc:'+1 Energy next morning',sellMult:1.2},
+    desc:'+25 Energy next morning',sellMult:1.2},
   clarity:{id:'clarity',name:'Clarity',icon:'🔵',color:'#4060c0',dcMod:2,suffix:'_ic',unlockLv:1,
     desc:'+2 next craft/enchant check',sellMult:1.2},
   fortify:{id:'fortify',name:'Fortify',icon:'🟢',color:'#40a040',dcMod:3,suffix:'_if',unlockLv:2,
@@ -2228,7 +2228,7 @@ var GADGET_BLUEPRINTS=[
     effect:'staffEffBonus',values:[0.15,0.30,0.45],effectDesc:['+15% staff efficiency','+30% staff efficiency','+45% staff efficiency']},
   {id:'gd_perpetual',name:'Perpetual Motion Engine',icon:'♾️',tier:3,dc:20,legendary:true,
     matCost:{embervein:3,deep_crystal:2,volcanic_essence:1},desc:'A device that defies natural law — self-sustaining energy.',
-    effect:'perpetual',values:[null,null,[3,2]],effectDesc:['—','—','+3 Energy/day AND 2 free crafts']},
+    effect:'perpetual',values:[null,null,[75,2]],effectDesc:['—','—','+75 Energy/day AND 2 free crafts']},
   {id:'gd_probability',name:'Probability Manipulator',icon:'🎲',tier:3,dc:20,legendary:true,
     matCost:{starwort:2,deep_crystal:2,moonpetal:2},desc:'A crystalline device that nudges fate in your favor.',
     effect:'rerollsPerDay',values:[null,null,2],effectDesc:['—','—','Reroll 2 failed checks/day']},
@@ -2268,7 +2268,7 @@ var CONSTRUCTOR_BPS=[
     effect:'rareIngredient',value:true,effectDesc:'Produces 1 random rare ingredient daily'},
   {id:'bp_conduit',name:'Arcane Conduit',icon:'⚡',tier:3,draftDC:20,buildSessions:6,legendary:true,
     matCost:{deep_crystal:4,embervein:2,volcanic_essence:1},desc:'A ley line tap that channels ambient energy directly into your morning reserves.',
-    effect:'conduitEnergy',value:2,effectDesc:'+2 Energy per day permanently'},
+    effect:'conduitEnergy',value:50,effectDesc:'+50 Energy per day permanently'},
 ];
 
 // ═══ NATURALIST FIELD JOURNAL ═══
@@ -2507,8 +2507,8 @@ var RANGER_COMPANIONS=[
   {id:'rc_hawk',name:'Ash Hawk',icon:'🦅',region:'ironwood',role:'scout',color:'#6090c0',
     desc:'A keen-eyed raptor that rides the thermal updrafts above the canopy.',
     primary:{type:'danger_reduce',values:[0.25,0.40,0.50,0.60,0.75]},
-    secondary:{type:'travel_reduce',desc:'-1 travel time to scouted region',unlockLv:3},
-    legendary:'Once/day: instant travel (0 Energy) to any region',passive:{reducedRisk:0.15,travelReduction:1}},
+    secondary:{type:'travel_reduce',desc:'−25 Energy travel cost to scouted region',unlockLv:3},
+    legendary:'Once/day: instant travel (0 Energy) to any region',passive:{reducedRisk:0.15,travelReduction:25}},
   {id:'rc_hound',name:'Ridge Hound',icon:'🐕',region:'crystal_hollow',role:'greeter',color:'#c09040',
     desc:'A loyal hound with crystalline eyes. Customers love petting it at the door.',
     primary:{type:'customers',values:[1,2,2,3,4]},
@@ -2543,8 +2543,8 @@ var RANGER_COMPANIONS=[
   {id:'rc_vulture',name:'Obsidian Vulture',icon:'🦅',region:'obsidian_wastes',role:'scout',color:'#404040',
     desc:'A massive black bird that circles the wastes. Nothing escapes its gaze.',
     primary:{type:'danger_reduce',values:[0.25,0.40,0.50,0.60,0.75]},
-    secondary:{type:'travel_reduce',desc:'-1 travel time to scouted region',unlockLv:3},
-    legendary:'Once/day: instant travel (0 Energy) to any Ashfall region',passive:{reducedRisk:0.15,travelReduction:1}},
+    secondary:{type:'travel_reduce',desc:'−25 Energy travel cost to scouted region',unlockLv:3},
+    legendary:'Once/day: instant travel (0 Energy) to any Ashfall region',passive:{reducedRisk:0.15,travelReduction:25}},
   {id:'rc_sandworm',name:'Burrowing Grub',icon:'🪱',region:'sandworm_tunnels',role:'shopkeeper',color:'#a08060',
     desc:'A juvenile sandworm that tunnels through soft earth. Surprisingly useful around the shop.',
     primary:{type:'shop',baseGold:[10,18,28,40,55]},
@@ -2570,7 +2570,7 @@ var RANGER_COMPANIONS=[
     desc:'A coastal raptor that circles above the waves, spotting treasures and dangers.',
     primary:{type:'danger_reduce',values:[0.25,0.40,0.50,0.60,0.75]},
     secondary:{type:'discovery',bonusPerLoyalty:0.05,unlockLv:2,desc:'+5% discovery chance per loyalty level'},
-    legendary:'Danger events auto-avoided at Soulbound loyalty',passive:{reducedRisk:0.15,travelReduction:1}},
+    legendary:'Danger events auto-avoided at Soulbound loyalty',passive:{reducedRisk:0.15,travelReduction:25}},
   {id:'rc_dolphin',name:'Harbor Dolphin',icon:'🐬',region:'tidal_pools',role:'gather',color:'#40a0d0',
     desc:'A friendly dolphin that retrieves ingredients from the seafloor.',
     primary:{type:'gather',ingr:['coral_shard','pearl_dust','nautilus_shell','sea_amber','deep_coral'],baseYield:[5,8,12,16,20]},
@@ -2616,8 +2616,8 @@ var RANGER_COMPANIONS=[
   {id:'rc_falcon',img:'https://jumppiejim-creator.github.io/cindervale-alchemist/companion_rc_falcon.jpg',name:'Cliff Falcon',icon:'🐦‍⬛',region:'windcarved_cliffs',role:'scout',color:'#6080a0',loc:'skyreach',
     desc:'A fearless raptor that dives through gale-force winds. Spots danger from miles away.',
     primary:{type:'danger_reduce',values:[0.25,0.40,0.50,0.60,0.75]},
-    secondary:{type:'travel_reduce',desc:'-1 travel time to scouted region',unlockLv:3},
-    legendary:'Once/day: instant travel (0 Energy) to any Skyreach region',passive:{reducedRisk:0.15,travelReduction:1}},
+    secondary:{type:'travel_reduce',desc:'−25 Energy travel cost to scouted region',unlockLv:3},
+    legendary:'Once/day: instant travel (0 Energy) to any Skyreach region',passive:{reducedRisk:0.15,travelReduction:25}},
   {id:'rc_goat',img:'https://jumppiejim-creator.github.io/cindervale-alchemist/companion_rc_goat.jpg',name:'Mountain Goat',icon:'🐐',region:'crystal_caverns_sr',role:'greeter',color:'#a09070',loc:'skyreach',
     desc:'A sure-footed mountain goat with crystalline horns. Customers find it irresistible.',
     primary:{type:'customers',values:[1,2,2,3,4]},
@@ -3234,8 +3234,8 @@ var ELIXIR_BUFFS={
     desc:'+2 extraction, +1 forage yield for 3 days.',
     effects:{extractionBonus:2,forageYieldBonus:1},buffDesc:'+2 extraction, +1 yield for 3 days'},
   essence_wild:{id:'essence_wild',name:'Essence of the Wild',icon:'🌍',duration:5,
-    desc:'+3 extraction, +2 yield, +1 Energy/day for 5 days.',
-    effects:{extractionBonus:3,forageYieldBonus:2,bonusEnergyPerDay:1},buffDesc:'+3 extraction, +2 yield, +1 Energy for 5 days'},
+    desc:'+3 extraction, +2 yield, +25 Energy/day for 5 days.',
+    effects:{extractionBonus:3,forageYieldBonus:2,bonusEnergyPerDay:25},buffDesc:'+3 extraction, +2 yield, +25 Energy for 5 days'},
   // ═══ ASHFALL CARTOGRAPHER ELIXIR BUFFS ═══
   oasis_bloom_tonic:{id:'oasis_bloom_tonic',name:'Oasis Bloom Tonic',icon:'🌵',duration:3,
     desc:'Desert bloom fragrance charms customers and sharpens negotiation.',
@@ -3355,16 +3355,16 @@ var FACTIONS={ashwardens:{id:'ashwardens',loc:'cindervale',name:'Ashwardens',ico
     {name:'Purification',desc:'+10% potion sale value.',effects:{potionValueBonus:0.10}},
     {name:'Holy Recipes',desc:'Unlock Hearthkeeper holy recipes.',effects:{}},
     {name:'Sacred Embers',desc:'Quests occasionally reward bonus Sacred Embers.',effects:{factionBonusDrop_sacred_ember:0.25}},
-    {name:'Temple Healing',desc:'Restore 1 Energy when completing a quest.',effects:{questEnergyRestore:1}},
+    {name:'Temple Healing',desc:'Restore 1 Energy when completing a quest.',effects:{questEnergyRestore:25}},
     {name:'Keeper',desc:'+10% XP from all sources.',effects:{xpMultiplier:0.10}},
   ]},veilwalkers:{id:'veilwalkers',loc:'cindervale',name:'Veilwalkers',icon:'👁️',color:TH.fVeil,res:'veil_shard',
-  alignBonus:{name:'Veilseer',desc:'+25% enchant success, +20% discovery chance, research -1h.',effects:{enchantSuccessFlat:25,discoveryChanceBonus:0.20,researchCostReduction:1}},
+  alignBonus:{name:'Veilseer',desc:'+25% enchant success, +20% discovery chance, research -1h.',effects:{enchantSuccessFlat:25,discoveryChanceBonus:0.20,researchCostReduction:25}},
   tierBonuses:[
     {name:'Arcane ID',desc:'+5% enchantment success chance.',effects:{enchantSuccessFlat:5}},
     {name:'Rare Formulas',desc:'Unlock Veilwalker rare formulas.',effects:{}},
     {name:'Veil Shards',desc:'Quests occasionally reward bonus Veil Shards.',effects:{factionBonusDrop_veil_shard:0.25}},
     {name:'Library',desc:'+15% recipe & enchantment discovery chance.',effects:{discoveryChanceBonus:0.15}},
-    {name:'Veilseer',desc:'Research studies cost 1 fewer hour. See enchant success %.',effects:{researchCostReduction:1}},
+    {name:'Veilseer',desc:'Research studies cost 25 less Energy. See enchant success %.',effects:{researchCostReduction:25}},
   ]},cinderfolk:{id:'cinderfolk',loc:'cindervale',name:'Cinderfolk',icon:'⛏️',color:TH.fCinder,res:'deep_crystal',
   alignBonus:{name:'Stone Sibling',desc:'-20% shop prices, +2 forage yield, +40% rare find chance.',effects:{buyDiscount:0.20,forageYieldBonus:2,rareForageBonus:0.40}},
   tierBonuses:[
@@ -3385,16 +3385,16 @@ var FACTIONS={ashwardens:{id:'ashwardens',loc:'cindervale',name:'Ashwardens',ico
       {name:'Guild Sovereign',desc:'+2 all checks. Free daily procurement.',effects:{craftBonus:2,enchantBonus:2}},
     ]},
   flamekeepers:{id:'flamekeepers',loc:'ashfall',name:'Flamekeepers',icon:'🕯️',color:'#d06030',res:'flamekeeper_ember',
-    alignBonus:{name:'Flamekeeper Acolyte',desc:'+15% XP, free herbs, +1 Energy.',effects:{xpMultiplier:0.15,dailyHerbs:true,bonusEnergyPerDay:1}},
+    alignBonus:{name:'Flamekeeper Acolyte',desc:'+15% XP, free herbs, +25 Energy.',effects:{xpMultiplier:0.15,dailyHerbs:true,bonusEnergyPerDay:25}},
     tierBonuses:[
       {name:'Temple Access',desc:'Unlocks Oasis Grove.',effects:{}},
       {name:'Sacred Rites',desc:'+2 research, +1 craft.',effects:{researchBonus:2,craftBonus:1}},
-      {name:'Eternal Flame',desc:'All checks +1. +1 Energy on quest.',effects:{craftBonus:1,enchantBonus:1,extractionBonus:1,questEnergyRestore:1}},
+      {name:'Eternal Flame',desc:'All checks +1. +25 Energy on quest.',effects:{craftBonus:1,enchantBonus:1,extractionBonus:1,questEnergyRestore:25}},
       {name:'Sacred Guardian',desc:'+15% recipe & enchantment discovery.',effects:{discoveryChanceBonus:0.15}},
-      {name:'Flamewarden',desc:'Research -1 hour. +10% XP from all sources.',effects:{researchCostReduction:1,xpMultiplier:0.10}},
+      {name:'Flamewarden',desc:'Research costs 25 less Energy. +10% XP from all sources.',effects:{researchCostReduction:25,xpMultiplier:0.10}},
     ]},
   dustwalkers:{id:'dustwalkers',loc:'ashfall',name:'Dustwalkers',icon:'🧭',color:'#8a7050',res:'dustwalker_compass',
-    alignBonus:{name:'Dustwalker Scout',desc:'+2 extraction, danger reduced, +1 Energy.',effects:{extractionBonus:2,reducedRisk:0.25,bonusEnergyPerDay:1}},
+    alignBonus:{name:'Dustwalker Scout',desc:'+2 extraction, danger reduced, +25 Energy.',effects:{extractionBonus:2,reducedRisk:0.25,bonusEnergyPerDay:25}},
     tierBonuses:[
       {name:'Trail Knowledge',desc:'Travel time -1 Ashfall regions.',effects:{}},
       {name:'Desert Sense',desc:'+30% danger reduction. Unlocks Mirage Bazaar.',effects:{reducedRisk:0.30}},
@@ -3404,7 +3404,7 @@ var FACTIONS={ashwardens:{id:'ashwardens',loc:'cindervale',name:'Ashwardens',ico
     ]},
   // ═══ TIDECREST HARBOR FACTIONS ═══
   harbormasters:{id:'harbormasters',loc:'tidecrest',name:'Harbormaster\'s Guild',icon:'⚓',color:'#4080a0',res:'harbor_seal',
-    alignBonus:{name:'Admiral\'s Trust',desc:'+15% sell prices, +2 combat, +1 Energy.',effects:{sellBonus:0.15,combatBonus:2,bonusEnergyPerDay:1}},
+    alignBonus:{name:'Admiral\'s Trust',desc:'+15% sell prices, +2 combat, +25 Energy.',effects:{sellBonus:0.15,combatBonus:2,bonusEnergyPerDay:25}},
     tierBonuses:[
       {name:'Dock Access',desc:'+10% gold from all sales.',effects:{sellBonus:0.10}},
       {name:'Naval Escort',desc:'Unlocks Abyssal Trench. +20% danger reduction.',effects:{reducedRisk:0.20}},
@@ -3413,7 +3413,7 @@ var FACTIONS={ashwardens:{id:'ashwardens',loc:'cindervale',name:'Ashwardens',ico
       {name:'Admiral\'s Trust',desc:'+2 all checks. Free daily patrol.',effects:{craftBonus:2,enchantBonus:2}},
     ]},
   pearl_divers:{id:'pearl_divers',loc:'tidecrest',name:'Pearl Divers',icon:'🤿',color:'#60a0c0',res:'diver_token',
-    alignBonus:{name:'Deep Diver',desc:'+2 extraction, +40% rare find, +1 Energy.',effects:{extractionBonus:2,rareForageBonus:0.40,bonusEnergyPerDay:1}},
+    alignBonus:{name:'Deep Diver',desc:'+2 extraction, +40% rare find, +25 Energy.',effects:{extractionBonus:2,rareForageBonus:0.40,bonusEnergyPerDay:25}},
     tierBonuses:[
       {name:'Reef Guide',desc:'Unlocks Coral Labyrinth.',effects:{}},
       {name:'Breath Training',desc:'+1 expedition yield. -1 travel time.',effects:{forageYieldBonus:1}},
@@ -3422,13 +3422,13 @@ var FACTIONS={ashwardens:{id:'ashwardens',loc:'cindervale',name:'Ashwardens',ico
       {name:'Deep Diver',desc:'+50% rare find chance. See hidden site hints.',effects:{rareForageBonus:0.50}},
     ]},
   tidekeepers:{id:'tidekeepers',loc:'tidecrest',name:'Tidekeepers',icon:'🌊',color:'#6080c0',res:'tidekeeper_sigil',
-    alignBonus:{name:'Tidebound',desc:'+15% XP, free daily herbs, +1 Energy.',effects:{xpMultiplier:0.15,dailyHerbs:true,bonusEnergyPerDay:1}},
+    alignBonus:{name:'Tidebound',desc:'+15% XP, free daily herbs, +25 Energy.',effects:{xpMultiplier:0.15,dailyHerbs:true,bonusEnergyPerDay:25}},
     tierBonuses:[
       {name:'Tidal Blessing',desc:'+5% XP from all sources.',effects:{xpMultiplier:0.05}},
       {name:'Sacred Waters',desc:'+2 research, +1 craft.',effects:{researchBonus:2,craftBonus:1}},
       {name:'Tidekeeper Sigils',desc:'Quests occasionally reward Tidekeeper Sigils.',effects:{factionBonusDrop_tidekeeper_sigil:0.25}},
       {name:'Oracle\'s Sight',desc:'+15% recipe & enchantment discovery.',effects:{discoveryChanceBonus:0.15}},
-      {name:'Tidebound',desc:'Research -1 hour. See enchant success %.',effects:{researchCostReduction:1}},
+      {name:'Tidebound',desc:'Research costs 25 less Energy. See enchant success %.',effects:{researchCostReduction:25}},
     ]},
   merchant_marine:{id:'merchant_marine',loc:'tidecrest',name:'Merchant Marine',icon:'🚢',color:'#a08060',res:'trade_manifest',
     alignBonus:{name:'Fleet Master',desc:'-20% shop prices, +2 forage yield, +40% rare find.',effects:{buyDiscount:0.20,forageYieldBonus:2,rareForageBonus:0.40}},
@@ -3456,7 +3456,7 @@ var FACTIONS={ashwardens:{id:'ashwardens',loc:'cindervale',name:'Ashwardens',ico
       {name:'Star Charts',desc:'+10% potion sale value.',effects:{potionValueBonus:0.10}},
       {name:'Celestial Formulas',desc:'Unlock Starcaller celestial recipes.',effects:{}},
       {name:'Sacred Instruments',desc:'Quests occasionally reward bonus Starcaller Seals.',effects:{factionBonusDrop_starcaller_seal:0.25}},
-      {name:'Observatory Access',desc:'Restore 1 Energy when completing a quest.',effects:{questEnergyRestore:1}},
+      {name:'Observatory Access',desc:'Restore 1 Energy when completing a quest.',effects:{questEnergyRestore:25}},
       {name:'Stargazer',desc:'+10% XP from all sources.',effects:{xpMultiplier:0.10}},
     ]},
   cloud_traders:{id:'cloud_traders',loc:'skyreach',name:'Cloud Traders',icon:'🪁',color:'#808a60',res:'cloud_trader_token',
@@ -3469,13 +3469,13 @@ var FACTIONS={ashwardens:{id:'ashwardens',loc:'cindervale',name:'Ashwardens',ico
       {name:'Summit Broker',desc:'+25% rare find chance on expeditions.',effects:{rareForageBonus:0.25}},
     ]},
   windrunners:{id:'windrunners',loc:'skyreach',name:'Windrunners',icon:'🌪️',color:'#50808a',res:'windrunner_compass',
-    alignBonus:{name:'Wind Adept',desc:'+25% enchant success, +20% discovery, research -1h.',effects:{enchantSuccessFlat:25,discoveryChanceBonus:0.20,researchCostReduction:1}},
+    alignBonus:{name:'Wind Adept',desc:'+25% enchant success, +20% discovery, research -1h.',effects:{enchantSuccessFlat:25,discoveryChanceBonus:0.20,researchCostReduction:25}},
     tierBonuses:[
       {name:'Trail Sense',desc:'+5% enchantment success chance.',effects:{enchantSuccessFlat:5}},
       {name:'Wind Reading',desc:'Unlock Windrunner rare formulas.',effects:{}},
       {name:'Wayfinder Compasses',desc:'Quests occasionally reward bonus Windrunner Compasses.',effects:{factionBonusDrop_windrunner_compass:0.25}},
       {name:'High Routes',desc:'+15% recipe & enchantment discovery chance.',effects:{discoveryChanceBonus:0.15}},
-      {name:'Pathfinder',desc:'Research studies cost 1 fewer hour. See enchant success %.',effects:{researchCostReduction:1}},
+      {name:'Pathfinder',desc:'Research studies cost 25 less Energy. See enchant success %.',effects:{researchCostReduction:25}},
     ]},
 };
 var getFactionEffects=(fRepState,alignment,alignBoostMult)=>{const abm=1+(alignBoostMult||0);const effs={};for(const [fid,f] of Object.entries(FACTIONS)){const rl=getRepLvl(fRepState[fid]||0);for(let i=0;i<Math.min(rl,f.tierBonuses.length);i++){const tb=f.tierBonuses[i];for(const [k,v] of Object.entries(tb.effects)){effs[k]=(effs[k]||0)+(typeof v==='number'?v:v===true?1:0);}}if(alignment===fid&&f.alignBonus){for(const [k,v] of Object.entries(f.alignBonus.effects)){effs[k]=(effs[k]||0)+(typeof v==='number'?v*abm:v===true?1:0);}}}return effs;};
@@ -4565,7 +4565,7 @@ var TOWN_EVENTS=[
     effect:()=>{const picks=['cloud_moss','alpine_mint','windstone','frost_daisy'];var id=picks[Math.floor(Math.random()*picks.length)];return{items:{[id]:3},msg:'Surplus: 3\u00d7 '+((INGR[id]||{}).icon||'')+((INGR[id]||{}).name||id)+'.'}}},
   // Negative events
   {id:'sr_ev19',loc:'skyreach',vibe:'danger',prob:0.06,minLv:0,negative:true,text:'Mountain Storm — A violent storm slams into the peaks. Travel is treacherous.',
-    effect:()=>({travelPenalty:2,msg:'Storm adds +2 hours to all expeditions for 2 days.'})},
+    effect:()=>({travelPenalty:50,msg:'Storm adds +50 Energy of travel cost to all expeditions for 2 days.'})},
   {id:'sr_ev20',loc:'skyreach',vibe:'danger',prob:0.05,minLv:2,negative:true,text:'Sky Raider Theft — Raiders hit your stores overnight.',
     effect:(s)=>{const picks=Object.keys(s.inv).filter(k=>s.inv[k]>1);if(picks.length===0)return{msg:'Lucky \u2014 your stores are too bare to steal from.'};var id=picks[Math.floor(Math.random()*picks.length)];return{items:{[id]:-2},msg:'Lost 2\u00d7 '+((INGR[id]||{}).icon||'')+((INGR[id]||{}).name||id)+'! The raiders fled up the cliffs.'}}},
 ];
@@ -4624,7 +4624,7 @@ var HOLLOW_MARCH={
   // Ingredient quantity for gathering solutions
   ingrQty:function(w){return 3+Math.ceil(w*1.2);},
   // Energy cost for direct-action solutions
-  energyCost:function(w){return Math.min(4,1+Math.floor(w/3));},
+  energyCost:function(w){return Math.min(100,25+25*Math.floor(w/3));},
   // Staff deployment count
   staffQty:function(w){return 1+Math.floor(w/4);},
   // Reward per crisis solved
@@ -4734,7 +4734,7 @@ var MARCH_RECIPES=[
   {id:'march_veilseal',name:'Veilseal Elixir',icon:'🔮',ingr:['veil_shard','moonpetal','embercap'],xp:130,unlock:10,dc:17,stat:'inu',cat:'utility',
     desc:'Seals tears in reality. Reduces magical threat by 20 when brewed during the March.',marchEffect:{threatReduc:20,threatPos:2}},
   {id:'march_rallying_cry',name:'Rallying Cry Tonic',icon:'📯',ingr:['embervein','starwort','bark_resin'],xp:110,unlock:10,dc:15,stat:'inu',cat:'buff',
-    desc:'Inspires defenders to fight harder. Grants +2 Energy next day and reduces bandit threat by 15.',marchEffect:{threatReduc:15,threatPos:0,bonusEnergy:2}},
+    desc:'Inspires defenders to fight harder. Grants +50 Energy next day and reduces bandit threat by 15.',marchEffect:{threatReduc:15,threatPos:0,bonusEnergy:50}},
   {id:'march_ironwall',name:'Ironwall Concentrate',icon:'🛡️',ingr:['sacred_ember','hearthstone','ironroot_bark'],xp:140,unlock:10,dc:18,stat:'tec',cat:'utility',
     desc:'Coats fortifications in alchemical compounds. Reduces corruption threat by 20 and grants staff injury immunity for 3 days.',marchEffect:{threatReduc:20,threatPos:1,staffShield:3}},
 ];
@@ -4911,7 +4911,7 @@ function getContractSlots(level,classLevels){let slots=0;if(level>=5)slots=1;if(
 var SETTLEMENT_PROJECTS=[
   {id:'sp_roads',name:'Paved Roads',icon:'🛤️',desc:'Smooth roads reduce travel time across all regions.',
     cost:{gold:300},matCost:{cindervale:{ashite:5},ashfall:{sandstone_dust:5,obsidian_shard:3},tidecrest:{driftstone:5,coral_shard:3},skyreach:{skystone_chip:5,cliff_quartz:3}},
-    buildDays:3,effect:{travelReduction:1},effectDesc:'-1 travel time to all regions',req:null,tier:1},
+    buildDays:3,effect:{travelReduction:25},effectDesc:'-1 travel time to all regions',req:null,tier:1},
   {id:'sp_market',name:'Market Square',icon:'🏪',desc:'A proper market attracts more customers and traveling merchants.',
     cost:{gold:500},matCost:{cindervale:{ashite:5,ironroot_bark:3},ashfall:{sandstone_dust:5,dustite:3},tidecrest:{driftstone:5,waterlogged_timber:3},skyreach:{skystone_chip:5,windstone:3}},
     buildDays:5,effect:{premiumCustomers:2,shelfSaleBonus:0.10},effectDesc:'+2 customers/morning, +10% shelf sale, weekly Traveling Merchant',req:null,tier:1},
@@ -4929,7 +4929,7 @@ var SETTLEMENT_PROJECTS=[
     buildDays:7,effect:{contractCostReduction:0.40,shopDiscount:0.15,premiumCustomers:1},effectDesc:'Contract costs -40%, shop prices -15%, +1 customer/morning',req:'sp_market',tier:3},
   {id:'sp_academy',name:'Academy',icon:'🎓',desc:'A center of learning that accelerates all research and growth.',
     cost:{gold:1200},matCost:{cindervale:{ashite:10,veil_shard:2,starwort:5},ashfall:{sandstone_dust:10,mirage_dust:2,ancient_resin:3},tidecrest:{driftstone:10,oracle_tear:2,nautilus_shell:5},skyreach:{skystone_chip:10,celestial_essence:2,meltwater_pearl:5}},
-    buildDays:8,effect:{xpMultiplier:0.10,researchCostReduction:1},effectDesc:'+10% XP permanently, research -1 hour, staff specialization',req:null,tier:3},
+    buildDays:8,effect:{xpMultiplier:0.10,researchCostReduction:25},effectDesc:'+10% XP permanently, research costs 25 less Energy, staff specialization',req:null,tier:3},
   {id:'sp_walls',name:'Fortified Walls',icon:'🏰',desc:'Massive walls that protect the settlement from the worst threats.',
     cost:{gold:1500},matCost:{cindervale:{ashite:15,deep_iron:5,embervein:5},ashfall:{sandstone_dust:15,obsidian_shard:8,heatstone:3},tidecrest:{driftstone:15,barnacle_cluster:8,rusted_anchor:3},skyreach:{skystone_chip:15,thunder_iron:5,aurora_lichen:5}},
     buildDays:10,effect:{threatCap:80,negativeEventReduction:0.50,tradeConfidenceGold:50},effectDesc:'Threats capped at 80, events halved, +50g/morning',req:'sp_watchtower',tier:4},
@@ -4952,4 +4952,4 @@ ZONE_IMGS.stormspire_peaks='https://jumppiejim-creator.github.io/cindervale-alch
 ZONE_IMGS.sky_ruins='https://jumppiejim-creator.github.io/cindervale-alchemist/skyreach-sky-ruins.jpg';
 ZONE_IMGS.observatory_summit='https://jumppiejim-creator.github.io/cindervale-alchemist/skyreach-observatory-summit.jpg';
 
-var DEF={phase:'identity',charName:'',charRace:null,charGender:null,stats:{cre:10,inu:10,acu:10,tec:10,dis:10},ptsLeft:12,skRanks:{},skPts:0,classLevels:{},specs:{},playerFeats:[],asiSpent:[],startingClass:null,screen:'map',day:1,hours:4,gameLocation:'cindervale',xp:0,gold:15,inv:{ashbloom:3,hearthstone:1,embercap:1},pots:{},known:['healing_salve'],aQ:[],doneQ:[],log:[],milestones:[],fRep:{ashwardens:0,hearthkeepers:0,veilwalkers:0,cinderfolk:0},upgrades:[],hiredAppr:[],apprTasks:{},apprXP:{},boardQ:[],activeBQ:[],doneBQCount:0,dayFlags:[],knownEnch:['e_sharp','e_glow','e_ironbark','e_feather','e_windwalk','e_rootbind'],constructProgress:{},hollowMarch:{active:false,wave:0,nextWaveDay:0,demands:[],history:[],finalStandAvailable:false,finalStandComplete:false,marchRecipesUnlocked:[]}};
+var DEF={phase:'identity',charName:'',charRace:null,charGender:null,stats:{cre:10,inu:10,acu:10,tec:10,dis:10},ptsLeft:12,skRanks:{},skPts:0,classLevels:{},specs:{},playerFeats:[],asiSpent:[],startingClass:null,screen:'map',day:1,energy:100,gameLocation:'cindervale',xp:0,gold:15,inv:{ashbloom:3,hearthstone:1,embercap:1},pots:{},known:['healing_salve'],aQ:[],doneQ:[],log:[],milestones:[],fRep:{ashwardens:0,hearthkeepers:0,veilwalkers:0,cinderfolk:0},upgrades:[],hiredAppr:[],apprTasks:{},apprXP:{},boardQ:[],activeBQ:[],doneBQCount:0,dayFlags:[],knownEnch:['e_sharp','e_glow','e_ironbark','e_feather','e_windwalk','e_rootbind'],constructProgress:{},hollowMarch:{active:false,wave:0,nextWaveDay:0,demands:[],history:[],finalStandAvailable:false,finalStandComplete:false,marchRecipesUnlocked:[]}};
