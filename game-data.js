@@ -363,7 +363,7 @@ var UPGRADES={
   bench_2:{id:'bench_2',name:'Arcane Nexus',icon:'🔮',cat:'Crafting',desc:'Masterwork inscription DC -1.',cost:{gold:200,veil_shard:2,hearthstone:5},effect:{mwEnchDC:-1},tier:2,req:'bench_1'},
   mortar:{id:'mortar',name:'Precision Mortar',icon:'⚙️',cat:'Crafting',desc:'15% save ingredient.',cost:{gold:35,ashite:2},effect:{saveIngredient:0.15},tier:1,req:null},
   runic_tools:{id:'runic_tools',name:'Runic Tools',icon:'🔧',cat:'Crafting',desc:'+1 craft checks.',cost:{gold:80,warden_sigil:1,embervein:2},effect:{craftSkillBonus:1},tier:1,req:null},
-  shelves:{id:'shelves',name:'Shelves',icon:'📦',cat:'Storage',desc:'Stockpiling +2.',cost:{gold:25,ironroot_bark:3},effect:{stockBonus:2},tier:1,req:null},
+  shelves:{id:'shelves',name:'Shelves',icon:'📦',cat:'Storage',desc:'+1 display slot for shelved potions.',cost:{gold:25,ironroot_bark:3},effect:{displaySlots:1},tier:1,req:null},
   cellar:{id:'cellar',name:'Cellar',icon:'🏚️',cat:'Storage',desc:'Spoilage threshold +2.',cost:{gold:80,ashite:5},effect:{spoilThreshold:2},tier:1,req:'shelves'},
   preserveJars:{id:'preserveJars',name:'Preservation Jars',icon:'🫙',cat:'Storage',desc:'Spoilage threshold +2.',cost:{gold:60,ironroot_bark:4,gloomcap:2},effect:{spoilThreshold:2},tier:1,req:null},
   vault:{id:'vault',name:'Vault',icon:'🔐',cat:'Storage',desc:'Double capacity.',cost:{gold:200,deep_crystal:1,ashite:8},effect:{doubleStorage:true},tier:2,req:'cellar'},
@@ -374,11 +374,11 @@ var UPGRADES={
   ledger:{id:'ledger',name:'Ledger',icon:'📒',cat:'Business',desc:'+1 staff, +20% eff.',cost:{gold:40},effect:{apprenticeEff:0.2},tier:1,req:null},
   quarters:{id:'quarters',name:'Beds',icon:'🛏️',cat:'Comfort',desc:'+25 Energy/day. Upgrade from bedrolls.',cost:{gold:35,ironroot_bark:3},effect:{bonusEnergy:25},tier:1,req:null},
   hearth:{id:'hearth',name:'Hearth',icon:'🔥',cat:'Comfort',desc:'+25 Energy, +morale.',cost:{gold:100,hearthstone:3},effect:{bonusEnergy:25,morale:10},tier:2,req:'quarters'},
-  garden:{id:'garden',name:'Garden',icon:'🌱',cat:'Comfort',desc:'Free daily herbs.',cost:{gold:45,ashbloom:5},effect:{dailyHerbs:true},tier:1,req:null},
-  garden_2:{id:'garden_2',name:'Greenhouse',icon:'🌿',cat:'Comfort',desc:'Free rare herbs.',cost:{gold:150,moonpetal:3,sacred_ember:1},effect:{dailyRareHerbs:true},tier:2,req:'garden'},
-  library:{id:'library',name:'Library',icon:'📚',cat:'Advanced',desc:'Research/Lore +2.',cost:{gold:120,veil_shard:1},effect:{researchBonus:2},tier:2,req:null},
+  garden:{id:'garden',name:'Garden',icon:'🌱',cat:'Comfort',desc:'Free daily herbs.',cost:{gold:45,ashbloom:5},effect:{},tier:1,req:null},
+  garden_2:{id:'garden_2',name:'Greenhouse',icon:'🌿',cat:'Comfort',desc:'Free rare herbs.',cost:{gold:150,moonpetal:3,sacred_ember:1},effect:{},tier:2,req:'garden'},
+  library:{id:'library',name:'Library',icon:'📚',cat:'Advanced',desc:'Unlocks the Library room and reduces research Energy cost by 25%.',cost:{gold:120,veil_shard:1},effect:{energyCostMultiplier:{research:-0.25}},tier:2,req:null},
   forge:{id:'forge',name:'Forge',icon:'🔨',cat:'Advanced',desc:'+2 craft bonus, +1 daily enchant customer, +5% double batch chance.',cost:{gold:180,embervein:5,ashite:8},effect:{craftSkillBonus:2,extraCustomers:1,doubleBatch:0.05},tier:2,req:'runic_tools'},
-  leyline:{id:'leyline',name:'Ley Line Tap',icon:'⚡',cat:'Advanced',desc:'+1 free research/day, daily veil shard.',cost:{gold:300,veil_shard:3,deep_crystal:2},effect:{freeResearchPerDay:1,dailyVeil:true},tier:3,req:'library'},
+  leyline:{id:'leyline',name:'Ley Line Tap',icon:'⚡',cat:'Advanced',desc:'+1 free research/day, daily veil shard.',cost:{gold:300,veil_shard:3,deep_crystal:2},effect:{freeResearchPerDay:1},tier:3,req:'library'},
 };
 
 // ═══ APPRENTICES ═══

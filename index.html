@@ -956,6 +956,32 @@ function CindervaleAlchemistInner(){
   const doCheck=(skId,dc)=>{const sk=SKILLS[skId];if(!sk)return{success:false,total:0,roll:0,name:'?',mod:0,rb:0,dc,statName:'',extras:[]};const roll=d20();const mod=getMod(eStat(sk.stat));const rb=rankB(skRanks[skId]||0,pb);let total=roll+mod+rb;const utb=(skRanks[skId]||0)===0?getFeatureVal('untrainedBonus'):0;if(utb)total+=utb;const asb=getFeatureVal('allSkillBonus');if(asb)total+=asb;const r={roll,mod,rb,total,dc,success:roll===1?false:roll===20?true:total>=dc,name:sk.name,icon:sk.icon,statName:STATS[sk.stat]?.name||'',extras:[]};if(utb)r.extras.push({label:'🃏 Untrained',val:utb});if(asb)r.extras.push({label:'🏆 Monument',val:'+'+asb});setLastCheck(r);return r;};
   const hasUp=id=>upgrades.includes(id);
   const upEff=key=>{let v=0;upgrades.filter(uid=>!disabledUpgrades.includes(uid)).forEach(uid=>{const u=UPGRADES[uid];if(u?.effect?.[key])v+=typeof u.effect[key]==='number'?u.effect[key]:(u.effect[key]?1:0);});if(v>0&&getFeatureVal('upgradeDoubleBonus'))v*=2;return v;};
+  // Phase 2 percentage modifier capability. Sums an `energyCostMultiplier[actionType]` (signed decimal) across all owned
+  // upgrades, active class/spec features, prestige features, and feats; applies the percentage to the base cost; rounds;
+  // hard-floors at 1. Caller is responsible for any game-design floors (e.g. research's Math.max(25, ...)) and flat
+  // modifiers (which subtract after the percentage per spec). Valid actionType strings (Phase 2): 'research'.
+  const getActionEnergyCost=(actionType,baseCost)=>{
+    let mult=0;
+    upgrades.filter(uid=>!disabledUpgrades.includes(uid)).forEach(uid=>{
+      const m=UPGRADES[uid]?.effect?.energyCostMultiplier?.[actionType];
+      if(typeof m==='number')mult+=m;
+    });
+    for(const [cid,lv] of Object.entries(classLevels)){
+      const cls=CLASSES[cid];if(!cls)continue;
+      for(const f of cls.features){const m=f.effects?.energyCostMultiplier?.[actionType];if(f.classLv<=lv&&typeof m==='number')mult+=m;}
+      const specId=specs[cid];
+      if(specId&&cls.specs?.[specId]){
+        for(const sf of cls.specs[specId].features){const m=sf.effects?.energyCostMultiplier?.[actionType];if(sf.classLv<=lv&&typeof m==='number')mult+=m;}
+      }
+    }
+    for(const [pid,plv] of Object.entries(prestigeLevels||{})){
+      const pc=PRESTIGE_CLASSES?.[pid];if(!pc)continue;
+      for(const pf of pc.features||[]){const m=pf.effects?.energyCostMultiplier?.[actionType];if((pf.lv||pf.classLv)<=plv&&typeof m==='number')mult+=m;}
+    }
+    for(const fid of playerFeats){const m=FEATS[fid]?.effects?.energyCostMultiplier?.[actionType];if(typeof m==='number')mult+=m;}
+    if(mult<-0.99)mult=-0.99;
+    return Math.max(1,Math.round(baseCost*(1+mult)));
+  };
   const modInv=(id,a)=>setInv(p=>{const n={...p};n[id]=(n[id]||0)+a;if(n[id]<=0)delete n[id];return n;});
   const modPot=(id,a)=>setPots(p=>{const n={...p};n[id]=(n[id]||0)+a;if(n[id]<=0)delete n[id];return n;});
   // Count potions across inventory AND shelves (all quality variants)
@@ -2704,7 +2730,9 @@ function CindervaleAlchemistInner(){
   // ─── RESEARCH (spend energy to discover recipes/enchantments) ───
   const doResearch=(type)=>{
     const loreMod=getFeatureVal('researchTimeReduction');const scholarReduc=getFeatureVal('researchCostReduction');
-    const resCost=Math.max(25,(loreMod>=100?25:50)-scholarReduc);
+    // Phase 2: getActionEnergyCost applies percentage modifiers (e.g. Library's -25%) to the base cost. The existing
+    // 25-energy game-design floor and the flat scholarReduc subtraction are preserved in the outer expression.
+    const resCost=Math.max(25,getActionEnergyCost('research',loreMod>=100?25:50)-scholarReduc);
     const freeResPerDay=getFeatureVal('freeResearchPerDay')+upEff('freeResearchPerDay')+getFeatureVal('researchSlotBonus');
     const freeUsed=dayFlags.filter(f=>f==='free_research_used').length;
     const isFree=freeResPerDay>freeUsed;
@@ -3763,8 +3791,8 @@ function CindervaleAlchemistInner(){
 
   // ─── SHOP SHELVES ───
   const compShelfBonus=(()=>{let b=0;companions.filter(c=>c.active).forEach(c=>{const comp=RANGER_COMPANIONS.find(r=>r.id===c.compId);if(comp?.secondary?.type==='organize'&&c.loyalty>=(comp.secondary.unlockLv||3))b+=c.loyalty;});return b;})();
-  const baseShelf=(hasUp('display')?12:hasUp('shopfront')?8:4)+getFeatureVal('shelfCapBonus')+Math.floor(getFeatureVal('shelfCapBonus'))+compShelfBonus;
-  const SHELF_MAX=Math.floor(baseShelf*(1+getFeatureVal('shelfCapacityBonus'))*(getFeatureVal('doubleStorage')?2:1));
+  const baseShelf=(hasUp('display')?12:hasUp('shopfront')?8:4)+upEff('displaySlots')+getFeatureVal('shelfCapBonus')+Math.floor(getFeatureVal('shelfCapBonus'))+compShelfBonus;
+  const SHELF_MAX=Math.floor(baseShelf*(1+getFeatureVal('shelfCapacityBonus'))*((getFeatureVal('doubleStorage')||hasUp('vault'))?2:1));
   const shelfTotal=Object.values(shelves).reduce((s,v)=>s+v,0);
   const stockShelf=(potId,qty)=>{
     if((pots[potId]||0)<qty||shelfTotal+qty>SHELF_MAX)return;
@@ -4323,7 +4351,7 @@ function CindervaleAlchemistInner(){
     if(upEff('dailyRep')>0)Object.keys(fRep).forEach(f=>addRep(f,upEff('dailyRep')));
     if(hasUp('garden')){const pool=gameLocation==='tidecrest'?['kelp_frond','tide_moss']:gameLocation==='ashfall'?['sunpetal','scorchroot']:['ashbloom','ironroot_bark'];const h=pool[Math.floor(Math.random()*pool.length)];const q=1+Math.floor(Math.random()*2);modInv(h,q);report.push({n:'Garden',i:'🌱',r:`${INGR[h]?.icon||''}×${q}`,t:'ok'});}
     if(hasUp('garden_2')){const pool=gameLocation==='tidecrest'?['coral_shard','pearl_dust']:gameLocation==='ashfall'?['dewdrop_lily','crystal_salt']:['moonpetal','starwort'];const h=pool[Math.floor(Math.random()*pool.length)];modInv(h,1);report.push({n:'Greenhouse',i:'🌿',r:`${INGR[h]?.icon||''}`,t:'ok'});}
-    if(hasUp('leyline')&&Math.random()<.25){const item=li('veil_shard');modInv(item,1);report.push({n:'Ley Line',i:'⚡',r:(INGR[item]?.name||item)+'!',t:'ok'});}
+    if(hasUp('leyline')){const item=li('veil_shard');modInv(item,1);report.push({n:'Ley Line',i:'⚡',r:(INGR[item]?.name||item)+'!',t:'ok'});}
     // forageOnRest: passive overnight foraging
     if(getFeatureVal('forageOnRest')){
       const restRegions=locRegions.filter(r=>level>=regUnlock(r)&&(!r.faction||getRL(r.faction)>=(r.fReq||0)));
@@ -9768,7 +9796,7 @@ function CindervaleAlchemistInner(){
           <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
             {(()=>{const undiscP=RECIPES.filter(r=>!known.includes(r.id)&&level>=r.unlock&&canCraftAtLocation(r.ingr)&&(!r.faction||getRL(r.faction)>=(r.fReq||0)));
               const undiscE=ENCHANTMENTS.filter(e=>!knownEnch.includes(e.id)&&(!e.faction||getRL(e.faction)>=(e.fReq||0))&&canCraftAtLocation(e.ingr));
-              const resCost=Math.max(25,50-getFeatureVal('researchTimeReduction')-getFeatureVal('researchCostReduction'));
+              const resCost=Math.max(25,getActionEnergyCost('research',getFeatureVal('researchTimeReduction')>=100?25:50)-getFeatureVal('researchCostReduction'));
               const freeRes=getFeatureVal('freeResearchPerDay')+upEff('freeResearchPerDay')+getFeatureVal('researchSlotBonus');
               const freeUsed=dayFlags.filter(f=>f==='free_research_used').length;
               const hasFree=freeRes>freeUsed;

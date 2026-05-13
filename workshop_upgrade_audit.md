@@ -10,14 +10,20 @@ For each upgrade in `UPGRADES` (game-data.js:359-382): (1) read the handbook tab
 ## Summary
 
 - **Total upgrades audited:** 22 (full `UPGRADES` table)
-- ✓ accurate: 18
+- ✓ accurate: 22
 - ⚠️ unclear: 0
-- 🔁 description mismatch: 1
-- ❌ no effect: 2
+- 🔁 description mismatch: 0
+- ❌ no effect: 0
 - ❓ dead system: 0
-- 🔧 partial: 1
+- 🔧 partial: 0
 - 💡 unexpected: 0
 - ❓ needs review: 0
+
+> **Audit closed.** All 22 workshop upgrades now ✓ accurate.
+
+## Changelog
+
+- **2026-05-13** — Phase 2: vault wired, shelves replaced (+1 display slot), library now grants −25% research cost via new percentage modifier system, leyline veil shard now daily. Dead documentation flags removed from garden/garden_2/leyline. **Workshop upgrade audit closed: 22/22 ✓.**
 
 ## Data Structures Audited
 
@@ -42,10 +48,10 @@ Out-of-scope adjacent systems noted in passing: `GADGET_BLUEPRINTS` (line 2207, 
 
 | ID | Name | Handbook says | In-game tooltip | Code does | Verdict | Notes |
 |----|------|---------------|-----------------|-----------|---------|-------|
-| `shelves` | Shelves | "**Stockpiling +2.**" | "Stockpiling +2." | `effect:{stockBonus:2}` is set but **`stockBonus` is never read** anywhere in `index.html`. The only matching shelves-reference is in scene-builder overlay positioning (no functional effect). The "Stockpiling" name itself refers to a skill that was removed in V2 (see [index.html:766](index.html:766): `_removedSkills=[...,'stockpiling',...]`). | ❌ no effect | Pure stub. Was wired to the now-removed Stockpiling skill. Either delete the upgrade, re-wire `stockBonus` to something player-visible (e.g. raise the inventory cap, or grant +2 spoilage), or drop the price-point upgrade entirely. |
+| `shelves` | Shelves | "+1 display slot for shelved potions." | "+1 display slot for shelved potions." | Dead `stockBonus:2` replaced with `displaySlots:1`. The `baseShelf` calculation at [index.html:3794](index.html:3794) now adds `upEff('displaySlots')`, so shelves contributes +1 to the player's shelf capacity (stacks with the existing shopfront/display tier-base of 4/8/12). | ✓ accurate | Replaced dead stockBonus with +1 display slot; wired into existing display slot calc. |
 | `cellar` | Cellar | "Spoilage threshold +2." | "Spoilage threshold +2." | `spoilThreshold:2` read via `upEff('spoilThreshold')` at 3 sites (the daily spoilage tick, plus two inventory tooltip computations). | ✓ accurate | |
 | `preserveJars` | Preservation Jars | "Spoilage threshold +2." | "Spoilage threshold +2." | Same key, same sites. Stacks additively with `cellar` (a player buying both gets +4). | ✓ accurate | |
-| `vault` | Vault | "**Double capacity.**" | "Double capacity." | `effect:{doubleStorage:true}` is set. The only read site for `doubleStorage` is at [index.html:3744](index.html:3744): `SHELF_MAX = Math.floor(baseShelf * ... * (getFeatureVal('doubleStorage')?2:1))`. **`getFeatureVal` only iterates CLASSES/FEATS/etc., not `UPGRADES`** — so the only source that lights up this branch is Quartermaster Lv3's `doubleStorage:true` class effect. Vault's flag is invisible to the read site. | ❌ no effect | Mirror-image of the Diplomat-effects-not-iterated bug. Two cheap fixes: (a) change the read site to `(getFeatureVal('doubleStorage') \|\| upEff('doubleStorage'))?2:1`, or (b) move vault's effect to a key that `upEff` already covers, like `shelfCapBonus:8` or similar. |
+| `vault` | Vault | "Double capacity." | "Double capacity." | `effect:{doubleStorage:true}` set. The read site at [index.html:3795](index.html:3795) now reads `(getFeatureVal('doubleStorage')\|\|hasUp('vault'))?2:1`, so vault's flag triggers shelf doubling without `getFeatureVal` needing to iterate UPGRADES. Stacks cleanly with Quartermaster Lv3's `doubleStorage:true` (booleans OR cleanly — no quadruple-storage). | ✓ accurate | doubleStorage wired at read sites in Phase 2 (mirrors Diplomat surgical pattern). |
 
 ### Business
 
@@ -70,9 +76,9 @@ Out-of-scope adjacent systems noted in passing: `GADGET_BLUEPRINTS` (line 2207, 
 
 | ID | Name | Handbook says | In-game tooltip | Code does | Verdict | Notes |
 |----|------|---------------|-----------------|-----------|---------|-------|
-| `library` | Library | "**Research/Lore +2.**" | "Research/Lore +2." | `effect:{researchBonus:2}` is set but **never read**. The only `researchBonus` references in `index.html` are: (a) `MENTOR_TYPES.scholar = {type:'researchBonus', val:1, ...}` (Pass-the-Torch mentor effect — different mechanism, not from the upgrade), and (b) a local variable name in the research check at [2672](index.html:2672) (`const researchBonus = getSkMod('research') >= 2 ? 20:10` — based on the Research SKILL rank, unrelated to the upgrade). Direct `hasUp('library')` at [10115](index.html:10115) gates the Library room-tab in the scene builder — that part works. The "+2" effect itself does not fire. The "Lore" half of the description references a removed skill ([index.html:766](index.html:766) lists `lore` in `_removedSkills`). | 🔧 partial | Room-tab gate works; +2 research bonus is unimplemented; Lore claim is a removed-system reference. Either wire `researchBonus:2` into the research check, change the upgrade's effect to a key `upEff` already covers (e.g. `discoveryChanceBonus:0.10`), or rewrite the description to surface only what's real. |
+| `library` | Library | "Unlocks the Library room and reduces research Energy cost by 25%." | "Unlocks the Library room and reduces research Energy cost by 25%." | Dead `researchBonus:2` removed; replaced with `effect:{energyCostMultiplier:{research:-0.25}}`. The new `getActionEnergyCost` helper (Phase 2) sums percentage modifiers across upgrades/features and applies them to research's base cost — Library now reduces a 50-energy research action to ~38 energy. Direct `hasUp('library')` at [10115](index.html:10115) still gates the Library room-tab. | ✓ accurate | Library now grants −25% research cost via new percentage modifier system; room-gate preserved. |
 | `forge` | Forge | "+2 craft, +1 customer, +5% double batch." | "+2 craft bonus, +1 daily enchant customer, +5% double batch chance." | `craftSkillBonus:2` (11 reads), `extraCustomers:1` (read at 1026), `doubleBatch:0.05` (read at 2554 craft path) all wire correctly via `upEff`. Direct `hasUp('forge')` at [10116](index.html:10116) gates the Forge room-tab. | ✓ accurate | |
-| `leyline` | Ley Line Tap | "+1 free research/day, **daily veil shard**." | "+1 free research/day, daily veil shard." | `freeResearchPerDay:1` read via `upEff` at [2685](index.html:2685), [6672](index.html:6672), [9748](index.html:9748) — works correctly. `dailyVeil:true` flag is **never read**, BUT a direct `hasUp('leyline')` check at [4302](index.html:4302) grants a veil_shard with `Math.random() < 0.25` per day — i.e. **25% chance per day, not "daily"**. Direct `hasUp` at [10117](index.html:10117) gates the Ley Line room-tab. | 🔁 description mismatch | The +1 free research works as described. The "daily veil shard" claim is wrong by ~4× — over a long run, the player gets ~1 veil shard every 4 days, not daily. Either the description should say "25% chance of a daily veil shard" / "veil shards on lucky mornings", or the code should be tightened to actually daily (drop the 0.25 roll). |
+| `leyline` | Ley Line Tap | "+1 free research/day, daily veil shard." | "+1 free research/day, daily veil shard." | `freeResearchPerDay:1` read via `upEff` at [2685](index.html:2685), [6672](index.html:6672), [9748](index.html:9748). Daily veil shard now grants unconditionally on the morning tick at [index.html:4354](index.html:4354) — the `Math.random() < 0.25` gate was dropped. Dead `dailyVeil:true` flag removed from the data. Direct `hasUp` at [10169](index.html:10169) gates the Ley Line room-tab. | ✓ accurate | Veil shard now grants daily as promised; was previously 25%/day. |
 
 ## Cross-cutting issues found
 
