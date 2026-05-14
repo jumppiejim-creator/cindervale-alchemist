@@ -335,7 +335,11 @@ function CindervaleAlchemistInner(){
   const [startingClass,setStartingClass]=useState(null);  // 'alchemist'
   const [classPreview,setClassPreview]=useState(null);    // hover preview during class select
   const [classDetail,setClassDetail]=useState(null);      // full class info popup
-  const [pendingLevelUp,setPendingLevelUp]=useState(null);// level-up wizard state
+  const [pendingLevelUp,setPendingLevelUp]=useState(null);// level-up wizard state; `_minimized:true` hides the modal while preserving all in-progress choices
+  // Queue of stacked level-ups awaiting resolution. When the player has an active `pendingLevelUp` (open or minimized)
+  // and gains another level, the new wizard payload is pushed here instead of overwriting the current one. The queue
+  // is drained on commit: when `pendingLevelUp` is cleared, the next queued entry (if any) is shifted in to take its place.
+  const [pendingLevelUpQueue,setPendingLevelUpQueue]=useState([]);
   const [featureGrantsApplied,setFeatureGrantsApplied]=useState([]); // keys like "alchemist:7" or "apothecary:6" — tracks one-time recipe/enchant grants
   const [screen,setScreen]=useState('map');
   const [day,setDay]=useState(1);
@@ -765,8 +769,11 @@ function CindervaleAlchemistInner(){
     infusionsUsedToday,wildcraftsUsedToday,
     // Phase 3 expedition crash-recovery: persist only when active (so the player resumes mid-trip if browser dies).
     expedition:expedition.active?expedition:null,
+    // Level-up wizard state — persists across save/reload so a pending advancement (open, minimized, or queued)
+    // survives the browser dying mid-flow. Null when no pending; otherwise the full wizard payload object.
+    pendingLevelUp,pendingLevelUpQueue,
     saveVersion:2,
-  }),[phase,charName,charRace,charGender,stats,ptsLeft,skRanks,skPts,skProgress,classLevels,specs,playerFeats,asiSpent,startingClass,screen,day,energy,maxEnergy,xp,gold,inv,pots,known,aQ,doneQ,log,milestones,fRep,factionAlign,upgrades,hiredAppr,apprTasks,apprXP,enchQ,potCustQ,clinicPatients,venomContracts,forgedWeapons,shieldCommissions,planarFocus,gadgets,blueprints,fieldJournal,loreFragments,companions,caravans,supplyChains,caravanRuns,trainingSessions,factionHarmony,prestigeLevels,automata,customPatterns,mappedRegions,activeBuffs,debt,disabledUpgrades,shopLocked,injuryPenalty,staffInjuries,shelves,dailyReport,boardQ,activeBQ,doneBQCount,dayFlags,knownEnch,brewCounts,procureItems,constructProgress,selectedSite,lineage,brands,brandOrders,relics,museum,threats,outposts,ingredientContracts,settlementProjects,settlementConstruction,defenseQuests,hollowMarch,legacyFeature,seasonalOverride,wildAlly,featureGrantsApplied,infusionsUsedToday,wildcraftsUsedToday,expedition]);
+  }),[phase,charName,charRace,charGender,stats,ptsLeft,skRanks,skPts,skProgress,classLevels,specs,playerFeats,asiSpent,startingClass,screen,day,energy,maxEnergy,xp,gold,inv,pots,known,aQ,doneQ,log,milestones,fRep,factionAlign,upgrades,hiredAppr,apprTasks,apprXP,enchQ,potCustQ,clinicPatients,venomContracts,forgedWeapons,shieldCommissions,planarFocus,gadgets,blueprints,fieldJournal,loreFragments,companions,caravans,supplyChains,caravanRuns,trainingSessions,factionHarmony,prestigeLevels,automata,customPatterns,mappedRegions,activeBuffs,debt,disabledUpgrades,shopLocked,injuryPenalty,staffInjuries,shelves,dailyReport,boardQ,activeBQ,doneBQCount,dayFlags,knownEnch,brewCounts,procureItems,constructProgress,selectedSite,lineage,brands,brandOrders,relics,museum,threats,outposts,ingredientContracts,settlementProjects,settlementConstruction,defenseQuests,hollowMarch,legacyFeature,seasonalOverride,wildAlly,featureGrantsApplied,infusionsUsedToday,wildcraftsUsedToday,expedition,pendingLevelUp,pendingLevelUpQueue]);
 
   const restoreState=useCallback((s)=>{
     if(!s)return;
@@ -830,6 +837,10 @@ function CindervaleAlchemistInner(){
     // Phase 3: Restore in-progress expedition (crash recovery). Inactive by default for older saves and on fresh chars.
     setExpedition(s.expedition&&s.expedition.active?s.expedition:{active:false,regionId:null,siteId:null,siteIsHidden:false,targetIngr:null,rollCount:0,cumG:{},cumXp:0,baseDC:0,travelCost:0,maxDCMet:0,lastRoll:null,lastFlavorIdx:-1,startedDay:0});
     setExpSummary(null);
+    // Level-up wizard state persists across save/reload (pending advancement preserved if browser crashed mid-flow,
+    // or if the player minimized the wizard and quit). Defaults to null/[] for fresh characters and older saves.
+    setPendingLevelUp(s.pendingLevelUp||null);
+    setPendingLevelUpQueue(Array.isArray(s.pendingLevelUpQueue)?s.pendingLevelUpQueue:[]);
   },[]);
 
   // ─── ALL EFFECTS (before any return!) ───
@@ -902,15 +913,18 @@ function CindervaleAlchemistInner(){
 
   useEffect(()=>{
     if(level>prevLvl.current&&phase==='play'){
-      // Open level-up wizard instead of directly granting points
+      // Build the new wizard payload. If `pendingLevelUp` is already active (open or minimized), push this onto
+      // the queue instead of overwriting — the player will see this level after they commit the current one.
       const newLv=level;
       const needsASI=ASI_LEVELS.includes(newLv);
       const needsFeat=FEAT_LEVELS.includes(newLv);
-      setPendingLevelUp({
+      const payload={
         newCharLevel:newLv,step:'overview',
         chosenClass:null,chosenSpec:null,asiChoices:null,chosenFeat:null,
         skillPointsSpent:{},needsASI,needsFeat,needsSpec:false,skillPointsAvailable:3+(getFeatureVal('bonusSkillEveryOther')&&newLv%2===0?1:0),
-      });
+      };
+      if(pendingLevelUp){setPendingLevelUpQueue(q=>[...q,payload]);}
+      else{setPendingLevelUp(payload);}
       addLog(`⬆ Level ${newLv+1}! Time to advance your training.`,'level');
       const nw=[{icon:'⬆',text:`Level ${newLv+1}! Choose how to advance.`,color:TH.goldBright}];
       const newRegions=locRegions.filter(r=>r.unlock===newLv);
@@ -922,7 +936,7 @@ function CindervaleAlchemistInner(){
       if(newLv>=15)earnMilestone('legend');
       prevLvl.current=level;
     }
-  },[level,phase,addLog]);
+  },[level,phase,addLog,pendingLevelUp]);
 
   // ─── UNDO SYSTEM ───
   const snapshot=useCallback(()=>{
@@ -6806,6 +6820,16 @@ function CindervaleAlchemistInner(){
           <div style={{fontSize:20,color:TH.gold,letterSpacing:2,cursor:'pointer'}} onClick={()=>{setScreen('map');handleDevTap();}}>⚗️ {locName}</div>
           <div style={{fontSize:11,color:TH.gold,position:'absolute',right:8,top:2}}>{BUILD_VERSION}</div>
           <div style={{display:'flex',gap:4}}>
+            {/* Pending level-up indicator — appears whenever there's a minimized wizard or queued level-ups
+                awaiting resolution. Click to unminimize / reopen the wizard. The pulsing gold border draws the
+                eye since pending advancement holds locked feat / class / ASI choices the player is forfeiting
+                if they ignore the indicator. */}
+            {(pendingLevelUp||pendingLevelUpQueue.length>0)&&<button
+              style={{...S.btn('gold'),fontSize:14,padding:'3px 10px',borderColor:TH.goldBright,boxShadow:'0 0 6px '+TH.goldBright+'66',fontWeight:'bold'}}
+              onClick={()=>{if(pendingLevelUp){setPendingLevelUp(p=>({...p,_minimized:false}));}else if(pendingLevelUpQueue.length>0){setPendingLevelUp(pendingLevelUpQueue[0]);setPendingLevelUpQueue(q=>q.slice(1));}}}
+              title="Resume your pending level-up. Feat / class / skill-point choices are preserved until you confirm.">
+              ⬆ Lv{((pendingLevelUp?.newCharLevel||0)+1)}{pendingLevelUpQueue.length>0?' (+'+pendingLevelUpQueue.length+')':''}
+            </button>}
             <button style={{...S.btn('gold'),fontSize:14,padding:'3px 10px'}} onClick={()=>setConfirmRest(true)}>🌙 Rest (⚡{energy})</button>
             {undoStack.length>0&&<button style={{...S.btn('def'),fontSize:14,padding:'3px 8px'}} onClick={undo}>↩️ Undo</button>}
             <button style={{...S.btn(expedition.active?'dim':'dim'),fontSize:14,padding:'3px 8px',opacity:expedition.active?0.4:1,cursor:expedition.active?'not-allowed':'pointer'}}
@@ -7329,7 +7353,7 @@ function CindervaleAlchemistInner(){
       })()}
 
       {/* ═══ LEVEL-UP WIZARD ═══ */}
-      {pendingLevelUp&&<div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'#000000dd',display:'flex',alignItems:'center',justifyContent:'center',zIndex:1000,padding:12}}>
+      {pendingLevelUp&&!pendingLevelUp._minimized&&<div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'#000000dd',display:'flex',alignItems:'center',justifyContent:'center',zIndex:1000,padding:12}}>
         <div style={{background:`linear-gradient(160deg,${TH.panelAlt},${TH.panel})`,border:`2px solid ${TH.gold}`,borderRadius:12,padding:'20px 20px',maxWidth:520,width:'100%',maxHeight:'90vh',overflowY:'auto',boxShadow:`0 0 60px ${TH.gold}30`}} onClick={e=>e.stopPropagation()}>
           {/* Step progress */}
           {pendingLevelUp.step!=='overview'&&(()=>{
@@ -7752,7 +7776,7 @@ function CindervaleAlchemistInner(){
                 const parentCid=isPrestige?pendingLevelUp.prestigeParentClass:null;
                 const cid=isPrestige?parentCid:pendingLevelUp.chosenClass;
                 // Validate FIRST before any state changes
-                if(!cid||!CLASSES[cid]){addLog('Error: No valid class for advancement (parent: '+cid+')','error');setPendingLevelUp(null);return;}
+                if(!cid||!CLASSES[cid]){addLog('Error: No valid class for advancement (parent: '+cid+')','error');setPendingLevelUpQueue(q=>{if(q.length>0){setPendingLevelUp(q[0]);return q.slice(1);}setPendingLevelUp(null);return q;});return;}
                 const c=CLASSES[cid];
                 const newClassLv=(classLevels[cid]||0)+1;
                 // Advance prestige level if applicable
@@ -7831,7 +7855,8 @@ function CindervaleAlchemistInner(){
                   const _specFeat=c.specs[_activeSpecId].features.find(f=>f.classLv===newClassLv);
                   if(_specFeat)applyFeatureGrants(_specFeat,_activeSpecId+':'+newClassLv,c.specs[_activeSpecId].name+' Lv'+newClassLv);
                 }
-                setPendingLevelUp(null);
+                // Drain the queue: if a level-up was deferred while this one was open, surface it next.
+                setPendingLevelUpQueue(q=>{if(q.length>0){setPendingLevelUp(q[0]);return q.slice(1);}setPendingLevelUp(null);return q;});
               }}>✨ Confirm Advancement</button>
             </div>
           </>}
@@ -7839,8 +7864,9 @@ function CindervaleAlchemistInner(){
           {/* Skip for later */}
           <div style={{textAlign:'center',marginTop:12}}>
             <button style={{background:'none',border:'none',color:TH.textDim,fontSize:13,cursor:'pointer',textDecoration:'underline'}}
-              onClick={()=>{setSkPts(p=>p+(pendingLevelUp?.skillPointsAvailable||2));setPendingLevelUp(null);addLog('Level-up completed. Skill points saved for later.','info');}}>
-              Save points for later
+              onClick={()=>{setPendingLevelUp(p=>p?{...p,_minimized:true}:p);addLog('⬆ Level-up minimized. Click the ⬆ indicator in the header to resume.','info');}}
+              title="Hide this window but keep all your choices. Reopen from the ⬆ indicator in the header.">
+              Save for later
             </button>
           </div>
         </div>
