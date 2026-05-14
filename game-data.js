@@ -4576,7 +4576,7 @@ var TOWN_EVENTS=[
     effect:()=>{const picks=['cloud_moss','alpine_mint','windstone','frost_daisy'];var id=picks[Math.floor(Math.random()*picks.length)];return{items:{[id]:3},msg:'Surplus: 3\u00d7 '+((INGR[id]||{}).icon||'')+((INGR[id]||{}).name||id)+'.'}}},
   // Negative events
   {id:'sr_ev19',loc:'skyreach',vibe:'danger',prob:0.06,minLv:0,negative:true,text:'Mountain Storm — A violent storm slams into the peaks. Travel is treacherous.',
-    effect:()=>({travelPenalty:50,msg:'Storm adds +50 Energy of travel cost to all expeditions for 2 days.'})},
+    effect:()=>({flag:'ash_storm',msg:'Storm conditions — expedition travel +⚡25 today.'})},
   {id:'sr_ev20',loc:'skyreach',vibe:'danger',prob:0.05,minLv:2,negative:true,text:'Sky Raider Theft — Raiders hit your stores overnight.',
     effect:(s)=>{const picks=Object.keys(s.inv).filter(k=>s.inv[k]>1);if(picks.length===0)return{msg:'Lucky \u2014 your stores are too bare to steal from.'};var id=picks[Math.floor(Math.random()*picks.length)];return{items:{[id]:-2},msg:'Lost 2\u00d7 '+((INGR[id]||{}).icon||'')+((INGR[id]||{}).name||id)+'! The raiders fled up the cliffs.'}}},
 ];

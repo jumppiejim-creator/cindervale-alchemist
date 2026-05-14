@@ -31,6 +31,7 @@ For each feature: (1) read handbook text in `cindervale_handbook.html`; (2) read
 - **2026-05-12** — Naturalist L10 cut+replace (passive highest-yield highlight). **Audit closure: all 140 class features now at ✓ accurate.**
 - **2026-05-12** — Phase D: long-tail fixes for 10 features across 6 clusters. Cluster 2 cut/replaced dead `showIngredients` flag on Naturalist L3 (+10% `bonusForageChance` wired at the forage hour loop) and Scholar L8 (`researchSlotBonus:1` wired at three free-research read sites). Cluster 4 cut/replaced Brand Master L5's dead `collectors` flag with a +25% sell-multiplier bump in `getBrandSellMult`. Cluster 5 extended the Phase C grant infrastructure with `grantUpgrades`, reworked Constructor L10 to grant 3-of-7 high-tier workshop upgrades, and removed the dead `legendaryBlueprints` flag. Cluster 1 built Cartographer L3 (region-picker ingredient preview via direct prestige check + new `xpBonus` key wired into `gainXP`) and L4 (new `staffForageYield` key wired into staff forage). Cluster 3 built Spellbrewer L3/L4 (`catalystSaveOnFail` on failed-infusion path) and L5 (5a fallback — 50%-more-potent infusion sellMult + 5b `infusedSellBonus:0.30` on both shelf and direct sales). Cluster 6 investigation confirmed no staff `inscribe` task exists, took CUT/REPLACE path for Arcanist L4: 15% inscription DC reduction on custom Arcanist patterns. **Naturalist L10** was not in any cluster scope and remains 🔧 partial.
 - **2026-05-13** — Diplomat L4 (Grand Alliance) legendary vendor stock mechanic built. All harmonies maxed → daily shop restock includes a legendary-tier item (`val>=25` ingredient at 2× base price). Closes the last partial feature from the exclusivity audit. **Class feature work fully closed: 140/140 ✓ accurate AND 140/140 🔓 exclusive.**
+- **2026-05-13** — Event audit: Skyreach Mountain Storm (`sr_ev19`) dead effect resolved by matching the `ash_storm` flag pattern (cosmetic + mechanical consistency with Cindervale/Ashfall/Tidecrest storms). Was a stub event printing "+50 Energy travel for 2 days" with no read site; now correctly adds +⚡25 travel for the day via the wired `dayFlags['ash_storm']` mechanism at `index.html:1593`.
 - **2026-05-13** — Exclusivity audit follow-up: Cartographer L3, Diplomat L1, and Diplomat L2 redesigned to grant exclusive mechanics replacing aspirational/redundant descriptions. Cartographer L3 gains Familiar Territory (−1 DC at 5+-visited regions) backed by new `regionVisits` state. Diplomat L1 gains +1 daily passive rep to each Friendly+ faction. Diplomat L2 gains daily faction-signature ingredient in shop restock. Antiquarian L2 investigation confirmed `seeRarity` is properly gated on `aqLv>=2` (exclusive). Diplomat L4 investigation revealed "legendary vendor stock" claim is unimplemented (no harmony-gated shop branch) — flagged for Jim's decision in the exclusivity audit's partial section. All three redesigns ADD new effect keys (`familiarTerritory`, `embassyPassiveRep`, `factionRestock`) without changing existing wired benefits.
 - **2026-05-13** — Phase 4 close-out: flat cost-reducing modifiers converted to percentage form across all applicable action types (travel, research). 14 features touched — Warden L1 Trailblazer (`travelReduction:25` → `energyCostMultiplier:{travel:-0.25}`), Warden L10 Legend of the Wild (75 flat → −50% capped per Phase 4 heuristic, with description update from "all travel becomes 0" to "travel Energy −50%"), Trailblazer's Boots feat, Quick Study feat, 4 Ranger companion passives (Hawk/Vulture/Seahawk/Falcon), 6 spec/alignBonus research-cost rows (Veilseer spec, Veilseer alignBonus, Flamewarden, Tidebound, Pathfinder spec, Wind Adept alignBonus). Plus 2 settlement projects (Paved Roads, Academy). All conversions preserve description-mechanic accuracy; no feature row shifted verdict. The `getActionEnergyCost` helper was extended to walk the same source list as `getFeatureVal` (companion passives, settlement projects, faction alignBonus + tier bonuses, elixir buffs, mentor lineage, legacy feature). Dead `researchTimeReduction` branch removed (Quick Study migrated to percentage); 1 mechDesc reference reworded (Theorist "research hours" → "research Energy"); training entry-gate removed (was leftover from a non-free design); automaton / preemptive strike / Hollow March crisis solution call sites routed through `spendEnergy` so Early Riser and Endurance fire on first-action-of-day. **Class feature audit still 140/140 ✓.**
 
@@ -383,3 +384,56 @@ My read: **Option A is the best price-to-value**. The enchant side has zero data
 - **`legendaryBlueprints:true` flag** (Constructor Lv10) — declared in game-data.js but no read site anywhere. Either remove the flag or implement the named blueprints (Alchemical Forge, Crystal Greenhouse, Arcane Conduit) as distinct features rather than the current grab-bag of `passiveIncomeMulti`/`overnightCraft`/`bonusEnergy` flags.
 - **`fortressWard:true` flag** (Wardkeeper Lv10): read site at 4325 uses it to disable bandit shelf theft below threat 75 — that's a useful permanent bonus, but it has nothing to do with the handbook's "1/day, reduces all threats by 5 for 3 days" description. Worth surfacing the actual effect somewhere visible to the player (handbook + UI). This is a 💡 unexpected for a player who has the spec — the actual passive is genuinely good, just unannounced.
 - The audit only covered class/spec/prestige features as scoped. Feats (62), workshop upgrades, settlement projects, faction tier bonuses, companion abilities, race bonuses, and lore chains were not audited — but spot-checks during the audit suggest similar issues are likely there (the "Crystal Greenhouse" claim should probably be backed by similar effect/read-site work).
+
+## Re-Sample Findings (2026-05-13)
+
+**Methodology question:** Phase A-D explicitly addressed ~46 features through cluster-driven fixes. The remaining ~94 features were verified through broader sweeps but not deeply audited at the per-claim level the clusters got. The Arcanist L1 "Pattern Research" find — uncovered by the event audit, not the original feature audit — raised the question of whether Phase A-D's coverage left gaps. This re-sample spot-checks non-cluster features for description-implementation mismatches similar to Pattern Research.
+
+**Scope:** All non-cluster class/spec/prestige features whose descriptions contain specific cost / effect-value / trigger / cooldown claims. Pure-stat descriptions ("+1 craft") were skip-verified since they're obvious.
+
+**Total candidates checked:** ~35 high-risk-shape features (every feature with "Spend N", "Costs N Energy", "Once per day", "N% chance", "per forage hour", "free action", "Reduce DC by N", or similar). Pure-stat features and already-cluster-addressed features were excluded from deep check.
+
+**Mismatches found:** **2 hard mismatches** (description claims a cost/effect that doesn't fire) + **3 terminology-drift cases** (Phase 3 "per hour" leftover from when forage was cycle-based).
+
+### Hard mismatches (Pattern Research shape)
+
+#### 1. Wildcrafter L2 "Fresh Reagents"
+
+- **Description claim:** "2 field brews. Fresh 1.3×. Fine quality field brewing. **+1 bonus ingredient per expedition.** Unlock Seasonal Bypass wildcraft (1/day)."
+- **Code behavior:** The `bonusForageIngr:1` effect-key is declared on the feature, but **no read site exists anywhere in `index.html`** — grepped confirmed zero matches. All other Wildcrafter L2 claims (2 brews, 1.3× fresh, Fine quality, Seasonal Bypass) are wired via direct `wcLv>=2` prestige checks at lines 2110/2560/2599/2631. The "+1 bonus ingredient per expedition" claim alone is a dead flag.
+- **Recommended fix:** Either (a) trim the claim from the description (the feature still has 4 other meaningful benefits) or (b) wire `bonusForageIngr` — most cleanly by adding one ingredient to `cumG` at the end of `_returnToTown` in `index.html` (where per-expedition bonuses like guaranteedRare backstop and faction rareForageBonus already fire) when `prestigeLevels.wildcrafter >= 2`.
+
+#### 2. Antiquarian L1 "Relic Sense"
+
+- **Description claim:** "15% relic find chance per expedition hour. **Appraise interface unlocked (1 Energy, Acumen check).**"
+- **Code behavior:** `appraiseRelic` at `index.html:2210` performs a `doCheck('research', dc)` (Acumen-based research skill) but **does not call `spendEnergy`** anywhere — appraisal is free. The "1 Energy" cost claim is unimplemented.
+- **Recommended fix:** Either (a) trim "1 Energy" from the description (appraisal is meant to be a free action — match Pattern Research's path) or (b) add `spendEnergy(25)` to `appraiseRelic`. (a) is the lower-friction choice; appraisal as a free narrative action arguably feels right for the relic system.
+
+### Terminology drift (Phase 3 "per forage hour" leftover)
+
+These features still describe forage events with "per hour" wording from before Phase 3's per-roll refactor. The mechanical rates per event-fire are unchanged; only the unit label is stale.
+
+#### 3. Cartographer L1 "Hidden Paths"
+- **Description:** "Discover secret sub-areas within known regions with unique ingredients. **25% chance per forage hour.**"
+- **Recommended fix:** Replace "per forage hour" with "per forage roll" to match Phase 3 terminology and consistency with the workshop UI / handbook sweep that already updated Naturalist L3, Ranger encounters, etc.
+
+#### 4. Warden L7 "Wilderness Mastery"
+- **Description:** "+2 extraction bonus. Positive expedition events 2× more likely. **15% chance of bonus rare find per hour.**"
+- **Recommended fix:** Same — "per hour" → "per forage roll".
+
+#### 5. Antiquarian L1 (additional)
+- Same feature as #2 above; the relic-find rate phrasing "**15% relic find chance per expedition hour**" is also stale. Bundle with #3 / #4's terminology fix.
+
+### Cross-cutting findings
+
+1. **Pattern Research was not isolated** — two more hard mismatches exist in the same shape (description claims a cost/effect, code doesn't fire it). All three are at **prestige Lv1 features**: Pattern Research (Arcanist L1), Relic Sense (Antiquarian L1), Fresh Reagents (Wildcrafter L2 — close enough). Phase A-D didn't deeply audit prestige Lv1 features because they were assumed to be the "unlocking" feature (gates the prestige system) and not heavy in mechanical claims. That assumption was wrong for these three.
+2. **All three are description-side drift, not code regressions.** The features all work correctly except for the dead-flag-or-cost-claim in the description. In other words: the *value* the player gets is intact; only the *contract* the description sets is off.
+3. **Phase 3 terminology cleanup was incomplete in feature data.** The workshop UI sweep updated handbook + UI strings but missed three class feature descriptions that still say "per forage hour". Low-impact (mechanics unchanged) but consistency-worth-fixing.
+
+### Confidence statement
+
+After this re-sample, the 140/140 ✓ accuracy claim is **mostly solid but has three known gaps**. Two are real description-mechanic mismatches at prestige Lv1 (Antiquarian L1, Wildcrafter L2) that would benefit from a fix pass. Three are minor terminology drift items.
+
+**The 140/140 number should probably drop to 137 ✓ / 3 🔁** until the description trims (or wirings) ship. After that fix pass, audit re-closes cleanly. A follow-up Kevin prompt to handle these 3-5 items would be a 30-minute targeted task.
+
+**No need for a fuller re-audit.** Phase A-D's coverage was thorough on the cluster-identified features; the gaps were predictable (prestige Lv1 features were under-scrutinized, plus Phase 3 terminology had a longer tail than the workshop sweep caught). Both gaps are addressed by surgical fixes, not a methodological overhaul.
