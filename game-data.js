@@ -238,7 +238,7 @@ var CLASSES={
       {classLv:4,name:'Iron Constitution',desc:'Immune to expedition events that cost time. Power through danger.',effects:{immuneTimeLossEvents:true}},
       {classLv:5,name:'Expert Forager',desc:'Critical extraction (nat 20) yields 3× ingredients. Successes yield +1 bonus.',effects:{critExtractionMulti:3,bonusPerSuccess:1}},
       {classLv:6,name:'Deep Mapping',desc:'Your charts open paths others can\'t reach. Region level requirements are reduced by 1 (you can access regions one level earlier than normal).',effects:{bonusRegionSlot:true}},
-      {classLv:7,name:'Wilderness Mastery',desc:'+2 extraction bonus. Positive expedition events 2× more likely. 15% chance of bonus rare find per hour.',effects:{extractionBonus:2,positiveEventMulti:2,luckyFindChance:0.15}},
+      {classLv:7,name:'Wilderness Mastery',desc:'+2 extraction bonus. Positive expedition events 2× more likely. 15% chance of bonus rare find per forage roll.',effects:{extractionBonus:2,positiveEventMulti:2,luckyFindChance:0.15}},
       {classLv:8,name:'Expedition Commander',desc:'Staff foraging yields +40%. Staff gain XP 25% faster.',effects:{staffForageBonus:0.40,staffXPBonus:0.25}},
       {classLv:9,name:'Indomitable',desc:'+3 extraction bonus. +1 bonus ingredient per successful extraction.',effects:{extractionBonus:3,bonusPerSuccess:1}},
       {classLv:10,name:'Legend of the Wild',desc:'Travel Energy cost -75%. Stacks with Trailblazer and other travel reducers; with multiple sources, travel costs only 1 Energy — effectively free. +50% foraging yields. Overnight foraging.',effects:{energyCostMultiplier:{travel:-0.75},yieldMultiplier:0.5,forageOnRest:true}},
@@ -2833,7 +2833,7 @@ var PRESTIGE_CLASSES={
     req:{warden:3,skillRank:{extraction:'expert'}},maxLv:5,
     desc:'Explorer-scholar who maps hidden regions containing unique ingredients.',
     features:[
-      {lv:1,name:'Hidden Paths',desc:'Discover secret sub-areas within known regions with unique ingredients. 25% chance per forage hour.',legacyEffects:{extractionBonus:1,luckyFindChance:0.05}},
+      {lv:1,name:'Hidden Paths',desc:'Discover secret sub-areas within known regions with unique ingredients. 25% chance per forage roll.',legacyEffects:{extractionBonus:1,luckyFindChance:0.05}},
       {lv:2,name:'Detailed Maps',desc:'Hidden area discovery chance +15%. Mapped areas yield +1 bonus ingredient.',legacyEffects:{extractionBonus:1,yieldMultiplier:0.15}},
       {lv:3,name:'Cartographer\'s Insight',desc:'Familiar Territory: forage checks at regions you\'ve visited 5+ times get -1 DC — your maps and notes pay off. The region picker also shows each region\'s ingredient pool inline as a convenience. +10% XP from all sources.',effects:{revealRegionIngredients:true,xpBonus:0.10,familiarTerritory:true},legacyEffects:{showIngredients:true,xpMultiplier:0.10}},
       {lv:4,name:'Pathfinder\'s Network',desc:'Your charts are shared with your apprentices: +25% staff forage yield.',effects:{staffForageYield:0.25},legacyEffects:{staffForageBonus:0.25,extractionBonus:1}},
@@ -2883,7 +2883,7 @@ var PRESTIGE_CLASSES={
     req:{scholar:3,feat:['keen_eye']},maxLv:5,
     desc:'Discovers and appraises mysterious relics for massive profit or permanent bonuses.',
     features:[
-      {lv:1,name:'Relic Sense',desc:'15% relic find chance per expedition hour. Appraise interface unlocked (1 Energy, Acumen check).',effects:{relicChance:0.15}},
+      {lv:1,name:'Relic Sense',desc:'15% relic find chance per forage roll. Appraise interface unlocked (free action, Acumen check).',effects:{relicChance:0.15}},
       {lv:2,name:'Keen Appraisal',desc:'25% find chance. +3 appraisal bonus. See relic rarity before appraising.',effects:{relicChance:0.25,appraisalBonus:3,showRarity:true}},
       {lv:3,name:'Collector\'s Network',desc:'Sell appraised relics at 3× value. Museum display unlocked. Collection set bonuses active.',effects:{relicChance:0.25,collectorSell:3,museum:true}},
       {lv:4,name:'Relic Expertise',desc:'35% find chance. Auto-identify (no check). Staff can do Relic Hunt tasks.',effects:{relicChance:0.35,autoAppraise:true}},

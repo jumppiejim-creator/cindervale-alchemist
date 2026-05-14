@@ -2098,6 +2098,17 @@ function CindervaleAlchemistInner(){
           addLog('🌿 Faction contacts smuggled an extra '+(INGR[rId]?.icon||'')+(INGR[rId]?.name||rId)+' into your pack.','craft');
         }
       }
+      // Wildcrafter L2 Fresh Reagents: +1 bonus ingredient per expedition. Duplicates one of the rolled-this-trip
+      // ingredients (picked at random) — represents the wildcrafter's eye for the best specimen in the pile.
+      // Edge case (a): if cumG is empty (all rolls failed), skip the bonus — "bonus" implies a base to amplify.
+      if((prestigeLevels?.wildcrafter||0)>=2){
+        const wcBonusPool=Object.keys(cumG).filter(id=>cumG[id]>0);
+        if(wcBonusPool.length>0){
+          const wcPick=wcBonusPool[Math.floor(Math.random()*wcBonusPool.length)];
+          cumG[wcPick]=(cumG[wcPick]||0)+1;modInv(wcPick,1);
+          addLog('🌿 Fresh Reagents: picked an extra '+(INGR[wcPick]?.icon||'')+(INGR[wcPick]?.name||wcPick)+' from the day\'s haul.','craft');
+        }
+      }
       // forageDiscovery: chance per expedition to discover a new recipe.
       const fdChance=getFeatureVal('forageDiscovery');
       if(fdChance>0&&Math.random()<fdChance){
