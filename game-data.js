@@ -2835,7 +2835,7 @@ var PRESTIGE_CLASSES={
     features:[
       {lv:1,name:'Hidden Paths',desc:'Discover secret sub-areas within known regions with unique ingredients. 25% chance per forage hour.',legacyEffects:{extractionBonus:1,luckyFindChance:0.05}},
       {lv:2,name:'Detailed Maps',desc:'Hidden area discovery chance +15%. Mapped areas yield +1 bonus ingredient.',legacyEffects:{extractionBonus:1,yieldMultiplier:0.15}},
-      {lv:3,name:'Cartographer\'s Insight',desc:'The region picker shows you each region\'s ingredient pool at a glance. +10% XP from all sources.',effects:{revealRegionIngredients:true,xpBonus:0.10},legacyEffects:{showIngredients:true,xpMultiplier:0.10}},
+      {lv:3,name:'Cartographer\'s Insight',desc:'Familiar Territory: forage checks at regions you\'ve visited 5+ times get -1 DC — your maps and notes pay off. The region picker also shows each region\'s ingredient pool inline as a convenience. +10% XP from all sources.',effects:{revealRegionIngredients:true,xpBonus:0.10,familiarTerritory:true},legacyEffects:{showIngredients:true,xpMultiplier:0.10}},
       {lv:4,name:'Pathfinder\'s Network',desc:'Your charts are shared with your apprentices: +25% staff forage yield.',effects:{staffForageYield:0.25},legacyEffects:{staffForageBonus:0.25,extractionBonus:1}},
       {lv:5,name:'Legendary Atlas',desc:'Discover the Heartforge\'s hidden chambers. Unique legendary ingredients only you can access.',legacyEffects:{extractionBonus:2,luckyFindChance:0.15,yieldMultiplier:0.20}},
     ]},
@@ -2913,10 +2913,10 @@ var PRESTIGE_CLASSES={
     req:{anyTwoClasses:3,skillRank:{persuasion:'expert'}},maxLv:5,
     desc:'Forges cross-faction alliances and doubles faction reputation gains. Unlock exclusive vendor stock.',
     features:[
-      {lv:1,name:'Embassy',desc:'Double faction rep gains. Faction NPCs offer unique dialogue and quests.',effects:{doubleRep:true,questRepBonus:10}},
-      {lv:2,name:'Trade Agreements',desc:'Exclusive faction vendors with rare stock. Cross-faction quests.',effects:{shopRestockBonus:3,questGoldBonus:0.30}},
+      {lv:1,name:'Embassy',desc:'Double faction rep gains. Faction quests grant +10 bonus rep. Each morning, every faction at Friendly+ gains +1 rep — your embassy keeps relationships warm even when you\'re not actively questing.',effects:{doubleRep:true,questRepBonus:10,embassyPassiveRep:true}},
+      {lv:2,name:'Trade Agreements',desc:'+3 rare ingredients in daily shop restock. +30% gold from quest turn-ins. Each day, one signature ingredient from a Friendly+ faction\'s specialty pool also appears — your trade agreements bring exotic goods to your doorstep.',effects:{shopRestockBonus:3,questGoldBonus:0.30,factionRestock:true}},
       {lv:3,name:'Faction Harmony',desc:'Build diplomatic bridges between faction pairs, creating harmony bonuses.',effects:{factionHarmony:true,repGainBonus:0.25}},
-      {lv:4,name:'Grand Alliance',desc:'Allied with all factions simultaneously. Faction vendors stock legendary items.',effects:{repGainBonus:0.50,buyDiscount:0.25,shopRestockBonus:5}},
+      {lv:4,name:'Grand Alliance',desc:'+50% reputation gains and +25% sell prices from all factions. When all harmony pairs reach their maximum state, one legendary-tier ingredient also appears in your daily shop restock — your standing as a power broker among the factions opens trade in goods of legendary make.',effects:{repGainBonus:0.50,buyDiscount:0.25,shopRestockBonus:5,grandAllianceLegendaryStock:true}},
       {lv:5,name:'Ambassador',desc:'Faction harmony bonuses doubled. Cross-faction rep spillover 25%. Carries through Torch.',effects:{harmonyDouble:true,repSpillover:0.25,torchHarmony:true}},
     ]},
 };

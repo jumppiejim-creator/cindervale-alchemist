@@ -369,6 +369,9 @@ function CindervaleAlchemistInner(){
   const [wcPickRegion,setWcPickRegion]=useState(null); // region ID for Seasonal Bypass picker
   const [brands,setBrands]=useState([]);
   const [relics,setRelics]=useState([]); // [{id,category,rarity,name,value,appraised,displayed,region}]
+  // Cartographer L3 "Familiar Territory" — tracks expeditions launched to each region. Used to grant a forage
+  // DC reduction at well-trodden regions for Cartographer-prestige characters. Other systems may read this later.
+  const [regionVisits,setRegionVisits]=useState({}); // {ashfields: 7, ironwood: 3, ...}
   const [museum,setMuseum]=useState({pottery:0,tablets:0,jewelry:0,mechanisms:0,weapons:0});
   const [threats,setThreats]=useState({});
   const [outposts,setOutposts]=useState([]); // [{id,regionId,built,daysLeft,recipe,storedIngr,fortress}]
@@ -756,7 +759,7 @@ function CindervaleAlchemistInner(){
   const gatherState=useCallback(()=>({
     phase,charName,charRace,charGender,stats,ptsLeft,skRanks,skPts,skProgress,classLevels,specs,playerFeats,asiSpent,startingClass,
     screen,day,energy,maxEnergy,gameLocation,xp,gold,inv,pots,known,aQ,doneQ,
-    log:log.slice(-30),milestones,fRep,factionAlign,upgrades,hiredAppr,apprTasks,apprXP,enchQ,potCustQ,clinicPatients,venomContracts,forgedWeapons,shieldCommissions,planarFocus,gadgets,blueprints,fieldJournal,loreFragments,companions,caravans,supplyChains,caravanRuns,trainingSessions,factionHarmony,prestigeLevels,automata,customPatterns,mappedRegions,activeBuffs,debt,disabledUpgrades,shopLocked,injuryPenalty,staffInjuries,shelves,dailyReport,
+    log:log.slice(-30),milestones,fRep,factionAlign,upgrades,hiredAppr,apprTasks,apprXP,enchQ,potCustQ,clinicPatients,venomContracts,forgedWeapons,shieldCommissions,planarFocus,gadgets,blueprints,fieldJournal,loreFragments,companions,caravans,supplyChains,caravanRuns,trainingSessions,factionHarmony,prestigeLevels,automata,customPatterns,mappedRegions,regionVisits,activeBuffs,debt,disabledUpgrades,shopLocked,injuryPenalty,staffInjuries,shelves,dailyReport,
     boardQ,activeBQ,doneBQCount,dayFlags,knownEnch,brewCounts,procureItems,pubPapers,selectedSite,constructProgress,lineage,brands,brandOrders,relics,museum,threats,outposts,ingredientContracts,settlementProjects,settlementConstruction,defenseQuests,hollowMarch,legacyFeature,seasonalOverride,wildAlly,featureGrantsApplied,
     // Phase 1 energy refactor: persist daily counters that were previously losing state on reload.
     infusionsUsedToday,wildcraftsUsedToday,
@@ -818,7 +821,7 @@ function CindervaleAlchemistInner(){
     setUpgrades(s.upgrades||[]);setHiredAppr(s.hiredAppr||[]);
     setApprTasks(s.apprTasks||{});setApprXP(s.apprXP||{});
     prevLvl.current=getLvl(s.xp||0);
-    setDailyReport(s.dailyReport||[]);setEnchQ(s.enchQ||[]);setPotCustQ(s.potCustQ||[]);setClinicPatients(s.clinicPatients||[]);setVenomContracts(s.venomContracts||[]);setForgedWeapons(s.forgedWeapons||[]);setShieldCommissions(s.shieldCommissions||[]);setPlanarFocus(s.planarFocus||null);setGadgets(s.gadgets||[]);setBlueprints(s.blueprints||[]);setFieldJournal(s.fieldJournal||[]);setLoreFragments(s.loreFragments||[]);setCompanions(s.companions||[]);setCaravans(s.caravans||[]);setSupplyChains(s.supplyChains||[]);setCaravanRuns(s.caravanRuns||{});setTrainingSessions(s.trainingSessions||{});setFactionHarmony(s.factionHarmony||{});setPrestigeLevels(s.prestigeLevels||{});setAutomata(s.automata||[]);setCustomPatterns(s.customPatterns||[]);setMappedRegions(s.mappedRegions||[]);setActiveBuffs(s.activeBuffs||{});setDebt(s.debt||0);setDisabledUpgrades(s.disabledUpgrades||[]);setShopLocked(s.shopLocked||false);setInjuryPenalty(s.injuryPenalty||0);setStaffInjuries(s.staffInjuries||{});setShelves(s.shelves||{});setLastCheck(null);setNews([]);setMorningReport(null);setCompanionReport(null);
+    setDailyReport(s.dailyReport||[]);setEnchQ(s.enchQ||[]);setPotCustQ(s.potCustQ||[]);setClinicPatients(s.clinicPatients||[]);setVenomContracts(s.venomContracts||[]);setForgedWeapons(s.forgedWeapons||[]);setShieldCommissions(s.shieldCommissions||[]);setPlanarFocus(s.planarFocus||null);setGadgets(s.gadgets||[]);setBlueprints(s.blueprints||[]);setFieldJournal(s.fieldJournal||[]);setLoreFragments(s.loreFragments||[]);setCompanions(s.companions||[]);setCaravans(s.caravans||[]);setSupplyChains(s.supplyChains||[]);setCaravanRuns(s.caravanRuns||{});setTrainingSessions(s.trainingSessions||{});setFactionHarmony(s.factionHarmony||{});setPrestigeLevels(s.prestigeLevels||{});setAutomata(s.automata||[]);setCustomPatterns(s.customPatterns||[]);setMappedRegions(s.mappedRegions||[]);setRegionVisits(s.regionVisits||{});setActiveBuffs(s.activeBuffs||{});setDebt(s.debt||0);setDisabledUpgrades(s.disabledUpgrades||[]);setShopLocked(s.shopLocked||false);setInjuryPenalty(s.injuryPenalty||0);setStaffInjuries(s.staffInjuries||{});setShelves(s.shelves||{});setLastCheck(null);setNews([]);setMorningReport(null);setCompanionReport(null);
     setBoardQ(s.boardQ||[]);setActiveBQ(s.activeBQ||[]);setDoneBQCount(s.doneBQCount||0);setDayFlags(s.dayFlags||[]);setKnownEnch(s.knownEnch&&s.knownEnch.length>0?s.knownEnch:(LOCATIONS[s.gameLocation||'cindervale']?.startEnch||['e_sharp','e_glow','e_ironbark','e_feather','e_windwalk','e_rootbind']));
     setBrewCounts(s.brewCounts||{});setProcureItems(s.procureItems||[]);setPubPapers(s.pubPapers||[]);setConstructProgress(s.constructProgress||{});
     setSelHex(null);setVBuild('workshop');setDlgNpc(null);setShowShop(false);setQuestDlg(null);setPendingLevelUp(null);setSelectedSite(s.selectedSite||null);setLineage(s.lineage||null);setBrands(s.brands||[]);setBrandOrders(s.brandOrders||[]);setRelics(s.relics||[]);setMuseum(s.museum||{pottery:0,tablets:0,jewelry:0,mechanisms:0,weapons:0});setThreats(s.threats||Object.fromEntries(locThreatIds.map(t=>[t,0])));setOutposts(s.outposts||[]);setIngredientContracts(s.ingredientContracts||[]);setSettlementProjects(s.settlementProjects||[]);setSettlementConstruction(s.settlementConstruction||null);setDefenseQuests(s.defenseQuests||[]);setHollowMarch(s.hollowMarch||DEF?.hollowMarch||{active:false,wave:0,nextWaveDay:0,demands:[],history:[],finalStandAvailable:false,finalStandComplete:false,marchRecipesUnlocked:[]});setLegacyFeature(s.legacyFeature||null);setSeasonalOverride(s.seasonalOverride||null);setWildAlly(s.wildAlly||null);setFeatureGrantsApplied(s.featureGrantsApplied||[]);
@@ -1642,6 +1645,9 @@ function CindervaleAlchemistInner(){
     if(targetIngr&&reg.ingr.includes(targetIngr))addLog(`🎯 Targeting ${INGR[targetIngr]?.icon||''}${INGR[targetIngr]?.name||targetIngr}${getFeatureVal('targetNoYieldPenalty')?' (Tracker: no penalty!)':' (-25% yield)'}.`,'info');
     // Tag expedition difficulty for Blight tracking (was inside the legacy loop with h===0 guard).
     setDayFlags(f=>[...f,'exp_diff_'+reg.diff]);
+    // Cartographer L3 Familiar Territory — tick the visit counter for this region. Once a region reaches
+    // 5+ visits, Cartographer-prestige characters get -1 forage DC there (applied inside `_executeForageRoll`).
+    setRegionVisits(p=>({...p,[reg.id]:(p[reg.id]||0)+1}));
     setExpedition({active:true,regionId:reg.id,
       siteId:selectedSite?.regId===reg.id?selectedSite.siteId:null,
       siteIsHidden:!!(selectedSite?.regId===reg.id&&selectedSite?.isHidden),
@@ -1654,7 +1660,10 @@ function CindervaleAlchemistInner(){
   // expects. The caller (`_forageAgain`) is responsible for pushing to expQ and updating expedition state.
   const _executeForageRoll=(reg,rollIndex,prevCumG,prevCumXp)=>{
     const cumG={...prevCumG};let cumXp=prevCumXp;
-    const effectiveDC=reg.dc+rollIndex;
+    // Cartographer L3 Familiar Territory: -1 DC at regions visited 5+ times. The visit counter is
+    // incremented in doHarvest before this roll fires, so the 5th visit benefits from this trip.
+    const familiarTerritory=(prestigeLevels?.cartographer||0)>=3&&(regionVisits[reg.id]||0)>=5?1:0;
+    const effectiveDC=reg.dc+rollIndex-familiarTerritory;
     const hourNum=rollIndex+1;
     const ext=pureCheck('extraction',effectiveDC);
       const extB=getFeatureVal('extractionBonus');
@@ -5034,6 +5043,31 @@ function CindervaleAlchemistInner(){
         }
       }
     }
+    // Diplomat L2 Trade Agreements — one item from a friendly faction's specialty pool (the `res` ingredient)
+    // appears in today's shop on top of the standard restock. Rotates randomly among friendly+ factions.
+    if((prestigeLevels?.diplomat||0)>=2&&typeof FACTIONS!=='undefined'){
+      const friendlyFacs=Object.entries(fRep||{}).filter(([fid,r])=>FACTIONS[fid]&&FACTIONS[fid].res&&r>=150&&!alreadyInShop.has(FACTIONS[fid].res)&&!procList.find(p=>p.id===FACTIONS[fid].res));
+      if(friendlyFacs.length>0){
+        const [pickFid]=friendlyFacs[Math.floor(Math.random()*friendlyFacs.length)];
+        const resId=FACTIONS[pickFid].res;const ig=INGR[resId];
+        if(ig){procList.push({id:resId,price:Math.ceil((ig.val||10)*1.5),name:ig.name,icon:ig.icon});}
+      }
+    }
+    // Diplomat L4 Grand Alliance — when ALL harmony pairs for the current location are at max state (3),
+    // a legendary-tier item (val >= 25) appears in the daily shop restock. Filter uses the same shape as
+    // `getHarmonyBonus`'s allMax check at index.html:3651. Tidecrest/Skyreach have no harmony pairs in
+    // FACTION_PAIRS data (pre-existing gap), so .every() on empty returns true — Diplomats in those locations
+    // get the legendary stock without harmony work. Pricing is 2× the ingredient's base val per spec.
+    if((prestigeLevels?.diplomat||0)>=4&&typeof FACTION_PAIRS!=='undefined'){
+      const allHarmoniesMaxed=FACTION_PAIRS.filter(fp=>(!fp.loc||fp.loc===gameLocation)).every(fp=>(factionHarmony[fp.id]||0)>=3);
+      if(allHarmoniesMaxed){
+        const legendaryPool=Object.entries(INGR).filter(([id,ig])=>(ig.val||0)>=25&&!alreadyInShop.has(id)&&!procList.find(p=>p.id===id));
+        if(legendaryPool.length>0){
+          const [legId,legIg]=legendaryPool[Math.floor(Math.random()*legendaryPool.length)];
+          procList.push({id:legId,price:Math.ceil((legIg.val||10)*2.0),name:legIg.name,icon:legIg.icon});
+        }
+      }
+    }
     setProcureItems(procList);
     setDailyReport(report);const custResult=genCust();
     const DAY_FLAVOR=gameLocation==='tidecrest'
@@ -5190,6 +5224,16 @@ function CindervaleAlchemistInner(){
         }
       });
       mrSections.push({title:'👥 Staff',lines:staffLines});
+    }
+    // Diplomat L1 Embassy: +1 daily rep per faction at Friendly+ (rep >= 150). Passive diplomatic infrastructure —
+    // the embassy keeps relationships warm even when you're not actively questing. Stacks with doubleRep on action gains.
+    if((prestigeLevels?.diplomat||0)>=1){
+      const friendlyFacs=Object.entries(fRep||{}).filter(([fid,r])=>FACTIONS[fid]&&r>=150);
+      if(friendlyFacs.length>0){
+        const diploLines=[];
+        setFRep(prev=>{const n={...prev};friendlyFacs.forEach(([fid])=>{n[fid]=(n[fid]||0)+1;diploLines.push({icon:FACTIONS[fid].icon,label:FACTIONS[fid].name,val:'+1 rep',color:TH.green});});return n;});
+        if(diploLines.length>0)mrSections.push({title:'🤝 Embassy Network',lines:diploLines});
+      }
     }
     // Resources gained (garden, greenhouse, ley line, faction gifts)
     const resEntries=report.filter(r=>['Garden','Greenhouse','Ley Line'].includes(r.n));
