@@ -10772,7 +10772,11 @@ function CindervaleAlchemistInner(){
                 <span style={{color:TH.gold}}>+{q.xp}XP +{q.gold}g</span>
                 {q.faction&&<span style={{color:FACTIONS[q.faction]?.color}}>{FACTIONS[q.faction]?.icon}+{q.fRep} rep</span>}
               </div>
-              <GoBtn to={goScreen} label={goLabel} npc={q.giver.toLowerCase().replace(/ /g,'_')}/>
+              {/* Direct accept (no relocation) + optional NPC dialog visit for flavor / q.onAccept lines. */}
+              <div style={{display:'flex',gap:6,marginTop:4,flexWrap:'wrap',alignItems:'center'}}>
+                <button style={{...S.btn('gold'),fontSize:14,padding:'4px 12px'}} onClick={()=>acceptQ(q)} title="Accept the quest now without traveling to the giver">📜 Accept Quest</button>
+                <GoBtn to={goScreen} label={goLabel} variant="def" npc={q.giver.toLowerCase().replace(/ /g,'_')}/>
+              </div>
             </div>);})}
         </div>}
         {/* ── Defense Quests (External Threats) ── */}
