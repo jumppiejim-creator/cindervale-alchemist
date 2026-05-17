@@ -379,11 +379,11 @@ var UPGRADES={
   leyline:{id:'leyline',name:'Ley Line Tap',icon:'⚡',cat:'Advanced',desc:'+1 free research/day, daily veil shard.',cost:{gold:300,veil_shard:3,deep_crystal:2},effect:{freeResearchPerDay:1},tier:3,req:'library'},
 };
 
-// ═══ WORKSHOP ROOM SHOWCASE (additive — independent of cat / WS_ZONES) ═══
-// 8-room model that maps every workshop upgrade to exactly one showcase room.
-// Used by the Tour-the-Workshop pop-out only; the functional upgrade panel
-// continues to use UPGRADES[].cat + WS_ZONES untouched. Each room has 3 art
-// tiers driven by how many of its upgrades the player owns:
+// ═══ WORKSHOP ROOM TAXONOMY (drives the workshop screen) ═══
+// 8-room model that maps every workshop upgrade to exactly one room. Used by
+// the integrated workshop screen — a large room hero on top + the selected
+// room's upgrade list below. Each room has 3 art tiers driven by how many of
+// its upgrades the player owns:
 //   owned >= t3 → Grand (3) ; owned >= t2 → Established (2) ; else Humble (1)
 // Tour order = the order ROOM_DEFS is declared in. All 22 upgrades are mapped
 // exactly once (verified against UPGRADES keys). Tier is computed on the fly
@@ -417,32 +417,10 @@ function getRoomTier(ownedCount,roomDef){
 }
 
 // ═══ APPRENTICES ═══
-// ═══ WORKSHOP VISUAL LAYOUT ═══
-// viewBox 600×350, cells 80×46, 6px gap
-var WS_ZONES=[
-  {id:'Advanced',label:'🔮 Advanced',x:6,y:4,w:588,h:74,color:'#6a5a9a'},
-  {id:'Crafting',label:'⚗️ Brewing',x:6,y:84,w:190,h:176,color:'#4a6a3a'},
-  {id:'Storage',label:'📦 Storage',x:202,y:84,w:190,h:176,color:'#5a4a3a'},
-  {id:'Business',label:'💰 Shopfront',x:398,y:84,w:190,h:176,color:'#6a5a2a'},
-  {id:'Comfort',label:'🏠 Living',x:6,y:266,w:588,h:76,color:'#5a3a3a'},
-];
-var WS_POS={
-  // Advanced — centered row of 3
-  library:{x:173,y:22},forge:{x:259,y:22},leyline:{x:345,y:22},
-  // Crafting — 2 cols × 3 rows
-  cauldron_2:{x:16,y:104},cauldron_3:{x:102,y:104},
-  mortar:{x:16,y:154},runic_tools:{x:102,y:154},
-  bench_1:{x:16,y:204},bench_2:{x:102,y:204},
-  // Storage — 2 cols × 2 rows (vault centered)
-  shelves:{x:212,y:104},cellar:{x:298,y:104},
-  vault:{x:255,y:154},
-  // Business — 2 cols × 3 rows (ledger centered)
-  shopfront:{x:408,y:104},signage:{x:494,y:104},
-  display:{x:408,y:154},rep_board:{x:494,y:154},
-  ledger:{x:451,y:204},
-  // Comfort — centered row of 4
-  quarters:{x:121,y:284},hearth:{x:207,y:284},garden:{x:293,y:284},garden_2:{x:379,y:284},
-};
+// (Workshop visual layout removed 2026-05-16 — v1 WS_ZONES/WS_POS replaced
+//  by the room-hero + scoped-upgrade-list workshop screen. Room metadata
+//  for the new layout lives in ROOM_OF / ROOM_DEFS above. UPGRADES[].cat
+//  is still authored for data taxonomy but no longer drives layout.)
 
 // ═══ TRAIT EFFECTS ═══
 var TRAIT_FX={

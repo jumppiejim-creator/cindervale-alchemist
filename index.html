@@ -581,12 +581,9 @@ function CindervaleAlchemistInner(){
   const [tapInfo,setTapInfo]=useState(null); // global tap-to-reveal: string key of currently open info panel
   const [showDoneQ,setShowDoneQ]=useState(false);
   const [showTaskGuide,setShowTaskGuide]=useState(true);
-  const [selectedUpgrade,setSelectedUpgrade]=useState(null);
-  const [workshopListView,setWorkshopListView]=useState(false);
-  const [workshopTab,setWorkshopTab]=useState('workshop');
-  // Room Showcase (Tour the Workshop) — ephemeral UI state only; tier is computed
-  // on the fly from `upgrades` ownership, no persisted save data added.
-  const [roomShowcase,setRoomShowcase]=useState({open:false,idx:0});
+  // Workshop upgrades screen — selected room index. Ephemeral UI state only;
+  // tier is computed on the fly from `upgrades` ownership, no persisted save data.
+  const [workshopRoomIdx,setWorkshopRoomIdx]=useState(0);
   const [showReport,setShowReport]=useState(true);
   const [confirmFire,setConfirmFire]=useState(null);
   const [upgrades,setUpgrades]=useState([]);
@@ -957,17 +954,20 @@ function CindervaleAlchemistInner(){
   },[musicVol]);
   useEffect(()=>{if(musicRef.current)musicRef.current.setVol(musicVol);},[musicVol]);
   useEffect(()=>()=>{if(musicRef.current){musicRef.current.stop();musicRef.current=null;}},[]);
-  // Room Showcase keyboard support: Esc closes; ← / → step through rooms.
+  // Workshop upgrades screen keyboard nav: ← / → step rooms while the screen
+  // is active; handler registered on enter, torn down on leave. Ignores key
+  // events while focus is in an input/textarea/select so typing is unaffected.
   useEffect(()=>{
-    if(!roomShowcase.open||typeof ROOM_DEFS==='undefined')return;
+    if(screen!=='upgrades'||typeof ROOM_DEFS==='undefined')return;
     const onKey=e=>{
-      if(e.key==='Escape')setRoomShowcase({open:false,idx:0});
-      else if(e.key==='ArrowLeft')setRoomShowcase(s=>({open:true,idx:(s.idx-1+ROOM_DEFS.length)%ROOM_DEFS.length}));
-      else if(e.key==='ArrowRight')setRoomShowcase(s=>({open:true,idx:(s.idx+1)%ROOM_DEFS.length}));
+      const tag=(e.target&&e.target.tagName||'').toLowerCase();
+      if(tag==='input'||tag==='textarea'||tag==='select')return;
+      if(e.key==='ArrowLeft')setWorkshopRoomIdx(i=>(i-1+ROOM_DEFS.length)%ROOM_DEFS.length);
+      else if(e.key==='ArrowRight')setWorkshopRoomIdx(i=>(i+1)%ROOM_DEFS.length);
     };
     window.addEventListener('keydown',onKey);
     return()=>window.removeEventListener('keydown',onKey);
-  },[roomShowcase.open]);
+  },[screen]);
   const sfxDb=volToDb(sfxVol);
   const playSfx=useCallback(async(fn)=>{if(!sfxOn)return;await ensureTone();fn(sfxDb);},[sfxOn,sfxDb]);
 
@@ -8495,7 +8495,6 @@ function CindervaleAlchemistInner(){
           </select>}
           <button style={{...S.btn(),fontSize:14}} onClick={()=>setScreen('enchant')}>🛒 Customers{enchNote?' ('+enchNote+')':''}</button>
           <button style={{...S.btn(),fontSize:14}} onClick={()=>setScreen('upgrades')}>🏗️ Upgrades ({upgrades.length})</button>
-          <button style={{...S.btn(),fontSize:14}} onClick={()=>setRoomShowcase({open:true,idx:0})} title="Tour your workshop room by room">🏛 Tour Workshop</button>
         </div>
 
         {/* Daily Costs Summary */}
@@ -10480,190 +10479,71 @@ function CindervaleAlchemistInner(){
           </div>);})}
       </>}
 
-      {/* ═══════════ UPGRADES ═══════════ */}
-      {screen==='upgrades'&&<>
-        <BackBar title="Workshop Upgrades" icon="🏗️" back="workshop"/>
-        {/* Tab bar + toggle */}
-        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:4}}>
-          <div style={{display:'flex',gap:2,flexWrap:'wrap',flex:1}}>
-            {[
-              {id:'workshop',label:'🏠 Workshop',always:true},
-              {id:'storefront',label:'🏪 Storefront',always:true},
-              {id:'quarters',label:'🛏️ Quarters',always:true},
-              {id:'grounds',label:'🌿 Grounds',always:true},
-              {id:'library',label:'📚 Library',locked:!hasUp('library')},
-              {id:'forge',label:'🔨 Forge',locked:!hasUp('forge')},
-              {id:'leyline',label:'⚡ Ley Line',locked:!hasUp('leyline')},
-              {id:'greenhouse',label:'🌱 Greenhouse',locked:!hasUp('garden_2')},
-            ].map(tab=>{
-              const active=(workshopTab||'workshop')===tab.id;
-              return <button key={tab.id} onClick={()=>setWorkshopTab(tab.id)} style={{
-                padding:'4px 8px',fontSize:13,fontFamily:'inherit',cursor:'pointer',borderRadius:4,
-                border:'1px solid '+(active?TH.gold:tab.locked?TH.border+'66':TH.border),
-                background:active?TH.gold+'22':tab.locked?TH.panel+'44':'none',
-                color:active?TH.gold:tab.locked?TH.textDim+'88':TH.textDim,
-                opacity:tab.locked&&!active?0.6:1,
-              }}>{tab.locked&&!active?'🔒 ':''}{tab.label}</button>;
-            })}
-          </div>
-          <button style={{fontSize:13,color:TH.textDim,background:'none',border:'none',cursor:'pointer',fontFamily:'inherit',textDecoration:'underline',marginLeft:6}} onClick={()=>setWorkshopListView(p=>!p)}>{workshopListView?'🎨 Visual':'📋 List'}</button>
-        </div>
-
-        {!workshopListView&&<>
-          {/* ═══ IMAGE-BASED WORKSHOP ═══ */}
-          {(()=>{
-            const tab=workshopTab||'workshop';
-            // Upgrade checker
-            const ck=(uid)=>{
-              const u=UPGRADES[uid];if(!u)return{owned:false,avail:false,canBuy:false};
-              const owned=upgrades.includes(uid);const reqMet=!u.req||upgrades.includes(u.req);
-              const prepped=(constructProgress[uid]||0)>=100;
-              const pDisc=getFeatureVal('upgradeCostReduction')+(prepped?0.40:0);
-              const gCost=Math.max(1,Math.floor((u.cost.gold||0)*(1-Math.min(pDisc,0.9))));
-              const mE=Object.entries(u.cost).filter(([id])=>id!=='gold').map(([id,q])=>[li(id),q]);
-              let wM=null;if(prepped&&mE.length>0){const s=[...mE].sort((a,b)=>(INGR[a[0]]?.val||0)-(INGR[b[0]]?.val||0));wM=s[0][0];}
-              const aM=mE.filter(([id])=>id!==wM);
-              const canBuy=reqMet&&!owned&&gold>=gCost&&aM.every(([id,q])=>(inv[id]||0)>=q);
-              return{owned,avail:reqMet&&!owned,canBuy,prepped,cProg:constructProgress[uid]||0};
-            };
-            const sel=selectedUpgrade;const ss=(uid)=>setSelectedUpgrade(sel===uid?null:uid);
-
-            // Tab configurations: {base, swap:{upgradeId:imageFile}, overlays:[{uid,x,y,w,h}], lockedRoom:uid}
-            const TABS={
-              workshop:{
-                base:'ws_base_workshop.png',
-                overlays:[
-                  {uid:'cauldron_2',x:75,y:41,w:15,h:21},
-                  {uid:'cauldron_3',x:75,y:38,w:15,h:27},
-                  {uid:'mortar',x:84,y:50,w:9,h:14},
-                  {uid:'runic_tools',x:80,y:28,w:11,h:19},
-                  {uid:'bench_1',x:39,y:56,w:27,h:36},
-                  {uid:'bench_2',x:19,y:71,w:21,h:29},
-                  {uid:'shelves',x:26,y:37,w:17,h:34},
-                  {uid:'cellar',x:67,y:76,w:15,h:25},
-                  {uid:'vault',x:34,y:26,w:34,h:38},
-                  {uid:'ledger',x:44,y:63,w:7,h:11},
-                ],
-              },
-              storefront:{
-                base:'ws_base_storefront.png',
-                swap:{shopfront:'ws_swap_shopfront.png'},
-                overlays:[
-                  {uid:'signage',x:83,y:36,w:16,h:21},
-                  {uid:'display',x:16,y:28,w:41,h:47},
-                  {uid:'rep_board',x:3,y:33,w:12,h:21},
-                ],
-              },
-              quarters:{
-                base:'ws_base_quarters.png',
-                swap:{quarters:'ws_swap_beds.png'},
-                overlays:[
-                  {uid:'hearth',x:41,y:34,w:19,h:43},
-                ],
-              },
-              grounds:{
-                base:'ws_base_grounds.png',
-                swap:{garden:'ws_swap_garden.png'},
-                overlays:[],
-              },
-              library:{lockedRoom:'library',img:'ws_library.png'},
-              forge:{lockedRoom:'forge',img:'ws_forge.png'},
-              leyline:{lockedRoom:'leyline',img:'ws_leyline.png'},
-              greenhouse:{lockedRoom:'garden_2',img:'ws_greenhouse.png'},
-            };
-            const tc=TABS[tab];if(!tc)return null;
-
-            // ─── Locked room tabs ───
-            if(tc.lockedRoom){
-              const uid=tc.lockedRoom;const u=UPGRADES[uid];const st=ck(uid);
-              if(st.owned){
-                return(<div style={{...S.card,padding:0,overflow:'hidden',borderRadius:8}}>
-                  <img src={tc.img} style={{width:'100%',display:'block',borderRadius:8}} alt={u?.name}/>
-                  <div style={{padding:'8px 12px',background:TH.green+'11',borderTop:'1px solid '+TH.green+'33'}}>
-                    <span style={{color:TH.green,fontSize:15}}>✓ {u?.icon} {u?.name} — Installed and active</span>
-                  </div>
-                </div>);
-              }
-              // Not owned — show purchase card with dimmed preview
-              const prepped=(constructProgress[uid]||0)>=100;const cProg=constructProgress[uid]||0;
-              const upgDisc=getFeatureVal('upgradeCostReduction')+(prepped?0.40:0);
-              const gc=Math.max(1,Math.floor((u.cost.gold||0)*(1-Math.min(upgDisc,0.9))));
-              const matEntries=Object.entries(u.cost).filter(([id])=>id!=='gold').map(([id,q])=>[li(id),q]);
-              let waivedMat=null;
-              if(prepped&&matEntries.length>0){const sorted=[...matEntries].sort((a,b)=>(INGR[a[0]]?.val||0)-(INGR[b[0]]?.val||0));waivedMat=sorted[0][0];}
-              const adjMats=matEntries.filter(([id])=>id!==waivedMat);
-              const reqMet=!u.req||hasUp(u.req);
-              const canBuy=reqMet&&gold>=gc&&adjMats.every(([id,q])=>(inv[id]||0)>=q);
-              return(<div style={{...S.card,padding:0,overflow:'hidden',borderRadius:8}}>
-                <div style={{position:'relative'}}>
-                  <img src={tc.img} style={{width:'100%',display:'block',borderRadius:'8px 8px 0 0',filter:'brightness(0.3) grayscale(0.6)',opacity:0.7}} alt={u?.name+' (locked)'}/>
-                  <div style={{position:'absolute',top:'50%',left:'50%',transform:'translate(-50%,-50%)',textAlign:'center'}}>
-                    <div style={{fontSize:48,marginBottom:8}}>🔒</div>
-                    <div style={{fontSize:20,color:TH.gold,fontWeight:'bold',textShadow:'0 2px 8px #000'}}>{u?.icon} {u?.name}</div>
-                  </div>
-                </div>
-                <div style={{padding:12,background:TH.panelLight}}>
-                  <div style={{fontSize:15,color:TH.textDim,marginBottom:8}}>{u?.desc}</div>
-                  {!reqMet&&<div style={{fontSize:14,color:TH.red,marginBottom:6}}>🔒 Requires: {UPGRADES[u.req]?.icon} {UPGRADES[u.req]?.name}</div>}
-                  {cProg>0&&cProg<100&&<div style={{marginBottom:6}}><div style={{height:6,background:TH.panel,borderRadius:3,overflow:'hidden'}}><div style={{height:'100%',width:cProg+'%',background:TH.gold,borderRadius:3}}/></div><div style={{fontSize:13,color:TH.gold,marginTop:2}}>🔨 Construction: {cProg}%</div></div>}
-                  {prepped&&<div style={{fontSize:14,color:TH.gold,marginBottom:4}}>🔨 Prepped: gold -40%{waivedMat?', '+((INGR[waivedMat]?.icon||'')+' '+(INGR[waivedMat]?.name||waivedMat))+' waived':''}</div>}
-                  <div style={{...S.row}}>
-                    <span style={{fontSize:16,color:TH.gold,fontWeight:'bold'}}>{gc}g</span>
-                    {adjMats.map(([id,q])=><span key={id} title={INGR[id]?.name||id} style={{...S.tag,fontSize:14,borderColor:(inv[id]||0)>=q?TH.green:TH.red,cursor:'help'}}>{INGR[id]?.icon||id} {inv[id]||0}/{q}</span>)}
-                    {waivedMat&&<span title={INGR[waivedMat]?.name||waivedMat} style={{...S.tag,fontSize:14,borderColor:TH.gold,textDecoration:'line-through',opacity:.5,cursor:'help'}}>{INGR[waivedMat]?.icon||''}{INGR[waivedMat]?.name||waivedMat}</span>}
-                    <button style={{...S.btn(canBuy?'gold':'dim'),fontSize:15,padding:'4px 14px'}} onClick={()=>{if(canBuy)buyUpgrade(uid);}}>{!reqMet?'🔒 Locked':'Build '+u?.name}</button>
-                  </div>
-                </div>
-              </div>);
-            }
-
-            // ─── Scene-based tabs (workshop, storefront, quarters, grounds) ───
-            // Determine which base image to show
-            let bgImg=tc.base;
-            if(tc.swap){Object.entries(tc.swap).forEach(([uid,img])=>{if(hasUp(uid))bgImg=img;});}
-
-            return(<>
-              <div style={{position:'relative',borderRadius:8,overflow:'hidden',border:'1px solid '+TH.border}}>
-                <img src={bgImg} style={{width:'100%',display:'block'}} alt={tab+' view'}/>
-                {/* Hotspot overlays */}
-                {(tc.overlays||[]).map(ov=>{
-                  const st=ck(ov.uid);const u=UPGRADES[ov.uid];if(!u)return null;
-                  // Scene swap upgrades: show as hotspot only if not owned
-                  if(tc.swap&&tc.swap[ov.uid])return null; // scene swaps handled by bgImg
-                  const isSelected=sel===ov.uid;
-                  return(<div key={ov.uid} onClick={()=>ss(ov.uid)} style={{
-                    position:'absolute',left:ov.x+'%',top:ov.y+'%',width:ov.w+'%',height:ov.h+'%',
-                    cursor:'pointer',borderRadius:6,transition:'all 0.2s',
-                    border:isSelected?'2px solid '+TH.gold:st.canBuy?'2px solid '+TH.gold+'88':st.owned?'2px solid '+TH.green+'66':'2px dashed '+TH.border+'44',
-                    background:isSelected?TH.gold+'33':st.canBuy?TH.gold+'22':st.owned?TH.green+'11':'transparent',
-                    display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',
-                  }}>
-                    {st.owned&&<img src={'ws_'+ov.uid+'.png'} style={{width:'90%',height:'90%',objectFit:'contain',filter:'drop-shadow(0 2px 4px #0008)'}} alt={u.name}/>}
-                    {!st.owned&&<>
-                      <div style={{fontSize:ov.w>16?24:18,opacity:st.canBuy?0.9:0.4}}>{u.icon}</div>
-                      <div style={{fontSize:ov.w>16?11:9,color:st.canBuy?TH.gold:TH.textDim,opacity:st.canBuy?1:0.5,textAlign:'center',textShadow:'0 1px 3px #000'}}>{u.name}</div>
-                    </>}
-                    {st.canBuy&&!st.owned&&<div style={{position:'absolute',top:-4,right:-4,background:TH.gold,color:'#000',borderRadius:'50%',width:16,height:16,fontSize:11,display:'flex',alignItems:'center',justifyContent:'center',fontWeight:'bold'}}>★</div>}
-                  </div>);
-                })}
-                {/* Scene swap purchase hotspot — for tabs with swaps, show buy button if not owned */}
-                {tc.swap&&Object.entries(tc.swap).map(([uid,img])=>{
-                  if(hasUp(uid))return null;
-                  const u=UPGRADES[uid];const st=ck(uid);
-                  return(<div key={uid} onClick={()=>ss(uid)} style={{
-                    position:'absolute',bottom:8,left:'50%',transform:'translateX(-50%)',
-                    background:'#000c',padding:'6px 14px',borderRadius:6,cursor:'pointer',
-                    border:'1px solid '+(st.canBuy?TH.gold:TH.border),textAlign:'center',
-                  }}>
-                    <div style={{fontSize:14,color:st.canBuy?TH.gold:TH.textDim,fontWeight:'bold'}}>{u?.icon} {u?.name}{st.canBuy?' ★':''}</div>
-                  </div>);
-                })}
+      {/* ═══════════ WORKSHOP — INTEGRATED ROOM HERO + SCOPED UPGRADE LIST ═══════════ */}
+      {/* One stacked screen: large room hero on top, room picker below it,
+          selected room's upgrade list below that. Art and list are always
+          matched — the picker swaps both together. Pure additive of the
+          showcase machinery (hero / picker / getRoomTier / roomImg / hint)
+          over the existing buyUpgrade purchase flow. No overlay-on-art —
+          art and list are stacked regions, never layered. Tier is derived
+          from owned upgrades; no persisted save state. ← / → keys step
+          rooms while on this screen (registered/torn-down by the useEffect
+          near line 960). */}
+      {screen==='upgrades'&&typeof ROOM_DEFS!=='undefined'&&<>
+        <BackBar title="Workshop" icon="🏗️" back="workshop"/>
+        {(()=>{
+          const roomCount=ROOM_DEFS.length;
+          const idx=Math.max(0,Math.min(workshopRoomIdx,roomCount-1));
+          const room=ROOM_DEFS[idx];if(!room)return null;
+          const ownedCt=room.upgrades.filter(uid=>upgrades.includes(uid)).length;
+          const totalCt=room.upgrades.length;
+          const tier=getRoomTier(ownedCt,room);
+          const tierLabel=(typeof ROOM_TIER_LABELS!=='undefined'?ROOM_TIER_LABELS[tier]:'')||'';
+          const roomImg=(typeof ROOM_IMGS!=='undefined'&&(ROOM_IMGS['room_'+room.id+'_t'+tier]||ROOM_IMGS['room_'+room.id]))||null;
+          const nextThresh=tier===1?room.t2:tier===2?room.t3:null;
+          const nextLabel=tier===1?'Established':tier===2?'Grand':null;
+          const hint=tier===3
+            ?'Grand · '+totalCt+'/'+totalCt+' upgrades — fully developed.'
+            :tierLabel+' · '+ownedCt+'/'+totalCt+' upgrades — own '+nextThresh+' for '+nextLabel+'.';
+          const tierColor=tier===3?TH.goldBright:tier===2?TH.gold:TH.text;
+          const prevRoom=()=>setWorkshopRoomIdx((idx-1+roomCount)%roomCount);
+          const nextRoom=()=>setWorkshopRoomIdx((idx+1)%roomCount);
+          return(<>
+            {/* ─── LARGE ROOM HERO (page anchor — materially bigger than the old 28vh modal band) ─── */}
+            <div style={{position:'relative',width:'100%',height:'48vh',minHeight:280,maxHeight:520,borderRadius:10,overflow:'hidden',border:'2px solid '+TH.borderGold,marginBottom:10,backgroundImage:roomImg?'url('+roomImg+')':'linear-gradient(135deg,'+TH.panelLight+','+TH.bg+')',backgroundSize:'cover',backgroundPosition:'center'}}>
+              {!roomImg&&<div style={{position:'absolute',top:'50%',left:'50%',transform:'translate(-50%,-50%)',fontSize:160,opacity:0.18,pointerEvents:'none'}}>{room.icon}</div>}
+              {/* Top header overlay — room name + tier chip + room counter */}
+              <div style={{position:'absolute',top:0,left:0,right:0,padding:'10px 16px',background:'linear-gradient(180deg,rgba(0,0,0,0.85) 0%,rgba(0,0,0,0.55) 60%,transparent 100%)',display:'flex',alignItems:'center',gap:12,flexWrap:'wrap'}}>
+                <span style={{fontSize:24,color:TH.goldBright,fontWeight:'bold',textShadow:'0 2px 4px #000'}}>{room.icon} {room.displayName}</span>
+                <span style={{fontSize:15,color:tierColor,background:'rgba(0,0,0,0.55)',padding:'3px 12px',borderRadius:14,textShadow:'0 1px 2px #000',fontWeight:'bold'}}>{tierLabel}</span>
+                <div style={{flex:1}}/>
+                <span style={{fontSize:13,color:TH.textDim,textShadow:'0 1px 2px #000'}}>{idx+1} / {roomCount}</span>
               </div>
-
-              {/* Selected upgrade detail panel */}
-              {sel&&UPGRADES[sel]&&(()=>{
-                const u=UPGRADES[sel];const uid=sel;
-                const owned=hasUp(uid);const reqMet=!u.req||hasUp(u.req);
+              {/* Prev / Next arrows on the hero */}
+              <button onClick={prevRoom} title="Previous room (←)" style={{position:'absolute',left:10,top:'50%',transform:'translateY(-50%)',background:'rgba(0,0,0,0.6)',border:'1px solid '+TH.border,color:TH.gold,borderRadius:8,padding:'10px 16px',fontSize:22,cursor:'pointer',fontFamily:'inherit'}}>◀</button>
+              <button onClick={nextRoom} title="Next room (→)" style={{position:'absolute',right:10,top:'50%',transform:'translateY(-50%)',background:'rgba(0,0,0,0.6)',border:'1px solid '+TH.border,color:TH.gold,borderRadius:8,padding:'10px 16px',fontSize:22,cursor:'pointer',fontFamily:'inherit'}}>▶</button>
+              {/* Bottom progression hint band */}
+              <div style={{position:'absolute',left:0,right:0,bottom:0,background:'linear-gradient(0deg,rgba(0,0,0,0.85) 0%,rgba(0,0,0,0.40) 60%,transparent 100%)',padding:'30px 16px 12px',fontSize:16,color:TH.text,textShadow:'0 1px 3px #000'}}>{hint}</div>
+            </div>
+            {/* ─── ROOM PICKER (8 rooms in tour order; current chip gold; each chip shows its current tier) ─── */}
+            <div style={{display:'flex',gap:5,flexWrap:'wrap',padding:'2px 0 10px',marginBottom:8,borderBottom:'1px solid '+TH.border}}>
+              {ROOM_DEFS.map((r,i)=>{
+                const rOwn=r.upgrades.filter(uid=>upgrades.includes(uid)).length;
+                const rT=getRoomTier(rOwn,r);
+                const active=i===idx;
+                const tColor=rT===3?TH.goldBright:rT===2?TH.gold:TH.textDim;
+                return <button key={r.id} onClick={()=>setWorkshopRoomIdx(i)} style={{padding:'5px 11px',fontSize:13,borderRadius:14,background:active?TH.gold+'30':'transparent',border:'1px solid '+(active?TH.gold:TH.border),color:active?TH.goldBright:TH.text,cursor:'pointer',fontFamily:'inherit'}}>
+                  {r.icon} {r.displayName} <span style={{color:tColor,fontSize:11,marginLeft:2}}>· T{rT}</span>
+                </button>;
+              })}
+            </div>
+            {/* ─── SELECTED ROOM'S UPGRADE LIST (separate stacked region — never overlaid on art) ─── */}
+            {/* Reuses the existing purchase flow: cost calc, requirement check, prepped/discount handling, buyUpgrade(uid). */}
+            <div style={{display:'flex',flexDirection:'column',gap:6}}>
+              {room.upgrades.map(uid=>{
+                const u=UPGRADES[uid];if(!u)return null;
+                const owned=hasUp(uid);
+                const reqMet=!u.req||hasUp(u.req);
                 const prepped=(constructProgress[uid]||0)>=100;const cProg=constructProgress[uid]||0;
                 const upgDisc=getFeatureVal('upgradeCostReduction')+(prepped?0.40:0);
                 const gc=Math.max(1,Math.floor((u.cost.gold||0)*(1-Math.min(upgDisc,0.9))));
@@ -10672,56 +10552,28 @@ function CindervaleAlchemistInner(){
                 if(prepped&&matEntries.length>0){const sorted=[...matEntries].sort((a,b)=>(INGR[a[0]]?.val||0)-(INGR[b[0]]?.val||0));waivedMat=sorted[0][0];}
                 const adjMats=matEntries.filter(([id])=>id!==waivedMat);
                 const canBuy=reqMet&&!owned&&gold>=gc&&adjMats.every(([id,q])=>(inv[id]||0)>=q);
-                return(<div style={{...S.card,marginTop:6,borderColor:owned?TH.green:canBuy?TH.gold:TH.border,background:owned?TH.green+'08':prepped?TH.gold+'06':TH.panelLight}}>
-                  <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-                    <div style={{fontSize:18,color:owned?TH.green:TH.textBright,fontWeight:'bold'}}>{u.icon} {u.name}{owned?' ✓':''}{prepped&&!owned?' 🔨':''}</div>
-                    <button style={{background:'none',border:'none',color:TH.textDim,fontSize:18,cursor:'pointer',fontFamily:'inherit'}} onClick={()=>setSelectedUpgrade(null)}>✕</button>
+                return(<div key={uid} style={{padding:'9px 11px',background:owned?TH.green+'10':prepped?TH.gold+'08':TH.panelLight,borderRadius:6,border:'1px solid '+(owned?TH.green:prepped?TH.gold:canBuy?TH.borderGold:TH.border),opacity:reqMet||owned?1:0.55}}>
+                  <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',gap:10,flexWrap:'wrap'}}>
+                    <div style={{flex:'1 1 240px',minWidth:0}}>
+                      <div style={{fontSize:16,color:owned?TH.green:TH.textBright,fontWeight:'bold'}}>{u.icon} {u.name}{owned?' ✓':''}{prepped&&!owned?' 🔨 Ready!':''}</div>
+                      <div style={{fontSize:13,color:TH.textDim,marginTop:2}}>{u.desc}</div>
+                      {u.req&&!hasUp(u.req)&&<div style={{fontSize:13,color:TH.red,marginTop:3}}>🔒 Requires: {UPGRADES[u.req]?.icon} {UPGRADES[u.req]?.name}</div>}
+                      {!owned&&cProg>0&&cProg<100&&<div style={{marginTop:4}}><div style={{height:5,background:TH.panel,borderRadius:2,overflow:'hidden'}}><div style={{height:'100%',width:cProg+'%',background:TH.gold,borderRadius:2}}/></div><div style={{fontSize:12,color:TH.gold,marginTop:1}}>🔨 Construction prep: {cProg}%</div></div>}
+                      {!owned&&prepped&&<div style={{fontSize:13,color:TH.gold,marginTop:3}}>🔨 Prepped: gold -40%{waivedMat?', '+(INGR[waivedMat]?.icon||'')+(INGR[waivedMat]?.name||waivedMat)+' waived':''}</div>}
+                    </div>
+                    {!owned&&<div style={{display:'flex',gap:5,alignItems:'center',flexWrap:'wrap'}}>
+                      <span style={{fontSize:15,color:TH.gold,fontWeight:'bold'}}>{gc}g{prepped?' ✦':''}</span>
+                      {adjMats.map(([id,q])=><span key={id} title={INGR[id]?.name||id} style={{...S.tag,fontSize:13,borderColor:(inv[id]||0)>=q?TH.green:TH.red,cursor:'help'}}>{INGR[id]?.icon||id} {inv[id]||0}/{q}</span>)}
+                      {waivedMat&&<span title={INGR[waivedMat]?.name||waivedMat} style={{...S.tag,fontSize:13,borderColor:TH.gold,textDecoration:'line-through',opacity:0.5,cursor:'help'}}>{INGR[waivedMat]?.icon||''}{INGR[waivedMat]?.name||waivedMat}</span>}
+                      <button style={{...S.btn(canBuy?'gold':'dim'),fontSize:14,padding:'5px 14px'}} onClick={()=>{if(canBuy)buyUpgrade(uid);}}>{!reqMet?'🔒 Locked':'Build'}</button>
+                    </div>}
+                    {owned&&<div style={{fontSize:13,color:TH.green,whiteSpace:'nowrap'}}>✓ Installed</div>}
                   </div>
-                  <div style={{fontSize:15,color:TH.textDim,margin:'4px 0'}}>{u.desc}</div>
-                  {u.req&&!hasUp(u.req)&&<div style={{fontSize:14,color:TH.red}}>🔒 Requires: {UPGRADES[u.req]?.icon} {UPGRADES[u.req]?.name}</div>}
-                  {!owned&&cProg>0&&cProg<100&&<div style={{margin:'4px 0'}}><div style={{height:6,background:TH.panel,borderRadius:3,overflow:'hidden'}}><div style={{height:'100%',width:cProg+'%',background:TH.gold,borderRadius:3}}/></div><div style={{fontSize:13,color:TH.gold,marginTop:2}}>🔨 Construction: {cProg}%</div></div>}
-                  {!owned&&prepped&&<div style={{fontSize:14,color:TH.gold,margin:'3px 0'}}>🔨 Prepped: gold -40%{waivedMat?', '+((INGR[waivedMat]?.icon||'')+' '+(INGR[waivedMat]?.name||waivedMat))+' waived':''}</div>}
-                  {!owned&&<div style={{...S.row,marginTop:6}}>
-                    <span style={{fontSize:15,color:TH.gold,fontWeight:'bold'}}>{gc}g{prepped?' ✦':''}</span>
-                    {adjMats.map(([id,q])=><span key={id} title={INGR[id]?.name||id} style={{...S.tag,fontSize:14,borderColor:(inv[id]||0)>=q?TH.green:TH.red,cursor:'help'}}>{INGR[id]?.icon||id} {inv[id]||0}/{q}</span>)}
-                    {waivedMat&&<span title={INGR[waivedMat]?.name||waivedMat} style={{...S.tag,fontSize:14,borderColor:TH.gold,textDecoration:'line-through',opacity:.5,cursor:'help'}}>{INGR[waivedMat]?.icon||''}{INGR[waivedMat]?.name||waivedMat}</span>}
-                    <button style={{...S.btn(canBuy?'gold':'dim'),fontSize:15,padding:'4px 12px'}} onClick={()=>{if(canBuy){buyUpgrade(uid);setSelectedUpgrade(null);}}}>{!reqMet?'🔒 Locked':'Build'}</button>
-                  </div>}
-                  {owned&&<div style={{fontSize:14,color:TH.green,marginTop:4}}>✓ Installed and active</div>}
                 </div>);
-              })()}
-            </>);
-          })()}
-        </>}
-        {workshopListView&&<>
-          {/* ═══ LIST VIEW (original) ═══ */}
-          <div style={S.card} className={isWsOpen('ws34')?'':'ws-closed'}><div style={{...S.cT,cursor:'pointer',userSelect:'none'}} onClick={()=>toggleWs('ws34')}><span style={{display:'flex',justifyContent:'space-between',width:'100%'}}><span>🏗️ Upgrades ({upgrades.length})</span><span style={{fontSize:13,color:TH.textDim}}>{isWsOpen('ws34')?'▲':'▼'}</span></span></div>
-          {['Crafting','Storage','Business','Comfort','Advanced'].map(cat=>{
-            const catUps=Object.values(UPGRADES).filter(u=>u.cat===cat);return(
-            <div key={cat} style={{marginBottom:8}}>
-              <div style={{fontSize:16,color:TH.gold,marginBottom:3}}>{cat}</div>
-              {catUps.map(u=>{const owned=hasUp(u.id);const reqMet=!u.req||hasUp(u.req);
-                const prepped=(constructProgress[u.id]||0)>=100;const cProg=constructProgress[u.id]||0;
-                const upgDisc=getFeatureVal('upgradeCostReduction')+(prepped?0.40:0);
-                const gc=Math.max(1,Math.floor((u.cost.gold||0)*(1-Math.min(upgDisc,0.9))));
-                const matEntries=Object.entries(u.cost).filter(([id])=>id!=='gold').map(([id,q])=>[li(id),q]);
-                let waivedMat=null;
-                if(prepped&&matEntries.length>0){const sorted=[...matEntries].sort((a,b)=>(INGR[a[0]]?.val||0)-(INGR[b[0]]?.val||0));waivedMat=sorted[0][0];}
-                const adjMats=matEntries.filter(([id])=>id!==waivedMat);
-                const canBuy=reqMet&&!owned&&gold>=gc&&adjMats.every(([id,q])=>(inv[id]||0)>=q);
-                return(<div key={u.id} style={{padding:'6px 8px',background:owned?`${TH.green}10`:prepped?`${TH.gold}08`:TH.panelLight,borderRadius:4,marginBottom:3,border:`1px solid ${owned?TH.green:prepped?TH.gold:canBuy?TH.borderGold:TH.border}`,opacity:reqMet||owned?1:.4}}>
-                  <div style={{fontSize:16,color:owned?TH.green:TH.textBright}}>{u.icon}{u.name}{owned?' ✓':''}{prepped&&!owned?' 🔨 Ready!':''}</div>
-                  <div style={{fontSize:14,color:TH.textDim}}>{u.desc}</div>
-                  {!owned&&cProg>0&&cProg<100&&<div style={{margin:'3px 0'}}><div style={{height:4,background:TH.panel,borderRadius:2,overflow:'hidden'}}><div style={{height:'100%',width:cProg+'%',background:TH.gold,borderRadius:2}}/></div><div style={{fontSize:12,color:TH.gold}}>🔨 Construction prep: {cProg}%</div></div>}
-                  {!owned&&prepped&&<div style={{fontSize:13,color:TH.gold,margin:'2px 0'}}>🔨 Prepped: gold -40%{waivedMat?`, ${INGR[waivedMat]?.icon||''}${INGR[waivedMat]?.name||waivedMat} waived`:''}</div>}
-                  {!owned&&<div style={S.row}><span style={{fontSize:14,color:prepped?TH.gold:TH.gold}}>{gc}g{prepped?' ✦':''}</span>
-                    {adjMats.map(([id,q])=><span key={id} title={INGR[id]?.name||id} style={{...S.tag,fontSize:14,borderColor:(inv[id]||0)>=q?TH.green:TH.red,cursor:'help'}}>{INGR[id]?.icon||id}{inv[id]||0}/{q}</span>)}
-                    {waivedMat&&<span title={INGR[waivedMat]?.name||waivedMat} style={{...S.tag,fontSize:14,borderColor:TH.gold,textDecoration:'line-through',opacity:.5,cursor:'help'}}>{INGR[waivedMat]?.icon||''}{INGR[waivedMat]?.name||waivedMat}</span>}
-                    <button style={S.btn(canBuy?'gold':'dim')} onClick={()=>canBuy&&buyUpgrade(u.id)}>{!reqMet?'Locked':'Build'}</button></div>}
-                </div>);})}
-          </div>);})}
-        </div>
-      </>}
+              })}
+            </div>
+          </>);
+        })()}
       </>}
 
       {/* ═══════════ STAFF ═══════════ */}
@@ -11905,77 +11757,6 @@ function CindervaleAlchemistInner(){
           </button>
         </div>
       </div>}
-
-      {/* ═══ WORKSHOP ROOM SHOWCASE ("Tour the Workshop") ═══ */}
-      {/* Mirrors the Phase 3 expedition scenery recipe (overlay + min(900px,96vw)
-          modal + 28vh hero band, backgroundSize:cover) and extends it with
-          room-to-room navigation (◀ / ▶ on the hero + picker tab bar + ← / →
-          keys). Pure showcase: no buy actions, no state writes besides the
-          ephemeral idx. Tier is derived from upgrades-owned via getRoomTier;
-          no persisted save state. Renders a deliberate gradient + tier label
-          when ROOM_IMGS has nothing for the room — the no-art state looks
-          finished, not broken. */}
-      {roomShowcase.open&&typeof ROOM_DEFS!=='undefined'&&(()=>{
-        const roomCount=ROOM_DEFS.length;
-        const idx=Math.max(0,Math.min(roomShowcase.idx,roomCount-1));
-        const room=ROOM_DEFS[idx];if(!room)return null;
-        const owned=room.upgrades.filter(uid=>upgrades.includes(uid)).length;
-        const total=room.upgrades.length;
-        const tier=getRoomTier(owned,room);
-        const tierLabel=(typeof ROOM_TIER_LABELS!=='undefined'?ROOM_TIER_LABELS[tier]:'')||'';
-        const roomImg=(typeof ROOM_IMGS!=='undefined'&&(ROOM_IMGS['room_'+room.id+'_t'+tier]||ROOM_IMGS['room_'+room.id]))||null;
-        const nextThresh=tier===1?room.t2:tier===2?room.t3:null;
-        const nextLabel=tier===1?'Established':tier===2?'Grand':null;
-        const hint=tier===3
-          ?'Grand · '+total+'/'+total+' upgrades — fully developed.'
-          :tierLabel+' · '+owned+'/'+total+' upgrades — own '+nextThresh+' for '+nextLabel+'.';
-        const tierColor=tier===3?TH.goldBright:tier===2?TH.gold:TH.text;
-        const prev=()=>setRoomShowcase({open:true,idx:(idx-1+roomCount)%roomCount});
-        const next=()=>setRoomShowcase({open:true,idx:(idx+1)%roomCount});
-        const close=()=>setRoomShowcase({open:false,idx:0});
-        return(<div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'rgba(0,0,0,0.78)',zIndex:50,display:'flex',alignItems:'center',justifyContent:'center',padding:'2vh 2vw'}} onClick={close}>
-          <div style={{background:TH.panel,border:'2px solid '+TH.borderGold,borderRadius:12,width:'min(900px,96vw)',maxWidth:'96vw',maxHeight:'92vh',display:'flex',flexDirection:'column',boxShadow:'0 6px 40px rgba(0,0,0,0.7)',overflow:'hidden'}} onClick={e=>e.stopPropagation()}>
-            {/* ─── Hero band (matches expedition recipe: 28vh, 140–280px, cover/center) ─── */}
-            <div style={{position:'relative',width:'100%',height:'28vh',minHeight:140,maxHeight:280,backgroundImage:roomImg?'url('+roomImg+')':'linear-gradient(135deg,'+TH.panelLight+','+TH.bg+')',backgroundSize:'cover',backgroundPosition:'center',flexShrink:0}}>
-              {/* If no art resolved, paint the room icon at large size as the visual anchor — keeps the no-art state intentional. */}
-              {!roomImg&&<div style={{position:'absolute',top:'50%',left:'50%',transform:'translate(-50%,-50%)',fontSize:96,opacity:0.18,pointerEvents:'none'}}>{room.icon}</div>}
-              {/* Top header overlay */}
-              <div style={{position:'absolute',top:0,left:0,right:0,padding:'8px 14px',background:'linear-gradient(180deg,rgba(0,0,0,0.85) 0%,rgba(0,0,0,0.55) 60%,transparent 100%)',display:'flex',alignItems:'center',gap:10,flexWrap:'wrap'}}>
-                <span style={{fontSize:20,color:TH.goldBright,fontWeight:'bold',textShadow:'0 2px 4px #000'}}>{room.icon} {room.displayName}</span>
-                <span style={{fontSize:14,color:tierColor,background:'rgba(0,0,0,0.55)',padding:'2px 10px',borderRadius:12,textShadow:'0 1px 2px #000',fontWeight:'bold'}}>{tierLabel}</span>
-                <div style={{flex:1}}/>
-                <span style={{fontSize:12,color:TH.textDim,textShadow:'0 1px 2px #000'}}>{idx+1} / {roomCount}</span>
-                <button onClick={close} title="Close (Esc)" style={{background:'rgba(0,0,0,0.55)',border:'1px solid '+TH.border,color:TH.gold,borderRadius:6,padding:'2px 10px',fontSize:18,cursor:'pointer',fontFamily:'inherit',lineHeight:1}}>×</button>
-              </div>
-              {/* Prev arrow */}
-              <button onClick={prev} title="Previous room (←)" style={{position:'absolute',left:8,top:'50%',transform:'translateY(-50%)',background:'rgba(0,0,0,0.6)',border:'1px solid '+TH.border,color:TH.gold,borderRadius:8,padding:'6px 12px',fontSize:18,cursor:'pointer',fontFamily:'inherit'}}>◀</button>
-              {/* Next arrow */}
-              <button onClick={next} title="Next room (→)" style={{position:'absolute',right:8,top:'50%',transform:'translateY(-50%)',background:'rgba(0,0,0,0.6)',border:'1px solid '+TH.border,color:TH.gold,borderRadius:8,padding:'6px 12px',fontSize:18,cursor:'pointer',fontFamily:'inherit'}}>▶</button>
-              {/* Bottom progression hint band */}
-              <div style={{position:'absolute',left:0,right:0,bottom:0,background:'linear-gradient(0deg,rgba(0,0,0,0.85) 0%,rgba(0,0,0,0.40) 60%,transparent 100%)',padding:'22px 14px 8px',fontSize:14,color:TH.text,textShadow:'0 1px 3px #000'}}>{hint}</div>
-            </div>
-            {/* ─── Room picker (tab bar in tour order) ─── */}
-            <div style={{display:'flex',gap:4,flexWrap:'wrap',padding:'10px 14px 6px',background:TH.bg,borderBottom:'1px solid '+TH.border}}>
-              {ROOM_DEFS.map((r,i)=>{
-                const rOwn=r.upgrades.filter(uid=>upgrades.includes(uid)).length;
-                const rT=getRoomTier(rOwn,r);
-                const active=i===idx;
-                const tColor=rT===3?TH.goldBright:rT===2?TH.gold:TH.textDim;
-                return <button key={r.id} onClick={()=>setRoomShowcase({open:true,idx:i})} style={{padding:'4px 9px',fontSize:12,borderRadius:14,background:active?TH.gold+'30':'transparent',border:'1px solid '+(active?TH.gold:TH.border),color:active?TH.goldBright:TH.text,cursor:'pointer',fontFamily:'inherit'}}>
-                  {r.icon} {r.displayName} <span style={{color:tColor,fontSize:11,marginLeft:2}}>· T{rT}</span>
-                </button>;
-              })}
-            </div>
-            {/* ─── Footer (Manage / Close) ─── */}
-            <div style={{display:'flex',gap:8,padding:'10px 14px',background:TH.bg,flexWrap:'wrap',alignItems:'center'}}>
-              <span style={{fontSize:12,color:TH.textDim}}>Click overlay or press Esc to close · ← / → to navigate</span>
-              <div style={{flex:1}}/>
-              <button style={{...S.btn('def'),fontSize:13,padding:'5px 11px'}} onClick={()=>{close();setScreen('upgrades');}} title="Open the functional upgrade panel">🏗️ Manage Upgrades</button>
-              <button style={{...S.btn('dim'),fontSize:13,padding:'5px 11px'}} onClick={close}>Close</button>
-            </div>
-          </div>
-        </div>);
-      })()}
 
       {/* ═══ RESULT POPUP with animated dice ═══ */}
       {resultPopup&&!expQ.length&&<DicePopup key={resultPopup.t} popup={resultPopup} LC={LC} TH={TH} S={S} onClose={()=>{setResultPopup(null);if(deferredNewDay){setDeferredNewDay(false);newDay();}}} playSfx={playSfx}/>}
