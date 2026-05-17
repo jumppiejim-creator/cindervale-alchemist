@@ -6673,7 +6673,7 @@ function CindervaleAlchemistInner(){
   ):null;
 
   return(
-    <div style={S.app}><link href="https://fonts.googleapis.com/css2?family=Almendra:wght@400;700&display=swap" rel="stylesheet"/>
+    <div style={{...S.app,paddingBottom:48}}><link href="https://fonts.googleapis.com/css2?family=Almendra:wght@400;700&display=swap" rel="stylesheet"/>
       <SaveOverlay/>
       {/* ═══ FIRST-LAUNCH HANDBOOK INTRO ═══ */}
       {showHandbookIntro&&(()=>{
@@ -6986,12 +6986,15 @@ function CindervaleAlchemistInner(){
         </div>}
       </div>
 
-      {/* ═══ STUB BAR (thin always-visible icon strip — express route from any screen) ═══
+      {/* ═══ STUB BAR (thin always-visible icon strip — pinned to viewport bottom) ═══
           Locked principle (design lock §5): one tap to anywhere from anywhere, never hidden,
-          never collapsed-by-default. 10 entries = Town/home + the 9 destinations (Threats kept
-          here AND on the hub). Click does setScreen + navClearModals (mirrors hub-tile behavior). */}
-      <div style={{width:'100%',maxWidth:1200,padding:'2px 8px',display:'flex',justifyContent:'center',borderBottom:`1px solid ${TH.border}`,background:'rgba(20,16,28,0.55)'}}>
-        <div style={{display:'flex',gap:3,padding:'2px 0',flexWrap:'wrap',justifyContent:'center'}}>
+          never collapsed-by-default. Pinned `position:fixed; bottom:0` so it survives page scroll
+          on long screens (Quest Board, character sheet) — the "always one tap" promise the redesign
+          rides on. z-index 40 sits above page content (default 0) and below modals (50+), preserving
+          modal layering. Backdrop (-2) + scrim (-1) remain untouched. Matching paddingBottom on the
+          app root (~6676) keeps the last bit of scrolling content from hiding behind this strip. */}
+      <div style={{position:'fixed',bottom:0,left:0,right:0,zIndex:40,padding:'2px 8px',display:'flex',justifyContent:'center',borderTop:`1px solid ${TH.borderGold}`,background:'rgba(20,16,28,0.94)',boxShadow:'0 -2px 12px rgba(0,0,0,0.5)',backdropFilter:'blur(4px)',WebkitBackdropFilter:'blur(4px)'}}>
+        <div style={{display:'flex',gap:3,padding:'2px 0',flexWrap:'wrap',justifyContent:'center',maxWidth:1200,width:'100%'}}>
           {[
             {id:'map',icon:'🏘️',label:'Town'},
             {id:'workshop',icon:'⚗️',label:'Workshop'},
