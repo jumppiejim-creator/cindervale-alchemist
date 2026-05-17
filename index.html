@@ -10374,7 +10374,7 @@ function CindervaleAlchemistInner(){
         </div></div>}
         {enchQ.length>0&&<div style={{...S.card,borderColor:TH.purple+'44'}} className={isWsOpen('ws33')?'':'ws-closed'}><div style={{...S.cT,cursor:'pointer',userSelect:'none'}} onClick={()=>toggleWs('ws33')}><span style={{display:'flex',justifyContent:'space-between',width:'100%'}}><span>✨ Enchant Requests ({enchQ.length})</span><span style={{fontSize:13,color:TH.textDim}}>{isWsOpen('ws33')?'▲':'▼'}</span></span></div>
           <div style={{fontSize:14,color:TH.textDim,marginBottom:6}}>Each customer brings a specific item and requests specific enchantments. Discover new enchantments via Research.</div>
-        </div>}
+          {/* Customer cards are CHILDREN of the collapsible card so the `.ws-closed > *:not(:first-child)` rule hides them when toggled closed. Previously rendered as siblings — never collapsed. */}
         {enchQ.map(cust=>{
           const cd=CUST_DATA[cust.customer]||{title:'Villager'};
           const catInfo=ENCH_CATS[cust.cat]||{name:'Item',icon:'❔'};
@@ -10477,6 +10477,7 @@ function CindervaleAlchemistInner(){
               </div>);})}
             {requested.length===0&&<div style={{fontSize:15,color:TH.textDim}}>No known enchantments match this item. Research new inscriptions!</div>}
           </div>);})}
+        </div>}
       </>}
 
       {/* ═══════════ WORKSHOP — INTEGRATED ROOM HERO + SCOPED UPGRADE LIST ═══════════ */}
