@@ -379,6 +379,43 @@ var UPGRADES={
   leyline:{id:'leyline',name:'Ley Line Tap',icon:'⚡',cat:'Advanced',desc:'+1 free research/day, daily veil shard.',cost:{gold:300,veil_shard:3,deep_crystal:2},effect:{freeResearchPerDay:1},tier:3,req:'library'},
 };
 
+// ═══ WORKSHOP ROOM SHOWCASE (additive — independent of cat / WS_ZONES) ═══
+// 8-room model that maps every workshop upgrade to exactly one showcase room.
+// Used by the Tour-the-Workshop pop-out only; the functional upgrade panel
+// continues to use UPGRADES[].cat + WS_ZONES untouched. Each room has 3 art
+// tiers driven by how many of its upgrades the player owns:
+//   owned >= t3 → Grand (3) ; owned >= t2 → Established (2) ; else Humble (1)
+// Tour order = the order ROOM_DEFS is declared in. All 22 upgrades are mapped
+// exactly once (verified against UPGRADES keys). Tier is computed on the fly
+// from owned-upgrade state; no new persisted save data.
+var ROOM_OF={
+  cauldron_2:'laboratory',cauldron_3:'laboratory',mortar:'laboratory',
+  runic_tools:'forge',forge:'forge',
+  bench_1:'enchanting',bench_2:'enchanting',
+  shelves:'vault',cellar:'vault',preserveJars:'vault',vault:'vault',
+  shopfront:'storefront',signage:'storefront',display:'storefront',rep_board:'storefront',ledger:'storefront',
+  garden:'greenhouse',garden_2:'greenhouse',
+  quarters:'quarters',hearth:'quarters',
+  library:'library',leyline:'library',
+};
+var ROOM_TIER_LABELS=['','Humble','Established','Grand'];
+var ROOM_DEFS=[
+  {id:'laboratory',displayName:'Laboratory',icon:'⚗️',upgrades:['cauldron_2','cauldron_3','mortar'],t2:2,t3:3},
+  {id:'forge',displayName:'The Forge',icon:'🔨',upgrades:['runic_tools','forge'],t2:1,t3:2},
+  {id:'enchanting',displayName:'Enchanting Sanctum',icon:'✨',upgrades:['bench_1','bench_2'],t2:1,t3:2},
+  {id:'vault',displayName:'The Vault',icon:'🔐',upgrades:['shelves','cellar','preserveJars','vault'],t2:2,t3:3},
+  {id:'storefront',displayName:'The Storefront',icon:'🪟',upgrades:['shopfront','signage','display','rep_board','ledger'],t2:2,t3:4},
+  {id:'greenhouse',displayName:'The Greenhouse',icon:'🌿',upgrades:['garden','garden_2'],t2:1,t3:2},
+  {id:'quarters',displayName:'Living Quarters',icon:'🛏️',upgrades:['quarters','hearth'],t2:1,t3:2},
+  {id:'library',displayName:'Library & Leyline Sanctum',icon:'📚',upgrades:['library','leyline'],t2:1,t3:2},
+];
+function getRoomTier(ownedCount,roomDef){
+  if(!roomDef)return 1;
+  if(ownedCount>=roomDef.t3)return 3;
+  if(ownedCount>=roomDef.t2)return 2;
+  return 1;
+}
+
 // ═══ APPRENTICES ═══
 // ═══ WORKSHOP VISUAL LAYOUT ═══
 // viewBox 600×350, cells 80×46, 6px gap
