@@ -71,3 +71,43 @@ var ROOM_IMGS={
   "room_library_t2":"https://jumppiejim-creator.github.io/cindervale-alchemist/room_library_t2.jpg",
   "room_library_t3":"https://jumppiejim-creator.github.io/cindervale-alchemist/room_library_t3.jpg",
 };
+
+// ═══ TOWN HUB / LOCATION ART ═══
+// Mirrors ZONE_IMGS / ROOM_IMGS pattern. Used by the art-driven town hub tiles
+// AND the global per-screen backdrop, via the single resolveArt() helper in
+// index.html. Keys: '<region>_<screenkey>' for region-specific locations,
+// '<screenkey>' (flat) for agnostic ones. 24 region-specific (4 regions × 6
+// locations) + 1 agnostic (threats) = 25 entries. `workshop` and `character`
+// are intentionally NOT here — they resolve via ROOM_IMGS (room-hero reuse).
+var TOWN_IMGS={
+  // ── Cindervale ──
+  "cindervale_market":"https://jumppiejim-creator.github.io/cindervale-alchemist/town_cindervale_market.jpg",
+  "cindervale_tavern":"https://jumppiejim-creator.github.io/cindervale-alchemist/town_cindervale_tavern.jpg",
+  "cindervale_worldmap":"https://jumppiejim-creator.github.io/cindervale-alchemist/town_cindervale_worldmap.jpg",
+  "cindervale_quests":"https://jumppiejim-creator.github.io/cindervale-alchemist/town_cindervale_quests.jpg",
+  "cindervale_staff":"https://jumppiejim-creator.github.io/cindervale-alchemist/town_cindervale_staff.jpg",
+  "cindervale_factions":"https://jumppiejim-creator.github.io/cindervale-alchemist/town_cindervale_factions.jpg",
+  // ── Ashfall Crossing ──
+  "ashfall_market":"https://jumppiejim-creator.github.io/cindervale-alchemist/town_ashfall_market.jpg",
+  "ashfall_tavern":"https://jumppiejim-creator.github.io/cindervale-alchemist/town_ashfall_tavern.jpg",
+  "ashfall_worldmap":"https://jumppiejim-creator.github.io/cindervale-alchemist/town_ashfall_worldmap.jpg",
+  "ashfall_quests":"https://jumppiejim-creator.github.io/cindervale-alchemist/town_ashfall_quests.jpg",
+  "ashfall_staff":"https://jumppiejim-creator.github.io/cindervale-alchemist/town_ashfall_staff.jpg",
+  "ashfall_factions":"https://jumppiejim-creator.github.io/cindervale-alchemist/town_ashfall_factions.jpg",
+  // ── Tidecrest Harbor ──
+  "tidecrest_market":"https://jumppiejim-creator.github.io/cindervale-alchemist/town_tidecrest_market.jpg",
+  "tidecrest_tavern":"https://jumppiejim-creator.github.io/cindervale-alchemist/town_tidecrest_tavern.jpg",
+  "tidecrest_worldmap":"https://jumppiejim-creator.github.io/cindervale-alchemist/town_tidecrest_worldmap.jpg",
+  "tidecrest_quests":"https://jumppiejim-creator.github.io/cindervale-alchemist/town_tidecrest_quests.jpg",
+  "tidecrest_staff":"https://jumppiejim-creator.github.io/cindervale-alchemist/town_tidecrest_staff.jpg",
+  "tidecrest_factions":"https://jumppiejim-creator.github.io/cindervale-alchemist/town_tidecrest_factions.jpg",
+  // ── Skyreach ──
+  "skyreach_market":"https://jumppiejim-creator.github.io/cindervale-alchemist/town_skyreach_market.jpg",
+  "skyreach_tavern":"https://jumppiejim-creator.github.io/cindervale-alchemist/town_skyreach_tavern.jpg",
+  "skyreach_worldmap":"https://jumppiejim-creator.github.io/cindervale-alchemist/town_skyreach_worldmap.jpg",
+  "skyreach_quests":"https://jumppiejim-creator.github.io/cindervale-alchemist/town_skyreach_quests.jpg",
+  "skyreach_staff":"https://jumppiejim-creator.github.io/cindervale-alchemist/town_skyreach_staff.jpg",
+  "skyreach_factions":"https://jumppiejim-creator.github.io/cindervale-alchemist/town_skyreach_factions.jpg",
+  // ── Agnostic (Threats: guard tower) ──
+  "threats":"https://jumppiejim-creator.github.io/cindervale-alchemist/town_threats.jpg",
+};

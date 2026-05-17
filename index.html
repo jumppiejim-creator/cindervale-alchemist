@@ -6543,6 +6543,65 @@ function CindervaleAlchemistInner(){
   const charNote=skPts>0?skPts:(pendingLevelUp?'!':null);
 
   // ─── MAP BUILDING ───
+  // ─── ART RESOLVER (single helper for hub tiles + screen backdrop) ─────────────
+  // "One image, two contexts" per design lock §4. Priority order:
+  //   region-specific town location  → TOWN_IMGS[region_screen] || TOWN_IMGS[screen]
+  //   workshop                       → laboratory room-hero (ROOM_DEFS[0]) at current tier
+  //   character                      → Living Quarters room-hero (ROOM_DEFS quarters) at current tier
+  //   threats                        → TOWN_IMGS['threats']
+  //   anything else (map / sub-tools)→ fall-through to seasonal()
+  // Final fallback for every branch: seasonal ZONE_IMGS, then null (caller paints gradient).
+  // Never throws; returns null on total miss. Keep this as ONE helper — do NOT scatter the branches.
+  const TOWN_LOC_SCREENS=['market','tavern','worldmap','quests','staff','factions'];
+  const resolveArt=(scr)=>{
+    // seasonal ambient = the per-location seasonal hero. Matches expedition heroImg's
+    // FINAL fallback at index.html:11720 (curSeason.img). Note: ZONE_IMGS keys are
+    // zone-specific (ashfields, ironwood, kelp_forest…), NOT gameLocation-level — so
+    // the design-lock pseudocode's `ZONE_IMGS[reg.id]` does not resolve at the location
+    // scope. `curSeason.img` IS the proper per-location/per-season ambient (the same
+    // image the expedition view falls back to). Also try ZONE_IMGS[gameLocation+_+season]
+    // first for forward-compat in case Jim ever adds gameLocation-level seasonal keys.
+    const seasonal=(()=>{
+      try{
+        const cs=(typeof getSeason==='function')?getSeason(day,gameLocation):null;
+        if(typeof ZONE_IMGS!=='undefined'){
+          const z=(cs&&ZONE_IMGS[gameLocation+'_'+cs.id])||ZONE_IMGS[gameLocation];
+          if(z)return z;
+        }
+        return cs&&cs.img||null;
+      }catch(e){return null;}
+    })();
+    // Helper: pull a ROOM_IMGS hero at current tier from a ROOM_DEFS entry.
+    const roomHero=(roomDef)=>{
+      if(!roomDef||typeof ROOM_IMGS==='undefined')return null;
+      const owned=roomDef.upgrades.filter(uid=>upgrades.includes(uid)).length;
+      const tier=(typeof getRoomTier==='function')?getRoomTier(owned,roomDef):1;
+      return ROOM_IMGS['room_'+roomDef.id+'_t'+tier]||ROOM_IMGS['room_'+roomDef.id]||null;
+    };
+    if(TOWN_LOC_SCREENS.indexOf(scr)>=0){
+      const town=(typeof TOWN_IMGS!=='undefined')?(TOWN_IMGS[gameLocation+'_'+scr]||TOWN_IMGS[scr]):null;
+      return town||seasonal||null;
+    }
+    if(scr==='workshop'){
+      // Workshop hero = the room the workshop screen defaults to (laboratory = ROOM_DEFS[0])
+      const lab=(typeof ROOM_DEFS!=='undefined'&&ROOM_DEFS[0])?ROOM_DEFS[0]:null;
+      return roomHero(lab)||seasonal||null;
+    }
+    if(scr==='character'){
+      // Quarters hero = Living Quarters room (ROOM_DEFS entry with id 'quarters')
+      const qr=(typeof ROOM_DEFS!=='undefined')?ROOM_DEFS.find(r=>r.id==='quarters'):null;
+      return roomHero(qr)||seasonal||null;
+    }
+    if(scr==='threats'){
+      const t=(typeof TOWN_IMGS!=='undefined')?TOWN_IMGS['threats']:null;
+      return t||seasonal||null;
+    }
+    return seasonal||null;
+  };
+  // Inline modal-clear used by every navigation path (tiles, stub bar, back control).
+  // Tactical replication per design lock §8 — no central router introduced.
+  const navClearModals=()=>{setDlgNpc(null);setShowShop(false);setConfirmRest(false);setQuestDlg(null);};
+
   const MapB=({icon,name,screen:scr,color,sub,note})=>{
     const act=screen===scr;
     return(<div onClick={()=>{setScreen(scr);setDlgNpc(null);setShowShop(false);setConfirmRest(false);setQuestDlg(null);}}
@@ -6559,11 +6618,27 @@ function CindervaleAlchemistInner(){
   };
 
   // ─── BACK BAR ───
-  const BackBar=({title,icon:ic,back})=>(
-    <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:8}}>
-      <span style={{fontSize:19,color:TH.gold}}>{ic} {title}</span>
-    </div>
-  );
+  // Per design lock §6: `back` prop drives a per-screen back control. Default `back='map'`
+  // (back to town); workshop sub-tools pass `back='workshop'` to preserve the 2-level
+  // Town → Workshop → sub-tool hierarchy. Click navigates + clears modals via navClearModals.
+  // Sits just above the screen's hero/backdrop art per the spec.
+  const BackBar=({title,icon:ic,back='map'})=>{
+    const backLabel=back==='workshop'?'⚗️ Workshop':'🏘️ Town';
+    return(
+      <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:8,flexWrap:'wrap'}}>
+        {back&&<button onClick={()=>{setScreen(back);navClearModals();}}
+          style={{background:'rgba(20,16,28,0.6)',border:`1px solid ${TH.borderGold}`,
+            color:TH.gold,cursor:'pointer',padding:'3px 10px',fontFamily:'inherit',
+            fontSize:13,borderRadius:6,whiteSpace:'nowrap'}}
+          title={`Back to ${back==='workshop'?'Workshop':'Town'}`}
+          onMouseEnter={e=>{e.currentTarget.style.background=TH.gold+'25';e.currentTarget.style.color=TH.goldBright;}}
+          onMouseLeave={e=>{e.currentTarget.style.background='rgba(20,16,28,0.6)';e.currentTarget.style.color=TH.gold;}}>
+          ← {backLabel}
+        </button>}
+        <span style={{fontSize:19,color:TH.gold}}>{ic} {title}</span>
+      </div>
+    );
+  };
 
   const SaveOverlay=()=>showSaveMenu?(
     <div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'#000000cc',display:'flex',alignItems:'center',justifyContent:'center',zIndex:9999}} onClick={()=>setShowSaveMenu(false)}>
@@ -6842,7 +6917,9 @@ function CindervaleAlchemistInner(){
       {/* HEADER */}
       <div style={{width:'100%',maxWidth:1200,padding:'6px 16px',borderBottom:`1px solid ${TH.border}`,position:'relative'}}>
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-          <div style={{fontSize:20,color:TH.gold,letterSpacing:2,cursor:'pointer'}} onClick={()=>{setScreen('map');handleDevTap();}}>⚗️ {locName}</div>
+          {/* Location-name → setScreen('map') click path removed per design lock §6/§8: back-to-town
+              is now the stub home icon + per-screen BackBar control. handleDevTap() preserved (dev mode). */}
+          <div style={{fontSize:20,color:TH.gold,letterSpacing:2,cursor:'pointer'}} onClick={()=>{handleDevTap();}}>⚗️ {locName}</div>
           <div style={{fontSize:11,color:TH.gold,position:'absolute',right:8,top:2}}>{BUILD_VERSION}</div>
           <div style={{display:'flex',gap:4}}>
             {/* Pending level-up indicator — appears whenever there's a minimized wizard or queued level-ups
@@ -6909,35 +6986,38 @@ function CindervaleAlchemistInner(){
         </div>}
       </div>
 
-      {/* ═══ NAVIGATION BAR ═══ */}
-      <div style={{width:'100%',maxWidth:1200,padding:'4px 8px',display:'flex',justifyContent:'center',borderBottom:`1px solid ${TH.border}`}}>
-        <div style={{display:'flex',gap:4,padding:'2px 0',flexWrap:'wrap',justifyContent:'center'}}>
+      {/* ═══ STUB BAR (thin always-visible icon strip — express route from any screen) ═══
+          Locked principle (design lock §5): one tap to anywhere from anywhere, never hidden,
+          never collapsed-by-default. 10 entries = Town/home + the 9 destinations (Threats kept
+          here AND on the hub). Click does setScreen + navClearModals (mirrors hub-tile behavior). */}
+      <div style={{width:'100%',maxWidth:1200,padding:'2px 8px',display:'flex',justifyContent:'center',borderBottom:`1px solid ${TH.border}`,background:'rgba(20,16,28,0.55)'}}>
+        <div style={{display:'flex',gap:3,padding:'2px 0',flexWrap:'wrap',justifyContent:'center'}}>
           {[
-            {id:'map',icon:'🏘️',label:'Town',img:'map'},
-            {id:'workshop',icon:'⚗️',label:'Workshop',img:'workshop'},
-            {id:'market',icon:'🛒',label:'Market',img:'market'},
-            {id:'tavern',icon:'🍺',label:'Tavern',img:'tavern'},
-            {id:'worldmap',icon:'🗺️',label:'Wilds',img:'wilds'},
-            {id:'quests',icon:'📜',label:'Quests',img:'tavern'},
-            {id:'factions',icon:'🏛️',label:'Factions',img:'chapel'},
-            {id:'threats',icon:'⚔️',label:'Threats',img:'wilds'},
-            {id:'staff',icon:'👥',label:'Staff',img:'workshop'},
-            {id:'character',icon:'📋',label:'Character',img:'map'},
+            {id:'map',icon:'🏘️',label:'Town'},
+            {id:'workshop',icon:'⚗️',label:'Workshop'},
+            {id:'market',icon:'🛒',label:'Market'},
+            {id:'tavern',icon:'🍺',label:'Tavern'},
+            {id:'worldmap',icon:'🗺️',label:'Wilds'},
+            {id:'quests',icon:'📜',label:'Quests'},
+            {id:'factions',icon:'🏛️',label:'Factions'},
+            {id:'staff',icon:'👥',label:'Staff'},
+            {id:'character',icon:'📋',label:'Character'},
+            {id:'threats',icon:'⚔️',label:'Threats'},
           ].map(nav=>{
             const active=screen===nav.id||(nav.id==='workshop'&&['research','enchant','transmute','upgrades'].includes(screen));
-            const thumb=typeof TOWN_IMGS!=='undefined'?TOWN_IMGS[nav.img]:null;
-            return(<button key={nav.id} onClick={()=>setScreen(nav.id)} style={{
-              background:'transparent',border:active?`2px solid ${TH.gold}`:`1px solid ${TH.border}44`,
-              color:active?TH.gold:TH.textDim,cursor:'pointer',padding:0,
-              fontFamily:"'Almendra',serif",transition:'all .15s',borderRadius:6,overflow:'hidden',
-              display:'flex',flexDirection:'column',alignItems:'center',width:72,opacity:active?1:0.7,
-              boxShadow:active?`0 0 12px ${TH.gold}40`:'none',
-            }}>
-              <div style={{width:'100%',height:40,overflow:'hidden',position:'relative',background:TH.panel}}>
-                {thumb&&<img src={thumb} alt="" style={{width:'100%',height:'100%',objectFit:'cover',display:'block',filter:active?'none':'brightness(0.6)'}}/>}
-                {!thumb&&<div style={{width:'100%',height:'100%',display:'flex',alignItems:'center',justifyContent:'center',fontSize:20}}>{nav.icon}</div>}
-              </div>
-              <div style={{padding:'2px 4px',fontSize:12,color:active?TH.gold:TH.textDim,whiteSpace:'nowrap',lineHeight:1.3}}>{nav.label}</div>
+            return(<button key={nav.id} title={nav.label}
+              onClick={()=>{setScreen(nav.id);navClearModals();}}
+              style={{
+                background:active?TH.gold+'25':'transparent',
+                border:active?`1px solid ${TH.gold}`:`1px solid ${TH.border}55`,
+                color:active?TH.goldBright:TH.text,
+                cursor:'pointer',padding:'4px 8px',fontFamily:'inherit',transition:'all .15s',
+                borderRadius:6,fontSize:18,lineHeight:1,minWidth:32,
+                boxShadow:active?`0 0 8px ${TH.gold}55`:'none',
+              }}
+              onMouseEnter={e=>{if(!active){e.currentTarget.style.borderColor=TH.gold+'88';e.currentTarget.style.color=TH.gold;}}}
+              onMouseLeave={e=>{if(!active){e.currentTarget.style.borderColor=TH.border+'55';e.currentTarget.style.color=TH.text;}}}>
+              {nav.icon}
             </button>);
           })}
         </div>
@@ -6946,11 +7026,15 @@ function CindervaleAlchemistInner(){
       {/* THREE-COLUMN LAYOUT with background image */}
       <div style={{display:'flex',width:'100%',maxWidth:1200,flex:1,gap:0,justifyContent:'center',position:'relative'}}>
 
-      {/* Background image layer */}
-      {(()=>{const bgKey=typeof SCREEN_BG!=='undefined'?SCREEN_BG[screen]:null;const bgImg=bgKey&&typeof TOWN_IMGS!=='undefined'?TOWN_IMGS[bgKey]:null;
+      {/* ─── GLOBAL ART BACKDROP (single full-viewport fixed layer behind all UI chrome) ───
+          Image = resolveArt(currentScreen): location screens → their town image; workshop/character →
+          room-hero; threats → guard tower; hub & sub-tools → seasonal region ambient. Scrim sits
+          between backdrop and UI for legibility (mirrors expedition-view recipe). Renders nothing
+          when no image resolves (gradient body bg shows through cleanly). */}
+      {(()=>{const bgImg=resolveArt(screen);
         return bgImg?<>
-          <div style={{position:'absolute',top:0,left:0,right:0,bottom:0,backgroundImage:`url(${bgImg})`,backgroundSize:'cover',backgroundPosition:'center',opacity:0.5,pointerEvents:'none',zIndex:0}}/>
-          <div style={{position:'absolute',top:0,left:0,right:0,bottom:0,background:'linear-gradient(180deg, #1a1a2ecc 0%, transparent 30%, transparent 70%, #1a1a2ecc 100%)',pointerEvents:'none',zIndex:0}}/>
+          <div style={{position:'fixed',top:0,left:0,right:0,bottom:0,backgroundImage:`url(${bgImg})`,backgroundSize:'cover',backgroundPosition:'center',opacity:0.55,pointerEvents:'none',zIndex:-2}}/>
+          <div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'linear-gradient(180deg, rgba(20,16,28,0.85) 0%, rgba(20,16,28,0.45) 28%, rgba(20,16,28,0.45) 70%, rgba(20,16,28,0.92) 100%)',pointerEvents:'none',zIndex:-1}}/>
         </>:null;
       })()}
 
@@ -7952,18 +8036,50 @@ function CindervaleAlchemistInner(){
             <div style={{fontSize:14,color:TH.textDim}}>{debt>200?'Your shop is PADLOCKED. Reduce debt to reopen.':debt>100?'Creditors circle. Some upgrades have been repossessed.':debt>50?'The town council is watching your finances closely.':energy>100?'The day stretches ahead.':energy>25?'Shadows lengthen across the village.':energy>0?'The last light fades.':'Night has fallen.'} Day {day} · {getSeason(day,gameLocation).icon} {getSeason(day,gameLocation).name} · ⚡{energy} Energy</div>
           </div>
 
-          {/* Buildings — 4×2 grid */}
-          <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(90px,1fr))',gap:8,position:'relative',zIndex:1}}>
-            <MapB icon="⚗️" name="Workshop" screen="workshop" color={TH.green} sub={`${upgrades.length} upgrades`}/>
-            <MapB icon="🛒" name={gameLocation==='tidecrest'?'Harbor Market':gameLocation==='ashfall'?'Bazaar':'Market'} screen="market" color={TH.gold} sub={gameLocation==='tidecrest'?'Shop · Mako · Finn':gameLocation==='ashfall'?'Shop · Sola · Razak':'Shop · Brenna'}/>
-            <MapB icon="🍺" name={gameLocation==='tidecrest'?'Driftwood Tavern':gameLocation==='ashfall'?'Oasis Cantina':'Ember & Anvil'} screen="tavern" color={TH.ember} sub={gameLocation==='tidecrest'?'Reva · Old Anchor':gameLocation==='ashfall'?'Amara · Nahla · Tarek':'Tavern · NPCs'}/>
-            <MapB icon="🗺️" name={gameLocation==='tidecrest'?'Harbor Docks':gameLocation==='ashfall'?'Desert Gates':'Village Gates'} screen="worldmap" color={TH.teal} sub={`⚡${energy} to explore`}/>
-
-            <MapB icon="📜" name="Quest Board" screen="quests" color={TH.cyan} note={questNote}/>
-            <MapB icon="👥" name="Staff Hall" screen="staff" color={TH.orange} sub={`${hiredAppr.length}/${maxAppr}`} note={staffNote}/>
-            <MapB icon="📊" name="Your Quarters" screen="character" color={TH.purple} sub="Skills · Gear" note={charNote}/>
-            <MapB icon="🛡️" name="Faction Hall" screen="factions" color={TH.blue} sub={factionAlign?FACTIONS[factionAlign]?.icon+' Aligned':null} note={availQ.filter(q=>q.chain).length>0?'!':null}/>
-          </div>
+          {/* ─── ART-DRIVEN HUB — 9 tiles (region/seasonal-aware), each tile's art via resolveArt() ───
+              Click → setScreen(target) + navClearModals(). Image renders as a backgroundImage
+              with the existing gradient fallback recipe (matches expedition view); onError-hidden
+              <img> off-screen used to detect deployed art and swap the fallback off. Threats is
+              now a real 9th tile (was nav-bar-only). Settlement Skyline SVG below stays intact. */}
+          {(()=>{
+            const tiles=[
+              {tgt:'workshop',label:'Workshop',sub:`${upgrades.length} upgrades`,color:TH.green,note:null},
+              {tgt:'market',label:gameLocation==='tidecrest'?'Harbor Market':gameLocation==='ashfall'?'Bazaar':'Market',sub:gameLocation==='tidecrest'?'Shop · Mako · Finn':gameLocation==='ashfall'?'Shop · Sola · Razak':'Shop · Brenna',color:TH.gold,note:null},
+              {tgt:'tavern',label:gameLocation==='tidecrest'?'Driftwood Tavern':gameLocation==='ashfall'?'Oasis Cantina':'Ember & Anvil',sub:gameLocation==='tidecrest'?'Reva · Old Anchor':gameLocation==='ashfall'?'Amara · Nahla · Tarek':'Tavern · NPCs',color:TH.ember,note:null},
+              {tgt:'worldmap',label:gameLocation==='tidecrest'?'Harbor Docks':gameLocation==='ashfall'?'Desert Gates':'Village Gates',sub:`⚡${energy} to explore`,color:TH.teal,note:null},
+              {tgt:'quests',label:'Quest Board',sub:null,color:TH.cyan,note:questNote},
+              {tgt:'staff',label:'Staff Hall',sub:`${hiredAppr.length}/${maxAppr}`,color:TH.orange,note:staffNote},
+              {tgt:'character',label:'Your Quarters',sub:'Skills · Gear',color:TH.purple,note:charNote},
+              {tgt:'factions',label:'Faction Hall',sub:factionAlign?FACTIONS[factionAlign]?.icon+' Aligned':null,color:TH.blue,note:availQ.filter(q=>q.chain).length>0?'!':null},
+              {tgt:'threats',label:'Threats',sub:'Guard Tower',color:'#c06040',note:null},
+            ];
+            return(<div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(150px,1fr))',gap:10,position:'relative',zIndex:1}}>
+              {tiles.map(t=>{
+                const img=resolveArt(t.tgt);
+                const act=screen===t.tgt;
+                return(<div key={t.tgt}
+                  onClick={()=>{setScreen(t.tgt);navClearModals();}}
+                  style={{position:'relative',cursor:'pointer',borderRadius:8,overflow:'hidden',aspectRatio:'16/10',
+                    border:`2px solid ${act?(t.color||TH.gold)+'aa':TH.border}`,
+                    backgroundImage:img?`url(${img})`:`linear-gradient(135deg,${(t.color||TH.gold)+'22'},${TH.panelLight})`,
+                    backgroundSize:'cover',backgroundPosition:'center',
+                    boxShadow:act?`0 0 14px ${(t.color||TH.gold)+'55'}`:'0 2px 6px rgba(0,0,0,0.4)',
+                    transition:'transform .15s, box-shadow .15s'}}
+                  onMouseEnter={e=>{e.currentTarget.style.transform='translateY(-2px)';e.currentTarget.style.boxShadow=`0 0 16px ${(t.color||TH.gold)+'66'}`;}}
+                  onMouseLeave={e=>{e.currentTarget.style.transform='none';e.currentTarget.style.boxShadow=act?`0 0 14px ${(t.color||TH.gold)+'55'}`:'0 2px 6px rgba(0,0,0,0.4)';}}>
+                  {/* Bottom legibility gradient + label band */}
+                  <div style={{position:'absolute',left:0,right:0,bottom:0,
+                    background:'linear-gradient(0deg,rgba(0,0,0,0.88) 0%,rgba(0,0,0,0.55) 55%,transparent 100%)',
+                    padding:'24px 10px 8px',color:TH.textBright}}>
+                    <div style={{fontSize:15,fontWeight:'bold',color:act?(t.color||TH.gold):TH.textBright,textShadow:'0 2px 4px #000',lineHeight:1.15}}>{t.label}</div>
+                    {t.sub&&<div style={{fontSize:12,color:TH.textDim,textShadow:'0 1px 3px #000',marginTop:1}}>{t.sub}</div>}
+                  </div>
+                  {/* Note badge (corner pip) */}
+                  {t.note&&<div style={{position:'absolute',top:6,right:6,background:TH.gold,color:TH.bg,fontSize:12,fontWeight:'bold',borderRadius:10,padding:'2px 6px',minWidth:18,textAlign:'center',boxShadow:'0 1px 4px rgba(0,0,0,0.5)'}}>{t.note}</div>}
+                </div>);
+              })}
+            </div>);
+          })()}
         </div>
 
         {/* Milestone notification popup */}
