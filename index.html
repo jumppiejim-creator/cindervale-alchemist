@@ -579,6 +579,11 @@ function CindervaleAlchemistInner(){
   const [constructProgress,setConstructProgress]=useState({}); // {upgradeId: 0-100} progress from engineer task
   const [skillTip,setSkillTip]=useState(null); // skill id for info overlay
   const [tapInfo,setTapInfo]=useState(null); // global tap-to-reveal: string key of currently open info panel
+  // Season tooltip: hover (desktop) OR tap (touch) shows current season's gameplay effects.
+  // Two pieces of state — pinned (click-toggle, persists across mouseLeave) and hovered (transient).
+  // Tooltip visible when either is true. Data source: SEASONS[loc] (game-data.js:1790).
+  const [seasonTipPinned,setSeasonTipPinned]=useState(false);
+  const [seasonTipHover,setSeasonTipHover]=useState(false);
   const [showDoneQ,setShowDoneQ]=useState(false);
   const [showTaskGuide,setShowTaskGuide]=useState(true);
   // Workshop upgrades screen — selected room index. Ephemeral UI state only;
@@ -6672,8 +6677,13 @@ function CindervaleAlchemistInner(){
     </div>
   ):null;
 
+  // App root background is overridden to transparent on the main render (not in S.app, which is
+  // shared with pre-game intro/onboarding renders that need TH.bg). The global art backdrop
+  // renders at position:fixed z-index:-2 and would be occluded by any opaque ancestor — transparent
+  // here lets it show through. Body CSS (background:#1a1a2e at line 18) is the dark fallback when
+  // no backdrop image resolves; onboarding screens still get TH.bg via S.app intact.
   return(
-    <div style={{...S.app,paddingBottom:48}}><link href="https://fonts.googleapis.com/css2?family=Almendra:wght@400;700&display=swap" rel="stylesheet"/>
+    <div style={{...S.app,paddingBottom:48,background:'transparent'}}><link href="https://fonts.googleapis.com/css2?family=Almendra:wght@400;700&display=swap" rel="stylesheet"/>
       <SaveOverlay/>
       {/* ═══ FIRST-LAUNCH HANDBOOK INTRO ═══ */}
       {showHandbookIntro&&(()=>{
@@ -6979,7 +6989,46 @@ function CindervaleAlchemistInner(){
           <Portrait cls={startingClass||'alchemist'} race={charRace} gender={charGender} size={22} style={{borderWidth:1,borderRadius:4}}/>
           <span style={{color:TH.textBright}}>{charName}</span>
           <span>{Object.entries(classLevels).filter(([cid])=>CLASSES[cid]).map(([cid,lv])=>CLASSES[cid]?.icon).join('')}</span>
-          <span>📅{day}</span><span style={{color:getSeason(day,gameLocation).color}}>{getSeason(day,gameLocation).icon}{getSeason(day,gameLocation).name}</span><span>⚡{energy}</span><span style={{color:TH.gold}}>Lv{displayLevel}</span><span style={{color:debt>0?'#c04040':TH.gold}}>💰{gold}g{debt>0&&<span style={{fontSize:11,color:'#c04040'}}> (debt:{debt}g)</span>}</span>
+          <span>📅{day}</span>
+          {/* ─── Season indicator with hover/tap tooltip showing current-season gameplay effects ─── */}
+          {(()=>{
+            const cs=getSeason(day,gameLocation);
+            if(!cs)return null;
+            const tipOpen=seasonTipPinned||seasonTipHover;
+            // Build human-readable effect lines from the season's modifier fields.
+            // Only show non-zero modifiers (accuracy over comprehensiveness).
+            const effects=[];
+            if(cs.yieldMod)effects.push({label:'Forage yield',val:(cs.yieldMod>0?'+':'')+cs.yieldMod,good:cs.yieldMod>0});
+            if(cs.floraYieldBonus)effects.push({label:'Flora yield',val:(cs.floraYieldBonus>0?'+':'')+cs.floraYieldBonus,good:cs.floraYieldBonus>0});
+            if(cs.travelMod){const suffix=cs.travelMinDiff?` (regions diff ≥${cs.travelMinDiff})`:'';effects.push({label:'Travel cost',val:(cs.travelMod>0?'+':'')+cs.travelMod+'⚡'+suffix,good:cs.travelMod<0});}
+            if(cs.customerMod)effects.push({label:'Customers/day',val:(cs.customerMod>0?'+':'')+cs.customerMod,good:cs.customerMod>0});
+            if(cs.spoilMod)effects.push({label:'Spoil threshold',val:(cs.spoilMod>0?'+':'')+cs.spoilMod,good:cs.spoilMod>0});
+            if(cs.dangerMod)effects.push({label:'Danger',val:(cs.dangerMod>0?'+':'')+cs.dangerMod,good:cs.dangerMod<0});
+            if(cs.moraleMod)effects.push({label:'Morale',val:(cs.moraleMod>0?'+':'')+cs.moraleMod,good:cs.moraleMod>0});
+            if(cs.questGoldMod)effects.push({label:'Quest gold',val:(cs.questGoldMod>0?'+':'')+Math.round(cs.questGoldMod*100)+'%',good:cs.questGoldMod>0});
+            if(cs.threatMod){Object.entries(cs.threatMod).forEach(([tid,v])=>{if(v){const tf=(typeof THREAT_FACTIONS!=='undefined')?THREAT_FACTIONS[tid]:null;const tname=tf?tf.name:tid;effects.push({label:tname+' threat',val:(v>0?'+':'')+v,good:v<0});}});}
+            return(<span style={{position:'relative',display:'inline-block'}}
+              onMouseEnter={()=>setSeasonTipHover(true)}
+              onMouseLeave={()=>setSeasonTipHover(false)}>
+              <span style={{color:cs.color,cursor:'pointer',textDecoration:tipOpen?'underline dotted':'none'}}
+                onClick={()=>setSeasonTipPinned(p=>!p)}
+                title={tipOpen?'':'Hover or tap for current-season effects'}>
+                {cs.icon}{cs.name}
+              </span>
+              {tipOpen&&<div style={{position:'absolute',top:'120%',left:'50%',transform:'translateX(-50%)',background:'rgba(20,16,28,0.97)',border:`1px solid ${cs.color}66`,borderRadius:8,padding:'10px 14px',minWidth:240,maxWidth:320,zIndex:45,boxShadow:'0 4px 18px rgba(0,0,0,0.6)',fontSize:13,color:TH.text,whiteSpace:'normal',textAlign:'left',pointerEvents:'auto'}} onClick={e=>e.stopPropagation()}>
+                <div style={{fontSize:16,color:cs.color,fontWeight:'bold',marginBottom:4}}>{cs.icon} {cs.name}</div>
+                {cs.desc&&<div style={{fontSize:12,color:TH.textDim,marginBottom:6,fontStyle:'italic',lineHeight:1.4}}>{cs.desc}</div>}
+                {effects.length>0?<div style={{display:'flex',flexDirection:'column',gap:2}}>
+                  {effects.map((eff,i)=><div key={i} style={{display:'flex',justifyContent:'space-between',gap:8,fontSize:13}}>
+                    <span style={{color:TH.textDim}}>{eff.label}</span>
+                    <span style={{color:eff.good?TH.green:TH.red,fontWeight:'bold'}}>{eff.val}</span>
+                  </div>)}
+                </div>:<div style={{fontSize:12,color:TH.textDim,fontStyle:'italic'}}>No mechanical modifiers this season.</div>}
+                {seasonTipPinned&&<div style={{fontSize:11,color:TH.textDim,marginTop:6,textAlign:'center',opacity:0.7}}>(tap again to close)</div>}
+              </div>}
+            </span>);
+          })()}
+          <span>⚡{energy}</span><span style={{color:TH.gold}}>Lv{displayLevel}</span><span style={{color:debt>0?'#c04040':TH.gold}}>💰{gold}g{debt>0&&<span style={{fontSize:11,color:'#c04040'}}> (debt:{debt}g)</span>}</span>
         </div>
         {nextXp&&<div style={{width:'100%',maxWidth:250,height:4,background:TH.panel,borderRadius:3,overflow:'hidden',margin:'2px auto'}}>
           <div style={{height:'100%',borderRadius:3,width:`${((xp-XP_TBL[getLvl(xp)])/(nextXp-XP_TBL[getLvl(xp)]))*100}%`,background:`linear-gradient(90deg,${TH.goldDim},${TH.gold})`}}/>
@@ -8035,7 +8084,7 @@ function CindervaleAlchemistInner(){
           </svg>
 
           <div style={{textAlign:'center',marginBottom:12,position:'relative',zIndex:1}}>
-            <div style={{fontSize:18,color:TH.gold,letterSpacing:4}}>— CINDERVALE —</div>
+            <div style={{fontSize:18,color:TH.gold,letterSpacing:4}}>— {(locName||'Cindervale').toUpperCase()} —</div>
             <div style={{fontSize:14,color:TH.textDim}}>{debt>200?'Your shop is PADLOCKED. Reduce debt to reopen.':debt>100?'Creditors circle. Some upgrades have been repossessed.':debt>50?'The town council is watching your finances closely.':energy>100?'The day stretches ahead.':energy>25?'Shadows lengthen across the village.':energy>0?'The last light fades.':'Night has fallen.'} Day {day} · {getSeason(day,gameLocation).icon} {getSeason(day,gameLocation).name} · ⚡{energy} Energy</div>
           </div>
 
@@ -10891,10 +10940,14 @@ function CindervaleAlchemistInner(){
                 <span style={{color:TH.gold}}>+{q.xp}XP +{q.gold}g</span>
                 {q.faction&&<span style={{color:FACTIONS[q.faction]?.color}}>{FACTIONS[q.faction]?.icon}+{q.fRep} rep</span>}
               </div>
-              {/* Direct accept (no relocation) + optional NPC dialog visit for flavor / q.onAccept lines. */}
+              {/* Direct accept (no relocation) + optional NPC dialog visit for flavor / q.onAccept lines.
+                  The Talk button calls openNpc() directly (no setScreen) so the dialog overlays the
+                  quests view rather than dumping the player at the tavern after the dialog closes.
+                  An NpcDlg render below (inside this screen block) renders the dialog over the quests
+                  view when dlgNpc is set. */}
               <div style={{display:'flex',gap:6,marginTop:4,flexWrap:'wrap',alignItems:'center'}}>
                 <button style={{...S.btn('gold'),fontSize:14,padding:'4px 12px'}} onClick={()=>acceptQ(q)} title="Accept the quest now without traveling to the giver">📜 Accept Quest</button>
-                <GoBtn to={goScreen} label={goLabel} variant="def" npc={q.giver.toLowerCase().replace(/ /g,'_')}/>
+                <button style={{...S.btn('def'),fontSize:14,padding:'4px 12px'}} onClick={()=>openNpc(q.giver.toLowerCase().replace(/ /g,'_'))} title={`Hear ${q.giver}'s offer — dialog opens here, no travel`}>{goLabel}</button>
               </div>
             </div>);})}
         </div>}
@@ -10979,6 +11032,10 @@ function CindervaleAlchemistInner(){
           <span>✅ Completed Quests ({doneQ.length})</span><span style={{fontSize:13,color:TH.textDim}}>{showDoneQ?'▲ hide':'▼ show'}</span></div>
           {showDoneQ&&doneQ.map(qid=>{const q=QUESTS.find(q=>q.id===qid);return q?(<div key={qid} style={{fontSize:14,color:TH.textDim,padding:'3px 6px',opacity:.7,borderBottom:'1px solid '+TH.border+'33'}}>✓ {q.name} <span style={{fontSize:13}}>— {q.giver}</span></div>):null;})}
         </div>}
+        {/* NPC dialog renders on this screen too so the quest-card "Talk to {giver}" button can
+            open the dialog WITHOUT relocating the player. Mirrors the gating used by the market
+            (line ~8174) and tavern (line ~8294) renders — same NpcDlg component, same props. */}
+        {dlgNpc&&NPCS[dlgNpc]&&<NpcDlg npc={{...NPCS[dlgNpc],id:dlgNpc}} {...{dlgLine,setDlgLine,setDlgNpc,availQ,aQ,acceptQ,compQ,qP,qObj,S,questDlg,setQuestDlg,openNpc}}/>}
       </>}
 
       {/* ═══════════ FACTIONS ═══════════ */}
