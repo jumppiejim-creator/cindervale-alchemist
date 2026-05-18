@@ -6607,20 +6607,6 @@ function CindervaleAlchemistInner(){
   // Tactical replication per design lock §8 — no central router introduced.
   const navClearModals=()=>{setDlgNpc(null);setShowShop(false);setConfirmRest(false);setQuestDlg(null);};
 
-  const MapB=({icon,name,screen:scr,color,sub,note})=>{
-    const act=screen===scr;
-    return(<div onClick={()=>{setScreen(scr);setDlgNpc(null);setShowShop(false);setConfirmRest(false);setQuestDlg(null);}}
-      style={{background:act?`${color||TH.gold}18`:TH.panel,border:`2px solid ${act?(color||TH.gold)+'aa':TH.border}`,
-        borderRadius:8,padding:'10px 6px',cursor:'pointer',textAlign:'center',position:'relative',transition:'all .15s',
-        boxShadow:act?`0 0 12px ${color||TH.gold}33`:'none',minHeight:72,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center'}}
-      onMouseEnter={e=>{e.currentTarget.style.borderColor=(color||TH.gold);e.currentTarget.style.boxShadow=`0 0 12px ${color||TH.gold}33`;}}
-      onMouseLeave={e=>{if(!act){e.currentTarget.style.borderColor=TH.border;e.currentTarget.style.boxShadow='none';}}}>
-      <div style={{fontSize:28}}>{icon}</div>
-      <div style={{fontSize:15,color:act?(color||TH.gold):TH.textBright,fontWeight:act?'bold':'normal',marginTop:2}}>{name}</div>
-      {sub&&<div style={{fontSize:13,color:TH.textDim,marginTop:1}}>{sub}</div>}
-      {note&&<div style={{position:'absolute',top:-5,right:-5,background:TH.gold,color:TH.bg,fontSize:13,fontWeight:'bold',borderRadius:8,padding:'1px 5px',minWidth:14,textAlign:'center'}}>{note}</div>}
-    </div>);
-  };
 
   // ─── BACK BAR ───
   // Per design lock §6: `back` prop drives a per-screen back control. Default `back='map'`
@@ -7733,6 +7719,12 @@ function CindervaleAlchemistInner(){
                   <span style={{fontSize:14,color:TH.gold}}>+2 {STATS[sp.bStat]?.name}</span>
                 </div>
                 <div style={{fontSize:14,color:TH.textDim,marginBottom:4}}>Bonus skills: {sp.bSkills.map(sk=>SKILLS[sk]?.icon+' '+SKILLS[sk]?.name).join(', ')}</div>
+                {/* Mechanical description — the unique system this spec unlocks, shown prominently at the
+                    moment of the irreversible choice. Sources `sp.mechDesc` from game-data.js (previously
+                    orphaned). Falls back to `sp.desc` if mechDesc is absent. */}
+                {(sp.mechDesc||sp.desc)&&<div style={{fontSize:14,color:TH.text,marginBottom:6,padding:'7px 9px',background:sp.color+'10',border:`1px solid ${sp.color}44`,borderRadius:5,lineHeight:1.45}}>
+                  {sp.mechDesc||sp.desc}
+                </div>}
                 {sp.features.map(f=><div key={f.name} style={{fontSize:14,color:sp.color,padding:'1px 0'}}>
                   Lv{f.classLv}: <b>{f.name}</b> — {f.desc}
                 </div>)}

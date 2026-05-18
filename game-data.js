@@ -147,7 +147,7 @@ var CLASSES={
           {classLv:6,name:'Layered Wards',desc:'Apply two enchantments to a single customer item (the second at +3 DC). 40% chance to save materials on a successful inscription.',effects:{enchantMatSave:0.40,dualInscription:true}},
           {classLv:10,name:'Unbreakable',desc:'Auto-succeed inscriptions at DC 15 or below. +10 flat inscription bonus. 60% chance to save materials on a successful inscription. Shield commissions pay 3× gold. A permanent Fortress Ward protects your shelves: bandits cannot steal overnight shelf sales while local bandit threat stays below 75.',effects:{autoEnchantDC:15,enchantSuccessFlat:10,enchantMatSave:0.60,shieldPayMult:3,fortressWard:true}},
         ]},
-      spellweaver:{id:'spellweaver',name:'Spellweaver',desc:'Craft exotic utility enchantments and tap into planar power sources. Attract rare, high-paying customers.',mechDesc:'Planar Attunement. Attune to extraplanar power sources that modify your enchantments with exotic effects. The Planar Focus interface lets you select and channel different planar energies. At Lv10, Planar Convergence lets you combine two enchantment types into a single inscription.',icon:'🌀',color:'#a060e0',bStat:'inu',bSkills:['arcane_sense','divination'],
+      spellweaver:{id:'spellweaver',name:'Spellweaver',desc:'Craft exotic utility enchantments and tap into planar power sources. Attract rare, high-paying customers.',mechDesc:'Planar Attunement. Attune to extraplanar power sources via the Planar Focus interface — selecting an active plane modifies your enchantments with exotic effects. Bonuses focus on the "other" enchantment category (accessory/utility inscriptions: rings, cloaks, charms). Lv6 grants +1 daily customer slot and +35% gold on those inscriptions. At Lv10, Planar Convergence sharpens your craft: inscription crits on 17+, +50% gold from enchanting overall, and +30% gold from potion customers as planar patronage attracts wealthy clientele.',icon:'🌀',color:'#a060e0',bStat:'inu',bSkills:['arcane_sense','divination'],
         features:[
           {classLv:3,name:'Exotic Inscriptions',desc:'+1 inscription bonus on accessory/utility enchantments specifically (rings, cloaks, charms — the "other" category). +15% research discovery from all sources.',effects:{discoveryChanceBonus:0.15},categoricalEnchantBonus:{other:{enchantBonus:1}}},
           {classLv:6,name:'Planar Weave',desc:'+35% gold on accessory/utility ("other"-category) enchantments specifically. +1 daily customer slot.',effects:{customerBonus:1},categoricalEnchantBonus:{other:{enchantGoldBonus:0.35}}},
@@ -207,7 +207,7 @@ var CLASSES={
       {classLv:10,name:'Omniscience',desc:'+40% discovery chance, +2 craft from deep knowledge, +30% XP from all sources. Publish theoretical papers for passive gold.',effects:{xpMultiplier:0.30,discoveryChanceBonus:0.40,craftBonus:2,publishPapers:true}},
     ],
     specs:{
-      theorist:{id:'theorist',name:'Theorist',desc:'Publish academic papers for passive income and reputation. Research discovers more, faster, and better.',mechDesc:'Published Papers. Spend research Energy writing academic papers that generate passive gold income over time. Papers earn more as they accumulate citations. Peer Review at Lv6 boosts research discovery rates. At Lv10, all research auto-discovers new recipes.',icon:'🧪',color:'#40c0c0',bStat:'acu',bSkills:['analysis','innovation'],
+      theorist:{id:'theorist',name:'Theorist',desc:'Publish academic papers for passive income and reputation. Research discovers more, faster, and better.',mechDesc:'Published Papers. Spend research Energy writing academic papers that generate passive gold income over time, scaling up as citations accumulate. Lv6 Peer Review adds +20% discovery to research studies and makes papers earn more over time. At Lv10, every research session produces 2 discoveries instead of 1, papers earn faction rep tied to the discovered recipe, and your published-paper count grants a permanent scaling craft bonus (+1 per 2 papers, capped at +4).',icon:'🧪',color:'#40c0c0',bStat:'acu',bSkills:['analysis','innovation'],
         features:[
           {classLv:3,name:'Published Research',desc:'2× XP from research and experiments. Can publish papers for passive gold.',effects:{researchXPMulti:2,publishPapers:true}},
           {classLv:6,name:'Peer Review',desc:'Research studies have +20% discovery chance. Papers earn more over time.',effects:{discoveryChanceBonus:0.20,paperScaling:true}},
@@ -256,7 +256,7 @@ var CLASSES={
           {classLv:6,name:'Logistics Master',desc:'Staff foraging +25%. +25% personal foraging yield. Spoilage threshold +4 (ingredients last longer before going bad).',effects:{staffForageBonus:0.25,yieldMultiplier:0.25,spoilThreshold:4}},
           {classLv:10,name:'War Room',desc:'Fully automated ingredient management. Foraging yield +100%. Spoilage threshold +8.',effects:{staffEfficiencyBonus:0.30,yieldMultiplier:1,spoilThreshold:8}},
         ]},
-      sentinel:{id:'sentinel',name:'Sentinel',desc:'Night expeditions for bonus foraging after dark. Guard the settlement against rising threats.',mechDesc:'Night Expeditions. After resting, send your character on a bonus night foraging run with extra gathering hours but increased danger. At Lv6, set traps for guaranteed rare finds. At Lv10, build permanent outposts for daily passive ingredient income and threat suppression.',icon:'🗼',color:'#a07040',bStat:'tec',bSkills:['extraction','precision'],
+      sentinel:{id:'sentinel',name:'Sentinel',desc:'Night expeditions for bonus foraging after dark. Guard the settlement against rising threats.',mechDesc:'Night Expeditions. After resting, the Sentinel runs a bonus night foraging trip with extra gathering hours at higher DC and increased danger. Lv6 lets you set traps for guaranteed rare finds and reduces night danger. At Lv10, night trips reach their full extent (4 bonus gathering hours at a milder +3 DC), all faction threats passively decay by 3/day, and once per day you can launch a Preemptive Strike — spend 50 Energy to reduce any one threat by 20 (plus XP/gold reward).',icon:'🗼',color:'#a07040',bStat:'tec',bSkills:['extraction','precision'],
         features:[
           {classLv:3,name:'Night Watch',desc:'Night expeditions: 2 bonus gathering hours at +4 DC, increased danger.',effects:{nightExpeditions:true,nightBonusHours:50}},
           {classLv:6,name:'Trap Setter',desc:'Set traps for guaranteed rare ingredient finds. Night danger reduced.',effects:{guaranteedRare:true,nightDangerReduction:true}},
@@ -701,11 +701,8 @@ var locIngrArr=function(arr,loc){
 };
 
 
-var SCREEN_BG={
-  map:'map',market:'market',tavern:'tavern',
-  workshop:'workshop',research:'workshop',enchant:'workshop',transmute:'workshop',upgrades:'workshop',
-  staff:'workshop',quests:'tavern',factions:'chapel',character:'map',worldmap:'wilds',
-};
+// (SCREEN_BG removed 2026-05-16 — dead data after the Town/Nav IA build replaced the per-screen
+//  background lookup with the resolveArt helper. No call sites remained.)
 var weightedPick=(weights,n)=>{
   const entries=Object.entries(weights);
   const picked=[];let remaining=[...entries];
@@ -2886,7 +2883,7 @@ var PRESTIGE_CLASSES={
     ]},
   wildcrafter:{id:'wildcrafter',name:'Wildcrafter',icon:'🌿',color:'#60a040',
     req:{warden:3,skillRank:{extraction:'expert',attunement:'trained'}},maxLv:5,
-    desc:'Brews potions in the field using fresh ingredients for bonus potency.',
+    desc:'Brews potions in the field using fresh ingredients for bonus potency. From Lv2, also unlocks Wildcrafts — outward-facing brews that change the world: override a region\'s season for one trip (Seasonal Bypass), summon a temporary companion creature (Wild Ally), or directly reduce a zone\'s threat level (Threat Suppression). Each wildcraft costs 3 unique ingredients; daily budget grows 1→3 with prestige level.',
     features:[
       {lv:1,name:'Field Alchemy',desc:'1 field brew per expedition from your haul. Fresh potions sell at 1.2×. Standard quality only.',effects:{fieldBrews:1,freshMult:1.2}},
       {lv:2,name:'Fresh Reagents',desc:'2 field brews. Fresh 1.3×. Fine quality field brewing. +1 bonus ingredient per expedition. Unlock Seasonal Bypass wildcraft (1/day).',effects:{fieldBrews:2,freshMult:1.3,fieldFine:true,bonusForageIngr:1,wildcraftSlots:1}},
