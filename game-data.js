@@ -105,11 +105,11 @@ var CLASSES={
           {classLv:6,name:'Panacea',desc:'+1 daily customer slot. One free Healing Salve brewed each morning. Healing potions also restore staff morale. Reaching this level grants three curative recipes.',effects:{healMorale:true,customerBonus:1,freeHealBrew:1},grantRecipes:{pool:['silver_salve','mycelium_wrap','holy_flame'],count:3}},
           {classLv:10,name:'Miracle Worker',desc:'Clinic patients auto-diagnosed on arrival. Clinic treatments pay 3× gold and XP. Once per day, perform a Miracle Cure on any patient regardless of potion requirements (5× reward). All healing potions have 50% chance to produce a bonus Masterwork copy.',effects:{freeHealBrew:1,clinicAutoDiagnose:true,clinicPayMult:3,miracleCure:true,healingBonusMW:0.50}},
         ]},
-      transmuter:{id:'transmuter',name:'Transmuter',desc:'Masters of ingredient conversion. Transform materials at ever-better ratios and transmute across types.',mechDesc:'Transmutation Lab. Convert ingredients between types at a 2:1 ratio (improving to 1:1 at Lv10). Select a source ingredient and target, spending multiples of one to create another. At Lv6 you also gain access to faction-specific ingredients as transmute targets, plus +25% ingredient efficiency on all crafts. At Lv10, transmutations cost 0 Energy.',icon:'🔄',color:'#d090e0',bStat:'cre',bSkills:['improvisation','innovation'],
+      transmuter:{id:'transmuter',name:'Transmuter',desc:'Masters of ingredient conversion. Transform materials at ever-better ratios — and at the capstone, transmute finished potions themselves.',mechDesc:'Transmutation Lab. Convert ingredients between types at a 2:1 ratio (improving to 1:1 at Lv10) — gated only by having enough source stock, no energy cost. Select a source ingredient and target, spending multiples of one to create another. At Lv6, faction-specific ingredients become available as transmute targets and all crafts gain +25% ingredient efficiency. At Lv10, the capstone Philosopher\'s Stone unlocks Potion Transmutation: convert finished potions into other potions you have a known recipe for (2:1 ratio). The result drops to standard quality with no infusion or freshness — you convert what the potion IS, not how good it was.',icon:'🔄',color:'#d090e0',bStat:'cre',bSkills:['improvisation','innovation'],
         features:[
-          {classLv:3,name:'Efficient Transmutation',desc:'Can convert ingredients at 2:1 ratio. Unlock transmutation recipes.',effects:{transmuteRatio:2,canTransmute:true}},
+          {classLv:3,name:'Efficient Transmutation',desc:'Can convert ingredients at 2:1 ratio. Unlock transmutation recipes. Free action — no energy cost.',effects:{transmuteRatio:2,canTransmute:true}},
           {classLv:6,name:'Lead to Gold',desc:'Faction-specific ingredients become available as transmute targets. +25% ingredient efficiency on all crafts.',effects:{factionTransmute:true,ingredientEfficiency:0.25}},
-          {classLv:10,name:"Philosopher's Stone",desc:'1:1 ingredient conversion. Transmutations cost 0 Energy.',effects:{transmuteRatio:1,freeTransmute:true}},
+          {classLv:10,name:"Philosopher's Stone",desc:'1:1 ingredient conversion. Potion Transmutation unlocks: convert finished potions into other potions you have a known recipe for (2:1 ratio). Result drops to standard quality with no infusion or freshness — what the potion IS, not how good it was.',effects:{transmuteRatio:1,canPotionTransmute:true}},
         ]},
       venomist:{id:'venomist',name:'Venomist',desc:'Brew volatile poisons and offensive concoctions. Sell deadly wares to guard factions for premium gold.',mechDesc:'Venom Contracts. Shady clients post poison contracts offering premium gold for specific volatile brews. The Venom Lab on your workshop screen shows available contracts with deadlines and rewards. Craft bonuses scale with level, and failures at Lv10 still produce lesser venoms.',icon:'☠️',color:'#a0d040',bStat:'tec',bSkills:['precision','extraction'],
         features:[
@@ -213,11 +213,11 @@ var CLASSES={
           {classLv:6,name:'Peer Review',desc:'Research studies have +20% discovery chance. Papers earn more over time.',effects:{discoveryChanceBonus:0.20,paperScaling:true}},
           {classLv:10,name:'Grand Unified Theory',desc:'Research sessions produce 2 discoveries instead of 1. +35% discovery chance. Papers earn faction reputation for the discovered recipe\'s faction. Published papers grant a scaling permanent craft bonus (+1 every 2 papers, capped at +4). Your academic legacy compounds.',effects:{discoveryChanceBonus:0.35,grandPapers:true,doubleDiscovery:true,citationCraftBonus:true}},
         ]},
-      naturalist:{id:'naturalist',name:'Naturalist',desc:'Document flora and geology in a Field Journal. Unlock permanent yield bonuses and seasonal mastery.',mechDesc:'Field Journal. Ecological observations accumulate during foraging expeditions as you explore different regions and document flora and (from Scholar Lv6) geology. Each documented flora entry passively grants a bonus ingredient on relevant forages, and at Lv10 every documented ingredient also grants a permanent +2 craft bonus. Documenting every entry in a region earns a ★ Region Mastery badge (a visible completion marker). At Lv10, every expedition yields one bonus hidden-area ingredient (even from unmapped areas), seasonal ingredients become available year-round, and the currently-highest-yield region is permanently flagged on the region picker.',icon:'🌿',color:'#60b060',bStat:'inu',bSkills:['divination','extraction'],
+      naturalist:{id:'naturalist',name:'Naturalist',desc:'Document flora and geology in a Field Journal. Unlock permanent yield bonuses, seasonal mastery, and Region Mastery — energy scaling with how much of the world you\'ve charted.',mechDesc:'Field Journal. Ecological observations accumulate during foraging expeditions as you explore different forage zones and document flora and (from Scholar Lv6) geology. Each documented flora entry passively grants a bonus ingredient on relevant forages; documented flora also extends spoilage threshold by +3 for its ingredient. Fauna entries multiplicatively reduce negative expedition events in their zone. At Lv10, the Field Journal capstone fires: (a) every documented ingredient grants a permanent +2 craft bonus (scaling sub-linearly, capped at +4 across 6+ entries); (b) **Region Mastery** activates — fully documenting one forage zone earns a ★ badge and +1 max Energy/day permanently, and completing every zone in a region (Cindervale / Ashfall / Tidecrest / Skyreach — 8 zones each) grants an additional +5 Energy/day for that region. At full mastery (all 32 zones + all 4 regions) the bonus reaches +52 Energy/day. Lv10 also: every expedition yields one bonus hidden-area ingredient (even from unmapped areas), seasonal ingredients become available year-round, and the currently-highest-yield region is permanently flagged on the region picker.',icon:'🌿',color:'#60b060',bStat:'inu',bSkills:['divination','extraction'],
         features:[
           {classLv:3,name:'Field Guide',desc:'+10% chance to find a bonus ingredient on each successful forage hour, drawn from the region\'s pool. Experiments with foraged ingredients get +15% discovery.',effects:{bonusForageChance:0.10,experimentBonus:0.15}},
           {classLv:6,name:'Ecological Insight',desc:'+20% XP from all sources. +15% research discovery chance. Reaching this level grants two nature-themed recipes from your field studies.',effects:{xpMultiplier:0.20,discoveryChanceBonus:0.15},grantRecipes:{pool:['moonmist','dream_dust'],count:2}},
-          {classLv:10,name:'Nature\'s Library',desc:'Every expedition yields 1 bonus hidden-area ingredient (even unmapped areas). Seasonal ingredients available in all seasons. The region with the currently-highest yield is permanently highlighted on the region picker. Field Journal entries grant permanent +2 craft bonus for documented ingredients.',effects:{forageDiscovery:0.30,forageXPBonus:0.25,hiddenForageBonus:true,allSeasonIngr:true,journalCraftBonus:2,revealHighestYieldRegion:true}},
+          {classLv:10,name:'Nature\'s Library',desc:'Every expedition yields 1 bonus hidden-area ingredient (even unmapped areas). Seasonal ingredients available in all seasons. The region with the currently-highest yield is permanently highlighted on the region picker. Field Journal entries grant permanent +2 craft bonus for documented ingredients. **Region Mastery activates:** fully documenting a forage zone earns a ★ badge and +1 max Energy/day permanently; completing every zone in a region (Cindervale/Ashfall/Tidecrest/Skyreach) grants an additional +5 Energy/day. Full mastery = +52 Energy/day.',effects:{forageDiscovery:0.30,forageXPBonus:0.25,hiddenForageBonus:true,allSeasonIngr:true,journalCraftBonus:2,revealHighestYieldRegion:true,regionMasteryBonus:true}},
         ]},
       archivist:{id:'archivist',name:'Archivist',desc:'Pursue lore fragments and quest chains. Board quests refresh faster, and deep knowledge grants permanent stats.',mechDesc:'Lore Fragments. Discover ancient lore fragments during quests and research. Fragments form chains that, when completed, grant permanent passive bonuses. The Lore Archive tracks your collection and shows incomplete chains. Board quests refresh more often and reward bonus reputation.',icon:'📜',color:'#c0a060',bStat:'dis',bSkills:['research','focus'],
         features:[
@@ -2379,71 +2379,81 @@ var FIELD_DISCOVERIES={
   ],
 
   // ═══ SKYREACH FIELD DISCOVERIES ═══
+  // (Re-shaped 2026-05-16: previous Skyreach entries used dead bonus shapes — yieldMultiplier /
+  //  reducedRisk / discoveryChanceBonus / xpMultiplier / enchantBonus / rareForageBonus / craftBonus
+  //  / extractionBonus, plus a `bonusDesc` text field — none of which is read by the engine. Converted
+  //  to the three working shapes the engine actually fires on: flora/geological grant
+  //  {ingredient, extraYield}; fauna grants {dangerReduce}. `bonusDesc` stripped. Each entry now also
+  //  carries a `type` field so the canGeo gate at index.html:9198 works correctly.)
   alpine_meadows:[
-    {id:'fd_sr_1',name:'Silver Edelweiss',icon:'🌸',desc:'A rare silver-petalled flower growing in a sheltered hollow.',bonus:{yieldMultiplier:0.10},bonusDesc:'+10% foraging yield in Alpine Meadows'},
-    {id:'fd_sr_2',name:'Mountain Pika Colony',icon:'🐹',desc:'A colony of pikas that cache rare herbs in their burrows.',bonus:{reducedRisk:0.15},bonusDesc:'+15% danger reduction in Alpine Meadows'},
+    {id:'fd_sr_1',name:'Silver Edelweiss',icon:'🌸',type:'flora',desc:'A rare silver-petalled flower growing in a sheltered hollow.',bonus:{ingredient:'frost_daisy',extraYield:1}},
+    {id:'fd_sr_2',name:'Mountain Pika Colony',icon:'🐹',type:'fauna',desc:'A colony of pikas that cache rare herbs in their burrows.',bonus:{dangerReduce:0.15}},
   ],
   cloud_forest:[
-    {id:'fd_sr_3',name:'Fog Spider Nursery',icon:'🕷️',desc:'A vast web network where fog spiders raise their young. Silk everywhere.',bonus:{yieldMultiplier:0.10},bonusDesc:'+10% foraging yield in Cloud Forest'},
-    {id:'fd_sr_4',name:'Moss Cathedral',icon:'🌿',desc:'An ancient tree hollow carpeted in crystal moss. The air itself feels alive.',bonus:{discoveryChanceBonus:0.10},bonusDesc:'+10% discovery chance in Cloud Forest'},
+    {id:'fd_sr_3',name:'Fog Spider Nursery',icon:'🕷️',type:'fauna',desc:'A vast web network where fog spiders raise their young. Silk everywhere.',bonus:{dangerReduce:0.15}},
+    {id:'fd_sr_4',name:'Moss Cathedral',icon:'🌿',type:'flora',desc:'An ancient tree hollow carpeted in crystal moss. The air itself feels alive.',bonus:{ingredient:'cloud_moss',extraYield:1}},
   ],
   windcarved_cliffs:[
-    {id:'fd_sr_5',name:'Raptor Graveyard',icon:'🦴',desc:'Where old raptors come to die. Ancient plumes and bones everywhere.',bonus:{yieldMultiplier:0.10},bonusDesc:'+10% foraging yield in Wind-Carved Cliffs'},
-    {id:'fd_sr_6',name:'Wind Harp Formation',icon:'🎶',desc:'Natural stone formation that sings when the wind blows through it.',bonus:{xpMultiplier:0.10},bonusDesc:'+10% XP in Wind-Carved Cliffs'},
+    {id:'fd_sr_5',name:'Raptor Graveyard',icon:'🦴',type:'fauna',desc:'Where old raptors come to die. Ancient plumes and bones everywhere.',bonus:{dangerReduce:0.15}},
+    {id:'fd_sr_6',name:'Wind Harp Formation',icon:'🎶',type:'geological',desc:'Natural stone formation that sings when the wind blows through it.',bonus:{ingredient:'windstone',extraYield:1}},
   ],
   crystal_caverns_sr:[
-    {id:'fd_sr_7',name:'Crystal Garden',icon:'💎',desc:'A hidden alcove where crystals grow in shapes resembling flowers.',bonus:{yieldMultiplier:0.10},bonusDesc:'+10% foraging yield in Crystal Caverns'},
-    {id:'fd_sr_8',name:'Resonance Pool',icon:'💧',desc:'A still pool that amplifies any sound. Crystal formations crowd its edges.',bonus:{enchantBonus:1},bonusDesc:'+1 enchant bonus in Crystal Caverns'},
+    {id:'fd_sr_7',name:'Crystal Garden',icon:'💎',type:'geological',desc:'A hidden alcove where crystals grow in shapes resembling flowers.',bonus:{ingredient:'altitude_crystal',extraYield:1}},
+    {id:'fd_sr_8',name:'Resonance Pool',icon:'💧',type:'geological',desc:'A still pool that amplifies any sound. Crystal formations crowd its edges.',bonus:{ingredient:'echo_mineral',extraYield:1}},
   ],
   glacial_lake:[
-    {id:'fd_sr_9',name:'Aurora Moss Bed',icon:'🌈',desc:'A shore where aurora lichen carpets every surface in shifting color.',bonus:{yieldMultiplier:0.10},bonusDesc:'+10% foraging yield in Glacial Lake'},
-    {id:'fd_sr_10',name:'Fossil Shore',icon:'🪸',desc:'Ancient marine fossils exposed by glacial erosion. Summit coral in abundance.',bonus:{rareForageBonus:0.15},bonusDesc:'+15% rare find chance in Glacial Lake'},
+    {id:'fd_sr_9',name:'Aurora Moss Bed',icon:'🌈',type:'flora',desc:'A shore where aurora lichen carpets every surface in shifting color.',bonus:{ingredient:'aurora_lichen',extraYield:1}},
+    {id:'fd_sr_10',name:'Fossil Shore',icon:'🪸',type:'geological',desc:'Ancient marine fossils exposed by glacial erosion. Summit coral in abundance.',bonus:{ingredient:'summit_coral',extraYield:1}},
   ],
   stormspire_peaks:[
-    {id:'fd_sr_11',name:'Lightning Glass Field',icon:'⚡',desc:'A field of natural glass formed by countless lightning strikes.',bonus:{yieldMultiplier:0.10},bonusDesc:'+10% foraging yield in Stormspire Peaks'},
-    {id:'fd_sr_12',name:'Storm Nest',icon:'🌩️',desc:'Where lightning seems to be born. The stone is permanently warm.',bonus:{craftBonus:1},bonusDesc:'+1 craft bonus from Stormspire discoveries'},
+    {id:'fd_sr_11',name:'Lightning Glass Field',icon:'⚡',type:'geological',desc:'A field of natural glass formed by countless lightning strikes.',bonus:{ingredient:'stormglass',extraYield:1}},
+    {id:'fd_sr_12',name:'Storm Nest',icon:'🌩️',type:'geological',desc:'Where lightning seems to be born. The stone is permanently warm.',bonus:{ingredient:'thunder_iron',extraYield:1}},
   ],
   sky_ruins:[
-    {id:'fd_sr_13',name:'Gravity Garden',icon:'🌀',desc:'An area where plants grow sideways, following gravity that points wrong.',bonus:{yieldMultiplier:0.10},bonusDesc:'+10% foraging yield in Sky Ruins'},
-    {id:'fd_sr_14',name:'Star Metal Deposit',icon:'☄️',desc:'A vein of meteoric iron embedded in ruin masonry.',bonus:{extractionBonus:1},bonusDesc:'+1 extraction in Sky Ruins'},
+    {id:'fd_sr_13',name:'Gravity Garden',icon:'🌀',type:'flora',desc:'An area where plants grow sideways, following gravity that points wrong.',bonus:{ingredient:'levitation_dust',extraYield:1}},
+    {id:'fd_sr_14',name:'Star Metal Deposit',icon:'☄️',type:'geological',desc:'A vein of meteoric iron embedded in ruin masonry.',bonus:{ingredient:'star_metal',extraYield:1}},
   ],
   observatory_summit:[
-    {id:'fd_sr_15',name:'Starlight Pool',icon:'⭐',desc:'A pool that collects focused starlight. It glows even at noon.',bonus:{yieldMultiplier:0.15},bonusDesc:'+15% foraging yield at Observatory Summit'},
-    {id:'fd_sr_16',name:'Celestial Instrument',icon:'🔭',desc:'An ancient instrument still tracking the stars after millennia.',bonus:{discoveryChanceBonus:0.15},bonusDesc:'+15% discovery at Observatory Summit'},
+    {id:'fd_sr_15',name:'Starlight Pool',icon:'⭐',type:'geological',desc:'A pool that collects focused starlight. It glows even at noon.',bonus:{ingredient:'celestial_essence',extraYield:2}},
+    {id:'fd_sr_16',name:'Celestial Instrument',icon:'🔭',type:'geological',desc:'An ancient instrument still tracking the stars after millennia.',bonus:{ingredient:'starfire_dust',extraYield:2}},
   ],
 
   // ═══ TIDECREST FIELD DISCOVERIES ═══
+  // (Re-shaped 2026-05-16: same dead-shape cleanup as Skyreach above. Tidecrest entries originally
+  //  used dead bonus shapes none of the engine's three reader sites consume. Converted to working
+  //  shapes: flora/geological grant {ingredient, extraYield}; fauna grants {dangerReduce}. Each
+  //  entry now carries a `type` field so the canGeo gate works correctly.)
   driftwood_shores:[
-    {id:'fd_tc_1',name:'Hermit Crab Colony',icon:'🦀',desc:'A colony of massive hermit crabs that cache rare shells and coral fragments in their borrowed homes.',bonus:{yieldMultiplier:0.10},bonusDesc:'+10% foraging yield in Driftwood Shores'},
-    {id:'fd_tc_2',name:'Tidal Glass Bed',icon:'✨',desc:'Sea glass tumbled smooth by centuries of tide, concentrated in a sheltered cove.',bonus:{reducedRisk:0.15},bonusDesc:'+15% danger reduction in Driftwood Shores'},
+    {id:'fd_tc_1',name:'Hermit Crab Colony',icon:'🦀',type:'fauna',desc:'A colony of massive hermit crabs that cache rare shells and coral fragments in their borrowed homes.',bonus:{dangerReduce:0.15}},
+    {id:'fd_tc_2',name:'Tidal Glass Bed',icon:'✨',type:'geological',desc:'Sea glass tumbled smooth by centuries of tide, concentrated in a sheltered cove.',bonus:{ingredient:'sea_glass',extraYield:1}},
   ],
   tidal_pools:[
-    {id:'fd_tc_3',name:'Bioluminescent Pool',icon:'💡',desc:'A tidal pool that glows at night. The organisms produce alchemically potent light.',bonus:{yieldMultiplier:0.10},bonusDesc:'+10% foraging yield in Tidal Pools'},
-    {id:'fd_tc_4',name:'Anemone Nursery',icon:'🪸',desc:'A sheltered nursery where juvenile anemones cluster. Their secretions are uniquely potent.',bonus:{discoveryChanceBonus:0.10},bonusDesc:'+10% discovery chance in Tidal Pools'},
+    {id:'fd_tc_3',name:'Bioluminescent Pool',icon:'💡',type:'flora',desc:'A tidal pool that glows at night. The organisms produce alchemically potent light.',bonus:{ingredient:'anemone_extract',extraYield:1}},
+    {id:'fd_tc_4',name:'Anemone Nursery',icon:'🪸',type:'fauna',desc:'A sheltered nursery where juvenile anemones cluster. Their secretions are uniquely potent.',bonus:{dangerReduce:0.15}},
   ],
   kelp_forest:[
-    {id:'fd_tc_5',name:'Whale Bone Arch',icon:'🐋',desc:'An ancient whale skeleton forming a natural arch. Rare organisms grow on the bones.',bonus:{yieldMultiplier:0.10},bonusDesc:'+10% foraging yield in Kelp Forest'},
-    {id:'fd_tc_6',name:'Current Convergence',icon:'🌊',desc:'Where three ocean currents meet, rare materials from distant waters accumulate.',bonus:{rareForageBonus:0.15},bonusDesc:'+15% rare find chance in Kelp Forest'},
+    {id:'fd_tc_5',name:'Whale Bone Arch',icon:'🐋',type:'flora',desc:'An ancient whale skeleton forming a natural arch. Rare organisms grow on the bones.',bonus:{ingredient:'phosphor_moss',extraYield:1}},
+    {id:'fd_tc_6',name:'Current Convergence',icon:'🌊',type:'geological',desc:'Where three ocean currents meet, rare materials from distant waters accumulate.',bonus:{ingredient:'sea_amber',extraYield:1}},
   ],
   fog_hollows:[
-    {id:'fd_tc_7',name:'Echo Grotto',icon:'🔔',desc:'A sea cave where sound bounces endlessly. Minerals here vibrate with stored acoustic energy.',bonus:{yieldMultiplier:0.10},bonusDesc:'+10% foraging yield in Fog Hollows'},
-    {id:'fd_tc_8',name:'Phosphor Ceiling',icon:'🌌',desc:'The cave ceiling is alive with bioluminescent organisms mimicking a starry sky.',bonus:{xpMultiplier:0.10},bonusDesc:'+10% XP in Fog Hollows'},
+    {id:'fd_tc_7',name:'Echo Grotto',icon:'🔔',type:'geological',desc:'A sea cave where sound bounces endlessly. Minerals here vibrate with stored acoustic energy.',bonus:{ingredient:'echo_coral',extraYield:1}},
+    {id:'fd_tc_8',name:'Phosphor Ceiling',icon:'🌌',type:'flora',desc:'The cave ceiling is alive with bioluminescent organisms mimicking a starry sky.',bonus:{ingredient:'phosphor_moss',extraYield:1}},
   ],
   coral_labyrinth:[
-    {id:'fd_tc_9',name:'Pearl Bed',icon:'🦪',desc:'A hidden chamber where giant clams cultivate pearls of extraordinary size and luster.',bonus:{yieldMultiplier:0.10},bonusDesc:'+10% foraging yield in Coral Labyrinth'},
-    {id:'fd_tc_10',name:'Siren Grotto',icon:'🧜',desc:'A cave where siren tears collect in mineral pools. The water has strange, beautiful properties.',bonus:{enchantBonus:1},bonusDesc:'+1 enchant bonus in Coral Labyrinth'},
+    {id:'fd_tc_9',name:'Pearl Bed',icon:'🦪',type:'fauna',desc:'A hidden chamber where giant clams cultivate pearls of extraordinary size and luster.',bonus:{dangerReduce:0.15}},
+    {id:'fd_tc_10',name:'Siren Grotto',icon:'🧜',type:'geological',desc:'A cave where siren tears collect in mineral pools. The water has strange, beautiful properties.',bonus:{ingredient:'siren_tear',extraYield:1}},
   ],
   shipwreck_graveyard:[
-    {id:'fd_tc_11',name:'Captain\'s Armory',icon:'⚔️',desc:'A sealed weapons locker from a sunken warship. Centuries of brine have alchemically transformed the contents.',bonus:{yieldMultiplier:0.10},bonusDesc:'+10% foraging yield in Shipwreck Graveyard'},
-    {id:'fd_tc_12',name:'Barnacle Fortress',icon:'🏰',desc:'A ship hull so encrusted with barnacles it has become a living reef. Unique materials grow here.',bonus:{extractionBonus:1},bonusDesc:'+1 extraction in Shipwreck Graveyard'},
+    {id:'fd_tc_11',name:'Captain\'s Armory',icon:'⚔️',type:'geological',desc:'A sealed weapons locker from a sunken warship. Centuries of brine have alchemically transformed the contents.',bonus:{ingredient:'cannon_bronze',extraYield:1}},
+    {id:'fd_tc_12',name:'Barnacle Fortress',icon:'🏰',type:'fauna',desc:'A ship hull so encrusted with barnacles it has become a living reef. Unique materials grow here.',bonus:{dangerReduce:0.20}},
   ],
   abyssal_trench:[
-    {id:'fd_tc_13',name:'Thermal Vent Colony',icon:'🌋',desc:'A cluster of hydrothermal vents supporting life found nowhere else on the surface.',bonus:{yieldMultiplier:0.10},bonusDesc:'+10% foraging yield in Abyssal Trench'},
-    {id:'fd_tc_14',name:'Pressure Crystal Seam',icon:'💎',desc:'Extreme pressure has crystallized minerals into forms with unique alchemical properties.',bonus:{craftBonus:1},bonusDesc:'+1 craft bonus from Abyssal Trench discoveries'},
+    {id:'fd_tc_13',name:'Thermal Vent Colony',icon:'🌋',type:'fauna',desc:'A cluster of hydrothermal vents supporting life found nowhere else on the surface.',bonus:{dangerReduce:0.20}},
+    {id:'fd_tc_14',name:'Pressure Crystal Seam',icon:'💎',type:'geological',desc:'Extreme pressure has crystallized minerals into forms with unique alchemical properties.',bonus:{ingredient:'abyssal_vent_mineral',extraYield:1}},
   ],
   drowned_sanctum:[
-    {id:'fd_tc_15',name:'Oracle\'s Mirror',icon:'🪞',desc:'A perfectly still pool that reflects not what is, but what was. Ancient visions shimmer below.',bonus:{yieldMultiplier:0.15},bonusDesc:'+15% foraging yield at Drowned Sanctum'},
-    {id:'fd_tc_16',name:'Rune-Carved Pillar',icon:'🗿',desc:'A pillar inscribed with runes from before the flood. Touching it fills your mind with knowledge.',bonus:{discoveryChanceBonus:0.15},bonusDesc:'+15% discovery at Drowned Sanctum'},
+    {id:'fd_tc_15',name:'Oracle\'s Mirror',icon:'🪞',type:'geological',desc:'A perfectly still pool that reflects not what is, but what was. Ancient visions shimmer below.',bonus:{ingredient:'oracle_tear',extraYield:2}},
+    {id:'fd_tc_16',name:'Rune-Carved Pillar',icon:'🗿',type:'geological',desc:'A pillar inscribed with runes from before the flood. Touching it fills your mind with knowledge.',bonus:{ingredient:'primordial_brine',extraYield:2}},
   ],
 };
 
