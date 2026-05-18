@@ -3235,7 +3235,10 @@ function CindervaleAlchemistInner(){
     // Arcanist Lv4 Pattern Library: 15% inscription DC reduction on custom patterns
     const _arcLv=prestigeLevels?.arcanist||0;
     const _customLibDCReduc=(ench.isCustom&&_arcLv>=4)?Math.floor(ench.dc*0.15):0;
-    const adjDC=Math.max(5,ench.dc+enchQualDCMod-_customLibDCReduc);
+    // Spellweaver Planar Attunement (designlock §B; combo replaces plane via getPlanarEffects).
+    const _planEfx=getPlanarEffects();
+    const _planarDCDelta=(-(_planEfx.dcReduction||0))+(ench.cat==='weapon'?(_planEfx.offensiveDCPenalty||0):0);
+    const adjDC=Math.max(5,ench.dc+enchQualDCMod-_customLibDCReduc+_planarDCDelta);
     const ch=doCheck('inscription',adjDC);
     const arcB=getSkMod('arcane_sense');const focB=getSkMod('focus');const csb=upEff('craftSkillBonus');
     const efb=getFeatureVal('enchantBonus');const esf=Math.min(getFeatureVal('enchantSuccessFlat'),20);
@@ -3245,6 +3248,9 @@ function CindervaleAlchemistInner(){
     if(arcB)ch.extras.push({label:'Arcane Sense',val:arcB});if(focB)ch.extras.push({label:'Focus',val:focB});if(csb)ch.extras.push({label:'Upgrades',val:csb});if(efb)ch.extras.push({label:'Inscription Mastery',val:efb});if(esf)ch.extras.push({label:'Enchant Mastery',val:esf});
     if(cefb)ch.extras.push({label:(ench.cat||'')+' specialty',val:cefb});
     if(cesf)ch.extras.push({label:(ench.cat||'')+' mastery',val:cesf});
+    const planarBonus=(ench.cat==='armor'?(_planEfx.defensiveBonus||0):0)+(_planEfx.inscriptionBonus||0);
+    if(planarBonus)ch.extras.push({label:'🌀 Planar',val:planarBonus});
+    const _planarAutoDC=_planEfx.autoSuccessDC||0;
     const autoEnchDC=getFeatureVal('autoEnchantDC');
     const critRange=20-getFeatureVal('enchantCritRange');
     const isCrit=ch.roll>=critRange;
@@ -3253,13 +3259,13 @@ function CindervaleAlchemistInner(){
     const isMW=isCrit||focusMW;
     const arcPatternB=isCustomEnch?getPatternInscBonus():0;
     if(arcPatternB){ch.total+=arcPatternB;ch.extras.push({label:'\u2728 Arcanist',val:arcPatternB});}
-    const adj=ch.total+arcB+focB+csb+efb+esf+arcPatternB+cefb+cesf;ch.total=adj;ch.success=ch.roll===1?false:(ch.roll===20?true:(adj>=adjDC||(autoEnchDC>0&&adjDC<=autoEnchDC)||isCrit));
+    const adj=ch.total+arcB+focB+csb+efb+esf+arcPatternB+cefb+cesf+planarBonus;ch.total=adj;ch.success=ch.roll===1?false:(ch.roll===20?true:(adj>=adjDC||(autoEnchDC>0&&adjDC<=autoEnchDC)||(_planarAutoDC>0&&adjDC<=_planarAutoDC)||isCrit));
     if(!ch.success){
       const crCharges=getFeatureVal('checkReroll')+dayFlags.filter(f=>f==='companion_reroll').length;
       const crUsed=dayFlags.filter(f=>f==='check_rerolled').length;
       if(crCharges>crUsed){
         const rr=doCheck('inscription',adjDC);
-        const rrAdj=rr.total+arcB+focB+csb+efb+esf+cefb+cesf;rr.total=rrAdj;rr.success=rr.roll===1?false:(rr.roll===20?true:(rrAdj>=adjDC||(autoEnchDC>0&&adjDC<=autoEnchDC)));
+        const rrAdj=rr.total+arcB+focB+csb+efb+esf+cefb+cesf+planarBonus;rr.total=rrAdj;rr.success=rr.roll===1?false:(rr.roll===20?true:(rrAdj>=adjDC||(autoEnchDC>0&&adjDC<=autoEnchDC)||(_planarAutoDC>0&&adjDC<=_planarAutoDC)));
         rr.extras.push({label:'🔄 Reroll',val:'1/day'});
         setDayFlags(f=>[...f,'check_rerolled']);
         if(rr.success){Object.assign(ch,rr);ch.success=true;}
@@ -3269,16 +3275,48 @@ function CindervaleAlchemistInner(){
       const critGold=isMW?Math.floor(baseGR*0.5):0;
       const enchGoldB=getFeatureVal('enchantGoldBonus')+getCategoricalBonus('enchant',ench.cat,'enchantGoldBonus');const custPayB=getFeatureVal('customerPayBonus');
       const debtPenalty=debt>50?-0.20:0;
-      const gR=Math.floor((baseGR+critGold)*(1+enchGoldB+custPayB+debtPenalty)*customSellMult*eqT.sellMult*GOLD_MULT);const enchXpEarned=Math.floor(ench.xp*eqT.xpMult);gainXP(enchXpEarned);setGold(g=>g+gR);
+      // Planar gold-mult composition (designlock §B): one of all/utility/defensive mults applies,
+      // gated by ench.cat where appropriate, then goldPenalty applies multiplicatively.
+      let _planarMult=1;
+      if(_planEfx.allGoldMult)_planarMult*=_planEfx.allGoldMult;
+      else if(_planEfx.utilityGoldMult&&ench.cat==='other')_planarMult*=_planEfx.utilityGoldMult;
+      else if(_planEfx.defensiveGoldMult&&ench.cat==='armor')_planarMult*=_planEfx.defensiveGoldMult;
+      if(_planEfx.goldPenalty)_planarMult*=(1-_planEfx.goldPenalty);
+      const gR=Math.floor((baseGR+critGold)*(1+enchGoldB+custPayB+debtPenalty)*customSellMult*eqT.sellMult*GOLD_MULT*_planarMult);const enchXpEarned=Math.floor(ench.xp*eqT.xpMult);gainXP(enchXpEarned);setGold(g=>g+gR);
       showResult(ench.icon+' '+(quality!=='std'?QUALITY[quality].icon+' ':'')+ench.name+' \u2014 Enchanted!','craft',cust.customer+"'s "+cust.icon+cust.name+'\\n+'+enchXpEarned+' XP  +'+gR+'g'+(isCustomEnch&&customSellMult>1?'\\n\u2728 Custom pattern: '+customSellMult+'\u00d7 premium!':'')+(matSaved?'\\n\u2728 Materials preserved!':'')+(isCrit?'\\n🎯 Critical inscription!':'')+(focusMW?'\\n🧘 Focus: Masterwork quality!':'')+(discounted?'\\n🏷\ufe0f Discount materials!':'')+(debtPenalty<0?'\\n\u26a0\ufe0f Debt penalty: -20% pay':''),ch);
       if(dualInsc>0&&!dayFlags.includes('dual_inscribed')){setDayFlags(f=>[...f,'dual_inscribed']);setEnergy(e=>e+25);addLog('\u2728 Dual Inscription: bonus enchant this hour!','info');}
       const ebsChance=getFeatureVal('enchantBonusScroll');if(ebsChance>0&&Math.random()<ebsChance){const scrollGold=Math.floor(ench.dc*5);setGold(g=>g+scrollGold);addLog(`📜 Arcane Recycler: Residual energy formed a bonus scroll! +${scrollGold}g`,'craft');}
+      // Planar Attunement reinterpreted effects (designlock §B): dualChanceBonus / bonusEnchantChance
+      // pay out as +50% bonus gold + +50% bonus XP (not a literal second enchant).
+      const _dualChance=(_planEfx.dualChanceBonus||0)+(_planEfx.bonusEnchantChance||0);
+      if(_dualChance>0&&Math.random()<_dualChance){
+        const bonusGold=Math.floor(gR*0.5);const bonusXp=Math.floor(enchXpEarned*0.5);
+        setGold(g=>g+bonusGold);gainXP(bonusXp);
+        addLog(`🌀 Planar surge: +${bonusGold}g, +${bonusXp} XP from residual energy.`,'craft');
+      }
+      // fadeChance reinterpreted (designlock §B): dissatisfied-customer roll, not overnight rollback.
+      if((_planEfx.fadeChance||0)>0&&Math.random()<_planEfx.fadeChance){
+        setGold(g=>g-10);
+        if(factionAlign)addRep(factionAlign,-1);
+        addLog('🌀 Feywild instability: '+cust.customer+' returns dissatisfied — refunded 10g'+(factionAlign?' (−1 '+(FACTIONS[factionAlign]?.name||factionAlign)+' rep).':'.'),'error');
+      }
     }
     else{
-      const fer=getFeatureVal('failEnchantReturn');
+      let fer=getFeatureVal('failEnchantReturn');
+      // Planar Attunement (designlock \u00a7B): Elemental Chaos failDestroyMats overrides material recovery;
+      // Void Storm critFailDestroy is reinterpreted as nat-1 \u2192 \u221225g compensation + zero recovery.
+      const _planarDestroysMats=(_planEfx.failDestroyMats===true)||(_planEfx.critFailDestroy===true&&ch.roll===1);
+      if(_planarDestroysMats)fer=0;
       if(fer>0&&!matSaved&&Object.keys(cost).length>0){Object.entries(cost).forEach(([id,q])=>modInv(id,Math.ceil(q*fer)));
         addLog('\u2728 Enchanter training: recovered '+Math.round(fer*100)+'% of materials.','info');}
-      showResult(ench.icon+' '+ench.name+' \u2014 Failed!','error',"The inscription flickers and fades on "+cust.customer+"'s "+cust.name+'.'+(fer>0?'\\nRecovered some materials.':''),ch);}
+      if(_planEfx.critFailDestroy===true&&ch.roll===1){
+        setGold(g=>g-25);
+        addLog('\ud83c\udf00 Void Storm crit-fail: paid 25g compensation, materials destroyed.','error');
+      }
+      else if(_planEfx.failDestroyMats===true&&!matSaved&&Object.keys(cost).length>0){
+        addLog('\ud83c\udf00 Elemental Chaos: failed inscription consumed all materials.','error');
+      }
+      showResult(ench.icon+' '+ench.name+' \u2014 Failed!','error',"The inscription flickers and fades on "+cust.customer+"'s "+cust.name+'.'+(fer>0?'\\nRecovered some materials.':'')+(_planarDestroysMats&&!matSaved?'\\n\ud83c\udf00 Planar dissipation: materials lost.':''),ch);}
     setEnchQ(p=>p.filter(c=>c!==cust));
   };
 
@@ -3605,10 +3643,14 @@ function CindervaleAlchemistInner(){
     if(canDual&&planarFocus&&planarFocus.planeIds.length===1&&planarFocus.expiresDay>day){
       const newIds=[...planarFocus.planeIds,planeId].sort();
       setPlanarFocus({planeIds:newIds,expiresDay:day+duration});
-      const combo=PLANAR_COMBOS[newIds.join('+')];
+      // PLANAR_COMBOS keys aren't alphabetical; try both orderings (same fix as getPlanarCombo).
+      const combo=PLANAR_COMBOS[newIds.join('+')]||PLANAR_COMBOS[newIds.slice().reverse().join('+')];
       const p=PLANAR_FOCUSES.find(f=>f.id===planeId);
+      // Render mechanical effects from locked semantics, NOT combo.desc (which carries literal-interpretation
+      // wording for reinterpreted effects — designlock §B).
+      const comboLines=combo?formatPlanarEffects(combo.effects).map(l=>(l.good?'✓ ':'⚠ ')+l.txt).join('\n'):'';
       showResult('🌀 Planar Convergence!','craft',
-        (combo?combo.icon+' '+combo.name+'\n'+combo.desc:p.icon+' '+p.name+' added')+
+        (combo?combo.icon+' '+combo.name+(comboLines?'\n'+comboLines:'')+'\n(Combo replaces both planes\' individual effects.)':p.icon+' '+p.name+' added')+
         '\nAttunement lasts '+duration+' day'+(duration>1?'s':'')+'.','');
       addLog(`🌀 Convergence: ${combo?combo.icon+combo.name:p.name}. Active for ${duration} day${duration>1?'s':''}.`,'quest');
       return;
@@ -3616,8 +3658,10 @@ function CindervaleAlchemistInner(){
     // New attunement
     const plane=PLANAR_FOCUSES.find(f=>f.id===planeId);if(!plane)return;
     setPlanarFocus({planeIds:[planeId],expiresDay:day+duration});
+    // Render mechanical effects from locked semantics, NOT plane.desc.
+    const planeLines=formatPlanarEffects(plane.effects).map(l=>(l.good?'✓ ':'⚠ ')+l.txt).join('\n');
     showResult('🌀 Planar Attunement — '+plane.icon+' '+plane.name,'craft',
-      plane.flavor+'\n\n'+plane.desc+'\nActive for '+duration+' day'+(duration>1?'s':'')+'.','');
+      plane.flavor+(planeLines?'\n\n'+planeLines:'')+'\nActive for '+duration+' day'+(duration>1?'s':'')+'.','');
     addLog(`🌀 Attuned to ${plane.icon}${plane.name}. Active for ${duration} day${duration>1?'s':''}.`,'info');
   };
   const getActivePlanes=()=>{
@@ -3627,7 +3671,42 @@ function CindervaleAlchemistInner(){
   const getPlanarCombo=()=>{
     const ids=getActivePlanes();
     if(ids.length<2)return null;
-    return PLANAR_COMBOS[ids.sort().join('+')]||null;
+    // PLANAR_COMBOS keys are not alphabetically sorted (they follow PLANAR_FOCUSES order,
+    // lower-index plane first), so try both orderings rather than assuming alphabetical.
+    const a=ids.slice().sort();
+    return PLANAR_COMBOS[a.join('+')]||PLANAR_COMBOS[a.slice().reverse().join('+')]||null;
+  };
+  // Single source of truth for the convergence rule (designlock §B):
+  // when 2 planes are attuned, the combo's effects REPLACE the individual planes' effects.
+  // Consumers read from here so the rule lives in one place.
+  const getPlanarEffects=()=>{
+    const ids=getActivePlanes();
+    if(ids.length===0)return{};
+    const combo=getPlanarCombo();
+    if(combo)return{...(combo.effects||{})};
+    const plane=PLANAR_FOCUSES.find(p=>p.id===ids[0]);
+    return plane?{...(plane.effects||{})}:{};
+  };
+  // Render an effect map as user-facing lines using LOCKED semantics
+  // (designlock §B; 4 keys are reinterpreted from their literal declared meaning).
+  const formatPlanarEffects=(efx)=>{
+    if(!efx)return[];
+    const out=[];
+    if(efx.utilityGoldMult)out.push({txt:'+'+Math.round((efx.utilityGoldMult-1)*100)+'% gold on accessory/utility ("other") enchants',good:true});
+    if(efx.allGoldMult)out.push({txt:'+'+Math.round((efx.allGoldMult-1)*100)+'% gold on all enchants',good:true});
+    if(efx.defensiveGoldMult)out.push({txt:'+'+Math.round((efx.defensiveGoldMult-1)*100)+'% gold on armor enchants',good:true});
+    if(efx.goldPenalty)out.push({txt:'−'+Math.round(efx.goldPenalty*100)+'% gold on all enchants',good:false});
+    if(efx.defensiveBonus)out.push({txt:'+'+efx.defensiveBonus+' inscription on armor enchants',good:true});
+    if(efx.inscriptionBonus)out.push({txt:'+'+efx.inscriptionBonus+' inscription on all enchants',good:true});
+    if(efx.offensiveDCPenalty)out.push({txt:'+'+efx.offensiveDCPenalty+' DC on weapon enchants',good:false});
+    if(efx.dcReduction)out.push({txt:'−'+efx.dcReduction+' DC on all enchants',good:true});
+    if(efx.autoSuccessDC)out.push({txt:'Auto-succeed inscriptions at DC '+efx.autoSuccessDC+' or below',good:true});
+    if(efx.fadeChance)out.push({txt:Math.round(efx.fadeChance*100)+'% chance on success: dissatisfied customer (−10g, −1 aligned-faction rep)',good:false});
+    if(efx.dualChanceBonus)out.push({txt:Math.round(efx.dualChanceBonus*100)+'% chance on success: planar surge (+50% gold, +50% XP)',good:true});
+    if(efx.bonusEnchantChance)out.push({txt:Math.round(efx.bonusEnchantChance*100)+'% chance on success: planar surge (+50% gold, +50% XP)',good:true});
+    if(efx.failDestroyMats)out.push({txt:'Failed inscriptions destroy materials (no recovery)',good:false});
+    if(efx.critFailDestroy)out.push({txt:'On nat-1: −25g compensation, materials destroyed',good:false});
+    return out;
   };
 
   // ═══ ARCANIST — CUSTOM ENCHANTMENT PATTERNS ═══
@@ -9047,18 +9126,28 @@ function CindervaleAlchemistInner(){
             const availCount=swLv>=6?4:2;
             const available=PLANAR_FOCUSES.slice(0,availCount);
             const canAttune=activePlanes.length<maxPlanes||(activePlanes.length>0&&planarFocus.expiresDay<=day);
+            // All effect text below is derived from getPlanarEffects()/formatPlanarEffects (designlock §B locked semantics).
+            // Raw plane.desc / combo.desc fields are intentionally NOT rendered — they contain literal-interpretation
+            // wording for 4 reinterpreted effects (fadeChance, dualChanceBonus, bonusEnchantChance, critFailDestroy).
+            const activeEfx=getPlanarEffects();
+            const daysLeft=planarFocus?Math.max(0,planarFocus.expiresDay-day):0;
             return <>
               {/* Active attunement display */}
               {activePlanes.length>0&&<div style={{padding:'8px 12px',background:'#a060e015',borderRadius:6,marginBottom:8,border:'1px solid #a060e044'}}>
                 {combo?<>
                   <div style={{fontSize:16,color:'#d090ff',fontWeight:'bold'}}>{combo.icon} {combo.name} — Convergence Active</div>
-                  <div style={{fontSize:14,color:TH.text,margin:'3px 0'}}>{combo.desc}</div>
+                  <div style={{fontSize:11,color:TH.textDim,fontStyle:'italic',margin:'2px 0 4px'}}>Combo replaces individual plane effects.</div>
+                  {formatPlanarEffects(activeEfx).map((l,i)=>
+                    <div key={i} style={{fontSize:13,color:l.good?TH.green:'#e08080'}}>{l.good?'✓':'⚠'} {l.txt}</div>)}
                 </>:<>
                   {activePlanes.map(pid=>{const p=PLANAR_FOCUSES.find(f=>f.id===pid);return p?
-                    <div key={pid}><span style={{fontSize:16,color:p.color,fontWeight:'bold'}}>{p.icon} {p.name}</span>
-                    <span style={{fontSize:13,color:TH.textDim,marginLeft:8}}>{p.desc}</span></div>:null;})}
+                    <div key={pid} style={{marginBottom:4}}>
+                      <div style={{fontSize:16,color:p.color,fontWeight:'bold'}}>{p.icon} {p.name}</div>
+                      {formatPlanarEffects(p.effects).map((l,i)=>
+                        <div key={i} style={{fontSize:13,color:l.good?TH.green:'#e08080',marginLeft:6}}>{l.good?'✓':'⚠'} {l.txt}</div>)}
+                    </div>:null;})}
                 </>}
-                <div style={{fontSize:12,color:TH.textDim,marginTop:4}}>Expires: Day {planarFocus.expiresDay}
+                <div style={{fontSize:12,color:TH.textDim,marginTop:4}}>Expires: Day {planarFocus?.expiresDay} ({daysLeft} day{daysLeft===1?'':'s'} left)
                   {swLv>=10&&activePlanes.length<2&&' · Can add second plane (Convergence)'}</div>
               </div>}
               {activePlanes.length===0&&<div style={{fontSize:14,color:TH.textDim,marginBottom:6}}>No active attunement. Choose a plane to channel its energy into your enchantments.</div>}
@@ -9066,12 +9155,22 @@ function CindervaleAlchemistInner(){
               <div style={{display:'flex',flexWrap:'wrap',gap:6}}>
                 {available.map(plane=>{
                   const isActive=activePlanes.includes(plane.id);
+                  // At Lv10 with 1 plane already active, preview the combo this selection would form.
+                  const comboPreview=(swLv>=10&&activePlanes.length===1&&!isActive)?
+                    (PLANAR_COMBOS[[activePlanes[0],plane.id].sort().join('+')]||PLANAR_COMBOS[[activePlanes[0],plane.id].sort().reverse().join('+')]):null;
                   return <button key={plane.id} style={{flex:'1 1 45%',padding:'8px 10px',borderRadius:6,cursor:isActive?'default':'pointer',
                     background:isActive?plane.color+'25':TH.panelLight,border:'2px solid '+(isActive?plane.color:TH.border),
                     color:isActive?plane.color:TH.text,textAlign:'left',fontFamily:'inherit',fontSize:13,opacity:isActive?0.7:1}}
                     disabled={isActive} onClick={()=>attunePlane(plane.id)}>
                     <div style={{fontWeight:'bold',fontSize:14}}>{plane.icon} {plane.name}</div>
-                    <div style={{fontSize:12,color:isActive?plane.color+'aa':TH.textDim,marginTop:2}}>{plane.desc}</div>
+                    {formatPlanarEffects(plane.effects).map((l,i)=>
+                      <div key={i} style={{fontSize:11,color:l.good?TH.green:'#e08080',marginTop:1}}>{l.good?'+':'•'} {l.txt}</div>)}
+                    {comboPreview&&<>
+                      <div style={{fontSize:11,color:'#d090ff',marginTop:4,fontWeight:'bold'}}>→ Convergence: {comboPreview.icon} {comboPreview.name}</div>
+                      {formatPlanarEffects(comboPreview.effects).map((l,i)=>
+                        <div key={'cp'+i} style={{fontSize:11,color:l.good?TH.green:'#e08080',marginLeft:8}}>{l.good?'+':'•'} {l.txt}</div>)}
+                      <div style={{fontSize:10,color:TH.textDim,fontStyle:'italic',marginTop:2}}>(combo replaces both planes' individual effects)</div>
+                    </>}
                   </button>;
                 })}
               </div>
