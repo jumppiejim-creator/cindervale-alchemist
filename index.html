@@ -165,6 +165,17 @@ function sfxFailure(volDb=0){
 // Convert 0-100 slider to gain (0=silent, 100=full)
 function volToGain(pct){return Math.max(0,Math.min(1,pct/100));}
 function volToDb(pct){if(pct<=0)return -Infinity;return 20*Math.log10(pct/100);}
+// ─── MONEY FORMATTER ───
+// The wallet integer is SILVER (the coinage standardization: values formerly suffixed "g" were
+// silver all along). 1g = 10s, 1pp = 10g. Copper is flavor-only. Renders the two largest
+// non-zero denominations. All math stays in raw integers — format at display time only.
+function fmtMoney(n){
+  const neg=n<0?'-':'';n=Math.abs(Math.floor(n||0));
+  const pp=Math.floor(n/100),g=Math.floor((n%100)/10),s=n%10;
+  if(pp>0)return neg+pp+'pp'+(g?' '+g+'g':'');
+  if(g>0)return neg+g+'g'+(s?' '+s+'s':'');
+  return neg+s+'s';
+}
 
 function createBgMusic(volPct){
   const gain=new Tone.Gain(volToGain(volPct)).toDestination();
@@ -4430,7 +4441,7 @@ function CindervaleAlchemistInner(){
         }
       }
     }
-    showResult('📌 Request Fulfilled!','quest',`${bq.giver}: "${bq.itemIcon}${bq.itemName} received. Much appreciated!"\n+${bq.gold}g  +${bq.xp}XP`+(bq.faction?'\n+'+bq.fRep+' '+FACTIONS[bq.faction]?.name+' rep':''));
+    showResult('📌 Request Fulfilled!','quest',`${bq.giver}: "${bq.itemIcon}${bq.itemName} received. Much appreciated!"\n+${fmtMoney(bq.gold)}  +${bq.xp}XP`+(bq.faction?'\n+'+bq.fRep+' '+FACTIONS[bq.faction]?.name+' rep':''));
   };
   const abandonBQ=(bq)=>{setActiveBQ(p=>p.filter(q=>q.id!==bq.id));addLog(`📌 Abandoned: ${bq.name}`,'info');};
   // Open NPC with auto-quest detection
@@ -4761,7 +4772,7 @@ function CindervaleAlchemistInner(){
       addLog('✅ Shop reopened! Debt reduced below critical threshold.','info');
     }
     // Report line
-    report.push({n:'Daily Costs',i:'💰',r:'-'+dailyUpkeep+'g (base 5 + '+Math.max(0,dailyUpkeep-5)+' maintenance/wages)'+(newDebt>0?' | DEBT: '+newDebt+'g':''),t:newDebt>0?'fail':'idle'});
+    report.push({n:'Daily Costs',i:'💰',r:fmtMoney(-dailyUpkeep)+' (base '+fmtMoney(5)+' + '+fmtMoney(Math.max(0,dailyUpkeep-5))+' maintenance/wages)'+(newDebt>0?' | DEBT: '+fmtMoney(newDebt):''),t:newDebt>0?'fail':'idle'});
     if(upEff('passiveIncome')>0){const piMult=Math.max(1,getFeatureVal('passiveIncomeMulti'));const p=Math.max(1,Math.floor(upEff('passiveIncome')*piMult*GOLD_MULT));setGold(g=>g+p);report.push({n:'Shop Front',i:'🪟',r:`+${p}g${piMult>1?' (×'+piMult+')':''}`,t:'ok'});}
     // ═══ LEGACY WORKSHOP INCOME ═══
     if(lineage?.generations?.length>0){
@@ -4773,7 +4784,7 @@ function CindervaleAlchemistInner(){
       if(legacyGold>0){
         legacyGold=Math.max(1,Math.floor(legacyGold*GOLD_MULT));
         setGold(g=>g+legacyGold);
-        report.push({n:'Family Business Network ('+lineage.generations.length+' gen'+(lineage.generations.length>1?'s':'')+')',i:'🏠',r:'+'+legacyGold+'g',t:'ok'});
+        report.push({n:'Family Business Network ('+lineage.generations.length+' gen'+(lineage.generations.length>1?'s':'')+')',i:'🏠',r:'+'+fmtMoney(legacyGold),t:'ok'});
       }
     }
     // ═══ SEASONAL FAMILY CARAVAN ═══
@@ -4810,11 +4821,11 @@ function CindervaleAlchemistInner(){
         const base=grand?8:3;
         paperGold+=scaling?Math.floor(base*(1+Math.min(age/30,2))):base;
       });
-      if(paperGold>0){setGold(g=>g+paperGold);report.push({n:'Research Papers',i:'📝',r:`+${paperGold}g (${pubPapers.length} paper${pubPapers.length>1?'s':''})`,t:'ok'});}
+      if(paperGold>0){setGold(g=>g+paperGold);report.push({n:'Research Papers',i:'📝',r:`+${fmtMoney(paperGold)} (${pubPapers.length} paper${pubPapers.length>1?'s':''})`,t:'ok'});}
     }
     // goldIncomeBonus: flat daily gold from class features
     const gib=getFeatureVal('goldIncomeBonus');
-    if(gib>0){setGold(g=>g+gib);report.push({n:'Class Income',i:'💰',r:`+${gib}g`,t:'ok'});}
+    if(gib>0){setGold(g=>g+gib);report.push({n:'Class Income',i:'💰',r:`+${fmtMoney(gib)}`,t:'ok'});}
     if(upEff('dailyRep')>0)Object.keys(fRep).forEach(f=>addRep(f,upEff('dailyRep')));
     if(hasUp('garden')){const pool=gameLocation==='tidecrest'?['kelp_frond','tide_moss']:gameLocation==='ashfall'?['sunpetal','scorchroot']:['ashbloom','ironroot_bark'];const h=pool[Math.floor(Math.random()*pool.length)];const q=1+Math.floor(Math.random()*2);modInv(h,q);report.push({n:'Garden',i:'🌱',r:`${INGR[h]?.icon||''}×${q}`,t:'ok'});}
     if(hasUp('garden_2')){const pool=gameLocation==='tidecrest'?['coral_shard','pearl_dust']:gameLocation==='ashfall'?['dewdrop_lily','crystal_salt']:['moonpetal','starwort'];const h=pool[Math.floor(Math.random()*pool.length)];modInv(h,1);report.push({n:'Greenhouse',i:'🌿',r:`${INGR[h]?.icon||''}`,t:'ok'});}
@@ -4874,7 +4885,7 @@ function CindervaleAlchemistInner(){
     const allSetsComplete=aqLv4>=5&&Object.keys(RELIC_SETS).every(sid=>(museum[sid]||0)>=RELIC_SETS[sid].needed);
     if(allSetsComplete){
       const museumGold=10;setGold(g=>g+museumGold);
-      report.push({n:'Museum Visitors',i:'🏛️',r:'+'+museumGold+'g (Grand Collection)',t:'ok'});
+      report.push({n:'Museum Visitors',i:'🏛️',r:'+'+fmtMoney(museumGold)+' (Grand Collection)',t:'ok'});
     }
     // ═══ EXTERNAL THREATS PROCESSING ═══
     const newThreats={...(threats||Object.fromEntries(locThreatIds.map(t=>[t,0])))};
@@ -4981,7 +4992,7 @@ function CindervaleAlchemistInner(){
     let stolenGold=0;
     if(theftChance>0&&shelfGold>0&&Math.random()<theftChance*2){
       stolenGold=Math.floor(shelfGold*theftChance);
-      report.push({n:banditTF?.icon+' '+banditTF?.name+' Raid',i:banditTF?.icon||'🏴',r:'Bandits stole '+stolenGold+'g from overnight shelf sales!',t:'bad'});
+      report.push({n:banditTF?.icon+' '+banditTF?.name+' Raid',i:banditTF?.icon||'🏴',r:'Bandits stole '+fmtMoney(stolenGold)+' from overnight shelf sales!',t:'bad'});
     }
 
     // Corruption ingredient loss (position 1 threat, Critical only)
@@ -5246,7 +5257,7 @@ function CindervaleAlchemistInner(){
       if(brandGold>0){
         setGold(g=>g+brandGold);
         const brandItems=Object.entries(brandSales).map(([rid,q])=>{const r=RECIPES.find(x=>x.id===rid);return(r?.icon||'')+r?.name+' ×'+q;}).join(', ');
-        report.push({n:'Brand Customers',i:'🏷️',r:'+'+brandGold+'g ('+brandItems+')',t:'ok'});
+        report.push({n:'Brand Customers',i:'🏷️',r:'+'+fmtMoney(brandGold)+' ('+brandItems+')',t:'ok'});
       }
     }
     // Brand orders (Lv3+)
@@ -5263,7 +5274,7 @@ function CindervaleAlchemistInner(){
             const price=Math.floor((r.xp+15)*getBrandSellMult(rid)*2*qty);
             const order={brandId:brand.id,recipeId:rid,qty,price,expires:day+3};
             setBrandOrders(prev=>[...prev,order]);
-            report.push({n:'Brand Order',i:'📦',r:brand.icon+' '+brand.name+': '+qty+'× '+r.icon+r.name+' for '+price+'g',t:'info'});
+            report.push({n:'Brand Order',i:'📦',r:brand.icon+' '+brand.name+': '+qty+'× '+r.icon+r.name+' for '+fmtMoney(price),t:'info'});
           }
         }
       }
@@ -5271,7 +5282,7 @@ function CindervaleAlchemistInner(){
       setBrandOrders(prev=>prev.filter(o=>o.expires>day));
     }
         if(shelfGold>0&&!shopLocked){setGold(g=>g+shelfGold);const items=Object.entries(shelfSold).map(([id,q])=>{const r=RECIPES.find(x=>x.id===getBaseRecipeId(id));const _inf=getInfusion(id);const _fr=isFreshPot(id);return(r?.icon||'')+(_inf?INFUSIONS[_inf]?.icon:'')+(_fr?'🌿':'')+r?.name+(getPotQuality(id)!=='std'?' '+QUALITY[getPotQuality(id)].icon:'')+(_inf?' ['+INFUSIONS[_inf]?.name+']':'')+(_fr?' [Fresh]':'')+' ×'+q;}).join(', ');
-      report.push({n:'Shelf Sales',i:'🏪',r:'+'+shelfGold+'g ('+items+')',t:'ok'});
+      report.push({n:'Shelf Sales',i:'🏪',r:'+'+fmtMoney(shelfGold)+' ('+items+')',t:'ok'});
       Object.entries(shelfSold).forEach(([pid,q])=>{recordBrandSale(getBaseRecipeId(pid),q);});}
     // Overnight Craft: auto-brew 1 potion while sleeping
     if(getFeatureVal('overnightCraft')){
@@ -5345,7 +5356,7 @@ function CindervaleAlchemistInner(){
     const totalCust=(custResult.ench||0)+(custResult.pot||0);
     if(totalCust>0){const parts=[];if(custResult.ench>0)parts.push(custResult.ench+' enchant');if(custResult.pot>0)parts.push(custResult.pot+' potion');
       nw.push({icon:'🛒',text:parts.join(' & ')+' customer'+(totalCust>1?'s':'')+' waiting!',to:'enchant',label:'🛒 Customers',color:TH.purple});}
-    if(shelfGold>0)nw.push({icon:'🏪',text:'Overnight shelf sales: +'+shelfGold+'g!',to:'workshop',label:'⚗️ Workshop',color:TH.gold});
+    if(shelfGold>0)nw.push({icon:'🏪',text:'Overnight shelf sales: +'+fmtMoney(shelfGold)+'!',to:'workshop',label:'⚗️ Workshop',color:TH.gold});
     if(procList.length>0)nw.push({icon:'📦',text:`Procurement: ${procList.length} rare ingredient${procList.length>1?'s':''} in shop today!`,to:'market',label:'🛒 Shop',color:TH.purple});
     const newAvailQ=locQuests.filter(q=>!doneQ.includes(q.id)&&!aQ.find(a=>a.id===q.id)&&getLvl(xp)>=q.unlock);
     if(newAvailQ.length>0)nw.push({icon:'📜',text:`${newAvailQ.length} quest${newAvailQ.length>1?'s':''} on the board.`,to:'quests',label:'📜 Quest Board',color:TH.cyan});
@@ -5416,46 +5427,46 @@ function CindervaleAlchemistInner(){
     const mrSections=[];
     // Gold summary
     let goldIn=0;let goldOut=0;const goldLines=[];
-    if(shelfGold>0){goldIn+=shelfGold;goldLines.push({icon:'🏪',label:'Shelf Sales',val:'+'+shelfGold+'g',color:TH.green});}
+    if(shelfGold>0){goldIn+=shelfGold;goldLines.push({icon:'🏪',label:'Shelf Sales',val:'+'+fmtMoney(shelfGold),color:TH.green});}
     const shopStaff=report.filter(r=>r.r?.startsWith('Shop: +'));
-    shopStaff.forEach(r=>{const m=r.r.match(/\+(\d+)g/);if(m){const g=+m[1];goldIn+=g;goldLines.push({icon:'🏪',label:r.n+' (Shop)',val:'+'+g+'g',color:TH.green});}});
-    if(upEff('passiveIncome')>0){const piMult=Math.max(1,getFeatureVal('passiveIncomeMulti'));const p=Math.max(1,Math.floor(upEff('passiveIncome')*piMult*GOLD_MULT));goldIn+=p;goldLines.push({icon:'🪟',label:'Shop Front'+(piMult>1?' (×'+piMult+')':''),val:'+'+p+'g',color:TH.green});}
+    shopStaff.forEach(r=>{const m=r.r.match(/\+(\d+)g/);if(m){const g=+m[1];goldIn+=g;goldLines.push({icon:'🏪',label:r.n+' (Shop)',val:'+'+fmtMoney(g),color:TH.green});}});
+    if(upEff('passiveIncome')>0){const piMult=Math.max(1,getFeatureVal('passiveIncomeMulti'));const p=Math.max(1,Math.floor(upEff('passiveIncome')*piMult*GOLD_MULT));goldIn+=p;goldLines.push({icon:'🪟',label:'Shop Front'+(piMult>1?' (×'+piMult+')':''),val:'+'+fmtMoney(p),color:TH.green});}
     if(lineage?.generations?.length>0){
       let lgGold=0;lineage.generations.forEach(gen=>{lgGold+=Math.min(10,Math.floor((gen.potionsBrewed||0)/50)+(gen.level||1));});
       lgGold=Math.max(1,Math.floor(lgGold*GOLD_MULT));
-      if(lgGold>0){goldIn+=lgGold;goldLines.push({icon:'🏠',label:'Family Business ('+lineage.generations.length+' gen)',val:'+'+lgGold+'g',color:TH.green});}
+      if(lgGold>0){goldIn+=lgGold;goldLines.push({icon:'🏠',label:'Family Business ('+lineage.generations.length+' gen)',val:'+'+fmtMoney(lgGold),color:TH.green});}
     }
     if(pubPapers.length>0){
       const scaling=getFeatureVal('paperScaling');const grand=getFeatureVal('grandPapers');
       let ppGold=0;pubPapers.forEach(p=>{const age=Math.max(1,day-p.day);const base=grand?8:3;ppGold+=scaling?Math.floor(base*(1+Math.min(age/30,2))):base;});
-      if(ppGold>0){goldIn+=ppGold;goldLines.push({icon:'📝',label:`Research Papers (${pubPapers.length})`,val:'+'+ppGold+'g',color:TH.green});}
+      if(ppGold>0){goldIn+=ppGold;goldLines.push({icon:'📝',label:`Research Papers (${pubPapers.length})`,val:'+'+fmtMoney(ppGold),color:TH.green});}
     }
     {
       const upkeepTotal=calcUpkeep();
       goldOut+=upkeepTotal;
       goldLines.push({icon:'🏠',label:'Base Upkeep',val:'-5g',color:TH.red});
       const upgMaint=upkeepTotal-5-hiredAppr.reduce((s,ap)=>{const pd=getFeatureVal('payrollDiscount');const hp=getFeatureVal('halfPayroll')?0.5:1;return s+Math.ceil((ap.salary||5)*hp*(1-pd));},0);
-      if(upgMaint>0)goldLines.push({icon:'🔧',label:'Upgrade Maintenance ('+upgrades.filter(u=>!disabledUpgrades.includes(u)).length+')',val:'-'+upgMaint+'g',color:TH.red});
+      if(upgMaint>0)goldLines.push({icon:'🔧',label:'Upgrade Maintenance ('+upgrades.filter(u=>!disabledUpgrades.includes(u)).length+')',val:fmtMoney(-upgMaint),color:TH.red});
       const staffCost=upkeepTotal-5-upgMaint;
-      if(staffCost>0)goldLines.push({icon:'💰',label:'Payroll ('+hiredAppr.length+' staff)',val:'-'+staffCost+'g',color:TH.red});
-      if(debt>0)goldLines.push({icon:'⚠️',label:'OUTSTANDING DEBT',val:debt+'g',color:'#c04040'});
+      if(staffCost>0)goldLines.push({icon:'💰',label:'Payroll ('+hiredAppr.length+' staff)',val:fmtMoney(-staffCost),color:TH.red});
+      if(debt>0)goldLines.push({icon:'⚠️',label:'OUTSTANDING DEBT',val:fmtMoney(debt),color:'#c04040'});
     }
     firedEvents.forEach(e=>{if(e.result?.gold){
-      if(e.result.gold>0){goldIn+=e.result.gold;goldLines.push({icon:'🏘️',label:e.text,val:'+'+e.result.gold+'g',color:TH.green});}
-      else{goldOut+=Math.abs(e.result.gold);goldLines.push({icon:'🏘️',label:e.text,val:e.result.gold+'g',color:TH.red});}}});
+      if(e.result.gold>0){goldIn+=e.result.gold;goldLines.push({icon:'🏘️',label:e.text,val:'+'+fmtMoney(e.result.gold),color:TH.green});}
+      else{goldOut+=Math.abs(e.result.gold);goldLines.push({icon:'🏘️',label:e.text,val:fmtMoney(e.result.gold),color:TH.red});}}});
     // Injury report
     if(injPen>0){mrSections.push({title:'🩹 Injuries',lines:[
       {icon:'🩹',label:'You are injured from yesterday\'s expedition',val:'-'+injPen+' Energy today',color:'#c06040'},
       {icon:'⚡',label:'Available Energy',val:baseE+' (normally '+(baseE+injPen)+')',color:TH.textDim}
     ]});}
-    if(goldLines.length>0)mrSections.push({title:'💰 Gold',net:goldIn-goldOut,lines:goldLines});
+    if(goldLines.length>0)mrSections.push({title:'💰 Earnings',net:goldIn-goldOut,lines:goldLines});
     // Shelf Sales detail
     if(Object.keys(shelfSold).length>0){
       const sLines=Object.entries(shelfSold).map(([id,q])=>{const r=RECIPES.find(x=>x.id===getBaseRecipeId(id));const _fr=isFreshPot(id);
         const basePrice=r?r.xp+getFeatureVal('potionSaleBonus')+Math.floor(upEff('sellBonus')*r.xp):0;
         const _frM=_fr?getFreshMult(prestigeLevels.wildcrafter||0):1;
         const price=Math.floor(basePrice*(1+getFeatureVal('sellBonus')+getFeatureVal('customerPayBonus')+getFeatureVal('potionValueBonus')+getCategoricalBonus('brew',r?.cat,'potionValueBonus'))*_frM*GOLD_MULT);
-        return{icon:(r?.icon||'🧪')+(_fr?'🌿':''),label:(r?.name||id)+(_fr?' (Fresh '+_frM+'×)':'')+' ×'+q,val:'+'+price*q+'g',color:_fr?'#60a040':TH.gold};});
+        return{icon:(r?.icon||'🧪')+(_fr?'🌿':''),label:(r?.name||id)+(_fr?' (Fresh '+_frM+'×)':'')+' ×'+q,val:'+'+fmtMoney(price*q),color:_fr?'#60a040':TH.gold};});
       mrSections.push({title:'🏪 Shelf Sales',lines:sLines});}
     // Staff injury recovery
     const updatedInjuries={...staffInjuries};
@@ -5502,7 +5513,7 @@ function CindervaleAlchemistInner(){
     if(resEntries.length>0)mrSections.push({title:'🌱 Workshop',lines:resEntries.map(r=>({icon:r.i,label:r.n,val:r.r,color:TH.green}))});
     // Town events
     if(firedEvents.length>0)mrSections.push({title:'🏘️ Town Events',lines:firedEvents.map(e=>{
-      const parts=[];if(e.result?.gold)parts.push((e.result.gold>0?'+':'')+e.result.gold+'g');
+      const parts=[];if(e.result?.gold)parts.push((e.result.gold>0?'+':'')+fmtMoney(e.result.gold));
       if(e.result?.xp)parts.push('+'+e.result.xp+' XP');
       if(e.result?.items)Object.entries(e.result.items).forEach(([id,q])=>parts.push((INGR[id]?.icon||'')+' ×'+q));
       return{icon:'🏘️',label:e.flavor||e.text,val:parts.join(', ')||'',color:e.result?.gold<0?TH.red:TH.gold};})});
@@ -5525,7 +5536,7 @@ function CindervaleAlchemistInner(){
       mrSections.push({title:'🏪 Shelf Stock',lines:sLines});
     } else {mrSections.push({title:'🏪 Shelf Stock',lines:[{icon:'📊',label:'Shelves empty',val:'0/'+shelfCap,color:TH.textDim}]});}
     // Procurement
-    if(procList.length>0)mrSections.push({title:'📦 Procurement',lines:procList.map(p=>({icon:p.icon,label:p.name,val:p.price+'g',color:TH.purple}))});
+    if(procList.length>0)mrSections.push({title:'📦 Procurement',lines:procList.map(p=>({icon:p.icon,label:p.name,val:fmtMoney(p.price),color:TH.purple}))});
     // Quests available
     const availQ=locQuests.filter(q=>!doneQ.includes(q.id)&&!aQ.find(a=>a.id===q.id)&&getLvl(xp)>=q.unlock&&(!q.fReq||getRL(q.faction)>=q.fReq)&&(!q.reqQuest||doneQ.includes(q.reqQuest)));
     const activeQ=aQ.length;
@@ -5563,7 +5574,7 @@ function CindervaleAlchemistInner(){
       } else {
         const shopGold=Math.floor(5+starRating*5+Math.random()*10);
         setGold(g=>g+shopGold);
-        clockLines.push({icon:'🤖',label:'Tended shop',val:'+'+shopGold+'g',color:TH.gold});
+        clockLines.push({icon:'🤖',label:'Tended shop',val:'+'+fmtMoney(shopGold),color:TH.gold});
       }
       if(clockLines.length>0)mrSections.push({title:'🤖 Clockwork Assistant'+(starRating>0?' '+'★'.repeat(starRating):''),lines:clockLines});
     }
@@ -5707,14 +5718,14 @@ function CindervaleAlchemistInner(){
         } else if(task.type==='shopkeep'){
           if(Math.random()<totalEff){
             const g=5+aLvl*3+Math.floor(Math.random()*8);setGold(gg=>gg+g);
-            autoLines.push({icon:'🤖',label:auto.name+' tended shop',val:'+'+g+'g',color:TH.gold});
+            autoLines.push({icon:'🤖',label:auto.name+' tended shop',val:'+'+fmtMoney(g),color:TH.gold});
           } else {
             autoLines.push({icon:'🤖',label:auto.name+' shop (slow day)',val:'+0g',color:TH.textDim});
           }
         } else if(task.type==='enchant'&&canAutoEnchant()){
           if(Math.random()<totalEff){
             const g=8+aLvl*4+Math.floor(Math.random()*12);setGold(gg=>gg+g);
-            autoLines.push({icon:'🤖',label:auto.name+' inscribed enchantments',val:'+'+g+'g',color:TH.purple});
+            autoLines.push({icon:'🤖',label:auto.name+' inscribed enchantments',val:'+'+fmtMoney(g),color:TH.purple});
           } else {
             autoLines.push({icon:'🤖',label:auto.name+' enchanting (failed)',val:'Misaligned runes',color:TH.orange});
           }
@@ -5760,11 +5771,11 @@ function CindervaleAlchemistInner(){
           for(let i=0;i<n;i++){const id=route.tradeIngr[Math.floor(Math.random()*route.tradeIngr.length)];tradeItems[id]=(tradeItems[id]||0)+1;}
           setInv(p=>{const nn={...p};Object.entries(tradeItems).forEach(([id,q])=>{nn[id]=(nn[id]||0)+q;});return nn;});
           const tradeGold=Math.floor(route.tradeGold*(1+cargoValue*0.2)*GOLD_MULT);setGold(g=>g+tradeGold);
-          qmLines.push({icon:'🚚',label:route.name+' returned!',val:Object.entries(tradeItems).map(([id,q])=>(INGR[id]?.icon||id)+'×'+q).join(' ')+' +'+tradeGold+'g',color:TH.green});
+          qmLines.push({icon:'🚚',label:route.name+' returned!',val:Object.entries(tradeItems).map(([id,q])=>(INGR[id]?.icon||id)+'×'+q).join(' ')+' +'+fmtMoney(tradeGold),color:TH.green});
         } else {
           // Partial loss
           const partialGold=Math.floor(route.tradeGold*0.4*GOLD_MULT);setGold(g=>g+partialGold);
-          qmLines.push({icon:'🚚',label:route.name+' — rough trip',val:'Partial cargo lost. +'+partialGold+'g',color:TH.orange});
+          qmLines.push({icon:'🚚',label:route.name+' — rough trip',val:'Partial cargo lost. +'+fmtMoney(partialGold),color:TH.orange});
         }
       });
       setCaravans(prev=>prev.map(c=>c.returnDay<=day+1?{...c,resolved:true}:c));
@@ -5779,9 +5790,9 @@ function CindervaleAlchemistInner(){
         const items={};outIngr.forEach((id,i)=>{const q=outQty[i]||1;items[id]=(items[id]||0)+q;});
         setInv(p=>{const nn={...p};Object.entries(items).forEach(([id,q])=>{nn[id]=(nn[id]||0)+q;});return nn;});
         const gOut=partner.goldOutput[tierKey]||0;if(gOut>0)setGold(g=>g+gOut);
-        qmLines.push({icon:partner.icon,label:partner.name+' (T'+sc.tier+')',val:Object.entries(items).map(([id,q])=>(INGR[id]?.icon||id)+'×'+q).join(' ')+(gOut>0?' +'+gOut+'g':''),color:partner.color});
+        qmLines.push({icon:partner.icon,label:partner.name+' (T'+sc.tier+')',val:Object.entries(items).map(([id,q])=>(INGR[id]?.icon||id)+'×'+q).join(' ')+(gOut>0?' +'+fmtMoney(gOut):''),color:partner.color});
       });
-      if(totalMaint>0){setGold(g=>g-totalMaint);qmLines.push({icon:'💰',label:'Maintenance',val:'-'+totalMaint+'g',color:TH.red});}
+      if(totalMaint>0){setGold(g=>g-totalMaint);qmLines.push({icon:'💰',label:'Maintenance',val:fmtMoney(-totalMaint),color:TH.red});}
       // Show active caravans
       caravans.filter(c=>!c.resolved&&c.returnDay>day+1).forEach(c=>{
         const route=CARAVAN_ROUTES.find(r=>r.id===c.routeId);
@@ -5803,7 +5814,7 @@ function CindervaleAlchemistInner(){
       });
       if(totalContractCost>0){
         setGold(g=>g-totalContractCost);
-        contractLines.push({icon:'💰',label:'Contract costs',val:'-'+totalContractCost+'g total',color:TH.red});
+        contractLines.push({icon:'💰',label:'Contract costs',val:fmtMoney(-totalContractCost)+' total',color:TH.red});
       }
       if(contractLines.length>0)mrSections.push({title:'📦 Ingredient Contracts',lines:contractLines});
     }
@@ -6084,7 +6095,7 @@ function CindervaleAlchemistInner(){
     if(newDebt>=300){
       setMorningReport({dayNum:day+1,sections:[{title:'🛑 WORKSHOP SEIZED',lines:[
         {icon:'⚠️',label:'The '+locName+' Town Council has seized your workshop.',val:'',color:'#c04040'},
-        {icon:'💰',label:'Outstanding debt: '+newDebt+'g',val:'',color:'#c04040'},
+        {icon:'💰',label:'Outstanding debt: '+fmtMoney(newDebt),val:'',color:'#c04040'},
         {icon:'🏠',label:'Your dream of '+locName+' is over... for now.',val:'',color:TH.textDim},
       ]}],baseE:0,flavor:'The workshop doors are locked. The dream is over.',isGameOver:true});
       return;
@@ -6176,7 +6187,7 @@ function CindervaleAlchemistInner(){
           {loadingSlots?<div style={{color:TH.textDim}}>Loading...</div>:<>
           {autoSaveData&&<div style={{...S.card,borderColor:TH.green,textAlign:'left',cursor:'pointer'}} onClick={()=>loadSave(autoSaveData)}>
             <div style={{fontSize:18,color:TH.green}}>▶ Continue — {autoSaveData.charName||'?'} {fbUser&&<span style={{fontSize:13}}>☁️</span>}</div>
-            <div style={{fontSize:15,color:TH.textDim}}>{autoSaveData.classLevels?Object.entries(autoSaveData.classLevels).map(([cid,lv])=>`${CLASSES[cid]?.icon||''}${CLASSES[cid]?.name||cid} ${lv}`).join(' / '):'?'} · Lv{getLvl(autoSaveData.xp||0)+1} · Day {autoSaveData.day} · {autoSaveData.gold}g</div>
+            <div style={{fontSize:15,color:TH.textDim}}>{autoSaveData.classLevels?Object.entries(autoSaveData.classLevels).map(([cid,lv])=>`${CLASSES[cid]?.icon||''}${CLASSES[cid]?.name||cid} ${lv}`).join(' / '):'?'} · Lv{getLvl(autoSaveData.xp||0)+1} · Day {autoSaveData.day} · {fmtMoney(autoSaveData.gold)}</div>
             <div style={{fontSize:14,color:TH.textDim}}>{fmtD(autoSaveData._at)}</div>
           </div>}
           <div style={{...S.card,textAlign:'left'}}><div style={S.cT}>💾 Save Slots {fbUser&&<span style={{fontSize:13,color:TH.green,fontWeight:'normal'}}>☁️ Cloud</span>}</div>
@@ -7237,7 +7248,7 @@ function CindervaleAlchemistInner(){
               </div>}
             </span>);
           })()}
-          <span>⚡{energy}</span><span style={{color:TH.gold}}>Lv{displayLevel}</span><span style={{color:debt>0?'#c04040':TH.gold}}>💰{gold}g{debt>0&&<span style={{fontSize:11,color:'#c04040'}}> (debt:{debt}g)</span>}</span>
+          <span>⚡{energy}</span><span style={{color:TH.gold}}>Lv{displayLevel}</span><span style={{color:debt>0?'#c04040':TH.gold}}>💰{fmtMoney(gold)}{debt>0&&<span style={{fontSize:11,color:'#c04040'}}> (debt:{fmtMoney(debt)})</span>}</span>
         </div>
         {nextXp&&<div style={{width:'100%',maxWidth:250,height:4,background:TH.panel,borderRadius:3,overflow:'hidden',margin:'2px auto'}}>
           <div style={{height:'100%',borderRadius:3,width:`${((xp-XP_TBL[getLvl(xp)])/(nextXp-XP_TBL[getLvl(xp)]))*100}%`,background:`linear-gradient(90deg,${TH.goldDim},${TH.gold})`}}/>
@@ -7407,7 +7418,7 @@ function CindervaleAlchemistInner(){
             {morningReport.season&&<div style={{fontSize:14,color:morningReport.season.color,marginBottom:2}}>{morningReport.season.icon} {morningReport.season.name}{morningReport.season.desc?' — '+morningReport.season.desc:''}</div>}
             <div style={{fontSize:16,color:TH.textBright}}>{charName} · {RACES[charRace]?.icon} {RACES[charRace]?.name}</div>
             <div style={{fontSize:14,color:TH.textDim,marginTop:2}}>
-              {Object.entries(classLevels).filter(([cid])=>CLASSES[cid]).map(([cid,lv])=>CLASSES[cid]?.icon+' '+CLASSES[cid]?.name+' '+lv).join(' · ')} · Lv{displayLevel} · 💰{gold}g
+              {Object.entries(classLevels).filter(([cid])=>CLASSES[cid]).map(([cid,lv])=>CLASSES[cid]?.icon+' '+CLASSES[cid]?.name+' '+lv).join(' · ')} · Lv{displayLevel} · 💰{fmtMoney(gold)}
             </div>
             <div style={{fontSize:14,color:TH.textDim,marginTop:4,fontStyle:'italic'}}>{morningReport.flavor}</div>
             <div style={{fontSize:15,color:TH.textBright,marginTop:4}}>⏳ ⚡{morningReport.baseE} Energy for today{hiredAppr.length>0?` · ${hiredAppr.length} staff on duty`:''}</div>
@@ -7415,7 +7426,7 @@ function CindervaleAlchemistInner(){
           {morningReport.sections.map((sec,si)=><div key={si} style={{marginBottom:10}}>
             <div style={{fontSize:16,color:TH.gold,fontWeight:'bold',borderBottom:`1px solid ${TH.border}`,paddingBottom:3,marginBottom:6,display:'flex',justifyContent:'space-between',alignItems:'center'}}>
               <span>{sec.title}</span>
-              {sec.net!=null&&<span style={{fontSize:16,color:sec.net>=0?TH.green:TH.red,fontWeight:'bold'}}>{sec.net>=0?'+':''}{sec.net}g net</span>}
+              {sec.net!=null&&<span style={{fontSize:16,color:sec.net>=0?TH.green:TH.red,fontWeight:'bold'}}>{sec.net>=0?'+':''}{fmtMoney(sec.net)} net</span>}
             </div>
             {sec.lines.map((ln,li)=><div key={li} style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',padding:'3px 4px',borderRadius:3,background:li%2===0?'transparent':`${TH.bg}40`,gap:8}}>
               <span style={{fontSize:15,color:TH.text,flex:1}}>{ln.icon} {ln.label}</span>
@@ -8515,7 +8526,7 @@ function CindervaleAlchemistInner(){
               <div key={item.id} style={{display:'flex',alignItems:'center',gap:6,padding:'3px 0',fontSize:16}}>
                 <span>{INGR[item.id]?.icon} {INGR[item.id]?.name}</span>
                 <span style={{fontSize:14,color:TH.textDim}}>×{have}</span>
-                <span style={{color:TH.gold,marginLeft:'auto'}}>{bp}g</span>
+                <span style={{color:TH.gold,marginLeft:'auto'}}>{fmtMoney(bp)}</span>
                 <button style={S.btn(gold>=bp?'def':'dim')} onClick={()=>{if(gold>=bp){setGold(g=>g-bp);modInv(item.id,1);}}} disabled={gold<bp}>+1</button>
                 <button style={S.btn(gold>=bp*5?'def':'dim')} onClick={()=>{const n=Math.min(5,Math.floor(gold/bp));if(n>0){setGold(g=>g-bp*n);modInv(item.id,n);}}} disabled={gold<bp*5}>+5</button>
               </div>);})}
@@ -8525,7 +8536,7 @@ function CindervaleAlchemistInner(){
                 <div key={item.id} style={{display:'flex',alignItems:'center',gap:6,padding:'3px 0',fontSize:16,background:TH.purple+'08',borderRadius:3,paddingLeft:4}}>
                   <span>{item.icon} {item.name}</span>
                   <span style={{fontSize:14,color:TH.textDim}}>×{have}</span>
-                  <span style={{color:TH.purple,marginLeft:'auto'}}>{bp}g</span>
+                  <span style={{color:TH.purple,marginLeft:'auto'}}>{fmtMoney(bp)}</span>
                   <button style={S.btn(gold>=bp?'def':'dim')} onClick={()=>{if(gold>=bp){setGold(g=>g-bp);modInv(item.id,1);}}} disabled={gold<bp}>+1</button>
                 </div>);})}</>}            {Object.entries(pots).filter(([,q])=>q>0).length>0&&<div style={{fontSize:16,color:TH.gold,marginTop:8,marginBottom:4}}>Sell Potions</div>}
             {Object.entries(pots).filter(([,q])=>q>0).map(([id,qty])=>{const baseId=getBaseRecipeId(id);const r=RECIPES.find(r=>r.id===baseId);if(!r)return null;const pq=getPotQuality(id);const qT=QUALITY[pq]||QUALITY.std;const _mInf=getInfusion(id);const _mInfObj=_mInf?INFUSIONS[_mInf]:null;const baseSp=r.xp+getFeatureVal('potionSaleBonus')+Math.floor(upEff('sellBonus')*r.xp);
@@ -8540,7 +8551,7 @@ function CindervaleAlchemistInner(){
               const _isFresh=isFreshPot(id);const freshMult=_isFresh?getFreshMult(prestigeLevels.wildcrafter||0):1;
               const sp=Math.floor(baseSp*(1+getFeatureVal('sellBonus')+brandMWExtra+infusedSellBonus)*qT.sellMult*infSellMult*freshMult*brandMult);return(
               <div key={id} style={{display:'flex',alignItems:'center',gap:6,padding:'3px 0',fontSize:16}}>
-                <span>{r.icon}{r.name}{qT.icon?' '+qT.icon:''}{_isFresh?' 🌿':''} ×{qty}</span>{_isFresh&&<span style={{fontSize:11,color:'#60a040',fontWeight:'bold'}}>Fresh {freshMult}×</span>}<span style={{color:TH.gold,marginLeft:'auto'}}>{sp}g ea</span>
+                <span>{r.icon}{r.name}{qT.icon?' '+qT.icon:''}{_isFresh?' 🌿':''} ×{qty}</span>{_isFresh&&<span style={{fontSize:11,color:'#60a040',fontWeight:'bold'}}>Fresh {freshMult}×</span>}<span style={{color:TH.gold,marginLeft:'auto'}}>{fmtMoney(sp)} ea</span>
                 <button style={S.btn()} onClick={()=>sellPotion(id,1,sp,r)}>Sell 1</button>
                 {qty>1&&<button style={S.btn()} onClick={()=>sellPotion(id,qty,sp,r)}>All ({sp*qty}g)</button>}
               </div>);})}
@@ -8548,10 +8559,10 @@ function CindervaleAlchemistInner(){
             {Object.entries(inv).filter(([,q])=>q>0).map(([id,qty])=>{const ig=INGR[id];if(!ig)return null;const baseSp=Math.max(1,Math.floor((ig.val||5)*0.4)+getFeatureVal('ingrSellBonus'));const sp=Math.max(1,Math.floor(baseSp*(1+getFeatureVal('sellBonus'))*GOLD_MULT));
               const isHid=HIDDEN_INGR&&HIDDEN_INGR[id];const spThresh=(isHid?12:8)+getFeatureVal('spoilThreshold')+upEff('spoilThreshold')+0;return(
               <div key={id} style={{display:'flex',alignItems:'center',gap:6,padding:'3px 0',fontSize:16}}>
-                <span>{ig.icon}{ig.name} ×{qty}</span><span style={{color:TH.gold,marginLeft:'auto'}}>{sp}g ea</span>
-                <button style={S.btn()} onClick={()=>{modInv(id,-1);setGold(g=>g+sp);addLog(`Sold ${ig.icon}${ig.name}. (+${sp}g)`,'info');}}>Sell 1</button>
-                {qty>spThresh&&<button style={{...S.btn('green'),fontSize:13}} onClick={()=>{const excess=qty-spThresh;modInv(id,-excess);setGold(g=>g+sp*excess);addLog(`Sold ${excess}× ${ig.icon}${ig.name} for ${sp*excess}g (trimmed to safe storage).`,'info');}}>Safe ({qty-spThresh}×{sp}g)</button>}
-                {qty>1&&<button style={S.btn()} onClick={()=>{modInv(id,-qty);setGold(g=>g+sp*qty);addLog(`Sold ${qty}× ${ig.icon}${ig.name}. (+${sp*qty}g)`,'info');}}>All ({sp*qty}g)</button>}
+                <span>{ig.icon}{ig.name} ×{qty}</span><span style={{color:TH.gold,marginLeft:'auto'}}>{fmtMoney(sp)} ea</span>
+                <button style={S.btn()} onClick={()=>{modInv(id,-1);setGold(g=>g+sp);addLog(`Sold ${ig.icon}${ig.name}. (+${fmtMoney(sp)})`,'info');}}>Sell 1</button>
+                {qty>spThresh&&<button style={{...S.btn('green'),fontSize:13}} onClick={()=>{const excess=qty-spThresh;modInv(id,-excess);setGold(g=>g+sp*excess);addLog(`Sold ${excess}× ${ig.icon}${ig.name} for ${fmtMoney(sp*excess)} (trimmed to safe storage).`,'info');}}>Safe ({qty-spThresh}×{fmtMoney(sp)})</button>}
+                {qty>1&&<button style={S.btn()} onClick={()=>{modInv(id,-qty);setGold(g=>g+sp*qty);addLog(`Sold ${qty}× ${ig.icon}${ig.name}. (+${fmtMoney(sp*qty)})`,'info');}}>All ({fmtMoney(sp*qty)})</button>}
               </div>);})}
           </div>}
           {(dlgNpc==='brenna'||dlgNpc==='sola'||dlgNpc==='razak'||dlgNpc==='mako'||dlgNpc==='finn'||dlgNpc==='sr_kael')&&!showShop&&NPCS[dlgNpc]&&<NpcDlg npc={{...NPCS[dlgNpc],id:dlgNpc}} {...{dlgLine,setDlgLine,setDlgNpc,availQ,aQ,acceptQ,compQ,qP,qObj,S,questDlg,setQuestDlg,openNpc}}/>}
@@ -8570,7 +8581,7 @@ function CindervaleAlchemistInner(){
             const riskChance=getFeatureVal('noRisk')?0:getFeatureVal('reducedRisk')?0.08:0.2;
             return(<div key={id} style={{display:'flex',alignItems:'center',gap:6,padding:'3px 0',fontSize:16}}>
               <span>{r.icon}{r.name}{qT.icon?' '+qT.icon:''} ×{qty}</span>
-              <span style={{color:'#ff4080',marginLeft:'auto'}}>{bmPrice}g ea</span>
+              <span style={{color:'#ff4080',marginLeft:'auto'}}>{fmtMoney(bmPrice)} ea</span>
               <button style={{...S.btn('def'),borderColor:'#ff408066'}} onClick={()=>{
                 if(Math.random()<riskChance){
                   const confiscated=Math.min(qty,1+Math.floor(Math.random()*2));
@@ -8579,7 +8590,7 @@ function CindervaleAlchemistInner(){
                   addLog(`🚔 Confiscated! Guards seized ${confiscated}× ${r.icon}${r.name} and fined you ${goldLost}g.`,'error');
                 } else {
                   modPot(id,-1);setGold(g=>g+bmPrice);
-                  addLog(`🕶️ Black market: Sold ${r.icon}${r.name} for ${bmPrice}g through back channels.`,'info');
+                  addLog(`🕶️ Black market: Sold ${r.icon}${r.name} for ${fmtMoney(bmPrice)} through back channels.`,'info');
                 }
               }}>Sell 1{riskChance>0?` (${Math.round(riskChance*100)}% risk)`:''}</button>
             </div>);})}
@@ -10519,13 +10530,13 @@ function CindervaleAlchemistInner(){
             const hasBuff=r.buff&&ELIXIR_BUFFS[r.buff];
             const buffActive=hasBuff&&activeBuffs[r.buff]?.daysLeft>0;
             return(<div key={id} style={{display:'flex',alignItems:'center',gap:6,padding:'3px 0',fontSize:16}}>
-              <span>{r.icon}{r.name}{qT.icon?' '+qT.icon:''}{_isFresh?' 🌿':''} ×{qty}</span>{_isFresh&&<span style={{fontSize:11,color:'#60a040',fontWeight:'bold'}}>Fresh</span>}<span style={{color:TH.gold,marginLeft:'auto'}}>{sp}g ea</span>
+              <span>{r.icon}{r.name}{qT.icon?' '+qT.icon:''}{_isFresh?' 🌿':''} ×{qty}</span>{_isFresh&&<span style={{fontSize:11,color:'#60a040',fontWeight:'bold'}}>Fresh</span>}<span style={{color:TH.gold,marginLeft:'auto'}}>{fmtMoney(sp)} ea</span>
               {hasBuff&&<button style={{...S.btn(buffActive?'dim':'green'),fontSize:14,padding:'2px 8px'}} disabled={buffActive}
                 onClick={()=>consumeElixir(r.buff)} title={ELIXIR_BUFFS[r.buff].buffDesc}>
                 {buffActive?'✓ Active':'🧪 Drink'}
               </button>}
               <button style={S.btn()} onClick={()=>sellPotion(id,1,sp,r)}>Sell 1</button>
-              {qty>1&&<button style={S.btn()} onClick={()=>sellPotion(id,qty,sp,r)}>Sell All ({sp*qty}g)</button>}
+              {qty>1&&<button style={S.btn()} onClick={()=>sellPotion(id,qty,sp,r)}>Sell All ({fmtMoney(sp*qty)})</button>}
             </div>);})}
           {Object.entries(inv).filter(([,q])=>q>0).length>0&&<div style={{fontSize:15,color:TH.gold,marginTop:6,marginBottom:4}}>Ingredients</div>}
           {Object.entries(inv).filter(([,q])=>q>0).map(([id,qty])=>{const ig=INGR[id];if(!ig)return null;const sp=Math.max(1,Math.floor(((ig.val||5)*0.4)+getFeatureVal('ingrSellBonus'))*GOLD_MULT);
@@ -10536,7 +10547,7 @@ function CindervaleAlchemistInner(){
             return(
             <div key={id} style={{padding:'3px 0',fontSize:16}}>
               <div style={{display:'flex',alignItems:'center',gap:6,cursor:'pointer'}} onClick={()=>setTapInfo(_io?null:_ik)}>
-                <span style={{color:spColor||TH.text}}>{ig.icon}{ig.name} ×{qty}{spColor&&<span style={{fontSize:11,marginLeft:4,color:spColor}}>⚠️</span>}{sWarn&&<span style={{fontSize:11,color:'#d09030',marginLeft:4}}>⏳ {sWarn.icon} {sWarn.season}</span>}</span><span style={{color:TH.gold,marginLeft:'auto'}}>{sp}g ea</span>
+                <span style={{color:spColor||TH.text}}>{ig.icon}{ig.name} ×{qty}{spColor&&<span style={{fontSize:11,marginLeft:4,color:spColor}}>⚠️</span>}{sWarn&&<span style={{fontSize:11,color:'#d09030',marginLeft:4}}>⏳ {sWarn.icon} {sWarn.season}</span>}</span><span style={{color:TH.gold,marginLeft:'auto'}}>{fmtMoney(sp)} ea</span>
               <button style={S.btn()} onClick={e=>{e.stopPropagation();modInv(id,-1);setGold(g=>g+sp);addLog(`Sold ${ig.icon}${ig.name} for ${sp}g.`,'info');}}>Sell 1</button>
               {qty>spThresh&&<button style={{...S.btn('green'),fontSize:13}} onClick={e=>{e.stopPropagation();const excess=qty-spThresh;modInv(id,-excess);setGold(g=>g+sp*excess);addLog(`Sold ${excess}× ${ig.icon}${ig.name} for ${sp*excess}g (trimmed to safe storage).`,'info');}}>Sell to Safe ({qty-spThresh}×{sp}g)</button>}
               {qty>1&&<button style={S.btn()} onClick={e=>{e.stopPropagation();modInv(id,-qty);setGold(g=>g+sp*qty);addLog(`Sold ${qty}× ${ig.icon}${ig.name} for ${sp*qty}g.`,'info');}}>Sell All ({sp*qty}g)</button>}
@@ -10922,7 +10933,7 @@ function CindervaleAlchemistInner(){
                 </div>}
                 <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
                   <span style={{fontSize:17,color:can?TH.textBright:TH.textDim,fontWeight:'bold'}}>{ench.icon} {ench.name}</span>
-                  <span style={{fontSize:14,color:TH.gold}}>DC{adjDC} · +{ench.xp}XP · +{reward}g</span>
+                  <span style={{fontSize:14,color:TH.gold}}>DC{adjDC} · +{ench.xp}XP · +{fmtMoney(reward)}</span>
                 </div>
                 {showHints>0&&<div style={{fontSize:13,color:hintPct>=60?TH.green:hintPct>=30?TH.gold:TH.red,marginTop:1}}>
                   📊 {hintPct}% success (Standard) · est. {fullReward}g
@@ -11239,7 +11250,7 @@ function CindervaleAlchemistInner(){
                 </div>)}
               </div>
               <div style={{display:'flex',gap:8,fontSize:14,color:TH.textDim,marginTop:4,flexWrap:'wrap'}}>
-                <span style={{color:TH.gold}}>+{q.xp}XP +{q.gold}g</span>
+                <span style={{color:TH.gold}}>+{q.xp}XP +{fmtMoney(q.gold)}</span>
                 {q.items?.length>0&&<span>Items: {q.items.map((id,i)=><span key={i}>{INGR[id]?.icon||''}{INGR[id]?.name||id} </span>)}</span>}
                 {q.faction&&<span style={{color:FACTIONS[q.faction]?.color}}>{FACTIONS[q.faction]?.icon}+{q.fRep} rep</span>}
               </div>
@@ -11274,7 +11285,7 @@ function CindervaleAlchemistInner(){
               <div style={{fontSize:15,color:TH.textDim,margin:'3px 0',fontStyle:'italic'}}>{q.desc||''}</div>
               {brief&&<div style={{fontSize:14,color:TH.cyan,margin:'2px 0'}}>📌 {brief}</div>}
               <div style={{display:'flex',gap:8,fontSize:14,color:TH.textDim,marginTop:4,flexWrap:'wrap'}}>
-                <span style={{color:TH.gold}}>+{q.xp}XP +{q.gold}g</span>
+                <span style={{color:TH.gold}}>+{q.xp}XP +{fmtMoney(q.gold)}</span>
                 {q.faction&&<span style={{color:FACTIONS[q.faction]?.color}}>{FACTIONS[q.faction]?.icon}+{q.fRep} rep</span>}
               </div>
               {/* Direct accept (no relocation) + optional NPC dialog visit for flavor / q.onAccept lines.
@@ -11325,7 +11336,7 @@ function CindervaleAlchemistInner(){
                 </div>
                 <div style={{fontSize:14,color:TH.textDim,fontStyle:'italic',margin:'2px 0'}}>{bq.desc}</div>
                 <div style={{display:'flex',gap:6,fontSize:14,color:TH.textDim,marginTop:2}}>
-                  <span style={{color:TH.gold}}>+{bq.gold}g +{bq.xp}XP</span>
+                  <span style={{color:TH.gold}}>+{fmtMoney(bq.gold)} +{bq.xp}XP</span>
                   {bq.faction&&<span style={{color:FACTIONS[bq.faction]?.color}}>{FACTIONS[bq.faction]?.icon}+{bq.fRep}</span>}
                 </div>
                 <div style={{display:'flex',gap:4,marginTop:4}}>
@@ -11349,7 +11360,7 @@ function CindervaleAlchemistInner(){
                 </div>
                 <div style={{fontSize:14,color:TH.textDim,fontStyle:'italic',margin:'2px 0'}}>{bq.desc}</div>
                 <div style={{display:'flex',gap:6,fontSize:14,color:TH.textDim,marginTop:2,alignItems:'center'}}>
-                  <span style={{color:TH.gold}}>+{bq.gold}g +{bq.xp}XP</span>
+                  <span style={{color:TH.gold}}>+{fmtMoney(bq.gold)} +{bq.xp}XP</span>
                   {bq.faction&&<span style={{color:FACTIONS[bq.faction]?.color}}>{FACTIONS[bq.faction]?.icon}+{bq.fRep}</span>}
                   <span style={{fontSize:13,color:isPotion?TH.purple:TH.green}}>{isPotion?'⚗️ Brew & deliver':'⛏️ Gather & deliver'}</span>
                   <button style={{...S.btn(canAccept?'gold':'dim'),marginLeft:'auto',fontSize:14}} onClick={()=>canAccept&&acceptBQ(bq)} disabled={!canAccept}>
@@ -11984,7 +11995,7 @@ function CindervaleAlchemistInner(){
               ['yieldMultiplier','🌾 Yield','+',' forage multi'],
               ['upgradeCostReduction','🏗️ Build Disc.','','% off'],
               ['maxApprenticeBonus','👥 Staff Slots','+',''],
-              ['goldIncomeBonus','💰 Daily Gold','+','g/day'],
+              ['goldIncomeBonus','💰 Daily Coin','+','s/day'],
               ['payrollDiscount','💼 Payroll','','% off'],
               ['ingredientEfficiency','♻️ Ing. Save','','% chance'],
               ['failStreakBonus','🔥 Fail Streak','+','/fail'],
@@ -12665,7 +12676,7 @@ function NpcDlg({npc,dlgLine,setDlgLine,setDlgNpc,availQ,aQ,acceptQ,compQ,qP,S,q
                     <div style={{fontSize:16,color:TH.cyan,margin:'6px 0',lineHeight:1.5}}>📌 {qObj?qObj(q):q.name}</div>
                     {q.hint&&<div style={{fontSize:15,color:TH.textDim,margin:'4px 0',lineHeight:1.4}}>💡 {q.hint}</div>}
                     <div style={{display:'flex',gap:8,fontSize:15,color:TH.textDim,marginTop:8,flexWrap:'wrap'}}>
-                      <span style={{color:TH.gold}}>Reward: +{q.xp}XP +{q.gold}g</span>
+                      <span style={{color:TH.gold}}>Reward: +{q.xp}XP +{fmtMoney(q.gold)}</span>
                       {q.items?.length>0&&<span>Items: {q.items.map((id,i)=><span key={i}>{INGR[id]?.icon}{INGR[id]?.name} </span>)}</span>}
                       {q.faction&&<span style={{color:FACTIONS[q.faction]?.color}}>{FACTIONS[q.faction]?.icon} +{q.fRep} rep</span>}
                     </div>
@@ -12718,7 +12729,7 @@ function NpcDlg({npc,dlgLine,setDlgLine,setDlgNpc,availQ,aQ,acceptQ,compQ,qP,S,q
                 <>
                   <div style={{padding:'10px 14px',background:`${TH.green}10`,borderRadius:10,border:`1px solid ${TH.green}`,margin:'8px 0'}}>
                     <div style={{fontSize:18,color:TH.green,fontWeight:'bold'}}>✅ \"{q.name}\" — Complete!</div>
-                    <div style={{fontSize:15,color:TH.textDim,marginTop:3}}>Reward: +{q.xp}XP +{q.gold}g{q.faction?` ${FACTIONS[q.faction]?.icon}+${q.fRep} rep`:''}</div>
+                    <div style={{fontSize:15,color:TH.textDim,marginTop:3}}>Reward: +{q.xp}XP +{fmtMoney(q.gold)}{q.faction?` ${FACTIONS[q.faction]?.icon}+${q.fRep} rep`:''}</div>
                   </div>
                   <button style={{...S.btn('green'),width:'100%',padding:'10px'}} onClick={()=>{compQ(q);closeDlg();}}>
                     ✓ Complete Quest

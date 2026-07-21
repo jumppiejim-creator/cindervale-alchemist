@@ -104,6 +104,18 @@ _All still-open logged design questions across the project as of session end. Cl
 
 ---
 
+## 10. Denominated money display — platinum/gold/silver (approved, recon complete)
+
+**Raised:** Jim, 2026-07-21 — single-currency gold limits flavor and flexibility ("no one pays their employee 7 gold per day").
+
+**Decision made:** Option A — one integer wallet, denominated display (the WoW model), with the **silver reinterpretation**: existing values are declared silver (salary 7 → 7s, upgrades → gold/platinum range), ratios 1pp = 10g = 100s, copper flavor-reserved. Zero data migration, zero save migration; the Firestore `gold` field keeps its name.
+
+**Recon:** `money_system_recon.md` (repo root). ~150-170 display sites in index.html across 3 grep-able pattern families; 79 `setGold` + checks + `GOLD_MULT` explicitly untouched; 25 literal suffix strings in game-data; 48 handbook mentions + a planned "Coinage of the Realm" sidebar. Phased build plan with grep-lint verification; estimate 1-2 sessions, low risk.
+
+**Status: RECON COMPLETE — build pending Jim's go.**
+
+---
+
 ## 6. FACTION_PAIRS gap
 
 **Raised:** mentioned multiple times across the session as "out of scope, separate" (e.g., in the dead-code housekeeping task, the mechDesc correctness pass, the Naturalist Region Mastery build).
