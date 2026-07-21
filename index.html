@@ -30,7 +30,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <script src="portraits.js"></script>
 <script src="location-images.js?v=20260609a"></script>
-<script src="game-data.js?v=20260721e"></script>
+<script src="game-data.js?v=20260721f"></script>
 <script src="npc-portraits.js"></script>
 <script type="text/babel" data-type="module">
 const { useState, useEffect, useCallback, useRef, Component, createElement } = React;
@@ -2173,7 +2173,7 @@ function CindervaleAlchemistInner(){
       }
     }
     if(hr.event?.injuryPenalty){setInjuryPenalty(prev=>prev+hr.event.injuryPenalty);addLog('🩹 Expedition injury: -'+hr.event.injuryPenalty+' Energy tomorrow.','error');}
-    if(hr.event?.gadgetDamage&&gadgets.length>0&&!getFeatureVal('infiniteGadgetMarks')){
+    if(hr.event?.gadgetDamage&&gadgets.length>0&&!getFeatureVal('masterworkCalibration')){
       const activeG=gadgets.filter(g=>g.equipped!==false);
       if(activeG.length>0){
         const victim=activeG[Math.floor(Math.random()*activeG.length)];
@@ -3589,8 +3589,15 @@ function CindervaleAlchemistInner(){
     const SUCC=[`The runes ignite with inner fire. You've created something remarkable.`,`The inscription blazes to life — a weapon worthy of legend.`,`Hammer and rune unite. ${wName} is born.`];
     showResult('⚔️ Weapon Forged! — '+wName,'craft',
       weapon.icon+' '+weapon.name+' + '+enchant.icon+' '+enchant.name+'\n'+SUCC[Math.floor(Math.random()*SUCC.length)]+
-      '\nDisplayed in shop window — attracts premium customers.\n+'+xpReward+' XP',forgeCh);
+      '\nDisplayed in shop window — attracts premium customers. Sell it from the Forge display case any time.\n+'+xpReward+' XP',forgeCh);
     addLog(`⚔️ Forged ${weapon.icon}${wName} (${weapon.name} + ${enchant.name}). Displayed in shop.`,'quest');
+  };
+  const sellForgedWeapon=(weaponId)=>{
+    const w=forgedWeapons.find(x=>x.id===weaponId);if(!w)return;
+    snapshot();
+    setForgedWeapons(prev=>prev.filter(x=>x.id!==weaponId));
+    setGold(g=>g+(w.goldValue||0));
+    addLog(`💰 Sold ${w.weaponIcon}${w.name} to a collector for ${w.goldValue||0}g. An empty stand remains in the display case.`,'info');
   };
 
   // ═══ WARDKEEPER SHIELD COMMISSIONS ═══
@@ -4183,9 +4190,14 @@ function CindervaleAlchemistInner(){
   const getGadgetSlots=()=>{const tkLv=eCL('artificer');const base=tkLv>=10?6:tkLv>=6?4:2;return base+(getFeatureVal('dualGadgets')?2:0);};
   const getMaxMk=()=>{const tkLv=eCL('artificer');return tkLv>=10?3:tkLv>=6?2:1;};
   const getGadgetEffect=(effectKey)=>{
+    const calib=getFeatureVal('masterworkCalibration');
     return gadgets.filter(g=>g.equipped).reduce((sum,g)=>{
       const bp=GADGET_BLUEPRINTS.find(b=>b.id===g.blueprintId);if(!bp||bp.effect!==effectKey)return sum;
-      const val=bp.values[g.mk-1];return val?sum+(typeof val==='number'?val:0):sum;
+      const val=bp.values[g.mk-1];let v=typeof val==='number'?val:0;
+      // Masterwork Calibration (Tinkerer Lv10): equipped Mk III gadgets run at 150% output.
+      // Applies to numeric effect values only — special-shaped gadgets (tuples, flags) read elsewhere.
+      if(v&&g.mk>=3&&calib)v*=1.5;
+      return sum+v;
     },0);
   };
   const craftGadget=(bpId)=>{
@@ -9072,7 +9084,7 @@ function CindervaleAlchemistInner(){
             const canForge=forgesToday<maxForges;
             return <>
               <div style={{fontSize:12,color:TH.textDim,marginBottom:6,padding:'4px 8px',background:TH.bg,borderRadius:4,border:'1px solid '+TH.border,lineHeight:1.5}}>
-                Forging costs materials only (free action, {maxForges}/day at your level). Two checks: 🎯 Precision vs the weapon's forge DC, then ✍️ Inscription vs the enchantment's DC (your flat inscription bonuses apply). Fail the forge — materials lost. Fail the inscription — sold immediately as a plain weapon for a little gold. Succeed at both — a Named Weapon joins the Display Case below, and each displayed weapon attracts +1 premium customer/day (up to +3).
+                Forging costs materials only (free action, {maxForges}/day at your level). Two checks: 🎯 Precision vs the weapon's forge DC, then ✍️ Inscription vs the enchantment's DC (your flat inscription bonuses apply). Fail the forge — materials lost. Fail the inscription — sold immediately as a plain weapon for a little gold. Succeed at both — a Named Weapon joins the Display Case below, and each displayed weapon attracts +1 premium customer/day (up to +3). Sell a displayed weapon any time for its listed value — you trade its customer draw for gold.
               </div>
               {available.map(w=>{
                 const hasMats=Object.entries(lmc(w.matCost)).every(([id,q])=>(inv[id]||0)>=q);
@@ -9097,9 +9109,11 @@ function CindervaleAlchemistInner(){
                 <div style={{fontSize:14,color:'#d08040',fontWeight:'bold',marginTop:8,marginBottom:4}}>⚔️ Display Case ({forgedWeapons.filter(w=>w.displayed).length} weapons · +{Math.min(3,forgedWeapons.filter(w=>w.displayed).length)} bonus customers/day)</div>
                 <div style={{display:'flex',flexWrap:'wrap',gap:4}}>
                   {forgedWeapons.map(w=>
-                    <div key={w.id} style={{padding:'3px 8px',background:'#d0804015',borderRadius:4,border:'1px solid #d0804033',fontSize:13}}>
+                    <div key={w.id} style={{padding:'3px 8px',background:'#d0804015',borderRadius:4,border:'1px solid #d0804033',fontSize:13,display:'flex',alignItems:'center',gap:4}}>
                       <span style={{color:'#d08040',fontWeight:'bold'}}>{w.weaponIcon} {w.name}</span>
-                      <span style={{color:TH.textDim,marginLeft:4}}>({w.weaponType}+{w.enchantName})</span>
+                      <span style={{color:TH.textDim}}>({w.weaponType}+{w.enchantName})</span>
+                      <button style={{...S.btn('gold'),fontSize:11,padding:'1px 6px'}} onClick={()=>sellForgedWeapon(w.id)}
+                        title="Selling removes this weapon's +1 customer/day display draw">💰 Sell {w.goldValue||0}g</button>
                     </div>
                   )}
                 </div>
@@ -9232,7 +9246,7 @@ function CindervaleAlchemistInner(){
             const owned=gadgets.map(g=>g.blueprintId);
             return <>
               {tkLv>=10&&<div style={{fontSize:12,color:'#d4a420',marginBottom:6,padding:'3px 8px',background:'#d4a42010',borderRadius:4,border:'1px solid #d4a42033'}}>
-                ⭐ Masterwork Tools active: +2 gadget slots · ★ legendary blueprints unlocked · gadgets immune to expedition damage
+                ⭐ Masterwork Tools active: +2 gadget slots · ★ legendary blueprints unlocked · Mk III gadgets run at 150% output · gadgets immune to expedition damage
               </div>}
               {/* Equipped gadgets */}
               {gadgets.length>0&&<div style={{marginBottom:8}}>

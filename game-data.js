@@ -175,7 +175,7 @@ var CLASSES={
         features:[
           {classLv:3,name:'Gadgeteer',desc:'Craft utility gadgets for passive bonuses. +1 craft bonus. +15% experiment discovery. 50% salvage on failures.',effects:{craftBonus:1,experimentBonus:0.15,salvagePercent:0.50}},
           {classLv:6,name:'Swiss Army',desc:'Gadgets provide multiple benefits. +15% batch brew success. Workshop upgrades cost -15%.',effects:{batchSuccessBonus:0.15,upgradeCostReduction:0.15}},
-          {classLv:10,name:'Masterwork Tools',desc:'Legendary utility tools. All craft DCs -2 permanently. 90% salvage on failure. Gadgets can be upgraded indefinitely beyond mark caps (+1 power per extra mark). Equip 2 gadgets simultaneously.',effects:{craftBonus:3,salvagePercent:0.90,infiniteGadgetMarks:true,dualGadgets:true}},
+          {classLv:10,name:'Masterwork Tools',desc:'Legendary utility tools. +3 to all craft checks. 90% salvage on failure. +2 gadget slots. Masterwork Calibration: your equipped Mk III gadgets run at 150% output, and your gadgets are immune to expedition damage.',effects:{craftBonus:3,salvagePercent:0.90,masterworkCalibration:true,dualGadgets:true}},
         ]},
       constructor:{id:'constructor',name:'Constructor',desc:'Master workshop builder. Upgrades cost less, staff work harder, and legendary blueprints reshape production.',mechDesc:'Blueprint Drafting. Draft and build custom workshop structures from blueprints. Each blueprint requires a drafting phase (research) followed by a construction phase (staff assignment). Completed blueprints provide unique workshop bonuses not available through normal upgrades.',icon:'🏗️',color:'#8090a0',bStat:'dis',bSkills:['endurance','precision'],
         features:[

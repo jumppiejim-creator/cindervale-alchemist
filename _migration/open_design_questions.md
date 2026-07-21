@@ -97,7 +97,10 @@ _All still-open logged design questions across the project as of session end. Cl
 
 **Defect B — Named Weapons' `goldValue` is dead data.** `forgeWeapon`'s success branch computes and stores a premium `goldValue` (weapon tier + enchant tier + sell/gold bonuses) on the weapon object (~3582), but nothing ever reads it — named weapons only join the Display Case (+1 customer/day each, up to 3, which IS real and now stated in-screen). The mechDesc's "Forged weapons sell at premium prices" only holds for the inscription-failure path (plain weapon, small gold). **Options:** (a) add a "Sell" action on displayed weapons paying `goldValue` and removing the customer draw — a real keep-vs-cash tradeoff, ~10-15 lines; (b) pay `goldValue` immediately on forge success; (c) delete the dead field and reword the mechDesc.
 
-**Status: OPEN, awaiting Jim's pick per defect.**
+**Status: CLOSED 2026-07-21 — Jim picked, both built same day.**
+- **Defect A resolved (reword + thematic replacement):** the false "upgraded indefinitely" claim is gone. The `infiniteGadgetMarks` flag was renamed **`masterworkCalibration`** and now does two honest things: equipped **Mk III gadgets run at 150% output** (new — one multiplier line in `getGadgetEffect`, numeric values only; tuple/flag-shaped legendary gadgets are untouched) plus the pre-existing expedition-damage immunity. Lv10 desc, handbook row, and the Gadget Bench callout all updated; the desc's stale "-2 craft DCs" claim was also corrected to the wired "+3 craft checks" while in there.
+- **Defect B resolved (option a — the Sell tradeoff):** new `sellForgedWeapon` handler + a "💰 Sell {value}g" button on each Display Case weapon. Selling pays the stored `goldValue` (finally live) and removes the weapon — trading its +1 customer/day draw for gold. Forge guidance strip and success popup mention the choice; sale is undo-able via snapshot.
+- Verified: `node -c` clean, zero `infiniteGadgetMarks` references remain in code, calibration math confirmed in-browser (0.45 → 0.675), clean boot. Cache-bust → `?v=20260721f`.
 
 ---
 
