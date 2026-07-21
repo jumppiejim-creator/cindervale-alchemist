@@ -101,4 +101,5 @@ When a character retires, they pass:
 - `HIDDEN_INGR` ingredients can silently overwrite main `INGR` entries via `Object.assign`. Use unique IDs (`hr_` prefix) for hidden ingredients.
 - `game-data.js` must stay above 4,700 lines — never rewrite the full file, only targeted edits.
 - Firestore paths must match rules: `users/{userId}/slots/{key}`.
+- **Cache-busting:** `game-data.js` and `location-images.js` are loaded with `?v=YYYYMMDDx` query params in `index.html`. Browsers cache by that URL — after editing either file, bump its `?v=` param or players (and local testing) keep the stale copy.
 - **Cross-repo file pollution (May 2026):** Tender's `game-data.js` was accidentally placed in this repo and pushed, breaking the deploy because none of `FACTIONS`, `CLASSES`, or `RECIPES` were defined. The fix took ~30 minutes. **Never read from or write to a sibling repo folder.** Always work in the path declared at the top of this file. If a task seems to require pulling files from another project, stop and ask.
