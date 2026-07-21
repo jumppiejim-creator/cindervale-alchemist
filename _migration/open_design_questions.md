@@ -111,7 +111,7 @@ _All still-open logged design questions across the project as of session end. Cl
 
 **Why not built now:** scoped as the trigger-fired expansion; Jim's call on whether/when to run.
 
-**Status: OPEN.** Audit methodology already proven on the specs/prestige set; the expansion is a known-good multiplier of the same approach.
+**Status: CLOSED 2026-07-21 — see `per_level_feature_sufficiency_audit.md` (repo root).** The real scope was 50 base-class features (the ~250 estimate double-counted; spec/prestige were already covered). Result: 43/50 PASS — the May accuracy sweeps had left descs strong — and 7 sub-bar entries fixed same day (wrong lucky-brew claim, phantom "Lore" skill, mis-phrased flat inscription bonus, omitted +15% batch success, unquantified 30% attuned-forage rate, stale "cost time" wording, and two literal `&mdash;` entities that JSX rendered as raw text). Fixes applied to both game-data descs and the mirrored handbook rows.
 
 ---
 

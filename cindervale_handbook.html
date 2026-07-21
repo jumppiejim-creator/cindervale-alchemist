@@ -446,9 +446,9 @@
   <tr><td>3</td><td>Specialization</td><td>Choose a specialization path. +5% ingredient save chance.</td></tr>
   <tr><td>4</td><td>Efficient Brewing</td><td>15% chance to save one ingredient per brew.</td></tr>
   <tr><td>5</td><td>Double Batch</td><td>25% chance to produce 2x potions on success.</td></tr>
-  <tr><td>6</td><td>Intuitive DC</td><td>Craft checks can't roll below 5. 10% lucky brew chance for bonus potions.</td></tr>
+  <tr><td>6</td><td>Intuitive DC</td><td>Craft checks can't roll below 5. 10% chance for a failed brew (except a natural 1) to succeed anyway &mdash; a lucky brew.</td></tr>
   <tr><td>7</td><td>Master Brewer</td><td>+2 to all craft checks (stacks). +15% research discovery. On reaching this level you are granted three legendary recipes from the master&rsquo;s archive (Celestial Balm, Phoenix Draught, Forge Catalyst).</td></tr>
-  <tr><td>8</td><td>Reagent Attunement</td><td>Foraging may yield bonus ingredients attuned to your most-brewed recipe. +15% ingredient efficiency on all crafts.</td></tr>
+  <tr><td>8</td><td>Reagent Attunement</td><td>Foraging: 30% chance per successful roll to yield a bonus ingredient from your most-brewed recipe (when it grows in that region). +15% ingredient efficiency on all crafts.</td></tr>
   <tr><td>9</td><td>Perfected Art</td><td>Craft failures on recipes brewed 10+ times produce a lesser version. Once per day, reroll a failed craft.</td></tr>
   <tr><td>10</td><td>Magnum Opus</td><td>Your 3 most-brewed recipes auto-succeed at Masterwork quality. +50% double batch chance. 1 free craft per day. Once you have brewed 20 different recipes 25+ times each, one brew per day costs zero ingredients.</td></tr>
 </table>
@@ -502,7 +502,7 @@
   <tr><td>1</td><td>Inscribe Enchantment</td><td>Can enchant customer items. +1 inscription, material cost -1.</td></tr>
   <tr><td>2</td><td>Mana Flow</td><td>+1 to all inscription checks. Enchanting material cost reduced by 1 (min 1).</td></tr>
   <tr><td>3</td><td>Specialization</td><td>Choose a specialization path. +5 inscription bonus.</td></tr>
-  <tr><td>4</td><td>Arcane Mastery</td><td>+8% enchant success chance. See customer satisfaction hints.</td></tr>
+  <tr><td>4</td><td>Arcane Mastery</td><td>+8 flat inscription bonus (flat inscription bonuses cap at +20). See customer satisfaction hints.</td></tr>
   <tr><td>5</td><td>Dual Inscription</td><td>Apply 2 enchantments to a single customer item (second at +3 DC).</td></tr>
   <tr><td>6</td><td>Resonance</td><td>Enchanting customers pay 25% more gold. 20% chance to save enchanting materials. On reaching this level you are granted two resonance-themed patterns: Echo Strike and Runespark Array.</td></tr>
   <tr><td>7</td><td>Overcharge</td><td>Natural 20 on an inscription roll produces a Masterwork enchantment &mdash; double XP and Masterwork-tier pricing.</td></tr>
@@ -565,7 +565,7 @@
   <tr><td>6</td><td>Production Line</td><td>Batch brew: +10% success rate per item after the first.</td></tr>
   <tr><td>7</td><td>Prototype</td><td>Once per day, reroll a failed craft. +15% discovery chance from research.</td></tr>
   <tr><td>8</td><td>Grand Artificer</td><td>Workshop upgrade costs &minus;25%. Your d20 craft rolls cannot land below 8. On reaching this level you are granted three legendary precision-craft recipes: Mithril Draught, Titan&rsquo;s Elixir, and Embersteel Oil.</td></tr>
-  <tr><td>9</td><td>Systematic Mastery</td><td>Batch brew cap +3. All batch brews show individual roll results.</td></tr>
+  <tr><td>9</td><td>Systematic Mastery</td><td>Batch brew cap +3. +15% batch brew success rate. All batch brews show individual roll results.</td></tr>
   <tr><td>10</td><td>Masterwork Engine</td><td>Two free 0-hour crafting actions per day. Batch size +2. 100% salvage on failures. Upgrades cost -30% and provide double bonuses.</td></tr>
 </table>
 
@@ -615,7 +615,7 @@
 
 <table>
   <tr><th>Lv</th><th>Feature</th><th>Description</th></tr>
-  <tr><td>1</td><td>Research Study</td><td>Can conduct research studies to discover recipes. +5% discovery chance.</td></tr>
+  <tr><td>1</td><td>Research Study</td><td>Can conduct research studies to discover recipes. Gain proficiency in Research and Analysis. +5% discovery chance, +5% XP from all sources.</td></tr>
   <tr><td>2</td><td>Speed Reader</td><td>One free research study per day (no Energy cost). +10% base discovery chance.</td></tr>
   <tr><td>3</td><td>Specialization</td><td>Choose a specialization path. +5% discovery chance.</td></tr>
   <tr><td>4</td><td>Eureka!</td><td>Experiments: +15% discovery chance. On discovery, show recipe stat/DC info.</td></tr>
@@ -676,7 +676,7 @@
   <tr><td>1</td><td>Trailblazer</td><td>Travel Energy cost &minus;25% to all regions. Gain proficiency in Extraction and Endurance.</td></tr>
   <tr><td>2</td><td>Enduring Spirit</td><td>+25 Energy per day. Weather penalties halved.</td></tr>
   <tr><td>3</td><td>Specialization</td><td>Choose a specialization path. +1 extraction bonus.</td></tr>
-  <tr><td>4</td><td>Iron Constitution</td><td>Immune to expedition events that cost time.</td></tr>
+  <tr><td>4</td><td>Iron Constitution</td><td>Immune to expedition events that cost Energy.</td></tr>
   <tr><td>5</td><td>Expert Forager</td><td>Critical extraction (nat 20) yields 3x ingredients. Successes yield +1 bonus.</td></tr>
   <tr><td>6</td><td>Deep Mapping</td><td>Your charts open paths others can't reach. Region level requirements are reduced by 1 &mdash; access regions one level earlier than normal.</td></tr>
   <tr><td>7</td><td>Wilderness Mastery</td><td>+2 extraction bonus. Positive expedition events 2x more likely. 15% bonus rare find per forage roll.</td></tr>
