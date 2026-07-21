@@ -26,8 +26,8 @@ Browser-based single-player RPG. Run an alchemy shop across 4 zones. Brew potion
 
 ## Architecture
 
-- **index.html** — Full game UI and logic. Single-file React app via Babel (inline JSX in script tags). ~12,800 lines.
-- **game-data.js** — All game data (ingredients, recipes, enchantments, regions, quests, NPCs, factions, threats, companions, etc). ~4,900 lines.
+- **index.html** — Full game UI and logic. Single-file React app via Babel (inline JSX in script tags). ~12,850 lines.
+- **game-data.js** — All game data (ingredients, recipes, enchantments, regions, quests, NPCs, factions, threats, companions, etc). ~4,970 lines.
 - **Hosted on GitHub Pages** at https://jumppiejim-creator.github.io/cindervale-alchemist/
 - **Images** hosted in the same GitHub repo. Leonardo AI generated.
 - **Cloud saves** via Firebase Firestore + Google Sign-In. Config is in `index.html` script tags (CDN, not npm).
@@ -61,6 +61,7 @@ Players build out a workshop with swappable rooms, furnishings, and stations. As
 - `eCL(classId)` returns effective class level (max of `classLevels` and `torchClassLevels`).
 - `eSpec(classId)` returns effective spec (own spec or torch spec).
 - `getFeatureVal(key)` aggregates all passive bonuses from class features, specs, feats, upgrades, factions, etc. This is the single source of truth for stacked bonuses.
+- Faction Harmony flows through `getHarmonyBonus(key)`, called from inside `getFeatureVal` — per-pair tier bonuses (capped by `HARMONY_CAPS` in game-data.js, doubled at Diplomat Lv5) plus pair-specific `pair.effect` tier-3 rewards (uncapped, undoubled). Categorical pair effects flow through `getCategoricalBonus`. Flattened targeted keys (`recipeBonus_<recipeId>`, `regionForage_<regionId>`) follow the `factionBonusDrop_<id>` convention.
 - `getSkMod(skillId)` returns stat mod + rank bonus + race bonus.
 - `doCheck(skillId, dc)` and `pureCheck(skillId, dc)` perform d20 roll + modifier vs DC. Nat 1 auto-fails, nat 20 auto-succeeds.
 - `INGR_SUBS` maps base-zone ingredients to local equivalents for cross-zone recipe craftability. `FACTION_SUBS` and `THREAT_SUBS` do the same for factions and threats.
@@ -87,8 +88,13 @@ When a character retires, they pass:
   - Spec/prestige description sufficiency audited and fixed (`_migration/spec_prestige_sufficiency_audit.md`); mechDesc correctness audited (`_migration/mechdesc_correctness_audit_phase1.md`).
 - **Town/Navigation redesign shipped:** 9 art-driven hub tiles, always-visible stub bar, back-to-town via `BackBar`, unified `resolveArt()` backdrop resolver (index.html ~6720). `TOWN_IMGS` populated in `location-images.js`; all 25 town art images are in the repo. Locked spec: `town_nav_design_lock.md`.
 - **Spellweaver Planar Attunement Stage-1 shipped:** planar/combo effect keys wired into `doEnchant` (index.html ~3289); `fadeChance` / `dualChanceBonus` / `bonusEnchantChance` use the locked Tier-1 reinterpretations. Design lock: `_migration/spellweaver_planar_designlock.md`.
-- **Open design questions** are consolidated in `_migration/open_design_questions.md` — literal Tier-3 planar interpretations, customer→faction mapping, Runesmith/Tinkerer/Apothecary in-screen guidance polish, FACTION_PAIRS recon (undiagnosed), per-level feature sufficiency expansion (trigger fired, ~250 entries).
-- **Time/energy:** read-only investigation complete (`time_energy_investigation.md`). Headline: `hours` and the player-facing "⚡ Energy" are the same variable. A continuous-energy refactor is a possible future project; nothing implemented.
+- **Faction Harmony / FACTION_PAIRS system completed (July 21, 2026)** — full arc in `faction_pairs_recon.md` (recon → fixes → content, all in one day):
+  - Recon found the Diplomat's harmony system was largely dead: `getHarmonyBonus` defined but never called, Tidecrest/Skyreach had zero pairs, `.every()`-on-empty granted vacuous Grand Alliance, the Embassy list leaked cross-zone, and reward strings promised unbuilt mechanics.
+  - All fixed: harmony bonuses wired via a `getHarmonyBonus` call inside `getFeatureVal`; vacuous-empty guards; Embassy loc-filtered and envoys local-only; reward strings made truthful; dead `dLv>=6` gates fixed.
+  - `FACTION_PAIRS` is now 21 pairs (6/3/6/6 per zone — Ashfall genuinely has only 3 factions) and **every pair carries a unique tier-3 `effect:{}` bonus** (recipe/region/caravan/categorical/flat keys). Pair effects are exempt from the Lv5 doubling and from `HARMONY_CAPS` (the tunable zone-total ceilings in game-data.js: restock 8 / discount 45% / rep +100% / sell +25%).
+  - Grand Alliance is achievable in all four zones and all zones converge on identical capped maxima.
+- **Open design questions** are consolidated in `_migration/open_design_questions.md` — literal Tier-3 planar interpretations, customer→faction mapping, Runesmith/Tinkerer/Apothecary in-screen guidance polish, per-level feature sufficiency expansion (trigger fired, ~250 entries). FACTION_PAIRS (#6) is closed.
+- **Time/energy:** the `hours` → `energy` refactor HAS shipped since the investigation doc (`time_energy_investigation.md`, May 2026) was written — the state variable is now `energy` (index.html ~346) on a 100-per-day base scale (1 old hour = 25 energy), spent via `spendEnergy`/`getActionEnergyCost` with percentage `energyCostMultiplier` modifiers (see the workshop audit's Phase 4 changelog). The investigation doc describes the pre-refactor system; treat it as historical.
 - **Torch rework (`torchClassLevels` → `torchFeature`): NOT implemented.** `eCL()`/`torchClassLevels` remain the live mechanism. Its design doc (`feature_dependency_audit.md`) is no longer in the repo, and `torchSkillRanks` is likewise designed-only, never built.
 - The old `v2_balance_patch_spec.md` is no longer in the repo. Of its open questions: the Diplomat prestige rename happened (`diplomat` in `PRESTIGE_CLASSES`); whether Brand Master should be reachable without multiclassing remains undecided.
 
