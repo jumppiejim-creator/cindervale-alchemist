@@ -3840,6 +3840,8 @@ function CindervaleAlchemistInner(){
   const getHarmonyCap=()=>{const dLv=prestigeLevels?.diplomat||0;return dLv>=5?3:dLv>=3?2:dLv>=1?1:0;};
   const dispatchEnvoy=(pairId)=>{
     const pair=FACTION_PAIRS.find(p=>p.id===pairId);if(!pair)return;
+    // Envoys are local-only: harmony pairs belong to their own zone's diplomacy.
+    if(pair.loc&&pair.loc!==gameLocation){addLog(`${pair.name} is a ${pair.loc} matter — travel there to send an envoy.`,'error');return;}
     const currentHarmony=factionHarmony[pairId]||0;
     if(currentHarmony>=getHarmonyCap()){addLog(`${pair.name} is already at max Harmony for your level.`,'error');return;}
     const envoysToday=dayFlags.filter(f=>f==='envoy_sent').length;
@@ -9729,7 +9731,7 @@ function CindervaleAlchemistInner(){
                 <div style={{fontSize:16,color:'#d4a420',fontWeight:'bold'}}>🏛️ Grand Alliance Active!</div>
                 <div style={{fontSize:14,color:TH.text}}>All factions united. +50% rep gains, +25% sell bonus</div>
               </div>}
-              {FACTION_PAIRS.map(pair=>{
+              {uiPairs.map(pair=>{
                 const h=factionHarmony[pair.id]||0;
                 const atCap=h>=maxHarmony;
                 const canSend=envoysToday<maxEnvoys&&!atCap;
@@ -12018,7 +12020,7 @@ function CindervaleAlchemistInner(){
             </div>
           </div>}
           {/* Faction Harmony */}
-          {Object.values(factionHarmony).some(h=>h>0)&&<div style={{marginTop:8,borderTop:'1px solid '+TH.border,paddingTop:6}}>
+          {FACTION_PAIRS.some(fp=>(!fp.loc||fp.loc===gameLocation)&&(factionHarmony[fp.id]||0)>0)&&<div style={{marginTop:8,borderTop:'1px solid '+TH.border,paddingTop:6}}>
             <div style={{fontSize:14,color:'#4090c0',fontWeight:'bold',marginBottom:4}}>🤝 Faction Harmony</div>
             <div style={{display:'grid',gridTemplateColumns:'repeat(2,1fr)',gap:3,fontSize:13}}>
               {FACTION_PAIRS.filter(fp=>(!fp.loc||fp.loc===gameLocation)&&(factionHarmony[fp.id]||0)>0).map(fp=>{

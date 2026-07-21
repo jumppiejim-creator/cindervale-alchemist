@@ -25,6 +25,13 @@ _Generated 2026-07-21. Read-only recon of the FACTION_PAIRS / Faction Harmony sy
   - Grand Alliance is now achievable in all four zones. Ashfall's 3-pair alliance remains the easiest (3 factions); that asymmetry is inherent to the faction roster, not a bug.
   - **D just got more pressing:** the Embassy panel's unfiltered pair list now renders all 21 pairs in every zone. Recommend the loc filter (D) as the next fix.
   - **Still open:** D (cross-zone envoy decision + loc-filter the Embassy list), the balance flag above.
+- **2026-07-21 — Fix D applied: envoys are local-only.**
+  - Embassy panel now renders `uiPairs` (the loc-filtered list already computed for the Grand Alliance banner) instead of the full unfiltered `FACTION_PAIRS` — each zone shows only its own pairs (6, or 3 in Ashfall).
+  - `dispatchEnvoy` gained a defense-in-depth loc guard: dispatching a non-local pair logs "`{pair.name}` is a `{loc}` matter — travel there to send an envoy." (unreachable via the filtered UI, but protects any future call path).
+  - Sidebar harmony section's outer gate is now loc-aware, matching its inner list — no more empty "🤝 Faction Harmony" header when all your harmony lives in another zone.
+  - Harmony built cross-zone before this fix is untouched in state and simply becomes visible/active again when the player travels to that pair's zone — no migration needed, since every bonus read site was already loc-filtered.
+  - Verified: JSX compiles (Babel clean), game boots with no console errors; `uiPairs` scope confirmed within the Embassy IIFE.
+  - **Recon fix menu now fully closed: A, B, C, D, E-cheap, F all applied 2026-07-21.** The only open thread is the balance flag (uncapped per-pair stacking — Jim's tuning call), plus the §6 table's cut pair-specific bonus ideas if they're ever wanted as real mechanics.
 
 > **Headline**: the flagged gap is real but it is the *smaller* of two problems. (1) Tidecrest and Skyreach have **zero** harmony pairs, so the Diplomat's signature mechanic doesn't exist in half the game and `.every()`-on-empty makes Grand Alliance vacuously "achieved" there. (2) Worse: **`getHarmonyBonus()` is defined but never called** — every percentage bonus the harmony system promises (shop stock, vendor discount, rep gains, Grand Alliance, the Lv5 Ambassador doubling) is dead code. The class feature audit verified the function's internals but never verified a call site.
 
