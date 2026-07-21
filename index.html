@@ -30,7 +30,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <script src="portraits.js"></script>
 <script src="location-images.js?v=20260609a"></script>
-<script src="game-data.js?v=20260721f"></script>
+<script src="game-data.js?v=20260721g"></script>
 <script src="npc-portraits.js"></script>
 <script type="text/babel" data-type="module">
 const { useState, useEffect, useCallback, useRef, Component, createElement } = React;
@@ -6703,6 +6703,11 @@ function CindervaleAlchemistInner(){
                           {spec.bSkills.map(sk=>{const skill=SKILLS[sk];return skill?<span key={sk} style={{fontSize:12,padding:'1px 5px',borderRadius:3,background:`${TH.green}12`,border:`1px solid ${TH.green}22`,color:TH.green}}>{skill.icon} {skill.name}</span>:null;})}
                         </div>
                       </div>
+                      {/* The spec's unique mechanic — sources sp.mechDesc (same surface fix as the level-up
+                          spec picker); without this, systems like the Apothecary Clinic were never explained
+                          at character selection. Falls back to sp.desc if mechDesc is absent. */}
+                      {spec.desc&&<div style={{fontSize:13,color:TH.textDim,fontStyle:'italic',marginBottom:6,lineHeight:1.4}}>{spec.desc}</div>}
+                      {spec.mechDesc&&<div style={{fontSize:13,color:TH.text,marginBottom:8,padding:'6px 8px',background:`${spec.color}10`,border:`1px solid ${spec.color}44`,borderRadius:5,lineHeight:1.45}}>{spec.mechDesc}</div>}
                       {spec.features.map((f,fi)=>(
                         <div key={fi} style={{marginBottom:8,padding:'6px 8px',borderRadius:4,background:`${TH.bg}60`,border:`1px solid ${TH.border}`}}>
                           <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:3}}>

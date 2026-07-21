@@ -12,6 +12,8 @@ _Read-only audit. Methodology: for each specialization and prestige class, appli
 
 **Source pattern: SEPARATE — picker and handbook draw from different sources.** Picker reads game-data live; handbook is hand-authored HTML. Worse: the game-data has a `mechDesc` field on every spec that explains the unique mechanic concretely — and nothing reads it. This is the root cause of the audit's findings.
 
+> **2026-07-21 addendum — third orphaned surface found and fixed (Jim's catch):** the fix sweep wired `sp.mechDesc` into the level-up spec picker, but the **character-selection class-detail modal** ("View Full Progression", index.html ~6690-6711) had the same orphan: spec cards showed icon/stat/skills/features but never `sp.desc` or `sp.mechDesc` — so a new player choosing their starting class never learned what the Clinic, Venom Contracts, Forge, etc. actually were. Both fields now render in each spec card (desc as the identity line, mechDesc in the mechanic box), mirroring the wizard's pattern. In passing, the markdown `**bold**` markers inside the Spellweaver/Naturalist mechDesc strings and the Naturalist Lv10 feature desc were removed — JSX rendered them as literal asterisks on every surface. Verified live in the modal (Clinic text renders at character selection). Cache-bust → `?v=20260721g`.
+
 ---
 
 ## Per-Entry Ratings
