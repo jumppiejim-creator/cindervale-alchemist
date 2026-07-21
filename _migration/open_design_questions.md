@@ -97,7 +97,7 @@ _All still-open logged design questions across the project as of session end. Cl
 
 **Why not built now:** scope was deliberately not pulled in during any session work — flagged for separate future attention.
 
-**Status: OPEN, UNDIAGNOSED.** Next step is a recon pass to establish what specifically is wrong (or whether the flag was speculative).
+**Status: DIAGNOSED 2026-07-21 — see `faction_pairs_recon.md` (repo root). Fixes A + B + F + E-cheap applied same day** (harmony bonuses wired via `getFeatureVal`; vacuous `.every()` guarded; dead gates fixed; all reward strings and the Grand Alliance popup reworded to the real wired effects — see the recon doc's changelog). **Still open:** C (author the 12 missing Tidecrest/Skyreach pairs — the recon's §6 table preserves the cut pair-specific bonus ideas if C wants to revive them as real mechanics), D (cross-zone envoy decision), and a **balance flag** — the newly-live per-pair bonuses stack uncapped (full Cindervale harmony at Diplomat Lv5 = 180% buy discount); tuning is Jim's call.
 
 ---
 

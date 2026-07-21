@@ -26,8 +26,8 @@ Browser-based single-player RPG. Run an alchemy shop across 4 zones. Brew potion
 
 ## Architecture
 
-- **index.html** — Full game UI and logic. Single-file React app via Babel (inline JSX in script tags). ~12,100 lines.
-- **game-data.js** — All game data (ingredients, recipes, enchantments, regions, quests, NPCs, factions, threats, companions, etc). ~4,955 lines.
+- **index.html** — Full game UI and logic. Single-file React app via Babel (inline JSX in script tags). ~12,800 lines.
+- **game-data.js** — All game data (ingredients, recipes, enchantments, regions, quests, NPCs, factions, threats, companions, etc). ~4,900 lines.
 - **Hosted on GitHub Pages** at https://jumppiejim-creator.github.io/cindervale-alchemist/
 - **Images** hosted in the same GitHub repo. Leonardo AI generated.
 - **Cloud saves** via Firebase Firestore + Google Sign-In. Config is in `index.html` script tags (CDN, not npm).
@@ -77,17 +77,20 @@ When a character retires, they pass:
 - Legacy feature — one spec or prestige feature chain with merged effects
 - Museum collection carries forward
 
-## Current State (as of May 2026)
+## Current State (as of July 2026)
 
-- V1 is fully playable across all 4 zones.
-- **V2 balance patch:** Phase 1 (data layer) and Phase 2 (logic) complete. Phase 3 (content cleanup — quests, events, NPC dialog, tutorial text referencing removed Merchant/COM/deleted skills) and Phase 4 (testing) pending.
-- **V2 open questions** still unresolved (see `v2_balance_patch_spec.md`):
-  - `torchSkillRanks` for skill-gated prestige inheritance — designed, not implemented
-  - Diplomat prestige rename (no longer Merchant-flavored)
-  - Whether Brand Master prestige should be reachable without multiclassing
-- **Torch rework** (`torchClassLevels` → `torchFeature`) is designed in `feature_dependency_audit.md`. Recommendation: keep the chain-merge approach to preserve all 140 features.
-- **Workshop swap system** is in active development. `ws_swap_shopfront` was the most recent piece wired in.
-- Firebase cloud saves working. PWA enabled.
+- V1 is fully playable across all 4 zones. Firebase cloud saves working. PWA enabled.
+- **Handbook ↔ code audit sweeps (May 2026) are all closed:**
+  - Class features 140/140 ✓ (`class_feature_audit.md`) — includes the Diplomat structural fix and the Phase C recipe-grant / category-routing builds.
+  - Feats 57/57 ✓ (`feat_audit.md`) — Thick Skin and Mentor's Gift were cut.
+  - Workshop upgrades 22/22 ✓ (`workshop_upgrade_audit.md`) — flat cost reductions converted to a percentage-modifier system that walks upgrades, classes, feats, companions, settlement projects, faction bonuses, elixir buffs, and lineage sources.
+  - Spec/prestige description sufficiency audited and fixed (`_migration/spec_prestige_sufficiency_audit.md`); mechDesc correctness audited (`_migration/mechdesc_correctness_audit_phase1.md`).
+- **Town/Navigation redesign shipped:** 9 art-driven hub tiles, always-visible stub bar, back-to-town via `BackBar`, unified `resolveArt()` backdrop resolver (index.html ~6720). `TOWN_IMGS` populated in `location-images.js`; all 25 town art images are in the repo. Locked spec: `town_nav_design_lock.md`.
+- **Spellweaver Planar Attunement Stage-1 shipped:** planar/combo effect keys wired into `doEnchant` (index.html ~3289); `fadeChance` / `dualChanceBonus` / `bonusEnchantChance` use the locked Tier-1 reinterpretations. Design lock: `_migration/spellweaver_planar_designlock.md`.
+- **Open design questions** are consolidated in `_migration/open_design_questions.md` — literal Tier-3 planar interpretations, customer→faction mapping, Runesmith/Tinkerer/Apothecary in-screen guidance polish, FACTION_PAIRS recon (undiagnosed), per-level feature sufficiency expansion (trigger fired, ~250 entries).
+- **Time/energy:** read-only investigation complete (`time_energy_investigation.md`). Headline: `hours` and the player-facing "⚡ Energy" are the same variable. A continuous-energy refactor is a possible future project; nothing implemented.
+- **Torch rework (`torchClassLevels` → `torchFeature`): NOT implemented.** `eCL()`/`torchClassLevels` remain the live mechanism. Its design doc (`feature_dependency_audit.md`) is no longer in the repo, and `torchSkillRanks` is likewise designed-only, never built.
+- The old `v2_balance_patch_spec.md` is no longer in the repo. Of its open questions: the Diplomat prestige rename happened (`diplomat` in `PRESTIGE_CLASSES`); whether Brand Master should be reachable without multiclassing remains undecided.
 
 ## Common Pitfalls (Bugs We've Hit)
 

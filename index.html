@@ -686,6 +686,30 @@ function CindervaleAlchemistInner(){
   };
 
   // Feature/effect queries across all classes + specs + feats
+  // Faction Harmony bonuses (Diplomat Embassy, FACTION_PAIRS). Defined ahead of getFeatureVal because
+  // getFeatureVal calls it — that single call site is what applies harmony to every read of
+  // shopRestockBonus / buyDiscount / repGainBonus / sellBonus, so no per-site wiring is needed.
+  const getHarmonyBonus=(effectKey)=>{
+    if(typeof FACTION_PAIRS==='undefined')return 0;
+    let total=0;
+    const locPairs=FACTION_PAIRS.filter(fp=>(!fp.loc||fp.loc===gameLocation));
+    locPairs.forEach(pair=>{
+      const h=factionHarmony[pair.id]||0;
+      if(h>=1&&effectKey==='shopRestockBonus')total+=2;
+      if(h>=2&&effectKey==='buyDiscount')total+=0.15;
+      if(h>=3&&effectKey==='repGainBonus')total+=0.25;
+    });
+    // Grand Alliance bonus. The length guard matters: .every() on an empty list is vacuously true,
+    // and zones with no FACTION_PAIRS data (currently Tidecrest/Skyreach) must not qualify for free.
+    const allMax=locPairs.length>0&&locPairs.every(fp=>(factionHarmony[fp.id]||0)>=3);
+    if(allMax){
+      if(effectKey==='repGainBonus')total+=0.50;
+      if(effectKey==='sellBonus')total+=0.25;
+    }
+    // Diplomat Lv5 Ambassador: harmony bonuses doubled
+    if((prestigeLevels?.diplomat||0)>=5)total*=2;
+    return total;
+  };
   const getFeatureVal=useCallback((effectKey)=>{
     let total=0;
     for(const [cid,lv] of Object.entries(classLevels)){
@@ -744,8 +768,10 @@ function CindervaleAlchemistInner(){
     if(wildAlly?.passive?.[effectKey]!=null){const v=wildAlly.passive[effectKey];total+=typeof v==='number'?v:v===true?1:0;}
     // Settlement project effects
     if(settlementProjects?.length>0&&typeof SETTLEMENT_PROJECTS!=='undefined'){settlementProjects.forEach(pid=>{const proj=SETTLEMENT_PROJECTS.find(p=>p.id===pid);if(proj?.effect?.[effectKey]!=null){const v=proj.effect[effectKey];total+=typeof v==='number'?v:v===true?1:0;}});}
+    // Faction Harmony (Diplomat Embassy) — shopRestockBonus/buyDiscount/repGainBonus/sellBonus
+    total+=getHarmonyBonus(effectKey);
     return total;
-  },[classLevels,specs,playerFeats,fRep,factionAlign,loreFragments,activeBuffs,mentorBonuses,museumBonuses,legacyFeature,pubPapers,fieldJournal,companions,wildAlly,settlementProjects]);
+  },[classLevels,specs,playerFeats,fRep,factionAlign,loreFragments,activeBuffs,mentorBonuses,museumBonuses,legacyFeature,pubPapers,fieldJournal,companions,wildAlly,settlementProjects,factionHarmony,gameLocation,prestigeLevels]);
   // Category-scoped bonus aggregator. kind is 'brew' (reads categoricalBrewBonus) or 'enchant' (reads categoricalEnchantBonus).
   // activeCat is the recipe's or enchant's `cat` field (e.g. 'healing', 'weapon', 'armor', 'other').
   // Returns sum of matching values from base-class + spec features.
@@ -3835,14 +3861,15 @@ function CindervaleAlchemistInner(){
       showResult('🤝 Envoy Successful! — Harmony '+newHarmony,'craft',
         pair.icon+' '+pair.name+'\n'+SUCC[Math.floor(Math.random()*SUCC.length)]+
         '\n\n'+pair.rewards[newHarmony-1]+
-        (dLv>=6?'\n+5 rep with both factions':''),ch);
+        (dLv>=3?'\n+5 rep with both factions':''),ch);
       addLog(`🤝 ${pair.name} Harmony → ${newHarmony}. ${pair.rewards[newHarmony-1]}`,'quest');
       // Check for Grand Alliance (Diplomat Lv4)
       if(dLv>=4){
-        const allMax=FACTION_PAIRS.filter(fp=>(!fp.loc||fp.loc===gameLocation)).every(fp=>(fp.id===pairId?newHarmony:(factionHarmony[fp.id]||0))>=3);
+        const gaPairs=FACTION_PAIRS.filter(fp=>(!fp.loc||fp.loc===gameLocation));
+        const allMax=gaPairs.length>0&&gaPairs.every(fp=>(fp.id===pairId?newHarmony:(factionHarmony[fp.id]||0))>=3);
         if(allMax){
           showResult('🏛️ Grand Alliance Achieved!','craft',
-            '✨ All factions united under your diplomacy!\n+50% all reputation gains\nAll vendors stock everything\n'+locName+' has never been stronger.');
+            '✨ All factions united under your diplomacy!\n+50% all reputation gains\n+25% sell prices\nA legendary ingredient joins your shop stock daily\n'+locName+' has never been stronger.');
           addLog('🏛️ GRAND ALLIANCE! All faction pairs at Harmony 3. '+locName+' is united!','level');
         }
       }
@@ -3853,24 +3880,7 @@ function CindervaleAlchemistInner(){
         pair.icon+' '+pair.name+'\n'+FAIL[Math.floor(Math.random()*FAIL.length)]+'\n+5 XP (for the effort)',ch);
     }
   };
-  const getHarmonyBonus=(effectKey)=>{
-    let total=0;
-    FACTION_PAIRS.filter(fp=>(!fp.loc||fp.loc===gameLocation)).forEach(pair=>{
-      const h=factionHarmony[pair.id]||0;
-      if(h>=1&&effectKey==='shopRestockBonus')total+=2;
-      if(h>=2&&effectKey==='buyDiscount')total+=0.15;
-      if(h>=3&&effectKey==='repGainBonus')total+=0.25;
-    });
-    // Grand Alliance bonus
-    const allMax=FACTION_PAIRS.filter(fp=>(!fp.loc||fp.loc===gameLocation)).every(fp=>(factionHarmony[fp.id]||0)>=3);
-    if(allMax){
-      if(effectKey==='repGainBonus')total+=0.50;
-      if(effectKey==='sellBonus')total+=0.25;
-    }
-    // Diplomat Lv5 Ambassador: harmony bonuses doubled
-    if((prestigeLevels?.diplomat||0)>=5)total*=2;
-    return total;
-  };
+  // (getHarmonyBonus is defined next to getFeatureVal, which calls it.)
 
   // ═══ GUILDMASTER ACADEMY ═══
   const trainApprentice=(apprId,statId)=>{
@@ -5268,12 +5278,12 @@ function CindervaleAlchemistInner(){
       }
     }
     // Diplomat L4 Grand Alliance — when ALL harmony pairs for the current location are at max state (3),
-    // a legendary-tier item (val >= 25) appears in the daily shop restock. Filter uses the same shape as
-    // `getHarmonyBonus`'s allMax check at index.html:3651. Tidecrest/Skyreach have no harmony pairs in
-    // FACTION_PAIRS data (pre-existing gap), so .every() on empty returns true — Diplomats in those locations
-    // get the legendary stock without harmony work. Pricing is 2× the ingredient's base val per spec.
+    // a legendary-tier item (val >= 25) appears in the daily shop restock. The length guard matters:
+    // .every() on an empty list is vacuously true, and zones with no FACTION_PAIRS data (currently
+    // Tidecrest/Skyreach) must not get the legendary stock for free. Pricing is 2× base val per spec.
     if((prestigeLevels?.diplomat||0)>=4&&typeof FACTION_PAIRS!=='undefined'){
-      const allHarmoniesMaxed=FACTION_PAIRS.filter(fp=>(!fp.loc||fp.loc===gameLocation)).every(fp=>(factionHarmony[fp.id]||0)>=3);
+      const hPairs=FACTION_PAIRS.filter(fp=>(!fp.loc||fp.loc===gameLocation));
+      const allHarmoniesMaxed=hPairs.length>0&&hPairs.every(fp=>(factionHarmony[fp.id]||0)>=3);
       if(allHarmoniesMaxed){
         const legendaryPool=Object.entries(INGR).filter(([id,ig])=>(ig.val||0)>=25&&!alreadyInShop.has(id)&&!procList.find(p=>p.id===id));
         if(legendaryPool.length>0){
@@ -9708,11 +9718,12 @@ function CindervaleAlchemistInner(){
             const maxHarmony=getHarmonyCap();
             const envoysToday=dayFlags.filter(f=>f==='envoy_sent').length;
             const maxEnvoys=getMaxEnvoys();
-            const allMax=FACTION_PAIRS.filter(fp=>(!fp.loc||fp.loc===gameLocation)).every(fp=>(factionHarmony[fp.id]||0)>=3);
+            const uiPairs=FACTION_PAIRS.filter(fp=>(!fp.loc||fp.loc===gameLocation));
+            const allMax=uiPairs.length>0&&uiPairs.every(fp=>(factionHarmony[fp.id]||0)>=3);
             return <>
               <div style={{fontSize:13,color:TH.textDim,marginBottom:6}}>
                 Envoys: {maxEnvoys-envoysToday}/{maxEnvoys} remaining today · Harmony cap: {maxHarmony}
-                {dLv>=6&&' · +5 rep per successful envoy'}
+                {dLv>=3&&' · +5 rep per successful envoy'}
               </div>
               {allMax&&<div style={{padding:'8px 12px',background:'#d4a42015',borderRadius:6,border:'2px solid #d4a42066',textAlign:'center',marginBottom:8}}>
                 <div style={{fontSize:16,color:'#d4a420',fontWeight:'bold'}}>🏛️ Grand Alliance Active!</div>
@@ -9721,7 +9732,7 @@ function CindervaleAlchemistInner(){
               {FACTION_PAIRS.map(pair=>{
                 const h=factionHarmony[pair.id]||0;
                 const atCap=h>=maxHarmony;
-                const canSend=envoysToday<maxEnvoys&&energy>=25&&!atCap;
+                const canSend=envoysToday<maxEnvoys&&!atCap;
                 return <div key={pair.id} style={{padding:'6px 10px',background:h>=3?'#4090c015':TH.panelLight,borderRadius:6,marginBottom:4,border:'1px solid '+(h>=3?'#4090c066':h>0?'#4090c033':TH.border)}}>
                   <div style={{...S.row,justifyContent:'space-between'}}>
                     <div>
@@ -9733,7 +9744,7 @@ function CindervaleAlchemistInner(){
                       title="Free action — daily limit applies">
                       🕊️ Send Envoy (DC{pair.dc+h*2})
                     </button>}
-                    {atCap&&h<3&&<span style={{fontSize:12,color:TH.textDim}}>🔒 Lv{h>=2?10:6} to advance</span>}
+                    {atCap&&h<3&&<span style={{fontSize:12,color:TH.textDim}}>🔒 Diplomat Lv{h>=2?5:3} to advance</span>}
                   </div>
                   <div style={{fontSize:12,color:TH.textDim,margin:'2px 0'}}>{pair.desc}</div>
                   {/* Harmony rewards display */}
