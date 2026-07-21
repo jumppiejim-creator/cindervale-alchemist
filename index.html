@@ -9005,7 +9005,9 @@ function CindervaleAlchemistInner(){
                   🩺 {patient.diagLevel>=2?ailment.hints.full:patient.diagLevel>=1?ailment.hints.partial:ailment.hints.fail}
                 </div>}
                 <div style={{...S.row,marginTop:6,flexWrap:'wrap'}}>
-                  {!patient.examined&&<button style={{...S.btn('gold'),fontSize:14}} onClick={()=>examinePatient(patient.id)}>🩺 Examine</button>}
+                  {!patient.examined&&<button style={{...S.btn('gold'),fontSize:14}} onClick={()=>examinePatient(patient.id)}
+                    title={'Diagnosis roll: beat the DC for a partial read, beat it by 5+ for a full diagnosis.'+(eCL('alchemist')>=10?' Apothecary Lv10: always a full diagnosis.':eCL('alchemist')>=6?' Apothecary Lv6: a near-miss (within 2) still gives a partial read.':'')}>
+                    🩺 Examine <span style={{fontSize:12,opacity:0.8}}>(Attunement DC{8+ailment.tier*3})</span></button>}
                   <select onChange={e=>{if(e.target.value)prescribePotion(patient.id,e.target.value);}} value="" style={{padding:'4px 6px',background:TH.panelLight,color:TH.text,border:'1px solid '+TH.border,borderRadius:4,fontFamily:'inherit',fontSize:14,flex:1,minWidth:140}}>
                     <option value="">💊 Prescribe a potion...</option>
                     {RECIPES.filter(r=>known.includes(r.id)&&((pots[r.id]||0)>0||(pots[r.id+'_M']||0)>0)).flatMap(r=>{
@@ -9069,6 +9071,9 @@ function CindervaleAlchemistInner(){
             // Forging is free (no spendEnergy in forgeWeapon); the legacy `energy>=50` gate was a Phase 1 sweep miss.
             const canForge=forgesToday<maxForges;
             return <>
+              <div style={{fontSize:12,color:TH.textDim,marginBottom:6,padding:'4px 8px',background:TH.bg,borderRadius:4,border:'1px solid '+TH.border,lineHeight:1.5}}>
+                Forging costs materials only (free action, {maxForges}/day at your level). Two checks: 🎯 Precision vs the weapon's forge DC, then ✍️ Inscription vs the enchantment's DC (your flat inscription bonuses apply). Fail the forge — materials lost. Fail the inscription — sold immediately as a plain weapon for a little gold. Succeed at both — a Named Weapon joins the Display Case below, and each displayed weapon attracts +1 premium customer/day (up to +3).
+              </div>
               {available.map(w=>{
                 const hasMats=Object.entries(lmc(w.matCost)).every(([id,q])=>(inv[id]||0)>=q);
                 return <div key={w.id} style={{padding:'6px 10px',background:TH.panelLight,borderRadius:6,marginBottom:5,border:'1px solid '+TH.border}}>
@@ -9226,6 +9231,9 @@ function CindervaleAlchemistInner(){
             const available=GADGET_BLUEPRINTS.filter(b=>b.tier<=maxTier&&(!b.legendary||maxMk>=3));
             const owned=gadgets.map(g=>g.blueprintId);
             return <>
+              {tkLv>=10&&<div style={{fontSize:12,color:'#d4a420',marginBottom:6,padding:'3px 8px',background:'#d4a42010',borderRadius:4,border:'1px solid #d4a42033'}}>
+                ⭐ Masterwork Tools active: +2 gadget slots · ★ legendary blueprints unlocked · gadgets immune to expedition damage
+              </div>}
               {/* Equipped gadgets */}
               {gadgets.length>0&&<div style={{marginBottom:8}}>
                 <div style={{fontSize:13,color:'#c0a040',fontWeight:'bold',marginBottom:4}}>Your Gadgets:</div>

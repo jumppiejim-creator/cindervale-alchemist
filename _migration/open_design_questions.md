@@ -83,7 +83,21 @@ _All still-open logged design questions across the project as of session end. Cl
 
 **Why not built now:** scoped out of the Spellweaver guidance task (which was Spellweaver-only). No urgency — these systems work; players just learn them from play rather than from the screen.
 
-**Status: OPEN. Captured here for the first time.** This was previously only in conversation as a "flag for possible future pass" — the consolidated list is the right home for it.
+**Status: CLOSED 2026-07-21 — guidance polish applied.** Three in-screen additions, all truthful-to-code: (1) Runesmith Forge panel now carries a guidance strip explaining the free-action material cost, the two-check flow (Precision vs forge DC → Inscription vs enchant DC), each failure mode's outcome, and the Display-Case customer draw; (2) the Apothecary Examine button now shows the live DC (`Attunement DC 8+tier×3`) with a tooltip explaining the partial/full thresholds and the Lv6/Lv10 diagnosis perks; (3) the Gadget Bench shows a ⭐ Masterwork Tools callout at Tinkerer Lv10 listing only the parts that actually work (+2 slots, legendary blueprints, expedition-damage immunity).
+
+**⚠️ Two new defects found during the pass — logged as item #9 below.**
+
+---
+
+## 9. Tinkerer infinite marks unwired + Runesmith forge goldValue dead (found 2026-07-21)
+
+**Raised:** the #5 guidance polish pass, while verifying claims before writing guidance text.
+
+**Defect A — `infiniteGadgetMarks` (Tinkerer Lv10) has no upgrade path.** `getMaxMk()` (index.html ~4184) caps at Mk III regardless of the flag; `upgradeGadget` blocks at that cap; the flag's only read site is expedition gadget-damage immunity. The Lv10 desc's "Gadgets can be upgraded indefinitely beyond mark caps (+1 power per extra mark)" is unimplemented — and can't be wired generically, because `GADGET_BLUEPRINTS.values` arrays are heterogeneous (numerics, nulls, and tuples like `[75,2]`), so Mk IV+ values need per-gadget design. The mechDesc audit's TRUE rating for Tinkerer missed this. **Options:** (a) design per-gadget Mk IV+ scaling and wire it (~30-50 lines + data), or (b) E-cheap the Lv10 desc down to what works. The Lv10 callout added by the #5 polish deliberately omits the claim.
+
+**Defect B — Named Weapons' `goldValue` is dead data.** `forgeWeapon`'s success branch computes and stores a premium `goldValue` (weapon tier + enchant tier + sell/gold bonuses) on the weapon object (~3582), but nothing ever reads it — named weapons only join the Display Case (+1 customer/day each, up to 3, which IS real and now stated in-screen). The mechDesc's "Forged weapons sell at premium prices" only holds for the inscription-failure path (plain weapon, small gold). **Options:** (a) add a "Sell" action on displayed weapons paying `goldValue` and removing the customer draw — a real keep-vs-cash tradeoff, ~10-15 lines; (b) pay `goldValue` immediately on forge success; (c) delete the dead field and reword the mechDesc.
+
+**Status: OPEN, awaiting Jim's pick per defect.**
 
 ---
 
