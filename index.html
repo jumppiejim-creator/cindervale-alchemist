@@ -30,7 +30,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <script src="portraits.js"></script>
 <script src="location-images.js?v=20260609a"></script>
-<script src="game-data.js?v=20260721b"></script>
+<script src="game-data.js?v=20260721c"></script>
 <script src="npc-portraits.js"></script>
 <script type="text/babel" data-type="module">
 const { useState, useEffect, useCallback, useRef, Component, createElement } = React;
@@ -691,13 +691,16 @@ function CindervaleAlchemistInner(){
   // shopRestockBonus / buyDiscount / repGainBonus / sellBonus, so no per-site wiring is needed.
   const getHarmonyBonus=(effectKey)=>{
     if(typeof FACTION_PAIRS==='undefined')return 0;
-    let total=0;
+    let total=0,pairFx=0;
     const locPairs=FACTION_PAIRS.filter(fp=>(!fp.loc||fp.loc===gameLocation));
     locPairs.forEach(pair=>{
       const h=factionHarmony[pair.id]||0;
       if(h>=1&&effectKey==='shopRestockBonus')total+=2;
       if(h>=2&&effectKey==='buyDiscount')total+=0.15;
       if(h>=3&&effectKey==='repGainBonus')total+=0.25;
+      // Pair-specific tier-3 reward (pair.effect). Kept in a separate accumulator: each effect
+      // exists on exactly one pair, so it is exempt from the Lv5 doubling and HARMONY_CAPS below.
+      if(h>=3&&pair.effect&&pair.effect[effectKey]!=null){const v=pair.effect[effectKey];pairFx+=typeof v==='number'?v:v===true?1:0;}
     });
     // Grand Alliance bonus. The length guard matters: .every() on an empty list is vacuously true,
     // and zones with no FACTION_PAIRS data (currently Tidecrest/Skyreach) must not qualify for free.
@@ -710,7 +713,7 @@ function CindervaleAlchemistInner(){
     if((prestigeLevels?.diplomat||0)>=5)total*=2;
     // Zone-total ceiling per effect key (HARMONY_CAPS, game-data.js) — applied after the doubling.
     if(typeof HARMONY_CAPS!=='undefined'&&HARMONY_CAPS[effectKey]!=null)total=Math.min(total,HARMONY_CAPS[effectKey]);
-    return total;
+    return total+pairFx;
   };
   const getFeatureVal=useCallback((effectKey)=>{
     let total=0;
@@ -795,8 +798,18 @@ function CindervaleAlchemistInner(){
         }
       }
     }
+    // Faction Harmony pair-specific categorical rewards (tier 3) — e.g. weapon enchant gold,
+    // healing potion value. Same pair.effect blocks getHarmonyBonus reads for flat keys.
+    if(typeof FACTION_PAIRS!=='undefined'){
+      FACTION_PAIRS.filter(fp=>(!fp.loc||fp.loc===gameLocation)).forEach(fp=>{
+        if((factionHarmony[fp.id]||0)>=3){
+          const cb=fp.effect?.[fieldName]?.[activeCat]?.[effectKey];
+          if(cb!=null)total+=typeof cb==='number'?cb:cb===true?1:0;
+        }
+      });
+    }
     return total;
-  },[classLevels,specs]);
+  },[classLevels,specs,factionHarmony,gameLocation]);
 
   const hasFeature=useCallback((effectKey)=>{
     for(const [cid,lv] of Object.entries(classLevels)){
@@ -1234,7 +1247,7 @@ function CindervaleAlchemistInner(){
         const r=availPots[Math.floor(Math.random()*availPots.length)];
         const qty=1+Math.floor(Math.random()*(level>=6?3:level>=3?2:1));
         const basePay=r.xp+getFeatureVal('potionSaleBonus')+Math.floor(upEff('sellBonus')*r.xp);
-        const payPer=Math.floor(basePay*(1+custPayBF+getFeatureVal('potionValueBonus'))*GOLD_MULT);
+        const payPer=Math.floor(basePay*(1+custPayBF+getFeatureVal('potionValueBonus')+getCategoricalBonus('brew',r.cat,'potionValueBonus'))*GOLD_MULT);
         const pl=POT_LINES[name];
         pQ.push({kind:'potion',customer:name,title:cd.title,potionId:r.id,potionName:r.name,potionIcon:r.icon,
           qty,payPer,xpPer:Math.floor(r.xp*0.3),
@@ -1253,7 +1266,7 @@ function CindervaleAlchemistInner(){
           const name=CUST_NAMES[Math.floor(Math.random()*CUST_NAMES.length)];
           const cd=CUST_DATA[name]||{title:'Villager'};
           const qty=1;const basePay=r.xp+getFeatureVal('potionSaleBonus')+Math.floor(upEff('sellBonus')*r.xp);
-          const payPer=Math.floor(basePay*(1+custPayBF+getFeatureVal('potionValueBonus'))*GOLD_MULT);
+          const payPer=Math.floor(basePay*(1+custPayBF+getFeatureVal('potionValueBonus')+getCategoricalBonus('brew',r.cat,'potionValueBonus'))*GOLD_MULT);
           pQ.push({kind:'potion',customer:name,title:cd.title,potionId:r.id,potionName:r.name,potionIcon:r.icon,
             qty,payPer,xpPer:Math.floor(r.xp*0.3),line:'"I heard you sell excellent '+r.name+'. I had to come see for myself."',
             id:'pc_rep_'+Math.random().toString(36).slice(2)});
@@ -1872,6 +1885,12 @@ function CindervaleAlchemistInner(){
         const bId=reg.ingr[Math.floor(Math.random()*reg.ingr.length)];
         hourG[bId]=(hourG[bId]||0)+1;
         if(!luckyBonus)luckyBonus={id:bId,icon:INGR[bId]?.icon||'',name:INGR[bId]?.name||bId};
+      }
+      // Faction Harmony pair reward: bonus yield in specific regions (regionForage_<regionId>)
+      const harmRegB=getFeatureVal('regionForage_'+reg.id);
+      if(ext.success&&harmRegB>0){
+        const hrId=reg.ingr[Math.floor(Math.random()*reg.ingr.length)];
+        hourG[hrId]=(hourG[hrId]||0)+harmRegB;
       }
       // Attuned Foraging: bonus ingredient from most-brewed recipe
       let attuneBonus=null;
@@ -2849,6 +2868,9 @@ function CindervaleAlchemistInner(){
     // Category-scoped craft bonus (e.g. Apothecary Healer's Touch on healing recipes)
     const ccfb=getCategoricalBonus('brew',r.cat,'craftBonus');
     if(ccfb){ch.total+=ccfb;ch.extras.push({label:(r.cat||'')+' specialty',val:ccfb});}
+    // Faction Harmony pair-specific recipe bonus (recipeBonus_<recipeId>, e.g. Forgeheart Tincture)
+    const hrb=getFeatureVal('recipeBonus_'+r.id);
+    if(hrb){ch.total+=hrb;ch.extras.push({label:'🤝 Harmony',val:hrb});}
     if(masteryDisc>0)ch.extras.push({label:'📖 Mastery',val:'-'+masteryDisc+' DC'});
     if(qualDCMod!==qT.dcMod)ch.extras.push({label:'🫕 Cauldron',val:qualDCMod-qT.dcMod+' DC'});
     // craftFloor: minimum roll result (capped at 10)
@@ -3996,7 +4018,7 @@ function CindervaleAlchemistInner(){
     if(isPotion)setPots(p=>{const n={...p};Object.entries(cargo).forEach(([id,q])=>{n[id]=Math.max(0,(n[id]||0)-q);});return n;});
     else setInv(p=>{const n={...p};Object.entries(cargo).forEach(([id,q])=>{n[id]=Math.max(0,(n[id]||0)-q);});return n;});
     const qLv=eCL('warden');
-    const tripDays=qLv>=6?Math.max(1,route.roundTrip-1):route.roundTrip;
+    const tripDays=Math.max(1,route.roundTrip-(qLv>=6?1:0)-getFeatureVal('caravanSpeedBonus'));
     setCaravans(prev=>[...prev,{id:'cv_'+Math.random().toString(36).slice(2),routeId,sentDay:day,returnDay:day+tripDays,cargo:{...cargo},resolved:false}]);
     setCaravanRuns(prev=>({...prev,[routeId]:(prev[routeId]||0)+1}));
     const cargoStr=Object.entries(cargo).map(([id,q])=>(INGR[id]?.icon||RECIPES.find(r=>r.id===id)?.icon||'')+(INGR[id]?.name||RECIPES.find(r=>r.id===id)?.name||id)+'×'+q).join(', ');
@@ -4828,7 +4850,7 @@ function CindervaleAlchemistInner(){
         for(let i=0;i<qty;i++){if(Math.random()<0.3+level*0.02+shelfSaleB+infCustBonus+brandShelfBonus)sold++;}
         if(sold>0){
           const basePrice=r.xp+getFeatureVal('potionSaleBonus')+Math.floor(upEff('sellBonus')*r.xp);
-          const price=Math.floor(basePrice*(1+sellB+custPayB+pvb+infusedSellBonus)*qMult*infMult*freshMult*brandMult*GOLD_MULT);
+          const price=Math.floor(basePrice*(1+sellB+custPayB+pvb+getCategoricalBonus('brew',r.cat,'potionValueBonus')+infusedSellBonus)*qMult*infMult*freshMult*brandMult*GOLD_MULT);
           shelfGold+=price*sold;shelfSold[potId]=(shelfSold[potId]||0)+sold;
           next[potId]=qty-sold;if(next[potId]<=0)delete next[potId];
         }
@@ -5420,7 +5442,7 @@ function CindervaleAlchemistInner(){
       const sLines=Object.entries(shelfSold).map(([id,q])=>{const r=RECIPES.find(x=>x.id===getBaseRecipeId(id));const _fr=isFreshPot(id);
         const basePrice=r?r.xp+getFeatureVal('potionSaleBonus')+Math.floor(upEff('sellBonus')*r.xp):0;
         const _frM=_fr?getFreshMult(prestigeLevels.wildcrafter||0):1;
-        const price=Math.floor(basePrice*(1+getFeatureVal('sellBonus')+getFeatureVal('customerPayBonus')+getFeatureVal('potionValueBonus'))*_frM*GOLD_MULT);
+        const price=Math.floor(basePrice*(1+getFeatureVal('sellBonus')+getFeatureVal('customerPayBonus')+getFeatureVal('potionValueBonus')+getCategoricalBonus('brew',r?.cat,'potionValueBonus'))*_frM*GOLD_MULT);
         return{icon:(r?.icon||'🧪')+(_fr?'🌿':''),label:(r?.name||id)+(_fr?' (Fresh '+_frM+'×)':'')+' ×'+q,val:'+'+price*q+'g',color:_fr?'#60a040':TH.gold};});
       mrSections.push({title:'🏪 Shelf Sales',lines:sLines});}
     // Staff injury recovery
@@ -9609,7 +9631,7 @@ function CindervaleAlchemistInner(){
                         dispatchCaravan(route.id,{[common[0][0]]:3});
                       }}
                       title={route.desc+'\nRuns completed: '+runs+(partner?' — '+partner.runsNeeded+' needed for supply chain':'')}>
-                      {route.icon} {route.name} (DC{route.dc} · {qLv>=6?Math.max(1,route.roundTrip-1):route.roundTrip}d)
+                      {route.icon} {route.name} (DC{route.dc} · {Math.max(1,route.roundTrip-(qLv>=6?1:0)-getFeatureVal('caravanSpeedBonus'))}d)
                       {partner&&runs<partner.runsNeeded&&<span style={{color:TH.textDim,marginLeft:3}}>{runs}/{partner.runsNeeded}</span>}
                     </button>;
                   })}

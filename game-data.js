@@ -2818,35 +2818,48 @@ var TRAINABLE_STATS=['tec','inu','acu','dis','cre'];
 var TEACHABLE_TRAITS=['Quick Learner','Keen Senses','Tireless','Organized','Creative','Methodical','Inventive','Insightful','Numerate','Fleet-Footed'];
 
 // ═══ DIPLOMAT EMBASSY & ENVOY SYSTEM ═══
+// pair.effect = tier-3 (Harmony 3) pair-specific reward. Generic keys flow through getHarmonyBonus
+// into getFeatureVal (flat — exempt from the Lv5 doubling and HARMONY_CAPS, since each exists once);
+// categoricalBrewBonus/categoricalEnchantBonus objects flow through getCategoricalBonus.
+// Flattened keys follow the factionBonusDrop_<id> convention: recipeBonus_<recipeId>, regionForage_<regionId>.
 var FACTION_PAIRS=[
   {id:'fp_ash_cind',loc:'cindervale',factions:['ashwardens','cinderfolk'],name:'Ashwardens ↔ Cinderfolk',icon:'⚔️⛏️',dc:11,
     desc:'The soldiers and the miners — united by the mountain but divided by pride.',
-    rewards:['Shop stocks +2 extra items daily','15% vendor discount','+25% all reputation gains']},
+    rewards:['Shop stocks +2 extra items daily','15% vendor discount','Forgeheart Tincture +2 brew checks, +25% all reputation gains'],
+    effect:{recipeBonus_forgeheart_tincture:2}},
   {id:'fp_ash_hk',loc:'cindervale',factions:['ashwardens','hearthkeepers'],name:'Ashwardens ↔ Hearthkeepers',icon:'⚔️🕯️',dc:10,
     desc:'The protectors and the healers — natural allies who sometimes forget it.',
-    rewards:['Shop stocks +2 extra items daily','15% vendor discount','+25% all reputation gains']},
+    rewards:['Shop stocks +2 extra items daily','15% vendor discount','Healing potions +25% value, +25% all reputation gains'],
+    effect:{categoricalBrewBonus:{healing:{potionValueBonus:0.25}}}},
   {id:'fp_ash_vw',loc:'cindervale',factions:['ashwardens','veilwalkers'],name:'Ashwardens ↔ Veilwalkers',icon:'⚔️🌀',dc:13,
     desc:'Steel and sorcery — the hardest alliance to forge, but the most powerful.',
-    rewards:['Shop stocks +2 extra items daily','15% vendor discount','+25% all reputation gains']},
+    rewards:['Shop stocks +2 extra items daily','15% vendor discount','Weapon enchants +25% gold, +25% all reputation gains'],
+    effect:{categoricalEnchantBonus:{weapon:{enchantGoldBonus:0.25}}}},
   {id:'fp_cind_hk',loc:'cindervale',factions:['cinderfolk','hearthkeepers'],name:'Cinderfolk ↔ Hearthkeepers',icon:'⛏️🕯️',dc:10,
     desc:'The workers and the community — the backbone of Cindervale.',
-    rewards:['Shop stocks +2 extra items daily','15% vendor discount','+25% all reputation gains']},
+    rewards:['Shop stocks +2 extra items daily','15% vendor discount','+1 forage yield in Ashfields & Deep Mines, +25% all reputation gains'],
+    effect:{regionForage_ashfields:1,regionForage_deep_mines:1}},
   {id:'fp_cind_vw',loc:'cindervale',factions:['cinderfolk','veilwalkers'],name:'Cinderfolk ↔ Veilwalkers',icon:'⛏️🌀',dc:12,
     desc:'Deep stone and deep magic — the miners distrust what they can\'t dig.',
-    rewards:['Shop stocks +2 extra items daily','15% vendor discount','+25% all reputation gains']},
+    rewards:['Shop stocks +2 extra items daily','15% vendor discount','+10% research discovery, +25% all reputation gains'],
+    effect:{discoveryChanceBonus:0.10}},
   {id:'fp_hk_vw',factions:['hearthkeepers','veilwalkers'],name:'Hearthkeepers ↔ Veilwalkers',icon:'🕯️🌀',dc:11,loc:'cindervale',
     desc:'Faith and arcana — two paths to the same truth about the Heartforge.',
-    rewards:['Shop stocks +2 extra items daily','15% vendor discount','+25% all reputation gains']},
+    rewards:['Shop stocks +2 extra items daily','15% vendor discount','Celestial Balm +2 brew checks, +25% all reputation gains'],
+    effect:{recipeBonus_celestial_balm:2}},
   // Ashfall Crossing
   {id:'fp_af_sm_fk',factions:['sand_merchants','flamekeepers'],name:'Sand Merchants ↔ Flamekeepers',icon:'🏪🔥',dc:10,loc:'ashfall',
     desc:'Commerce and devotion — the merchants fund the temple, the temple blesses the caravans.',
-    rewards:['Shop stocks +2 extra items daily','15% vendor discount','+25% all reputation gains']},
+    rewards:['Shop stocks +2 extra items daily','15% vendor discount','+10% sell prices, +25% all reputation gains'],
+    effect:{sellBonus:0.10}},
   {id:'fp_af_sm_dw',factions:['sand_merchants','dustwalkers'],name:'Sand Merchants ↔ Dustwalkers',icon:'🏪🧭',dc:12,loc:'ashfall',
     desc:'Profit and exploration — the walkers find new routes, the merchants make them profitable.',
-    rewards:['Shop stocks +2 extra items daily','15% vendor discount','+25% all reputation gains']},
+    rewards:['Shop stocks +2 extra items daily','15% vendor discount','Caravan routes 1 day faster, +25% all reputation gains'],
+    effect:{caravanSpeedBonus:1}},
   {id:'fp_af_fk_dw',factions:['flamekeepers','dustwalkers'],name:'Flamekeepers ↔ Dustwalkers',icon:'🔥🧭',dc:11,loc:'ashfall',
     desc:'Sacred fire and wandering wind — the keepers guard what the walkers discover.',
-    rewards:['Shop stocks +2 extra items daily','15% vendor discount','+25% all reputation gains']},
+    rewards:['Shop stocks +2 extra items daily','15% vendor discount','10% fewer expedition dangers, +25% all reputation gains'],
+    effect:{reducedRisk:0.10}},
   // Tidecrest Harbor
   {id:'fp_tc_hm_pd',factions:['harbormasters','pearl_divers'],name:'Harbormasters ↔ Pearl Divers',icon:'⚓🤿',dc:11,loc:'tidecrest',
     desc:'The lawkeepers and the free divers — the harbor runs on rules the reef has never heard of.',
