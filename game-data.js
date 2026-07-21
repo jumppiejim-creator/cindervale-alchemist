@@ -2886,6 +2886,10 @@ var FACTION_PAIRS=[
     desc:'Profit and the pathless wind — the Runners find the routes, the Traders make them pay.',
     rewards:['Shop stocks +2 extra items daily','15% vendor discount','+25% all reputation gains']},
 ];
+// Zone-total ceilings for stacked harmony bonuses. Applied in getHarmonyBonus AFTER the Diplomat
+// Lv5 Ambassador doubling — absolute caps regardless of level, so the doubling accelerates
+// reaching a cap rather than raising it. Every zone (3-pair Ashfall included) can reach each cap.
+var HARMONY_CAPS={shopRestockBonus:8,buyDiscount:0.45,repGainBonus:1.0,sellBonus:0.25};
 
 // ═══ PRESTIGE CLASSES ═══
 var PRESTIGE_CLASSES={
@@ -2977,7 +2981,7 @@ var PRESTIGE_CLASSES={
       {lv:2,name:'Trade Agreements',desc:'+3 rare ingredients in daily shop restock. +30% gold from quest turn-ins. Each day, one signature ingredient from a Friendly+ faction\'s specialty pool also appears — your trade agreements bring exotic goods to your doorstep.',effects:{shopRestockBonus:3,questGoldBonus:0.30,factionRestock:true}},
       {lv:3,name:'Faction Harmony',desc:'Build diplomatic bridges between faction pairs, creating harmony bonuses.',effects:{factionHarmony:true,repGainBonus:0.25}},
       {lv:4,name:'Grand Alliance',desc:'When all harmony pairs reach their maximum state: +50% reputation gains, +25% sell prices, and one legendary-tier ingredient appears in your daily shop restock — your standing as a power broker among the factions opens trade in goods of legendary make.',effects:{repGainBonus:0.50,buyDiscount:0.25,shopRestockBonus:5,grandAllianceLegendaryStock:true}},
-      {lv:5,name:'Ambassador',desc:'Faction harmony bonuses doubled. Cross-faction rep spillover 25%. Carries through Torch.',effects:{harmonyDouble:true,repSpillover:0.25,torchHarmony:true}},
+      {lv:5,name:'Ambassador',desc:'Faction harmony bonuses doubled (up to zone caps). Cross-faction rep spillover 25%. Carries through Torch.',effects:{harmonyDouble:true,repSpillover:0.25,torchHarmony:true}},
     ]},
 };
 

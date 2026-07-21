@@ -30,7 +30,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <script src="portraits.js"></script>
 <script src="location-images.js?v=20260609a"></script>
-<script src="game-data.js?v=20260721a"></script>
+<script src="game-data.js?v=20260721b"></script>
 <script src="npc-portraits.js"></script>
 <script type="text/babel" data-type="module">
 const { useState, useEffect, useCallback, useRef, Component, createElement } = React;
@@ -708,6 +708,8 @@ function CindervaleAlchemistInner(){
     }
     // Diplomat Lv5 Ambassador: harmony bonuses doubled
     if((prestigeLevels?.diplomat||0)>=5)total*=2;
+    // Zone-total ceiling per effect key (HARMONY_CAPS, game-data.js) — applied after the doubling.
+    if(typeof HARMONY_CAPS!=='undefined'&&HARMONY_CAPS[effectKey]!=null)total=Math.min(total,HARMONY_CAPS[effectKey]);
     return total;
   };
   const getFeatureVal=useCallback((effectKey)=>{

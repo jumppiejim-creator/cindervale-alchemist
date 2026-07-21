@@ -32,6 +32,13 @@ _Generated 2026-07-21. Read-only recon of the FACTION_PAIRS / Faction Harmony sy
   - Harmony built cross-zone before this fix is untouched in state and simply becomes visible/active again when the player travels to that pair's zone — no migration needed, since every bonus read site was already loc-filtered.
   - Verified: JSX compiles (Babel clean), game boots with no console errors; `uiPairs` scope confirmed within the Embassy IIFE.
   - **Recon fix menu now fully closed: A, B, C, D, E-cheap, F all applied 2026-07-21.** The only open thread is the balance flag (uncapped per-pair stacking — Jim's tuning call), plus the §6 table's cut pair-specific bonus ideas if they're ever wanted as real mechanics.
+- **2026-07-21 — Balance flag resolved: `HARMONY_CAPS` zone-total ceilings.**
+  - New tunable table in game-data.js (directly below `FACTION_PAIRS`): `HARMONY_CAPS={shopRestockBonus:8,buyDiscount:0.45,repGainBonus:1.0,sellBonus:0.25}`. One clamp line in `getHarmonyBonus`, applied **after** the Lv5 Ambassador doubling — the caps are absolute ceilings, so the doubling accelerates reaching a cap rather than raising it. Tuning is a one-line data edit; logic never needs touching.
+  - Before → after at full harmony + Diplomat Lv5 (6-pair zones): buy discount 180% → **45%**; rep gains +400% → **+100%**; restock +24 → **+8**; sell +50% → **+25%** (now matching the Grand Alliance banner text exactly).
+  - Deliberate side effect: all four zones (3-pair Ashfall included) reach identical capped maxima — zone parity for the Diplomat regardless of roster size.
+  - Ambassador Lv5 desc updated: "Faction harmony bonuses doubled (up to zone caps)." Cache-bust bumped to `?v=20260721b`.
+  - Verified: `node -c` clean (4,944 lines); console simulation of the exact `getHarmonyBonus` math confirms all four zones converge on the capped values at full harmony + Lv5; game boots with no errors.
+  - **All recon threads now closed.** Remaining ideas (§6 pair-specific bonuses) are future content, not defects.
 
 > **Headline**: the flagged gap is real but it is the *smaller* of two problems. (1) Tidecrest and Skyreach have **zero** harmony pairs, so the Diplomat's signature mechanic doesn't exist in half the game and `.every()`-on-empty makes Grand Alliance vacuously "achieved" there. (2) Worse: **`getHarmonyBonus()` is defined but never called** — every percentage bonus the harmony system promises (shop stock, vendor discount, rep gains, Grand Alliance, the Lv5 Ambassador doubling) is dead code. The class feature audit verified the function's internals but never verified a call site.
 
