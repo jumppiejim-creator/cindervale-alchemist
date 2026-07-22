@@ -2369,7 +2369,7 @@ function CindervaleAlchemistInner(){
     // Auto-identify at Lv4+
     if(aqLv>=4){
       setRelics(p=>p.map(r=>r.id===relicId?{...r,appraised:true}:r));
-      addLog('📖 Auto-identified: '+RELIC_CATS.find(c=>c.id===relic.category)?.icon+' '+relic.name+' ('+relic.rarity+', '+relic.value+'g).','craft');
+      addLog('📖 Auto-identified: '+RELIC_CATS.find(c=>c.id===relic.category)?.icon+' '+relic.name+' ('+relic.rarity+', '+fmtMoney(relic.value)+').','craft');
       return;
     }
     snapshot();
@@ -2381,7 +2381,7 @@ function CindervaleAlchemistInner(){
     if(ch.success){
       setRelics(p=>p.map(r=>r.id===relicId?{...r,appraised:true}:r));
       const cat=RELIC_CATS.find(c=>c.id===relic.category);
-      showResult(cat?.icon+' '+relic.name+' — Appraised!','craft','Value: '+relic.value+'g ('+relic.rarity+')\nFrom: '+relic.region+'\nSet: '+cat?.set,ch);
+      showResult(cat?.icon+' '+relic.name+' — Appraised!','craft','Value: '+fmtMoney(relic.value)+' ('+relic.rarity+')\nFrom: '+relic.region+'\nSet: '+cat?.set,ch);
     } else {
       showResult('📖 Appraisal Failed','error','You can\'t quite identify this piece. Try again tomorrow.',ch);
     }
@@ -2395,7 +2395,7 @@ function CindervaleAlchemistInner(){
     setGold(g=>g+gold_gain);
     setRelics(p=>p.filter(r=>r.id!==relicId));
     const cat=RELIC_CATS.find(c=>c.id===relic.category);
-    addLog('💰 Sold '+cat?.icon+' '+relic.name+' for '+gold_gain+'g'+(mult>1?' ('+mult+'× collector price)':'')+'!','quest');
+    addLog('💰 Sold '+cat?.icon+' '+relic.name+' for '+fmtMoney(gold_gain)+(mult>1?' ('+mult+'× collector price)':'')+'!','quest');
   };
 
   const displayRelic=(relicId)=>{
@@ -2441,7 +2441,7 @@ function CindervaleAlchemistInner(){
     if(outposts.length>=maxOutpostSlots){addLog('No outpost slots available ('+outposts.length+'/'+maxOutpostSlots+').','error');return;}
     if(outposts.some(op=>op.regionId===regionId)){addLog('Already have an outpost at '+reg.name+'.','error');return;}
     const cost=50+reg.diff*25;
-    if(gold<cost){addLog('Need '+cost+'g to build outpost at '+reg.name+' (have '+gold+'g).','error');return;}
+    if(gold<cost){addLog('Need '+fmtMoney(cost)+' to build outpost at '+reg.name+' (have '+fmtMoney(gold)+').','error');return;}
     // Need 10 of any region ingredient
     const regIngr=reg.ingr||[];const bestIngr=regIngr.find(id=>(inv[id]||0)>=10);
     if(!bestIngr){addLog('Need 10 of any '+reg.name+' ingredient to build outpost.','error');return;}
@@ -2449,7 +2449,7 @@ function CindervaleAlchemistInner(){
     setGold(g=>g-cost);modInv(bestIngr,-10);
     const newOp={id:'op_'+Date.now(),regionId,built:false,daysLeft:reg.diff>=4?3:2,recipe:null,storedIngr:{},fortress:null};
     setOutposts(p=>[...p,newOp]);
-    addLog('🏗️ Construction started: Outpost at '+reg.name+' ('+newOp.daysLeft+' days). Cost: '+cost+'g + 10× '+(INGR[bestIngr]?.icon||'')+INGR[bestIngr]?.name+'.','quest');
+    addLog('🏗️ Construction started: Outpost at '+reg.name+' ('+newOp.daysLeft+' days). Cost: '+fmtMoney(cost)+' + 10× '+(INGR[bestIngr]?.icon||'')+INGR[bestIngr]?.name+'.','quest');
   };
 
   const setOutpostRecipe=(opId,recipeId)=>{
@@ -2461,7 +2461,7 @@ function CindervaleAlchemistInner(){
     if(seLv<5){addLog('Fortress Network (Siege Engineer Lv5) required.','error');return;}
     const ft=FORTRESS_TYPES[fortressType];if(!ft)return;
     if(outposts.some(op=>op.fortress)){addLog('Can only have one fortress. Existing fortress must be demolished first.','error');return;}
-    if(gold<ft.cost){addLog('Need '+ft.cost+'g for '+ft.name+'.','error');return;}
+    if(gold<ft.cost){addLog('Need '+fmtMoney(ft.cost)+' for '+ft.name+'.','error');return;}
     snapshot();setGold(g=>g-ft.cost);
     setOutposts(p=>p.map(op=>op.id===opId?{...op,fortress:fortressType}:op));
     addLog('🏰 '+ft.name+' constructed! '+ft.desc,'quest');
@@ -2516,9 +2516,9 @@ function CindervaleAlchemistInner(){
       if(crisisItemReduc>0&&adjQty<cost.qty)addLog('🛡️ Crisis Responder: solution needed only '+adjQty+'× (saved '+(cost.qty-adjQty)+').','info');
     } else if(cost.type==='gold'){
       const adjGold=Math.max(0,Math.floor(cost.qty*(1-crisisGoldDisc)));
-      if(gold<adjGold){addLog('Need '+adjGold+'g (have '+gold+'g).','error');return;}
+      if(gold<adjGold){addLog('Need '+fmtMoney(adjGold)+' (have '+fmtMoney(gold)+').','error');return;}
       setGold(g=>g-adjGold);
-      if(crisisGoldDisc>0&&adjGold<cost.qty)addLog('🛡️ Crisis Responder: solution cost only '+adjGold+'g (saved '+(cost.qty-adjGold)+'g).','info');
+      if(crisisGoldDisc>0&&adjGold<cost.qty)addLog('🛡️ Crisis Responder: solution cost only '+fmtMoney(adjGold)+' (saved '+fmtMoney(cost.qty-adjGold)+').','info');
     } else if(cost.type==='staff'){
       const availStaff=hiredAppr.filter(ap=>!apprTasks[ap.id]||apprTasks[ap.id].type==='idle');
       if(availStaff.length<cost.qty){addLog('Need '+cost.qty+' idle staff (have '+availStaff.length+'). Set staff to 💤 Idle first.','error');return;}
@@ -2555,8 +2555,8 @@ function CindervaleAlchemistInner(){
         if(mRwd.xp)gainXP(mRwd.xp);if(mRwd.gold)setGold(g=>g+mRwd.gold);
         if(mRwd.threatReduc)locThreatIds.forEach(tid=>{setThreats(p=>({...p,[tid]:Math.max(0,(p[tid]||0)-Math.floor(mRwd.threatReduc/3))}));});
       }
-      const rText=[rwd.xp?'+'+rwd.xp+' XP':'',rwd.gold?'+'+rwd.gold+'g':''].filter(Boolean).join(', ');
-      const mText=mastery?' ★ MASTERY! '+[HOLLOW_MARCH.masteryReward(hm.wave).xp?'+'+HOLLOW_MARCH.masteryReward(hm.wave).xp+' XP':'',HOLLOW_MARCH.masteryReward(hm.wave).gold?'+'+HOLLOW_MARCH.masteryReward(hm.wave).gold+'g':''].filter(Boolean).join(', '):'';
+      const rText=[rwd.xp?'+'+rwd.xp+' XP':'',rwd.gold?'+'+fmtMoney(rwd.gold):''].filter(Boolean).join(', ');
+      const mText=mastery?' ★ MASTERY! '+[HOLLOW_MARCH.masteryReward(hm.wave).xp?'+'+HOLLOW_MARCH.masteryReward(hm.wave).xp+' XP':'',HOLLOW_MARCH.masteryReward(hm.wave).gold?'+'+fmtMoney(HOLLOW_MARCH.masteryReward(hm.wave).gold):''].filter(Boolean).join(', '):'';
       addLog(`💀✅ ${crisis.icon} ${crisis.name}: ${solution.icon} ${solution.label} succeeded!${rollResult?' ('+rollResult.total+' vs DC'+rollResult.dc+')':''} ${rText}${mText}`,'quest');
     } else {
       // Failed skill check — crisis counts as attempted but failed
@@ -2576,9 +2576,9 @@ function CindervaleAlchemistInner(){
         const updMarch2={...hm,demands:updDemands,finalStandComplete:true,finalStandInProgress:false};
         setHollowMarch(updMarch2);
         const masteryCount=updDemands.filter(d=>d.result?.mastery).length;
-        addLog(`👑 THE FINAL STAND IS WON! ${charName} has broken the Hollow March! +${fs.xp} XP, +${fs.gold}g. Threats capped at ${fs.threatCap}.${masteryCount>0?' ★ '+masteryCount+' masterful victories!':''}`,'quest');
+        addLog(`👑 THE FINAL STAND IS WON! ${charName} has broken the Hollow March! +${fs.xp} XP, +${fmtMoney(fs.gold)}. Threats capped at ${fs.threatCap}.${masteryCount>0?' ★ '+masteryCount+' masterful victories!':''}`,'quest');
         setEventPopup({events:[{
-          text:`👑 The Hollow March is Broken!\n\n${charName} stands atop the ward-stones as the last invaders dissolve into mist.\n\n${updDemands.map(d=>`${d.result?.success?'✅':'❌'} ${d.icon} ${d.name} — ${d.solutions.find(s=>s.id===d.chosenSolution)?.icon||''} ${d.solutions.find(s=>s.id===d.chosenSolution)?.label||''}\n   ${d.result?.roll?d.result.roll.skill+': '+d.result.roll.total+' vs DC'+d.result.roll.dc:'Auto-success'}${d.result?.mastery?' ★ MASTERY':''}`).join('\n')}\n\n${succCount}/${updDemands.length} crises overcome (needed ${needed}). Victory!\n\n+${fs.xp} XP, +${fs.gold}g\nAll threats capped at ${fs.threatCap}\nTitle: "Defender of ${locName}"`,
+          text:`👑 The Hollow March is Broken!\n\n${charName} stands atop the ward-stones as the last invaders dissolve into mist.\n\n${updDemands.map(d=>`${d.result?.success?'✅':'❌'} ${d.icon} ${d.name} — ${d.solutions.find(s=>s.id===d.chosenSolution)?.icon||''} ${d.solutions.find(s=>s.id===d.chosenSolution)?.label||''}\n   ${d.result?.roll?d.result.roll.skill+': '+d.result.roll.total+' vs DC'+d.result.roll.dc:'Auto-success'}${d.result?.mastery?' ★ MASTERY':''}`).join('\n')}\n\n${succCount}/${updDemands.length} crises overcome (needed ${needed}). Victory!\n\n+${fs.xp} XP, +${fmtMoney(fs.gold)}\nAll threats capped at ${fs.threatCap}\nTitle: "Defender of ${locName}"`,
           vibe:'hollow_final',result:{msg:'The March is over. You may Pass the Torch when ready.'},flavor:null}],idx:0});
         return;
       } else {
@@ -2698,7 +2698,7 @@ function CindervaleAlchemistInner(){
   // ═══ SELL POTION HELPER (with Appraisal repeat customer) ═══
   const sellPotion=(potId,qty,sp,r)=>{
     modPot(potId,-qty);setGold(g=>g+sp*qty);recordBrandSale(getBaseRecipeId(potId),qty);
-    addLog(`Sold ${qty>1?qty+'× ':''}${r.icon}${r.name}. (+${sp*qty}g)`,'info');
+    addLog(`Sold ${qty>1?qty+'× ':''}${r.icon}${r.name}. (+${fmtMoney(sp*qty)})`,'info');
     // Appraisal: rank×5% chance per sale to attract a repeat customer next morning
     const apprMod=getFeatureVal('enchantGoldFlat');
     if(apprMod>0&&Math.random()<apprMod*0.05){
@@ -2996,7 +2996,7 @@ function CindervaleAlchemistInner(){
     const fl=CRAFT_SUCCESS[Math.floor(Math.random()*CRAFT_SUCCESS.length)];
     const qualLabel=qT.name!=='Standard'?' ['+qT.icon+' '+qT.name+']':'';
     const infLabel=selInf?' ['+selInf.icon+' '+selInf.name+']':'';
-    showResult(r.icon+' '+r.name+qualLabel+infLabel+' — Brewed!','craft',fl+(autoSucc?'\n🧮 Analysis: Perfect execution!':'')+(refBonus?'\n💎 Refinement: Bonus potion!':'')+(qty2>1&&!refBonus?'\nBonus double batch!':'')+(fbf?'\n⚡ First brew free!':'')+(fc?'\n✨ Free craft!':'')+(mwGold>0?'\n🏆 Masterwork! +'+mwGold+'g':'')+(masteryDisc>0?'\n📖 Mastery: -'+masteryDisc+' DC':'')+'\n+'+xpEarned+' XP'+(qT.xpMult>1?' ('+qT.name+' '+qT.xpMult+'×)':''),ch);
+    showResult(r.icon+' '+r.name+qualLabel+infLabel+' — Brewed!','craft',fl+(autoSucc?'\n🧮 Analysis: Perfect execution!':'')+(refBonus?'\n💎 Refinement: Bonus potion!':'')+(qty2>1&&!refBonus?'\nBonus double batch!':'')+(fbf?'\n⚡ First brew free!':'')+(fc?'\n✨ Free craft!':'')+(mwGold>0?'\n🏆 Masterwork! +'+fmtMoney(mwGold):'')+(masteryDisc>0?'\n📖 Mastery: -'+masteryDisc+' DC':'')+'\n+'+xpEarned+' XP'+(qT.xpMult>1?' ('+qT.name+' '+qT.xpMult+'×)':''),ch);
     if(!hasMilestone('first_brew'))earnMilestone('first_brew');
     if(r.id==='forge_catalyst'){earnMilestone('heartforge');addLog('⚡ The Forge Catalyst pulses with ancient heat. The ground trembles. Something deep beneath '+locName+' stirs to life... but this is not an ending. It is a beginning.','story');}
     // March recipe special effects
@@ -3171,8 +3171,8 @@ function CindervaleAlchemistInner(){
     gainXP(baseXp);
     const item=type==='recipe'?RECIPES.find(r=>r.id===id):ENCHANTMENTS.find(e=>e.id===id);
     const FLAVOR=['Your careful notes form a compelling paper. The academic community will take notice.','The quill flies across parchment as you document your findings with scholarly precision.','You seal the manuscript with wax. Another contribution to '+locName+'\'s growing body of knowledge.'];
-    showResult('📝 Paper Published!','craft',`${FLAVOR[Math.floor(Math.random()*FLAVOR.length)]}\n"On the Properties of ${item?.icon||''}${item?.name||id}"\n+${baseXp} XP · Earns passive gold daily`);
-    addLog(`📝 Published research paper: "${item?.icon||''}${item?.name||id}". It will earn gold each morning.`,'quest');
+    showResult('📝 Paper Published!','craft',`${FLAVOR[Math.floor(Math.random()*FLAVOR.length)]}\n"On the Properties of ${item?.icon||''}${item?.name||id}"\n+${baseXp} XP · Earns passive coin daily`);
+    addLog(`📝 Published research paper: "${item?.icon||''}${item?.name||id}". It will earn coin each morning.`,'quest');
   };
 
   // ─── TRANSMUTATION ───
@@ -3344,7 +3344,7 @@ function CindervaleAlchemistInner(){
       else if(_planEfx.defensiveGoldMult&&ench.cat==='armor')_planarMult*=_planEfx.defensiveGoldMult;
       if(_planEfx.goldPenalty)_planarMult*=(1-_planEfx.goldPenalty);
       const gR=Math.floor((baseGR+critGold)*(1+enchGoldB+custPayB+debtPenalty)*customSellMult*eqT.sellMult*GOLD_MULT*_planarMult);const enchXpEarned=Math.floor(ench.xp*eqT.xpMult);gainXP(enchXpEarned);setGold(g=>g+gR);
-      showResult(ench.icon+' '+(quality!=='std'?QUALITY[quality].icon+' ':'')+ench.name+' \u2014 Enchanted!','craft',cust.customer+"'s "+cust.icon+cust.name+'\\n+'+enchXpEarned+' XP  +'+gR+'g'+(isCustomEnch&&customSellMult>1?'\\n\u2728 Custom pattern: '+customSellMult+'\u00d7 premium!':'')+(matSaved?'\\n\u2728 Materials preserved!':'')+(isCrit?'\\n🎯 Critical inscription!':'')+(focusMW?'\\n🧘 Focus: Masterwork quality!':'')+(discounted?'\\n🏷\ufe0f Discount materials!':'')+(debtPenalty<0?'\\n\u26a0\ufe0f Debt penalty: -20% pay':''),ch);
+      showResult(ench.icon+' '+(quality!=='std'?QUALITY[quality].icon+' ':'')+ench.name+' \u2014 Enchanted!','craft',cust.customer+"'s "+cust.icon+cust.name+'\\n+'+enchXpEarned+' XP  +'+fmtMoney(gR)+(isCustomEnch&&customSellMult>1?'\\n\u2728 Custom pattern: '+customSellMult+'\u00d7 premium!':'')+(matSaved?'\\n\u2728 Materials preserved!':'')+(isCrit?'\\n🎯 Critical inscription!':'')+(focusMW?'\\n🧘 Focus: Masterwork quality!':'')+(discounted?'\\n🏷\ufe0f Discount materials!':'')+(debtPenalty<0?'\\n\u26a0\ufe0f Debt penalty: -20% pay':''),ch);
       if(dualInsc>0&&!dayFlags.includes('dual_inscribed')){setDayFlags(f=>[...f,'dual_inscribed']);setEnergy(e=>e+25);addLog('\u2728 Dual Inscription: bonus enchant this hour!','info');}
       const ebsChance=getFeatureVal('enchantBonusScroll');if(ebsChance>0&&Math.random()<ebsChance){const scrollGold=Math.floor(ench.dc*5);setGold(g=>g+scrollGold);addLog(`📜 Arcane Recycler: Residual energy formed a bonus scroll! +${scrollGold}g`,'craft');}
       // Planar Attunement reinterpreted effects (designlock §B): dualChanceBonus / bonusEnchantChance
@@ -3353,13 +3353,13 @@ function CindervaleAlchemistInner(){
       if(_dualChance>0&&Math.random()<_dualChance){
         const bonusGold=Math.floor(gR*0.5);const bonusXp=Math.floor(enchXpEarned*0.5);
         setGold(g=>g+bonusGold);gainXP(bonusXp);
-        addLog(`🌀 Planar surge: +${bonusGold}g, +${bonusXp} XP from residual energy.`,'craft');
+        addLog(`🌀 Planar surge: +${fmtMoney(bonusGold)}, +${bonusXp} XP from residual energy.`,'craft');
       }
       // fadeChance reinterpreted (designlock §B): dissatisfied-customer roll, not overnight rollback.
       if((_planEfx.fadeChance||0)>0&&Math.random()<_planEfx.fadeChance){
         setGold(g=>g-10);
         if(factionAlign)addRep(factionAlign,-1);
-        addLog('🌀 Feywild instability: '+cust.customer+' returns dissatisfied — refunded 10g'+(factionAlign?' (−1 '+(FACTIONS[factionAlign]?.name||factionAlign)+' rep).':'.'),'error');
+        addLog('🌀 Feywild instability: '+cust.customer+' returns dissatisfied — refunded '+fmtMoney(10)+(factionAlign?' (−1 '+(FACTIONS[factionAlign]?.name||factionAlign)+' rep).':'.'),'error');
       }
     }
     else{
@@ -3372,7 +3372,7 @@ function CindervaleAlchemistInner(){
         addLog('\u2728 Enchanter training: recovered '+Math.round(fer*100)+'% of materials.','info');}
       if(_planEfx.critFailDestroy===true&&ch.roll===1){
         setGold(g=>g-25);
-        addLog('\ud83c\udf00 Void Storm crit-fail: paid 25g compensation, materials destroyed.','error');
+        addLog('\ud83c\udf00 Void Storm crit-fail: paid '+fmtMoney(25)+' compensation, materials destroyed.','error');
       }
       else if(_planEfx.failDestroyMats===true&&!matSaved&&Object.keys(cost).length>0){
         addLog('\ud83c\udf00 Elemental Chaos: failed inscription consumed all materials.','error');
@@ -3436,7 +3436,7 @@ function CindervaleAlchemistInner(){
     const totalPay=Math.floor(cust.payPer*cust.qty*custQB.mult);const totalXp=Math.floor(cust.xpPer*cust.qty*custQB.mult);
     setGold(g=>g+totalPay);gainXP(totalXp);
     setPotCustQ(p=>p.filter(c=>c!==cust));
-    showResult('🧪 Order Filled!','craft',cust.customer+' buys '+cust.qty+'× '+cust.potionIcon+cust.potionName+'\n+'+totalPay+'g  +'+totalXp+' XP'+(custQB.label?'\n'+custQB.label:''));
+    showResult('🧪 Order Filled!','craft',cust.customer+' buys '+cust.qty+'× '+cust.potionIcon+cust.potionName+'\n+'+fmtMoney(totalPay)+'  +'+totalXp+' XP'+(custQB.label?'\n'+custQB.label:''));
   };
   const dismissPotCust=(cust)=>setPotCustQ(p=>p.filter(c=>c!==cust));
 
@@ -3498,7 +3498,7 @@ function CindervaleAlchemistInner(){
     const WRONG_LINES=['"I... don\'t think that did anything."','"*grimaces* That\'s not quite hitting the mark, is it?"','"Well, at least it didn\'t make it worse."'];
     const lines=matchQuality==='great'?GREAT_LINES:matchQuality==='good'?GOOD_LINES:WRONG_LINES;
     const patientLine=lines[Math.floor(Math.random()*lines.length)];
-    const rewardText=(goldReward>0?'\n+'+goldReward+'g':'')+(xpReward>0?' +'+xpReward+' XP':'')+(repReward>0?' +'+repReward+' '+FACTIONS[repFaction]?.name+' rep':'');
+    const rewardText=(goldReward>0?'\n+'+fmtMoney(goldReward):'')+(xpReward>0?' +'+xpReward+' XP':'')+(repReward>0?' +'+repReward+' '+FACTIONS[repFaction]?.name+' rep':'');
     showResult('🏥 '+patient.patientName+' — '+(matchQuality==='great'?'Perfect Cure!':matchQuality==='good'?'Partial Relief':'Wrong Remedy'),
       matchQuality==='great'?'craft':matchQuality==='good'?'info':'error',
       'Prescribed: '+recipe.icon+' '+recipe.name+'\n'+patientLine+(rewardText?'\n'+rewardText:''));
@@ -3535,7 +3535,7 @@ function CindervaleAlchemistInner(){
       const SUCC_LINES=['"Deadly work, alchemist. The Wardens are in your debt."','"This will do the job. Payment as agreed."','"*inspects the vial* Potent. Very potent. Well done."'];
       showResult('☠️ Contract Fulfilled! — '+potency.name+' Potency',
         'craft',contract.icon+' '+contract.name+'\n'+SUCC_LINES[Math.floor(Math.random()*SUCC_LINES.length)]+
-        '\n+'+goldReward+'g +'+xpReward+' XP +'+repReward+' '+(FACTIONS[lf(contract.faction)]?.name||'')+' rep',ch);
+        '\n+'+fmtMoney(goldReward)+' +'+xpReward+' XP +'+repReward+' '+(FACTIONS[lf(contract.faction)]?.name||'')+' rep',ch);
     } else {
       // Failure — ingredients consumed, no reward
       setVenomContracts(prev=>prev.map(v=>v.id===vcId?{...v,fulfilled:true,chosenPotency:potencyId,success:false}:v));
@@ -3585,7 +3585,7 @@ function CindervaleAlchemistInner(){
       setGold(g=>g+plainGold);
       gainXP(Math.floor(weapon.tier*10));
       const PARTIAL=['The runes flicker and fade. A solid weapon, but uninscribed.','Your inscription crumbles. The blank is good steel, at least.'];
-      showResult('🔨 Inscription Failed — Plain '+weapon.name,'info',weapon.icon+' '+weapon.name+'\n'+PARTIAL[Math.floor(Math.random()*PARTIAL.length)]+'\nSold as plain weapon: +'+plainGold+'g',inscCh);
+      showResult('🔨 Inscription Failed — Plain '+weapon.name,'info',weapon.icon+' '+weapon.name+'\n'+PARTIAL[Math.floor(Math.random()*PARTIAL.length)]+'\nSold as plain weapon: +'+fmtMoney(plainGold),inscCh);
       return;
     }
     // Both succeeded! Create a Named Weapon
@@ -3608,7 +3608,7 @@ function CindervaleAlchemistInner(){
     snapshot();
     setForgedWeapons(prev=>prev.filter(x=>x.id!==weaponId));
     setGold(g=>g+(w.goldValue||0));
-    addLog(`💰 Sold ${w.weaponIcon}${w.name} to a collector for ${w.goldValue||0}g. An empty stand remains in the display case.`,'info');
+    addLog(`💰 Sold ${w.weaponIcon}${w.name} to a collector for ${fmtMoney(w.goldValue||0)}. An empty stand remains in the display case.`,'info');
   };
 
   // ═══ WARDKEEPER SHIELD COMMISSIONS ═══
@@ -3661,7 +3661,7 @@ function CindervaleAlchemistInner(){
           ratio>=1?'craft':'info',
           comm.icon+' '+comm.name+' · '+newCompleted+'/'+totalLayers+' layers\n'+
           lines[Math.floor(Math.random()*lines.length)]+
-          '\n+'+goldReward+'g +'+xpReward+' XP'+(repReward>0?' +'+repReward+' '+(FACTIONS[lf(comm.faction)]?.name||'')+' rep':'')+
+          '\n+'+fmtMoney(goldReward)+' +'+xpReward+' XP'+(repReward>0?' +'+repReward+' '+(FACTIONS[lf(comm.faction)]?.name||'')+' rep':'')+
           (referral?'\n⭐ Referral: +1 commission tomorrow!':''),ch);
         addLog(`🛡️ Completed ${comm.icon}${comm.name} for ${sc.clientName} — ${newCompleted}/${totalLayers} layers.`,'quest');
       } else {
@@ -3691,7 +3691,7 @@ function CindervaleAlchemistInner(){
           showResult('🛡️ Commission Complete — '+sc.clientName,'info',
             comm.icon+' '+comm.name+' · '+sc.layersCompleted+'/'+totalLayers+' layers\n'+
             (sc.layersCompleted>0?'"It\'s not what I hoped, but it\'ll have to do."':'"*shakes head* I can\'t use this. Partial payment for your time."')+
-            (goldReward>0?'\n+'+goldReward+'g':'')+(xpReward>0?' +'+xpReward+' XP':''),ch);
+            (goldReward>0?'\n+'+fmtMoney(goldReward):'')+(xpReward>0?' +'+xpReward+' XP':''),ch);
         } else {
           showResult('🛡️ Layer Failed — '+enchant.icon+' '+enchant.name,'error',
             'The inscription crumbles. Moving to next layer.\n'+(totalLayers-sc.layersCompleted-newFailed)+' layer'+(totalLayers-sc.layersCompleted-newFailed!==1?'s':'')+' remaining.',ch);
@@ -3760,20 +3760,20 @@ function CindervaleAlchemistInner(){
   const formatPlanarEffects=(efx)=>{
     if(!efx)return[];
     const out=[];
-    if(efx.utilityGoldMult)out.push({txt:'+'+Math.round((efx.utilityGoldMult-1)*100)+'% gold on accessory/utility ("other") enchants',good:true});
-    if(efx.allGoldMult)out.push({txt:'+'+Math.round((efx.allGoldMult-1)*100)+'% gold on all enchants',good:true});
-    if(efx.defensiveGoldMult)out.push({txt:'+'+Math.round((efx.defensiveGoldMult-1)*100)+'% gold on armor enchants',good:true});
-    if(efx.goldPenalty)out.push({txt:'−'+Math.round(efx.goldPenalty*100)+'% gold on all enchants',good:false});
+    if(efx.utilityGoldMult)out.push({txt:'+'+Math.round((efx.utilityGoldMult-1)*100)+'% coin on accessory/utility ("other") enchants',good:true});
+    if(efx.allGoldMult)out.push({txt:'+'+Math.round((efx.allGoldMult-1)*100)+'% coin on all enchants',good:true});
+    if(efx.defensiveGoldMult)out.push({txt:'+'+Math.round((efx.defensiveGoldMult-1)*100)+'% coin on armor enchants',good:true});
+    if(efx.goldPenalty)out.push({txt:'−'+Math.round(efx.goldPenalty*100)+'% coin on all enchants',good:false});
     if(efx.defensiveBonus)out.push({txt:'+'+efx.defensiveBonus+' inscription on armor enchants',good:true});
     if(efx.inscriptionBonus)out.push({txt:'+'+efx.inscriptionBonus+' inscription on all enchants',good:true});
     if(efx.offensiveDCPenalty)out.push({txt:'+'+efx.offensiveDCPenalty+' DC on weapon enchants',good:false});
     if(efx.dcReduction)out.push({txt:'−'+efx.dcReduction+' DC on all enchants',good:true});
     if(efx.autoSuccessDC)out.push({txt:'Auto-succeed inscriptions at DC '+efx.autoSuccessDC+' or below',good:true});
-    if(efx.fadeChance)out.push({txt:Math.round(efx.fadeChance*100)+'% chance on success: dissatisfied customer (−10g, −1 aligned-faction rep)',good:false});
+    if(efx.fadeChance)out.push({txt:Math.round(efx.fadeChance*100)+'% chance on success: dissatisfied customer (−'+fmtMoney(10)+', −1 aligned-faction rep)',good:false});
     if(efx.dualChanceBonus)out.push({txt:Math.round(efx.dualChanceBonus*100)+'% chance on success: planar surge (+50% gold, +50% XP)',good:true});
     if(efx.bonusEnchantChance)out.push({txt:Math.round(efx.bonusEnchantChance*100)+'% chance on success: planar surge (+50% gold, +50% XP)',good:true});
     if(efx.failDestroyMats)out.push({txt:'Failed inscriptions destroy materials (no recovery)',good:false});
-    if(efx.critFailDestroy)out.push({txt:'On nat-1: −25g compensation, materials destroyed',good:false});
+    if(efx.critFailDestroy)out.push({txt:'On nat-1: −'+fmtMoney(25)+' compensation, materials destroyed',good:false});
     return out;
   };
 
@@ -4050,12 +4050,12 @@ function CindervaleAlchemistInner(){
     if(partner.legendary&&eCL('warden')<10){addLog('Legendary partners require Warden Lv10.','error');return;}
     const runs=caravanRuns[partner.route]||0;
     if(runs<partner.runsNeeded){addLog(`Need ${partner.runsNeeded} caravan runs on ${CARAVAN_ROUTES.find(r=>r.id===partner.route)?.name||'this route'} (${runs}/${partner.runsNeeded}).`,'error');return;}
-    if(gold<partner.setupCost){addLog(`Need ${partner.setupCost}g to establish this supply chain.`,'error');return;}
+    if(gold<partner.setupCost){addLog(`Need ${fmtMoney(partner.setupCost)} to establish this supply chain.`,'error');return;}
     snapshot();
     setGold(g=>g-partner.setupCost);
     setSupplyChains(prev=>[...prev,{partnerId,tier:1}]);
     gainXP(partner.setupCost);
-    showResult('🤝 Supply Chain Established!','craft',partner.icon+' '+partner.name+'\n'+partner.desc+'\nTier 1 — delivers daily for '+partner.maint+'g/day maintenance.');
+    showResult('🤝 Supply Chain Established!','craft',partner.icon+' '+partner.name+'\n'+partner.desc+'\nTier 1 — delivers daily for '+fmtMoney(partner.maint)+'/day maintenance.');
     addLog(`🤝 Established supply chain with ${partner.icon}${partner.name}!`,'quest');
   };
   const upgradeChain=(partnerId)=>{
@@ -4064,7 +4064,7 @@ function CindervaleAlchemistInner(){
     const maxTier=getMaxChainTier();
     if(sc.tier>=maxTier){addLog('Max tier for current Warden level.','error');return;}
     const upgCost=partner.setupCost*sc.tier;
-    if(gold<upgCost){addLog(`Upgrade costs ${upgCost}g.`,'error');return;}
+    if(gold<upgCost){addLog(`Upgrade costs ${fmtMoney(upgCost)}.`,'error');return;}
     snapshot();setGold(g=>g-upgCost);
     setSupplyChains(prev=>prev.map(s=>s.partnerId===partnerId?{...s,tier:s.tier+1}:s));
     gainXP(upgCost);
@@ -4194,7 +4194,7 @@ function CindervaleAlchemistInner(){
       tradeResult='\n⭐ The buyer offers a trade: '+(INGR[tradeId]?.icon||tradeId)+' '+(INGR[tradeId]?.name||tradeId)+'!';
     }
     showResult('♻️ Salvage Auction','craft',
-      'Sold '+totalItems+' ingredients in bulk.\n+'+goldTotal+'g +'+xpTotal+' XP'+tradeResult);
+      'Sold '+totalItems+' ingredients in bulk.\n+'+fmtMoney(goldTotal)+' +'+xpTotal+' XP'+tradeResult);
   };
 
   // ═══ TINKERER GADGETS ═══
@@ -4361,7 +4361,7 @@ function CindervaleAlchemistInner(){
     const questER=getFeatureVal('questEnergyRestore');if(questER>0){setEnergy(h=>h+questER);addLog('\u26a1 Temple Healing: +'+questER+' Energy restored!','info');}
     // Faction tier 3 bonus: chance for bonus faction resource on quest complete
     if(q.faction){const fRes=FACTIONS[q.faction]?.res;if(fRes){const dropChance=getFeatureVal('factionBonusDrop_'+fRes);if(dropChance>0&&Math.random()<dropChance){modInv(fRes,1);addLog(`✨ Faction bonus: +1 ${INGR[fRes]?.icon||''} ${INGR[fRes]?.name||fRes} from ${FACTIONS[q.faction].name} reputation!`,'info');}}}
-    addLog(`✅ "${q.name}" complete! ${q.giver} rewards you with ${qGold}g and grateful thanks. (+${Math.floor((q.xp+loreXp)*qXpB*qQB.mult)}XP${loreXp>0?' incl. 📖Lore +'+loreXp:''}${qGoldB>1?' +Scholar bonus':''}${qQB.label}${q.faction?' | '+FACTIONS[q.faction]?.icon+'+'+Math.floor(q.fRep*qRepB)+' rep':''})`,'quest');
+    addLog(`✅ "${q.name}" complete! ${q.giver} rewards you with ${fmtMoney(qGold)} and grateful thanks. (+${Math.floor((q.xp+loreXp)*qXpB*qQB.mult)}XP${loreXp>0?' incl. 📖Lore +'+loreXp:''}${qGoldB>1?' +Scholar bonus':''}${qQB.label}${q.faction?' | '+FACTIONS[q.faction]?.icon+'+'+Math.floor(q.fRep*qRepB)+' rep':''})`,'quest');
     if([...doneQ,q.id].length>=QUESTS.length)earnMilestone('all_quests');
     // Faction chain completion milestones
     if(q.id==='fc_ash3')earnMilestone('ash_chain');
@@ -4426,7 +4426,7 @@ function CindervaleAlchemistInner(){
     if(bq.faction&&bq.fRep)addRep(bq.faction,Math.floor(bq.fRep*bqRepB));
     const bqER=getFeatureVal('questEnergyRestore');if(bqER>0){setEnergy(h=>h+bqER);addLog('\u26a1 Temple Healing: +'+bqER+' Energy restored!','info');}
     if(bq.faction){const fRes=FACTIONS[bq.faction]?.res;if(fRes){const dropChance=getFeatureVal('factionBonusDrop_'+fRes);if(dropChance>0&&Math.random()<dropChance){modInv(fRes,1);addLog(`✨ Faction bonus: +1 ${INGR[fRes]?.icon||''} ${INGR[fRes]?.name||fRes} from ${FACTIONS[bq.faction].name} reputation!`,'info');}}}
-    addLog(`✅ Board request complete: ${bq.name} — +${bqGold}g, +${Math.floor((bq.xp+bqLoreXp)*bqXpB*bqQB.mult)}XP${bqQB.label}${bq.faction?' | '+FACTIONS[bq.faction]?.icon+'+'+Math.floor(bq.fRep*bqRepB)+' rep':''}`,'quest');
+    addLog(`✅ Board request complete: ${bq.name} — +${fmtMoney(bqGold)}, +${Math.floor((bq.xp+bqLoreXp)*bqXpB*bqQB.mult)}XP${bqQB.label}${bq.faction?' | '+FACTIONS[bq.faction]?.icon+'+'+Math.floor(bq.fRep*bqRepB)+' rep':''}`,'quest');
     if(doneBQCount+1>=20)earnMilestone('board_veteran');
     // Archivist lore fragment from board quests
     if(eSpec('scholar')==='archivist'){
@@ -4555,7 +4555,7 @@ function CindervaleAlchemistInner(){
     const prepped=(constructProgress[uid]||0)>=100;
     const upgDisc=getFeatureVal('upgradeCostReduction')+(prepped?0.40:0);
     const gc=Math.max(1,Math.floor((u.cost.gold||0)*(1-Math.min(upgDisc,0.9))));
-    if(gold<gc){addLog(`The materials for ${u.icon}${u.name} would cost ${gc}g — more than you can afford right now.`,'error');return;}
+    if(gold<gc){addLog(`The materials for ${u.icon}${u.name} would cost ${fmtMoney(gc)} — more than you can afford right now.`,'error');return;}
     // Build adjusted material cost — substitute ingredients for location, then if prepped waive cheapest
     const matEntries=Object.entries(u.cost).filter(([id])=>id!=='gold').map(([id,q])=>[li(id),q]);
     let waivedMat=null;
@@ -4574,7 +4574,7 @@ function CindervaleAlchemistInner(){
   // ─── APPRENTICES ───
   const hireAppr=ap=>{
     if(hiredAppr.find(h=>h.id===ap.id)||hiredAppr.length>=maxAppr)return;
-    if(gold<ap.salary*5){addLog(`${ap.icon}${ap.name} asks for ${ap.salary*5}g as a signing fee. You can't afford it yet.`,'error');return;}
+    if(gold<ap.salary*5){addLog(`${ap.icon}${ap.name} asks for ${fmtMoney(ap.salary*5)} as a signing fee. You can't afford it yet.`,'error');return;}
     snapshot();
     setGold(g=>g-ap.salary*5);setHiredAppr(p=>[...p,{...ap,morale:80}]);setApprXP(p=>({...p,[ap.id]:0}));
     addLog(`👋 ${ap.icon}${ap.name} shakes your hand firmly. "${ap.personality}" They get to work.`,'event');
@@ -4679,7 +4679,7 @@ function CindervaleAlchemistInner(){
           } else report.push({n:ap.name,i:ap.icon,r:`No mats for ${recipe.name}`,t:'fail'});}
       } else if(task.type==='shopkeep'){
         const g=Math.floor((5+level*2+aLvl*3)*eff*(1+upEff('sellBonus')+getFeatureVal('sellBonus')));setGold(gg=>gg+g);
-        report.push({n:ap.name,i:ap.icon,r:`Shop: +${g}g`,t:'ok'});{const _xpGain=Math.floor(12*axp);_xpAdded[ap.id]=(_xpAdded[ap.id]||0)+_xpGain;setApprXP(p=>({...p,[ap.id]:(p[ap.id]||0)+_xpGain}));};
+        report.push({n:ap.name,i:ap.icon,r:`Shop: +${fmtMoney(g)}`,gold:g,t:'ok'});{const _xpGain=Math.floor(12*axp);_xpAdded[ap.id]=(_xpAdded[ap.id]||0)+_xpGain;setApprXP(p=>({...p,[ap.id]:(p[ap.id]||0)+_xpGain}));};
       } else if(task.type==='research_task'){
         const undP=RECIPES.filter(r=>!known.includes(r.id)&&!staffDiscR.includes(r.id)&&level>=r.unlock&&(!r.faction||getRL(r.faction)>=(r.fReq||0))&&canCraftAtLocation(r.ingr)&&!r.fieldOnly);
         const undE=ENCHANTMENTS.filter(e=>!knownEnch.includes(e.id)&&!staffDiscE.includes(e.id)&&(!e.faction||getRL(e.faction)>=(e.fReq||0))&&canCraftAtLocation(e.ingr));
@@ -4765,7 +4765,7 @@ function CindervaleAlchemistInner(){
     }
     if(newDebt>200&&!shopLocked){
       setShopLocked(true);
-      addLog('🛑 DEBT CRISIS: Your shop has been padlocked! You cannot sell from shelves or serve customers until debt is reduced below 200g.','error');
+      addLog('🛑 DEBT CRISIS: Your shop has been padlocked! You cannot sell from shelves or serve customers until debt is reduced below '+fmtMoney(200)+'.','error');
     }
     if(newDebt<=200&&shopLocked){
       setShopLocked(false);
@@ -5071,7 +5071,7 @@ function CindervaleAlchemistInner(){
             if(lostQty>0){modInv(pick,-lostQty);addLog(`💀 Lost ${lostQty}× ${INGR[pick]?.icon||''}${INGR[pick]?.name||pick}!`,'error');}
           }
           // Gold penalty
-          if(fp.goldLoss>0&&gold>0){const loss=Math.min(gold,fp.goldLoss);setGold(g=>g-loss);addLog(`💀 Looters took ${loss}g during the chaos!`,'error');}
+          if(fp.goldLoss>0&&gold>0){const loss=Math.min(gold,fp.goldLoss);setGold(g=>g-loss);addLog(`💀 Looters took ${fmtMoney(loss)} during the chaos!`,'error');}
           // Upgrade disable at high waves
           if(fp.upgradeDisableDays>0&&upgrades.length>0&&!getFeatureVal('upgradeProtection')){
             const activeUps=upgrades.filter(u=>!disabledUpgrades.includes(u));
@@ -5154,9 +5154,9 @@ function CindervaleAlchemistInner(){
             report.push({n:'Recipe Unlocked',i:nextRecipe.icon,r:nextRecipe.name+' — '+nextRecipe.desc,t:'ok'});
           }
         }
-        marchAlerts.push({text:`🏆 Wave ${wave-1} Victory!\n\nAll crises resolved. The defenses hold!\n\n+${wr.xp} XP, +${wr.gold}g, -${wr.threatReduc} all threats${wr.recipeUnlock?' + NEW RECIPE':''}`,
+        marchAlerts.push({text:`🏆 Wave ${wave-1} Victory!\n\nAll crises resolved. The defenses hold!\n\n+${wr.xp} XP, +${fmtMoney(wr.gold)}, -${wr.threatReduc} all threats${wr.recipeUnlock?' + NEW RECIPE':''}`,
           vibe:'hollow_victory',result:{msg:'Wave '+(wave)+' arrives on Day '+updMarch.nextWaveDay+'. Prepare!'},flavor:null});
-        addLog(`🏆 Wave ${wave-1} CLEARED! +${wr.xp} XP, +${wr.gold}g`,'quest');
+        addLog(`🏆 Wave ${wave-1} CLEARED! +${wr.xp} XP, +${fmtMoney(wr.gold)}`,'quest');
       } else if(updMarch.wave>1&&prevDemands.length>0){
         const failCount=prevDemands.filter(d=>!d.resolved||!d.result?.success).length;
         marchAlerts.push({text:`💀 Wave ${wave-1} — ${failCount} Crisis Failure${failCount>1?'s':''}\n\n${resolvedCount}/${prevDemands.length} crises resolved. The March punishes weakness.`,
@@ -5428,8 +5428,8 @@ function CindervaleAlchemistInner(){
     // Gold summary
     let goldIn=0;let goldOut=0;const goldLines=[];
     if(shelfGold>0){goldIn+=shelfGold;goldLines.push({icon:'🏪',label:'Shelf Sales',val:'+'+fmtMoney(shelfGold),color:TH.green});}
-    const shopStaff=report.filter(r=>r.r?.startsWith('Shop: +'));
-    shopStaff.forEach(r=>{const m=r.r.match(/\+(\d+)g/);if(m){const g=+m[1];goldIn+=g;goldLines.push({icon:'🏪',label:r.n+' (Shop)',val:'+'+fmtMoney(g),color:TH.green});}});
+    const shopStaff=report.filter(r=>r.r?.startsWith('Shop: +')&&r.gold>0);
+    shopStaff.forEach(r=>{const g=r.gold||0;if(g>0){goldIn+=g;goldLines.push({icon:'🏪',label:r.n+' (Shop)',val:'+'+fmtMoney(g),color:TH.green});}});
     if(upEff('passiveIncome')>0){const piMult=Math.max(1,getFeatureVal('passiveIncomeMulti'));const p=Math.max(1,Math.floor(upEff('passiveIncome')*piMult*GOLD_MULT));goldIn+=p;goldLines.push({icon:'🪟',label:'Shop Front'+(piMult>1?' (×'+piMult+')':''),val:'+'+fmtMoney(p),color:TH.green});}
     if(lineage?.generations?.length>0){
       let lgGold=0;lineage.generations.forEach(gen=>{lgGold+=Math.min(10,Math.floor((gen.potionsBrewed||0)/50)+(gen.level||1));});
@@ -5444,7 +5444,7 @@ function CindervaleAlchemistInner(){
     {
       const upkeepTotal=calcUpkeep();
       goldOut+=upkeepTotal;
-      goldLines.push({icon:'🏠',label:'Base Upkeep',val:'-5g',color:TH.red});
+      goldLines.push({icon:'🏠',label:'Base Upkeep',val:fmtMoney(-5),color:TH.red});
       const upgMaint=upkeepTotal-5-hiredAppr.reduce((s,ap)=>{const pd=getFeatureVal('payrollDiscount');const hp=getFeatureVal('halfPayroll')?0.5:1;return s+Math.ceil((ap.salary||5)*hp*(1-pd));},0);
       if(upgMaint>0)goldLines.push({icon:'🔧',label:'Upgrade Maintenance ('+upgrades.filter(u=>!disabledUpgrades.includes(u)).length+')',val:fmtMoney(-upgMaint),color:TH.red});
       const staffCost=upkeepTotal-5-upgMaint;
@@ -5720,7 +5720,7 @@ function CindervaleAlchemistInner(){
             const g=5+aLvl*3+Math.floor(Math.random()*8);setGold(gg=>gg+g);
             autoLines.push({icon:'🤖',label:auto.name+' tended shop',val:'+'+fmtMoney(g),color:TH.gold});
           } else {
-            autoLines.push({icon:'🤖',label:auto.name+' shop (slow day)',val:'+0g',color:TH.textDim});
+            autoLines.push({icon:'🤖',label:auto.name+' shop (slow day)',val:'+0s',color:TH.textDim});
           }
         } else if(task.type==='enchant'&&canAutoEnchant()){
           if(Math.random()<totalEff){
@@ -5810,7 +5810,7 @@ function CindervaleAlchemistInner(){
         setInv(p=>({...p,[c.ingrId]:(p[c.ingrId]||0)+c.qty}));
         const adjCost=Math.max(1,Math.floor(c.dailyCost*(1-costReduction)));
         totalContractCost+=adjCost;
-        contractLines.push({icon:ig.icon,label:ig.name+' ×'+c.qty,val:'-'+adjCost+'g/day'+(costReduction>0?' ('+Math.round(costReduction*100)+'% off)':''),color:TH.green});
+        contractLines.push({icon:ig.icon,label:ig.name+' ×'+c.qty,val:fmtMoney(-adjCost)+'/day'+(costReduction>0?' ('+Math.round(costReduction*100)+'% off)':''),color:TH.green});
       });
       if(totalContractCost>0){
         setGold(g=>g-totalContractCost);
@@ -5850,7 +5850,7 @@ function CindervaleAlchemistInner(){
       // Fortified Walls: trade confidence gold
       if(settlementProjects.includes('sp_walls')){
         const wallGold=50;setGold(g=>g+wallGold);
-        settLines.push({icon:'🏰',label:'Trade confidence',val:'+'+wallGold+'g',color:TH.gold});
+        settLines.push({icon:'🏰',label:'Trade confidence',val:'+'+fmtMoney(wallGold),color:TH.gold});
       }
       // Monument: daily faction rep
       if(settlementProjects.includes('sp_monument')){
@@ -5893,8 +5893,8 @@ function CindervaleAlchemistInner(){
           entry.actions.push({type:'gather',text:comp.name+' brought back ingredients',val:valStr,color:TH.green});
         } else if(comp.primary.type==='shop'){
           const g=Math.floor((comp.primary.baseGold[Math.min(loy-1,4)]+lvBonus*3)*compEffB);setGold(gg=>gg+g);
-          compLines.push({icon:comp.icon,label:comp.name+' tended shop',val:'+'+g+'g',color:TH.gold});
-          entry.actions.push({type:'shop',text:comp.name+' helped at the shop',val:'+'+g+'g',color:TH.gold});
+          compLines.push({icon:comp.icon,label:comp.name+' tended shop',val:'+'+fmtMoney(g),color:TH.gold});
+          entry.actions.push({type:'shop',text:comp.name+' helped at the shop',val:'+'+fmtMoney(g),color:TH.gold});
         } else if(comp.primary.type==='staff_morale'){
           const morBoost=comp.primary.values[Math.min(loy-1,4)];
           setHiredAppr(prev=>prev.map(a=>({...a,morale:Math.min(100,(a.morale||50)+morBoost)})));
@@ -5924,8 +5924,8 @@ function CindervaleAlchemistInner(){
             entry.actions.push({type:'gather',text:comp.name+' went out again',val:valStr2,color:TH.green});
           } else if(comp.primary.type==='shop'){
             const g2=Math.floor((comp.primary.baseGold[Math.min(loy-1,4)]+lvBonus*3)*compEffB);setGold(gg=>gg+g2);
-            compLines.push({icon:comp.icon,label:comp.name+' tended shop (2nd)',val:'+'+g2+'g',color:TH.gold});
-            entry.actions.push({type:'shop',text:comp.name+' helped at the shop again',val:'+'+g2+'g',color:TH.gold});
+            compLines.push({icon:comp.icon,label:comp.name+' tended shop (2nd)',val:'+'+fmtMoney(g2),color:TH.gold});
+            entry.actions.push({type:'shop',text:comp.name+' helped at the shop again',val:'+'+fmtMoney(g2),color:TH.gold});
           } else if(comp.primary.type==='customers'){
             const custB=comp.primary.values[Math.min(loy-1,4)]||1;
             compLines.push({icon:comp.icon,label:comp.name+' greeted (2nd)',val:'+'+custB+' more customers',color:TH.gold});
@@ -6016,13 +6016,13 @@ function CindervaleAlchemistInner(){
             } else if(pt==='shop'){
               // Legendary Merchant: premium customer at 3× price
               const legGold=Math.floor(20+level*3);setGold(gg=>gg+legGold);
-              compLines.push({icon:'👑',label:comp.name+' — Legendary Merchant',val:'+'+legGold+'g (VIP customer)',color:'#e0a030'});
-              entry.actions.push({type:'legendary',text:comp.name+' attracted a VIP collector',val:'+'+legGold+'g premium sale',color:'#e0a030'});
+              compLines.push({icon:'👑',label:comp.name+' — Legendary Merchant',val:'+'+fmtMoney(legGold)+' (VIP customer)',color:'#e0a030'});
+              entry.actions.push({type:'legendary',text:comp.name+' attracted a VIP collector',val:'+'+fmtMoney(legGold)+' premium sale',color:'#e0a030'});
             } else if(pt==='customers'){
               // Legendary Greeter: direct gold bonus (companion runs after customer gen)
               const legGold=Math.floor(15+level*2.5);setGold(gg=>gg+legGold);
-              compLines.push({icon:'👑',label:comp.name+' — Legendary Greeter',val:'+'+legGold+'g (VIP referrals)',color:'#e0a030'});
-              entry.actions.push({type:'legendary',text:comp.name+'\'s legendary charm draws wealthy visitors',val:'+'+legGold+'g from VIP referrals',color:'#e0a030'});
+              compLines.push({icon:'👑',label:comp.name+' — Legendary Greeter',val:'+'+fmtMoney(legGold)+' (VIP referrals)',color:'#e0a030'});
+              entry.actions.push({type:'legendary',text:comp.name+'\'s legendary charm draws wealthy visitors',val:'+'+fmtMoney(legGold)+' from VIP referrals',color:'#e0a030'});
             } else if(pt==='staff_morale'){
               // Legendary Guardian: heal all staff injuries, +1 Energy hour-equivalent (+25 energy)
               setStaffInjuries(prev=>{const n={...prev};Object.keys(n).forEach(k=>{n[k]=0;});return n;});
@@ -6076,7 +6076,7 @@ function CindervaleAlchemistInner(){
           waLines.push({icon:wa.icon,label:wa.name+' gathered '+yld+' ingredients',val:'',color:'#60a040'});
         } else if(comp?.primary?.type==='shop'&&comp.primary.baseGold){
           const g=comp.primary.baseGold[0]||5;goldIn+=g;
-          waLines.push({icon:wa.icon,label:wa.name+' earned '+g+'g',val:'+'+g+'g',color:TH.gold});
+          waLines.push({icon:wa.icon,label:wa.name+' earned '+fmtMoney(g),val:'+'+fmtMoney(g),color:TH.gold});
         } else if(comp?.primary?.type==='staff_morale'){
           waLines.push({icon:wa.icon,label:wa.name+' boosted morale',val:'',color:'#60a040'});
         }
@@ -7079,13 +7079,13 @@ function CindervaleAlchemistInner(){
         </div>
         {showDebug&&<div style={{position:'fixed',bottom:50,right:8,zIndex:1001,background:'#1a1a2a',border:'1px solid #555',borderRadius:8,padding:10,width:320,maxHeight:'80vh',overflow:'auto',fontSize:13,color:'#ddd',boxShadow:'0 4px 20px #000a'}} onClick={e=>e.stopPropagation()}>
           <div style={{fontSize:16,color:'#ff8',marginBottom:6,display:'flex',justifyContent:'space-between'}}><b>🐛 Debug Panel</b><span style={{cursor:'pointer'}} onClick={()=>setShowDebug(false)}>✕</span></div>
-          <div style={{color:'#aaa',fontSize:11,marginBottom:8}}>Day {day} · ⚡{energy} · Lv{getLvl(xp)+1} · {gold}g · {xp}xp</div>
+          <div style={{color:'#aaa',fontSize:11,marginBottom:8}}>Day {day} · ⚡{energy} · Lv{getLvl(xp)+1} · {fmtMoney(gold)} · {xp}xp</div>
 
           <div style={{marginBottom:6}}><b style={{color:'#8cf'}}>💰 Resources</b></div>
           <div style={{display:'flex',flexWrap:'wrap',gap:3,marginBottom:8}}>
-            <button onClick={()=>setGold(g=>g+100)} style={{padding:'2px 6px',fontSize:12,background:'#333',color:'#fd4',border:'1px solid #555',borderRadius:3,cursor:'pointer'}}>+100g</button>
-            <button onClick={()=>setGold(g=>g+1000)} style={{padding:'2px 6px',fontSize:12,background:'#333',color:'#fd4',border:'1px solid #555',borderRadius:3,cursor:'pointer'}}>+1000g</button>
-            <button onClick={()=>setGold(g=>g+10000)} style={{padding:'2px 6px',fontSize:12,background:'#333',color:'#fd4',border:'1px solid #555',borderRadius:3,cursor:'pointer'}}>+10000g</button>
+            <button onClick={()=>setGold(g=>g+100)} style={{padding:'2px 6px',fontSize:12,background:'#333',color:'#fd4',border:'1px solid #555',borderRadius:3,cursor:'pointer'}}>+{fmtMoney(100)}</button>
+            <button onClick={()=>setGold(g=>g+1000)} style={{padding:'2px 6px',fontSize:12,background:'#333',color:'#fd4',border:'1px solid #555',borderRadius:3,cursor:'pointer'}}>+{fmtMoney(1000)}</button>
+            <button onClick={()=>setGold(g=>g+10000)} style={{padding:'2px 6px',fontSize:12,background:'#333',color:'#fd4',border:'1px solid #555',borderRadius:3,cursor:'pointer'}}>+{fmtMoney(10000)}</button>
             <button onClick={()=>setXp(x=>x+500)} style={{padding:'2px 6px',fontSize:12,background:'#333',color:'#8f8',border:'1px solid #555',borderRadius:3,cursor:'pointer'}}>+500xp</button>
             <button onClick={()=>setXp(x=>x+2000)} style={{padding:'2px 6px',fontSize:12,background:'#333',color:'#8f8',border:'1px solid #555',borderRadius:3,cursor:'pointer'}}>+2000xp</button>
             <button onClick={()=>setSkPts(p=>p+5)} style={{padding:'2px 6px',fontSize:12,background:'#333',color:'#f8f',border:'1px solid #555',borderRadius:3,cursor:'pointer'}}>+5 SkPts</button>
@@ -7363,8 +7363,8 @@ function CindervaleAlchemistInner(){
         <div style={{fontSize:15,color:TH.textDim,marginBottom:8}}>
           {energy>0&&<span>You'll lose your remaining <b style={{color:TH.goldBright}}>⚡{energy} Energy</b>. </span>}
           {hiredAppr.length>0&&<span>Your {hiredAppr.length} staff will complete their assignments overnight. </span>}
-          {hiredAppr.reduce((s,a)=>s+a.salary,0)>0&&<span>Payroll: {hiredAppr.reduce((s,a)=>s+a.salary,0)}g. </span>}
-          {hiredAppr.reduce((s,a)=>s+a.salary,0)>gold&&<div style={{color:TH.red,marginTop:4}}>⚠️ You can't cover payroll! ({hiredAppr.reduce((s,a)=>s+a.salary,0)}g needed, {gold}g available)</div>}
+          {hiredAppr.reduce((s,a)=>s+a.salary,0)>0&&<span>Payroll: {fmtMoney(hiredAppr.reduce((s,a)=>s+a.salary,0))}. </span>}
+          {hiredAppr.reduce((s,a)=>s+a.salary,0)>gold&&<div style={{color:TH.red,marginTop:4}}>⚠️ You can't cover payroll! ({fmtMoney(hiredAppr.reduce((s,a)=>s+a.salary,0))} needed, {fmtMoney(gold)} available)</div>}
         </div>
         {/* Unused free actions warning */}
         {(()=>{
@@ -8387,7 +8387,7 @@ function CindervaleAlchemistInner(){
         {/* ═══ SETTLEMENT INVESTMENT ═══ */}
         {level>=4&&<div style={{...S.card,borderColor:'#80a060'}}>
           <div style={{...S.cT}}>🏘️ Settlement Investment</div>
-          <div style={{fontSize:13,color:TH.textDim,marginBottom:8}}>Invest gold and materials to develop the settlement. Projects provide permanent bonuses.</div>
+          <div style={{fontSize:13,color:TH.textDim,marginBottom:8}}>Invest coin and materials to develop the settlement. Projects provide permanent bonuses.</div>
           {/* ─── Settlement Skyline Art ─── */}
           {(()=>{
             const cp=settlementProjects||[];const bc=settlementConstruction;const bcId=bc?.projectId;
@@ -8432,7 +8432,7 @@ function CindervaleAlchemistInner(){
                       {p.icon} {p.name}{tapInfo==='sp_'+pid&&<div style={{fontSize:11,color:TH.textDim,marginTop:2}}>{p.effectDesc}</div>}
                     </span>:null;})}
                 </div>
-                <div style={{fontSize:12,color:TH.textDim,marginTop:2}}>Total invested: {totalInvested}g</div>
+                <div style={{fontSize:12,color:TH.textDim,marginTop:2}}>Total invested: {fmtMoney(totalInvested)}</div>
               </div>}
               {building&&buildingProj&&<div style={{padding:'8px',background:TH.gold+'08',borderRadius:4,border:'1px solid '+TH.gold+'33',marginBottom:8}}>
                 <div style={{fontSize:15,color:TH.gold,fontWeight:'bold'}}>🏗️ Under Construction: {buildingProj.icon} {buildingProj.name}</div>
@@ -8468,7 +8468,7 @@ function CindervaleAlchemistInner(){
                   return <div key={p.id} style={{padding:'8px 10px',background:meetsReq?TH.panelAlt:TH.panel,borderRadius:6,marginBottom:6,border:'1px solid '+(canBuild?TH.green+'44':meetsReq?TH.border:TH.border+'66'),opacity:meetsReq?1:0.5}}>
                     <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
                       <span style={{fontSize:16,color:TH.textBright,fontWeight:'bold'}}>{p.icon} {p.name}</span>
-                      <span style={{fontSize:13,color:canAffordGold?TH.gold:TH.red}}>{p.cost.gold}g · {p.buildDays} days</span>
+                      <span style={{fontSize:13,color:canAffordGold?TH.gold:TH.red}}>{fmtMoney(p.cost.gold)} · {p.buildDays} days</span>
                     </div>
                     <div style={{fontSize:13,color:TH.textDim,margin:'3px 0'}}>{p.desc}</div>
                     <div style={{fontSize:13,color:TH.green,margin:'2px 0'}}>{p.effectDesc}</div>
@@ -8553,7 +8553,7 @@ function CindervaleAlchemistInner(){
               <div key={id} style={{display:'flex',alignItems:'center',gap:6,padding:'3px 0',fontSize:16}}>
                 <span>{r.icon}{r.name}{qT.icon?' '+qT.icon:''}{_isFresh?' 🌿':''} ×{qty}</span>{_isFresh&&<span style={{fontSize:11,color:'#60a040',fontWeight:'bold'}}>Fresh {freshMult}×</span>}<span style={{color:TH.gold,marginLeft:'auto'}}>{fmtMoney(sp)} ea</span>
                 <button style={S.btn()} onClick={()=>sellPotion(id,1,sp,r)}>Sell 1</button>
-                {qty>1&&<button style={S.btn()} onClick={()=>sellPotion(id,qty,sp,r)}>All ({sp*qty}g)</button>}
+                {qty>1&&<button style={S.btn()} onClick={()=>sellPotion(id,qty,sp,r)}>All ({fmtMoney(sp*qty)})</button>}
               </div>);})}
             {Object.entries(inv).filter(([,q])=>q>0).length>0&&<div style={{fontSize:16,color:TH.gold,marginTop:8,marginBottom:4}}>Sell Ingredients</div>}
             {Object.entries(inv).filter(([,q])=>q>0).map(([id,qty])=>{const ig=INGR[id];if(!ig)return null;const baseSp=Math.max(1,Math.floor((ig.val||5)*0.4)+getFeatureVal('ingrSellBonus'));const sp=Math.max(1,Math.floor(baseSp*(1+getFeatureVal('sellBonus'))*GOLD_MULT));
@@ -8572,7 +8572,7 @@ function CindervaleAlchemistInner(){
           <div style={{...S.cT,color:'#ff4080'}}>🕶️ Black Market</div>
           <div style={{fontSize:14,color:TH.textDim,marginBottom:6,lineHeight:1.5}}>
             Sell potions through underground channels at {getFeatureVal('blackMarketMulti')||2}× price.
-            {!getFeatureVal('noRisk')?' ⚠️ Risk of confiscation — you may lose goods AND gold.':' No risk — you\'re untouchable.'}
+            {!getFeatureVal('noRisk')?' ⚠️ Risk of confiscation — you may lose goods AND coin.':' No risk — you\'re untouchable.'}
           </div>
           {Object.entries(pots).filter(([,q])=>q>0).map(([id,qty])=>{const baseId=getBaseRecipeId(id);const r=RECIPES.find(r=>r.id===baseId);if(!r)return null;const pq=getPotQuality(id);const qT=QUALITY[pq]||QUALITY.std;
             const baseSp=r.xp+getFeatureVal('potionSaleBonus')+Math.floor(upEff('sellBonus')*r.xp);
@@ -8587,7 +8587,7 @@ function CindervaleAlchemistInner(){
                   const confiscated=Math.min(qty,1+Math.floor(Math.random()*2));
                   const goldLost=Math.min(gold,Math.floor(bmPrice*0.5));
                   modPot(id,-confiscated);setGold(g=>g-goldLost);
-                  addLog(`🚔 Confiscated! Guards seized ${confiscated}× ${r.icon}${r.name} and fined you ${goldLost}g.`,'error');
+                  addLog(`🚔 Confiscated! Guards seized ${confiscated}× ${r.icon}${r.name} and fined you ${fmtMoney(goldLost)}.`,'error');
                 } else {
                   modPot(id,-1);setGold(g=>g+bmPrice);
                   addLog(`🕶️ Black market: Sold ${r.icon}${r.name} for ${fmtMoney(bmPrice)} through back channels.`,'info');
@@ -8605,8 +8605,8 @@ function CindervaleAlchemistInner(){
                 <div style={{display:'flex',gap:3,flexWrap:'wrap'}}>
                   {commItems.map(id=>{const ig=INGR[id];if(!ig)return null;const price=Math.ceil((ig.val||10)*3);
                     return <button key={id} style={{...S.tag,cursor:'pointer',border:'1px solid #ff408044'}} disabled={gold<price}
-                      onClick={()=>{setGold(g=>g-price);modInv(id,1);addLog(`📋 Commissioned ${ig.icon}${ig.name} for ${price}g.`,'info');}}>
-                      {ig.icon}{ig.name} <span style={{color:'#ff4080'}}>{price}g</span>
+                      onClick={()=>{setGold(g=>g-price);modInv(id,1);addLog(`📋 Commissioned ${ig.icon}${ig.name} for ${fmtMoney(price)}.`,'info');}}>
+                      {ig.icon}{ig.name} <span style={{color:'#ff4080'}}>{fmtMoney(price)}</span>
                     </button>;})}
                 </div>
               </div>
@@ -8634,16 +8634,16 @@ function CindervaleAlchemistInner(){
             return <>
               <div style={{fontSize:13,marginBottom:6}}>
                 <span style={{color:TH.textBright}}>Tier: <b style={{color:TH.gold}}>{tierInfo.label}</b></span>
-                <span style={{color:TH.textDim,marginLeft:8}}>Max value: {tierInfo.maxVal===999?'Any':tierInfo.maxVal+'g'}</span>
+                <span style={{color:TH.textDim,marginLeft:8}}>Max value: {tierInfo.maxVal===999?'Any':fmtMoney(tierInfo.maxVal)}</span>
                 <span style={{color:TH.textDim,marginLeft:8}}>Max qty: {tierInfo.maxQty}/day</span>
-                <span style={{color:totalDailyCost>0?TH.red:TH.textDim,marginLeft:8}}>Daily cost: {totalDailyCost}g</span>
+                <span style={{color:totalDailyCost>0?TH.red:TH.textDim,marginLeft:8}}>Daily cost: {fmtMoney(totalDailyCost)}</span>
               </div>
               <div style={{fontSize:14,color:TH.gold,marginBottom:4}}>Active Contracts ({usedSlots}/{maxSlots})</div>
               {ingredientContracts.length===0&&<div style={{fontSize:13,color:TH.textDim,fontStyle:'italic',padding:'4px 0'}}>No active contracts. Set one up below.</div>}
               {ingredientContracts.map((c,i)=>{const ig=INGR[c.ingrId];return ig?<div key={i} style={{display:'flex',alignItems:'center',gap:8,padding:'4px 8px',background:TH.bg,borderRadius:4,marginBottom:3,border:'1px solid '+TH.border}}>
                 <span style={{fontSize:16}}>{ig.icon}</span>
                 <span style={{flex:1,color:TH.textBright}}>{ig.name} <span style={{color:TH.textDim}}>×{c.qty}/day</span></span>
-                <span style={{color:TH.red,fontSize:13}}>-{c.dailyCost}g/day</span>
+                <span style={{color:TH.red,fontSize:13}}>{fmtMoney(-c.dailyCost)}/day</span>
                 <button style={{...S.btn('dim'),fontSize:12,padding:'2px 6px'}} onClick={()=>{
                   setIngredientContracts(prev=>prev.filter((_,j)=>j!==i));
                   addLog(`📦 Cancelled contract for ${ig.icon}${ig.name}.`,'info');
@@ -8656,12 +8656,12 @@ function CindervaleAlchemistInner(){
                     return <button key={id} style={{...S.tag,cursor:'pointer',border:'1px solid '+TH.borderLight,background:TH.panelLight,fontSize:13}}
                       onClick={()=>{
                         const qty=Math.min(tierInfo.maxQty,3);const cost=qty*dailyPer;const fee=setupFee;
-                        if(gold<fee){addLog('Not enough gold for setup fee ('+fee+'g).','error');return;}
+                        if(gold<fee){addLog('Not enough coin for the setup fee ('+fmtMoney(fee)+').','error');return;}
                         setGold(g=>g-fee);
                         setIngredientContracts(prev=>[...prev,{id:'ic_'+Date.now(),ingrId:id,qty,dailyCost:cost,setupDay:day}]);
-                        addLog(`📦 Contracted ${ig.icon}${ig.name}: ${qty}/day for ${cost}g/day (setup: ${fee}g).`,'info');
+                        addLog(`📦 Contracted ${ig.icon}${ig.name}: ${qty}/day for ${fmtMoney(cost)}/day (setup: ${fmtMoney(fee)}).`,'info');
                       }}>
-                      {ig.icon} {ig.name} <span style={{color:TH.textDim,fontSize:11}}>({setupFee}g setup · {dailyPer}g/ea/day)</span>
+                      {ig.icon} {ig.name} <span style={{color:TH.textDim,fontSize:11}}>({fmtMoney(setupFee)} setup · {fmtMoney(dailyPer)}/ea/day)</span>
                     </button>;})}
                 </div>
                 {availIngr.length===0&&<div style={{fontSize:13,color:TH.textDim}}>No eligible ingredients at your tier. Forage new regions or upgrade tier.</div>}
@@ -8722,7 +8722,7 @@ function CindervaleAlchemistInner(){
             <div style={{display:'flex',gap:4,flexWrap:'wrap'}}>
               {locThreatIds.filter(tid=>(threats[tid]||0)>=10).map(tid=>{const tf=THREAT_FACTIONS[tid];
                 return <button key={tid} style={{...S.btn('def'),fontSize:12,padding:'2px 8px',background:'#c0505015',border:'1px solid #c0505044',color:'#c05050'}}
-                  onClick={()=>{snapshot();spendEnergy(50);/* Phase 4: route through spendEnergy so Early Riser / Endurance fire */ const reduc=20;setThreats(p=>{const n={...p};n[tid]=Math.max(0,(n[tid]||0)-reduc);return n;});const strikeXp=40+level*3;const strikeGold=Math.floor(15+level*2);gainXP(strikeXp);setGold(g=>g+strikeGold);addLog(`⚔️ Preemptive Strike: ${tf.icon} ${tf.name} threat reduced by ${reduc}! +${strikeXp} XP +${strikeGold}g`,'quest');showResult('⚔️ Preemptive Strike!','craft',`${tf.icon} ${tf.name} threat -${reduc}\n+${strikeXp} XP  +${strikeGold}g\nYour vigilance keeps the settlement safe.`);}}>{tf.icon} Strike {tf.name}</button>;})}
+                  onClick={()=>{snapshot();spendEnergy(50);/* Phase 4: route through spendEnergy so Early Riser / Endurance fire */ const reduc=20;setThreats(p=>{const n={...p};n[tid]=Math.max(0,(n[tid]||0)-reduc);return n;});const strikeXp=40+level*3;const strikeGold=Math.floor(15+level*2);gainXP(strikeXp);setGold(g=>g+strikeGold);addLog(`⚔️ Preemptive Strike: ${tf.icon} ${tf.name} threat reduced by ${reduc}! +${strikeXp} XP +${fmtMoney(strikeGold)}`,'quest');showResult('⚔️ Preemptive Strike!','craft',`${tf.icon} ${tf.name} threat -${reduc}\n+${strikeXp} XP  +${fmtMoney(strikeGold)}\nYour vigilance keeps the settlement safe.`);}}>{tf.icon} Strike {tf.name}</button>;})}
             </div>
           </div>}
         </div>}
@@ -8750,7 +8750,7 @@ function CindervaleAlchemistInner(){
                 {seLv>=5&&!op.fortress&&!outposts.some(o=>o.fortress)&&<span style={{marginLeft:6}}>
                   {Object.entries(FORTRESS_TYPES).filter(([,ft])=>!ft.loc||ft.loc===gameLocation).map(([ftId,ft])=>
                     <button key={ftId} style={{...S.btn(gold>=ft.cost?'gold':'dim'),fontSize:11,padding:'1px 5px',marginLeft:3}} disabled={gold<ft.cost}
-                      onClick={()=>upgradeFortress(op.id,ftId)}>{ft.icon} {ft.name} ({ft.cost}g)</button>
+                      onClick={()=>upgradeFortress(op.id,ftId)}>{ft.icon} {ft.name} ({fmtMoney(ft.cost)})</button>
                   )}
                 </span>}
               </div>}
@@ -8761,7 +8761,7 @@ function CindervaleAlchemistInner(){
               <option value="">+ Build new outpost...</option>
               {locRegions.filter(reg=>level>=regUnlock(reg)&&!outposts.some(op=>op.regionId===reg.id)).map(reg=>{
                 const cost=50+reg.diff*25;
-                return <option key={reg.id} value={reg.id}>{reg.icon} {reg.name} (Diff {reg.diff}, {cost}g)</option>;
+                return <option key={reg.id} value={reg.id}>{reg.icon} {reg.name} (Diff {reg.diff}, {fmtMoney(cost)})</option>;
               })}
             </select>
           </div>}
@@ -8893,8 +8893,8 @@ function CindervaleAlchemistInner(){
 
         {/* Daily Costs Summary */}
         {debt>0&&<div style={{display:'flex',flexWrap:'wrap',gap:4,marginBottom:8,padding:'6px 10px',background:'#c0404015',borderRadius:6,border:'1px solid #c0404044'}}>
-          <span style={{fontSize:13,color:'#c04040',fontWeight:'bold',flex:1}}>⚠️ Debt: {debt}g {debt>=200?'| SHOP LOCKED':debt>=100?'| Upgrades at risk':debt>=50?'| Morale dropping':''}</span>
-          <span style={{fontSize:12,color:TH.textDim}}>Daily costs: ~{calcUpkeep()}g</span>
+          <span style={{fontSize:13,color:'#c04040',fontWeight:'bold',flex:1}}>⚠️ Debt: {fmtMoney(debt)} {debt>=200?'| SHOP LOCKED':debt>=100?'| Upgrades at risk':debt>=50?'| Morale dropping':''}</span>
+          <span style={{fontSize:12,color:TH.textDim}}>Daily costs: ~{fmtMoney(calcUpkeep())}</span>
         </div>}
 
         {/* Active Elixir Buffs */}
@@ -9077,8 +9077,8 @@ function CindervaleAlchemistInner(){
                     return <button key={pot.id} style={{...S.btn(hasIngr&&energy>=25?'gold':'dim'),fontSize:13,padding:'3px 8px'}}
                       disabled={!hasIngr||energy<25||done}
                       onClick={()=>fulfillContract(vc.id,pot.id)}
-                      title={'DC '+pot.dc+' · ~'+goldEst+'g'}
-                    >{pot.icon} {pot.name} (DC{pot.dc} · ~{goldEst}g)</button>;
+                      title={'DC '+pot.dc+' · ~'+fmtMoney(goldEst)}
+                    >{pot.icon} {pot.name} (DC{pot.dc} · ~{fmtMoney(goldEst)})</button>;
                   })}
                 </div>
               </>}
@@ -9100,7 +9100,7 @@ function CindervaleAlchemistInner(){
             const canForge=forgesToday<maxForges;
             return <>
               <div style={{fontSize:12,color:TH.textDim,marginBottom:6,padding:'4px 8px',background:TH.bg,borderRadius:4,border:'1px solid '+TH.border,lineHeight:1.5}}>
-                Forging costs materials only (free action, {maxForges}/day at your level). Two checks: 🎯 Precision vs the weapon's forge DC, then ✍️ Inscription vs the enchantment's DC (your flat inscription bonuses apply). Fail the forge — materials lost. Fail the inscription — sold immediately as a plain weapon for a little gold. Succeed at both — a Named Weapon joins the Display Case below, and each displayed weapon attracts +1 premium customer/day (up to +3). Sell a displayed weapon any time for its listed value — you trade its customer draw for gold.
+                Forging costs materials only (free action, {maxForges}/day at your level). Two checks: 🎯 Precision vs the weapon's forge DC, then ✍️ Inscription vs the enchantment's DC (your flat inscription bonuses apply). Fail the forge — materials lost. Fail the inscription — sold immediately as a plain weapon for a little coin. Succeed at both — a Named Weapon joins the Display Case below, and each displayed weapon attracts +1 premium customer/day (up to +3). Sell a displayed weapon any time for its listed value — you trade its customer draw for coin.
               </div>
               {available.map(w=>{
                 const hasMats=Object.entries(lmc(w.matCost)).every(([id,q])=>(inv[id]||0)>=q);
@@ -9129,7 +9129,7 @@ function CindervaleAlchemistInner(){
                       <span style={{color:'#d08040',fontWeight:'bold'}}>{w.weaponIcon} {w.name}</span>
                       <span style={{color:TH.textDim}}>({w.weaponType}+{w.enchantName})</span>
                       <button style={{...S.btn('gold'),fontSize:11,padding:'1px 6px'}} onClick={()=>sellForgedWeapon(w.id)}
-                        title="Selling removes this weapon's +1 customer/day display draw">💰 Sell {w.goldValue||0}g</button>
+                        title="Selling removes this weapon's +1 customer/day display draw">💰 Sell {fmtMoney(w.goldValue||0)}</button>
                     </div>
                   )}
                 </div>
@@ -9594,7 +9594,7 @@ function CindervaleAlchemistInner(){
               {/* Abilities — always show all three tiers, dim if locked */}
               <div style={{display:'flex',flexDirection:'column',gap:3,marginTop:4}}>
                 <span style={{padding:'2px 6px',fontSize:12,background:comp.color+'15',border:'1px solid '+comp.color+'33',borderRadius:3,color:comp.color}}>
-                  {comp.role==='gatherer'||comp.role==='gather'?'🌿':comp.role==='shopkeeper'?'🏪':comp.role==='scout'||comp.role==='combat'?'🦅':comp.role==='greeter'||comp.role==='trade'?'🐕':comp.role==='guardian'?'🛡️':comp.role==='muse'||comp.role==='research'?'✨':'🔥'} <b>Primary:</b> {comp.primary.type==='gather'?'Gather — brings '+comp.primary.baseYield[Math.min(loy-1,4)]+' ingredients/day':comp.primary.type==='shop'?'Shop — earns '+comp.primary.baseGold[Math.min(loy-1,4)]+'g/day':comp.primary.type==='customers'?'Greeter — +'+comp.primary.values[Math.min(loy-1,4)]+' customers/day':comp.primary.type==='staff_morale'?'Guardian — +'+comp.primary.values[Math.min(loy-1,4)]+'% staff morale':comp.primary.type==='research'?'Muse — +'+(comp.primary.values[Math.min(loy-1,4)]*100).toFixed(0)+'% discovery':comp.primary.type==='danger_reduce'||comp.primary.type==='danger'?'Scout — -'+(comp.primary.values[Math.min(loy-1,4)]*100).toFixed(0)+'% danger':comp.role}
+                  {comp.role==='gatherer'||comp.role==='gather'?'🌿':comp.role==='shopkeeper'?'🏪':comp.role==='scout'||comp.role==='combat'?'🦅':comp.role==='greeter'||comp.role==='trade'?'🐕':comp.role==='guardian'?'🛡️':comp.role==='muse'||comp.role==='research'?'✨':'🔥'} <b>Primary:</b> {comp.primary.type==='gather'?'Gather — brings '+comp.primary.baseYield[Math.min(loy-1,4)]+' ingredients/day':comp.primary.type==='shop'?'Shop — earns '+fmtMoney(comp.primary.baseGold[Math.min(loy-1,4)])+'/day':comp.primary.type==='customers'?'Greeter — +'+comp.primary.values[Math.min(loy-1,4)]+' customers/day':comp.primary.type==='staff_morale'?'Guardian — +'+comp.primary.values[Math.min(loy-1,4)]+'% staff morale':comp.primary.type==='research'?'Muse — +'+(comp.primary.values[Math.min(loy-1,4)]*100).toFixed(0)+'% discovery':comp.primary.type==='danger_reduce'||comp.primary.type==='danger'?'Scout — -'+(comp.primary.values[Math.min(loy-1,4)]*100).toFixed(0)+'% danger':comp.role}
                 </span>
                 {hasSecondary&&<span style={{padding:'2px 6px',fontSize:12,background:secUnlocked?TH.gold+'15':TH.panel,border:'1px solid '+(secUnlocked?TH.gold+'33':TH.border),borderRadius:3,color:secUnlocked?TH.gold:TH.textDim,opacity:secUnlocked?1:0.6}}>
                   {secUnlocked?'🔓':'🔒'} <b>Secondary{secUnlocked?'':' (★'+(comp.secondary.unlockLv||3)+')'}</b>: {comp.secondary.desc||comp.secondary.type}
@@ -9686,9 +9686,9 @@ function CindervaleAlchemistInner(){
                   <div style={{...S.row,justifyContent:'space-between'}}>
                     <span style={{fontSize:14,color:partner.color,fontWeight:'bold'}}>{partner.icon} {partner.name} <span style={{color:TH.gold}}>T{sc.tier}</span></span>
                     {sc.tier<maxTier&&<button style={{...S.btn('gold'),fontSize:11,padding:'1px 6px'}}
-                      onClick={()=>upgradeChain(sc.partnerId)}>↑ T{sc.tier+1} ({partner.setupCost*sc.tier}g)</button>}
+                      onClick={()=>upgradeChain(sc.partnerId)}>↑ T{sc.tier+1} ({fmtMoney(partner.setupCost*sc.tier)})</button>}
                   </div>
-                  <div style={{fontSize:12,color:TH.textDim}}>Daily: {outDesc}{partner.goldOutput[tierKey]>0?' +'+partner.goldOutput[tierKey]+'g':''} · Maint: {partner.maint}g/day</div>
+                  <div style={{fontSize:12,color:TH.textDim}}>Daily: {outDesc}{partner.goldOutput[tierKey]>0?' +'+fmtMoney(partner.goldOutput[tierKey]):''} · Maint: {fmtMoney(partner.maint)}/day</div>
                 </div>;
               })}
               {/* Available to establish */}
@@ -9700,7 +9700,7 @@ function CindervaleAlchemistInner(){
                   <div style={{...S.row,justifyContent:'space-between'}}>
                     <span style={{fontSize:14,color:TH.textBright}}>{partner.icon} {partner.name} {partner.legendary&&<span style={{color:'#d4a420',fontSize:11}}>★</span>}</span>
                     {canEstablish?<button style={{...S.btn('gold'),fontSize:12,padding:'2px 8px'}}
-                      onClick={()=>establishChain(partner.id)}>🤝 Establish ({partner.setupCost}g)</button>
+                      onClick={()=>establishChain(partner.id)}>🤝 Establish ({fmtMoney(partner.setupCost)})</button>
                       :<span style={{fontSize:12,color:TH.textDim}}>{runs}/{partner.runsNeeded} runs on {routeName}</span>}
                   </div>
                   <div style={{fontSize:12,color:TH.textDim}}>{partner.desc}</div>
@@ -9838,7 +9838,7 @@ function CindervaleAlchemistInner(){
             const availIngr=Object.entries(inv).filter(([,q])=>q>0);const hasIngr=availIngr.length>=3;
             const seasons=SEASONS[gameLocation]||[];
             const zoneComps=RANGER_COMPANIONS.filter(c=>(!c.loc||c.loc===gameLocation)&&!c.legendary_only);
-            const ROLE_DESC={gatherer:'Brings bonus ingredients each morning',gather:'Brings bonus ingredients each morning',shopkeeper:'Earns bonus gold from sales',scout:'Reduces expedition danger',guardian:'Boosts staff morale and blocks threat events',greeter:'Attracts extra customers',muse:'Boosts research discovery chance',research:'Boosts research discovery chance',combat:'Reduces expedition danger',trade:'Earns gold and boosts yield',legendary:'Unique legendary abilities'};
+            const ROLE_DESC={gatherer:'Brings bonus ingredients each morning',gather:'Brings bonus ingredients each morning',shopkeeper:'Earns bonus coin from sales',scout:'Reduces expedition danger',guardian:'Boosts staff morale and blocks threat events',greeter:'Attracts extra customers',muse:'Boosts research discovery chance',research:'Boosts research discovery chance',combat:'Reduces expedition danger',trade:'Earns coin and boosts yield',legendary:'Unique legendary abilities'};
             return <div style={{padding:'6px 8px'}}>
               {/* Seasonal Bypass */}
               <div style={{marginBottom:8,padding:'6px 8px',background:'#60a04010',borderRadius:4,border:'1px solid #60a04022'}}>
@@ -10292,7 +10292,7 @@ function CindervaleAlchemistInner(){
                 if(!r||!brand)return null;
                 const have=countAllPots(order.recipeId);const canFill=have>=order.qty;
                 return <div key={oi} style={{padding:'4px 8px',background:canFill?TH.greenDim:TH.panel,borderRadius:4,marginBottom:3,border:'1px solid '+(canFill?TH.green:TH.border),display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-                  <span style={{fontSize:14}}>{brand.icon} {order.qty}\u00d7 {r.icon}{r.name} <span style={{color:TH.gold}}>{order.price}g</span> <span style={{fontSize:11,color:TH.textDim}}>expires day {order.expires}</span></span>
+                  <span style={{fontSize:14}}>{brand.icon} {order.qty}\u00d7 {r.icon}{r.name} <span style={{color:TH.gold}}>{fmtMoney(order.price)}</span> <span style={{fontSize:11,color:TH.textDim}}>expires day {order.expires}</span></span>
                   <button style={S.btn(canFill?'gold':'dim')} disabled={!canFill} onClick={()=>{
                     consumePots(order.recipeId,order.qty);setGold(g=>g+order.price);
                     recordBrandSale(order.recipeId,order.qty);
@@ -10339,11 +10339,11 @@ function CindervaleAlchemistInner(){
               const aqLv=prestigeLevels.antiquarian||0;
               const sellPrice=relic.value*(aqLv>=3?3:1);
               return <div key={relic.id} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'3px 6px',background:TH.panelLight,borderRadius:3,marginBottom:2,border:'1px solid #c0a08022'}}>
-                <span style={{fontSize:14}}>{cat?.icon} {relic.name} <span style={{fontSize:12,color:{common:TH.textDim,uncommon:'#50c070',rare:'#d4a420',legendary:'#c050e0'}[relic.rarity]}}>{relic.rarity}</span> <span style={{color:TH.gold,fontSize:12}}>{relic.value}g</span></span>
+                <span style={{fontSize:14}}>{cat?.icon} {relic.name} <span style={{fontSize:12,color:{common:TH.textDim,uncommon:'#50c070',rare:'#d4a420',legendary:'#c050e0'}[relic.rarity]}}>{relic.rarity}</span> <span style={{color:TH.gold,fontSize:12}}>{fmtMoney(relic.value)}</span></span>
                 <span style={{display:'flex',gap:3}}>
-                  {aqLv>=3&&<button style={{...S.btn('gold'),fontSize:11,padding:'2px 5px'}} onClick={()=>sellRelic(relic.id)}>Sell {sellPrice}g</button>}
+                  {aqLv>=3&&<button style={{...S.btn('gold'),fontSize:11,padding:'2px 5px'}} onClick={()=>sellRelic(relic.id)}>Sell {fmtMoney(sellPrice)}</button>}
                   {aqLv>=3&&<button style={{...S.btn('def'),fontSize:11,padding:'2px 5px'}} onClick={()=>displayRelic(relic.id)}>Display</button>}
-                  {aqLv<3&&<button style={{...S.btn('gold'),fontSize:11,padding:'2px 5px'}} onClick={()=>sellRelic(relic.id)}>Sell {relic.value}g</button>}
+                  {aqLv<3&&<button style={{...S.btn('gold'),fontSize:11,padding:'2px 5px'}} onClick={()=>sellRelic(relic.id)}>Sell {fmtMoney(relic.value)}</button>}
                 </span>
               </div>;})}
           </div>}
@@ -10357,7 +10357,7 @@ function CindervaleAlchemistInner(){
                 {complete&&<span style={{fontSize:11,color:TH.green}}>{setData.desc}</span>}
               </div>;})}
             {Object.keys(RELIC_SETS).every(sid=>(museum[sid]||0)>=RELIC_SETS[sid].needed)&&
-              <div style={{fontSize:14,color:'#c050e0',fontWeight:'bold',textAlign:'center',marginTop:4,padding:4,background:'#c050e010',borderRadius:4}}>🏆 Grand Collection Complete! +10g/morning from museum visitors</div>}
+              <div style={{fontSize:14,color:'#c050e0',fontWeight:'bold',textAlign:'center',marginTop:4,padding:4,background:'#c050e010',borderRadius:4}}>🏆 Grand Collection Complete! +{fmtMoney(10)}/morning from museum visitors</div>}
           </div>}
           {relics.length===0&&<div style={{fontSize:14,color:TH.textDim,textAlign:'center',padding:6}}>Go on expeditions to discover relics! (15% chance per forage roll)</div>}
         </div>}
@@ -10488,7 +10488,7 @@ function CindervaleAlchemistInner(){
                       {n===1?('⚗️ Brew '+selQT.name+' ('+(freeForFirst?'FREE':'⚡'+effectiveEC)+')'):('×'+n+' ('+(freeForFirst?'FREE':'⚡'+effectiveEC)+')')}
                     </button>
                     {!canN&&bc.canBuy&&fOk&&energy>=effectiveEC&&<button style={{fontSize:11,padding:'2px 5px',background:TH.gold,color:TH.bg,border:'none',borderRadius:3,cursor:'pointer',fontFamily:'inherit'}}
-                      onClick={()=>selDoBuy(n)}>🛒 {bc.total}g</button>}
+                      onClick={()=>selDoBuy(n)}>🛒 {fmtMoney(bc.total)}</button>}
                   </span>;
                 })})()}
               </div>
@@ -10548,13 +10548,13 @@ function CindervaleAlchemistInner(){
             <div key={id} style={{padding:'3px 0',fontSize:16}}>
               <div style={{display:'flex',alignItems:'center',gap:6,cursor:'pointer'}} onClick={()=>setTapInfo(_io?null:_ik)}>
                 <span style={{color:spColor||TH.text}}>{ig.icon}{ig.name} ×{qty}{spColor&&<span style={{fontSize:11,marginLeft:4,color:spColor}}>⚠️</span>}{sWarn&&<span style={{fontSize:11,color:'#d09030',marginLeft:4}}>⏳ {sWarn.icon} {sWarn.season}</span>}</span><span style={{color:TH.gold,marginLeft:'auto'}}>{fmtMoney(sp)} ea</span>
-              <button style={S.btn()} onClick={e=>{e.stopPropagation();modInv(id,-1);setGold(g=>g+sp);addLog(`Sold ${ig.icon}${ig.name} for ${sp}g.`,'info');}}>Sell 1</button>
-              {qty>spThresh&&<button style={{...S.btn('green'),fontSize:13}} onClick={e=>{e.stopPropagation();const excess=qty-spThresh;modInv(id,-excess);setGold(g=>g+sp*excess);addLog(`Sold ${excess}× ${ig.icon}${ig.name} for ${sp*excess}g (trimmed to safe storage).`,'info');}}>Sell to Safe ({qty-spThresh}×{sp}g)</button>}
-              {qty>1&&<button style={S.btn()} onClick={e=>{e.stopPropagation();modInv(id,-qty);setGold(g=>g+sp*qty);addLog(`Sold ${qty}× ${ig.icon}${ig.name} for ${sp*qty}g.`,'info');}}>Sell All ({sp*qty}g)</button>}
+              <button style={S.btn()} onClick={e=>{e.stopPropagation();modInv(id,-1);setGold(g=>g+sp);addLog(`Sold ${ig.icon}${ig.name} for ${fmtMoney(sp)}.`,'info');}}>Sell 1</button>
+              {qty>spThresh&&<button style={{...S.btn('green'),fontSize:13}} onClick={e=>{e.stopPropagation();const excess=qty-spThresh;modInv(id,-excess);setGold(g=>g+sp*excess);addLog(`Sold ${excess}× ${ig.icon}${ig.name} for ${fmtMoney(sp*excess)} (trimmed to safe storage).`,'info');}}>Sell to Safe ({qty-spThresh}×{fmtMoney(sp)})</button>}
+              {qty>1&&<button style={S.btn()} onClick={e=>{e.stopPropagation();modInv(id,-qty);setGold(g=>g+sp*qty);addLog(`Sold ${qty}× ${ig.icon}${ig.name} for ${fmtMoney(sp*qty)}.`,'info');}}>Sell All ({fmtMoney(sp*qty)})</button>}
               </div>
               {_io&&<div style={{fontSize:12,color:TH.textDim,padding:'2px 8px 4px',lineHeight:1.4}}>
                 {srcs.length>0?srcs.map((s,i)=><div key={i} style={{color:s.type==='seasonal'?'#d09030':s.type==='hidden'?'#70c0c0':TH.textDim}}>{s.text}</div>):<div>Source unknown</div>}
-                <div style={{color:TH.textDim}}>Base value: {ig.val||5}g</div>
+                <div style={{color:TH.textDim}}>Base value: {fmtMoney(ig.val||5)}</div>
               </div>}
             </div>);})}
         </div>}
@@ -10681,7 +10681,7 @@ function CindervaleAlchemistInner(){
         {getFeatureVal('publishPapers')&&<div style={{...S.card,borderColor:TH.cyan+'44'}} className={isWsOpen('ws29')?'':'ws-closed'}>
           <div style={{...S.cT,cursor:'pointer',userSelect:'none'}} onClick={()=>toggleWs('ws29')}><span style={{display:'flex',justifyContent:'space-between',width:'100%'}}><span>📝 Research Papers ({pubPapers.length})</span><span style={{fontSize:13,color:TH.textDim}}>{isWsOpen('ws29')?'▲':'▼'}</span></span></div>
           <div style={{fontSize:14,color:TH.textDim,marginBottom:6,lineHeight:1.5}}>
-            Publish papers on your discoveries for passive daily gold income. Each discovery can be published once.
+            Publish papers on your discoveries for passive daily coin income. Each discovery can be published once.
             {getFeatureVal('paperScaling')?' Paper income grows over time.':''}
             {getFeatureVal('grandPapers')?' Grand theory papers earn premium rates.':''}
           </div>
@@ -10844,7 +10844,7 @@ function CindervaleAlchemistInner(){
               const _frM=_isFresh?getFreshMult(prestigeLevels.wildcrafter||0):1;
               const sp=Math.floor((r.xp+getFeatureVal('potionSaleBonus')+Math.floor(upEff('sellBonus')*r.xp))*sqT.sellMult*_frM);
               return(<div key={id} style={{display:'flex',alignItems:'center',gap:6,padding:'3px 6px',background:_isFresh?'#60a04010':TH.panelLight,borderRadius:3,marginBottom:2,fontSize:15,border:_isFresh?'1px solid #60a04030':'none'}}>
-                <span style={{flex:1}}>{r.icon} {r.name}{sqT.icon?' '+sqT.icon:''}{_isFresh?' 🌿':''} ×{qty}</span>{_isFresh&&<span style={{fontSize:11,color:'#60a040',fontWeight:'bold'}}>{_frM}×</span>}<span style={{color:TH.gold,fontSize:14}}>{sp}g ea</span>
+                <span style={{flex:1}}>{r.icon} {r.name}{sqT.icon?' '+sqT.icon:''}{_isFresh?' 🌿':''} ×{qty}</span>{_isFresh&&<span style={{fontSize:11,color:'#60a040',fontWeight:'bold'}}>{_frM}×</span>}<span style={{color:TH.gold,fontSize:14}}>{fmtMoney(sp)} ea</span>
                 <button style={{...S.btn('def'),fontSize:13,padding:'1px 5px'}} onClick={()=>unstockShelf(id,1)}>−1</button>
               </div>);})}</div>:
             <div style={{fontSize:14,color:TH.textDim,textAlign:'center',padding:4,marginBottom:6}}>Shelves empty — stock potions below.</div>}
@@ -10871,7 +10871,7 @@ function CindervaleAlchemistInner(){
                   <div style={{fontSize:17,color:TH.goldBright}}>{cust.customer} <span style={{fontSize:14,color:TH.textDim}}>· {cust.title}</span></div>
                   <div style={{padding:'4px 8px',background:TH.bg,borderRadius:3,border:'1px solid '+TH.border,fontSize:15,fontStyle:'italic',color:TH.text,margin:'4px 0'}}>{cust.line}</div>
                   <div style={{fontSize:15,color:TH.textBright}}>Wants <b style={{color:TH.gold}}>{cust.qty}× {cust.potionIcon} {cust.potionName}</b></div>
-                  <div style={{fontSize:14,color:TH.textDim}}>Pays {cust.payPer*cust.qty}g + {cust.xpPer*cust.qty} XP</div>
+                  <div style={{fontSize:14,color:TH.textDim}}>Pays {fmtMoney(cust.payPer*cust.qty)} + {cust.xpPer*cust.qty} XP</div>
                 </div>
               </div>
               <div style={{display:'flex',gap:6}}>
@@ -10936,7 +10936,7 @@ function CindervaleAlchemistInner(){
                   <span style={{fontSize:14,color:TH.gold}}>DC{adjDC} · +{ench.xp}XP · +{fmtMoney(reward)}</span>
                 </div>
                 {showHints>0&&<div style={{fontSize:13,color:hintPct>=60?TH.green:hintPct>=30?TH.gold:TH.red,marginTop:1}}>
-                  📊 {hintPct}% success (Standard) · est. {fullReward}g
+                  📊 {hintPct}% success (Standard) · est. {fmtMoney(fullReward)}
                 </div>}
                 {ench.desc&&<div style={{fontSize:14,color:TH.textDim,fontStyle:'italic',margin:'3px 0'}}>{ench.desc}</div>}
                 <div style={{margin:'6px 0',padding:'6px 8px',background:TH.bg,borderRadius:4,border:'1px solid '+TH.border}}>
@@ -11076,7 +11076,7 @@ function CindervaleAlchemistInner(){
                       <div style={{fontSize:13,color:TH.textDim,marginTop:2}}>{u.desc}</div>
                       {u.req&&!hasUp(u.req)&&<div style={{fontSize:13,color:TH.red,marginTop:3}}>🔒 Requires: {UPGRADES[u.req]?.icon} {UPGRADES[u.req]?.name}</div>}
                       {!owned&&cProg>0&&cProg<100&&<div style={{marginTop:4}}><div style={{height:5,background:TH.panel,borderRadius:2,overflow:'hidden'}}><div style={{height:'100%',width:cProg+'%',background:TH.gold,borderRadius:2}}/></div><div style={{fontSize:12,color:TH.gold,marginTop:1}}>🔨 Construction prep: {cProg}%</div></div>}
-                      {!owned&&prepped&&<div style={{fontSize:13,color:TH.gold,marginTop:3}}>🔨 Prepped: gold -40%{waivedMat?', '+(INGR[waivedMat]?.icon||'')+(INGR[waivedMat]?.name||waivedMat)+' waived':''}</div>}
+                      {!owned&&prepped&&<div style={{fontSize:13,color:TH.gold,marginTop:3}}>🔨 Prepped: coin cost -40%{waivedMat?', '+(INGR[waivedMat]?.icon||'')+(INGR[waivedMat]?.name||waivedMat)+' waived':''}</div>}
                     </div>
                     {!owned&&<div style={{display:'flex',gap:5,alignItems:'center',flexWrap:'wrap'}}>
                       <span style={{fontSize:15,color:TH.gold,fontWeight:'bold'}}>{gc}g{prepped?' ✦':''}</span>
@@ -11104,9 +11104,9 @@ function CindervaleAlchemistInner(){
           {showTaskGuide&&<div style={{fontSize:14,lineHeight:1.5,color:TH.textDim}}>
             <div style={{marginBottom:3}}><b style={{color:TH.text}}>⛏️ Forage</b> — Staff mount a full-day expedition to gather ingredients. They allocate their day-budget across travel and gathering (regions cost more travel the further they are). Yield scales with <b style={{color:STATS.tec.color}}>Technique</b> and experience. Frees you to craft, enchant, and tend the shop.</div>
             <div style={{marginBottom:3}}><b style={{color:TH.text}}>⚗️ Brew</b> — Attempts to brew a known recipe overnight using your ingredients. ~50% base success rate, scaling with <b style={{color:STATS.tec.color}}>Technique</b>. Failed brews have a 50% chance to lose ingredients.</div>
-            <div style={{marginBottom:3}}><b style={{color:TH.text}}>🏪 Shop</b> — Tends the storefront, earning passive gold each day. Income scales with your level, staff experience, and their <b style={{color:STATS.inu.color}}>Intuition</b> stat. Reliable daily income with no resource cost.</div>
+            <div style={{marginBottom:3}}><b style={{color:TH.text}}>🏪 Shop</b> — Tends the storefront, earning passive coin each day. Income scales with your level, staff experience, and their <b style={{color:STATS.inu.color}}>Intuition</b> stat. Reliable daily income with no resource cost.</div>
             <div><b style={{color:TH.text}}>📚 Research</b> — Studies texts overnight with a chance to discover new recipes or enchantment inscriptions. Discovery chance scales with <b style={{color:STATS.acu.color}}>Acumen</b>. Great for unlocking formulas while you sleep.</div>
-            <div><b style={{color:TH.text}}>🔨 Construct</b> — Prepares a workshop upgrade overnight. Progress scales with <b style={{color:STATS.dis.color}}>Discipline</b>. When prep reaches 100%, the upgrade's gold cost drops 40% and one material requirement is waived.</div>
+            <div><b style={{color:TH.text}}>🔨 Construct</b> — Prepares a workshop upgrade overnight. Progress scales with <b style={{color:STATS.dis.color}}>Discipline</b>. When prep reaches 100%, the upgrade's coin cost drops 40% and one material requirement is waived.</div>
           </div>}
         </div>
         {getFeatureVal('staffReassign')&&hiredAppr.length>0&&(()=>{
@@ -11138,7 +11138,7 @@ function CindervaleAlchemistInner(){
             <div key={ap.id} style={{padding:'8px',background:TH.panelLight,borderRadius:4,marginBottom:5,border:'1px solid '+TH.border}}>
               <div style={{display:'flex',justifyContent:'space-between'}}><span style={{fontSize:16,color:TH.textBright}}>{ap.icon}{ap.name} <span style={{color:TH.gold}} title={'Level '+aLvl+' — Each level gives +10% task efficiency.\nXP: '+(apprXP[ap.id]||0)+'/'+((aLvl+1)*100)+(aLvl>=5?' (MAX)':'')}>{'★'.repeat(aLvl)||'☆'} Lv{aLvl}</span></span>
                 <span style={{fontSize:14}}>
-                  <span style={{color:TH.gold,cursor:'help'}} title={'Daily salary paid each morning. Signing fee: '+ap.salary*5+'g'}>{ap.salary}g/d</span>
+                  <span style={{color:TH.gold,cursor:'help'}} title={'Daily salary paid each morning. Signing fee: '+fmtMoney(ap.salary*5)}>{fmtMoney(ap.salary)}/d</span>
                   {' '}<span style={{color:ap.morale>=70?TH.green:ap.morale>=40?TH.orange:TH.red}}>♥{ap.morale}%</span>
                   {staffInjuries[ap.id]&&staffInjuries[ap.id].daysLeft>0&&<span style={{color:'#c06040',marginLeft:4}}>🩹{staffInjuries[ap.id].daysLeft}d</span>}
                   <span style={{fontSize:12,color:ap.morale>=80?TH.green:ap.morale>=50?TH.textDim:ap.morale>=30?TH.orange:TH.red,marginLeft:2}}>({ap.morale>=80?'+10% eff':ap.morale>=50?'normal':ap.morale>=30?'-20% eff':'-40% eff'})</span>
@@ -11156,7 +11156,7 @@ function CindervaleAlchemistInner(){
                 {(ap.traits||[]).map(t=>{const fx=TRAIT_FX[t];const isGood=(fx?.effMult>0||fx?.xpMult>0||fx?.forageEff>0||fx?.brewEff>0||fx?.shopEff>0||fx?.researchEff>0||fx?.enchantEff>0);const isBad=(fx?.effMult<0||fx?.moraleDelta<=-2||fx?.forageEff<0||fx?.brewEff<0||fx?.shopEff<0||fx?.researchEff<0);return <span key={t} style={{padding:'1px 5px',fontSize:12,borderRadius:3,background:isGood?TH.green+'12':(isBad?TH.red+'12':TH.bg),border:'1px solid '+(isGood?TH.green+'33':isBad?TH.red+'33':TH.border),color:isGood?TH.green:isBad?TH.red:TH.textDim}}>{t}{fx?.desc?' — '+fx.desc:''}</span>;})}
               </div>
               <div style={{fontSize:14,color:TH.textDim,margin:'3px 0'}}>
-                Stats: {Object.entries(ap.baseStat).map(([s,v])=><span key={s} style={{marginRight:5,color:STATS[s]?.color||TH.text,cursor:'help'}} title={STATS[s]?.name+' '+v+' (mod '+(getMod(v)>=0?'+':'')+getMod(v)+'). '+({tec:'Used for brewing & foraging efficiency',com:'Used for shopkeeping gold earned',acu:'Used for research discovery chance',dis:'Used for construction speed & endurance',inu:'Used for attunement & intuition checks',cre:'Used for creative & experimental tasks'}[s]||'')}>{STATS[s]?.icon||s} {v}</span>)}
+                Stats: {Object.entries(ap.baseStat).map(([s,v])=><span key={s} style={{marginRight:5,color:STATS[s]?.color||TH.text,cursor:'help'}} title={STATS[s]?.name+' '+v+' (mod '+(getMod(v)>=0?'+':'')+getMod(v)+'). '+({tec:'Used for brewing & foraging efficiency',com:'Used for shopkeeping coin earned',acu:'Used for research discovery chance',dis:'Used for construction speed & endurance',inu:'Used for attunement & intuition checks',cre:'Used for creative & experimental tasks'}[s]||'')}>{STATS[s]?.icon||s} {v}</span>)}
               </div>
               <div style={{fontSize:14,color:TH.text,marginBottom:3}}>Task: <b style={{color:task?TH.gold:TH.textDim}}>{task?TASK_TYPES[task.type]?.icon+' '+TASK_TYPES[task.type]?.name+(task.target?' ('+(task.type==='forage'?(locRegions.find(r=>r.id===task.target)?.name||task.target):task.type==='brew'?(RECIPES.find(r=>r.id===task.target)?.name||task.target):task.type==='construct'?(UPGRADES[task.target]?.name||task.target):task.type==='patrol'?(THREAT_FACTIONS[task.target]?.name||task.target):task.target)+')':''):'None — assign below'}</b>
                 {task&&<span style={{fontSize:13,color:TH.textDim}}> — {TASK_TYPES[task.type]?.desc}</span>}
@@ -11209,7 +11209,7 @@ function CindervaleAlchemistInner(){
             const best=taskRanks.reduce((b,t)=>t.sv>b.sv?t:b,taskRanks[0]);
             return(
             <div key={ap.id} style={{padding:'6px 8px',background:TH.panelLight,borderRadius:4,marginBottom:4,border:'1px solid '+TH.border}}>
-              <div style={{display:'flex',justifyContent:'space-between'}}><span style={{fontSize:16,color:TH.textBright}}>{ap.icon}{ap.name}</span><span style={{fontSize:14,color:TH.gold}}>{ap.salary}g/d (sign:{ap.salary*5}g)</span></div>
+              <div style={{display:'flex',justifyContent:'space-between'}}><span style={{fontSize:16,color:TH.textBright}}>{ap.icon}{ap.name}</span><span style={{fontSize:14,color:TH.gold}}>{fmtMoney(ap.salary)}/d (sign:{fmtMoney(ap.salary*5)})</span></div>
               <div style={{fontSize:14,color:TH.textDim}}>{ap.personality} · {ap.traits.join(', ')}</div>
               <div style={{fontSize:14,color:TH.text,margin:'4px 0'}}>
                 Stats: {Object.entries(ap.baseStat).map(([s,v])=><span key={s} style={{marginRight:6,color:STATS[s]?.color||TH.text}}>{STATS[s]?.icon||s}<b>{v}</b></span>)}
@@ -11735,7 +11735,7 @@ function CindervaleAlchemistInner(){
                       have=inv[cost.target]||0;canDo=have>=cost.qty;
                       costDesc=`${have}/${cost.qty} ${cost.targetIcon||'🌿'}${cost.targetName||cost.target}`;
                     } else if(cost.type==='gold'){
-                      have=gold;canDo=have>=cost.qty;costDesc=`${cost.qty}g (have ${gold}g)`;
+                      have=gold;canDo=have>=cost.qty;costDesc=`${fmtMoney(cost.qty)} (have ${fmtMoney(gold)})`;
                     } else if(cost.type==='staff'){
                       have=hiredAppr.filter(ap=>!apprTasks[ap.id]||apprTasks[ap.id].type==='idle').length;
                       canDo=have>=cost.qty;costDesc=`${have}/${cost.qty} idle staff`;
@@ -11768,7 +11768,7 @@ function CindervaleAlchemistInner(){
               </div>;
             })}
             <div style={{fontSize:12,color:TH.textDim,marginTop:6,fontStyle:'italic',padding:'6px 10px',background:'#c0202010',borderRadius:4,border:'1px solid #c0202033'}}>
-              ⚠️ Unresolved crises at wave deadline cause: threat spikes (+{12+hollowMarch.wave*2} per crisis), guaranteed staff injuries, rare ingredient loss, gold looting{hollowMarch.wave>=6?', and upgrade damage':''}. Failed skill checks also count as unresolved.
+              ⚠️ Unresolved crises at wave deadline cause: threat spikes (+{12+hollowMarch.wave*2} per crisis), guaranteed staff injuries, rare ingredient loss, coin looting{hollowMarch.wave>=6?', and upgrade damage':''}. Failed skill checks also count as unresolved.
             </div>
           </>}
 
@@ -11957,7 +11957,7 @@ function CindervaleAlchemistInner(){
         {/* Wild Ally Display (Wildcrafter temporary companion) */}
         {wildAlly&&(()=>{
           const waComp=RANGER_COMPANIONS.find(c=>c.id===wildAlly.compId);
-          const WA_ROLE_DESC={gatherer:'Brings bonus ingredients each morning',gather:'Brings bonus ingredients each morning',shopkeeper:'Earns bonus gold',scout:'Reduces danger',guardian:'Boosts staff morale',greeter:'Attracts customers',muse:'Boosts discovery',research:'Boosts discovery',combat:'Reduces danger',trade:'Earns gold + yield'};
+          const WA_ROLE_DESC={gatherer:'Brings bonus ingredients each morning',gather:'Brings bonus ingredients each morning',shopkeeper:'Earns bonus coin',scout:'Reduces danger',guardian:'Boosts staff morale',greeter:'Attracts customers',muse:'Boosts discovery',research:'Boosts discovery',combat:'Reduces danger',trade:'Earns coin + yield'};
           return <div style={{...S.card,borderColor:'#40a06044',background:'#40a06008'}}>
             <div style={S.cT}>🐾 Wild Ally <span style={{fontSize:12,fontWeight:'normal',color:TH.textDim}}>(temporary)</span></div>
             <div style={{display:'flex',alignItems:'center',gap:10,padding:'4px 8px'}}>
@@ -12076,7 +12076,7 @@ function CindervaleAlchemistInner(){
                 const partner=SUPPLY_PARTNERS.find(p=>p.id===sc.partnerId);if(!partner)return null;
                 return <div key={sc.partnerId} style={{padding:'2px 6px',background:partner.color+'10',borderRadius:3,border:'1px solid '+partner.color+'33'}}>
                   <span style={{color:partner.color}}>{partner.icon} {partner.name} T{sc.tier}</span>
-                  <div style={{fontSize:11,color:TH.textDim}}>{partner.maint}g/day</div>
+                  <div style={{fontSize:11,color:TH.textDim}}>{fmtMoney(partner.maint)}/day</div>
                 </div>;
               })}
             </div>
@@ -12459,7 +12459,7 @@ function CindervaleAlchemistInner(){
         {screen==='market'&&<>
           <div style={S.sideSec}>
             <div style={S.sideHd}>💰 Economy</div>
-            <div style={{fontSize:13,color:TH.gold,marginBottom:3}}>Gold: {gold}g</div>
+            <div style={{fontSize:13,color:TH.gold,marginBottom:3}}>Coin: {fmtMoney(gold)}</div>
             <div style={{fontSize:13,color:TH.textDim}}>Sell Bonus: +{Math.round(getFeatureVal('sellBonus')*100)}%</div>
             <div style={{fontSize:13,color:TH.textDim}}>Buy Discount: -{Math.round(getFeatureVal('buyDiscount')*100)}%</div>
           </div>
@@ -12538,8 +12538,8 @@ function CindervaleAlchemistInner(){
           <div style={S.sideSec}>
             <div style={S.sideHd}>👥 Staff Info</div>
             <div style={{fontSize:13,color:TH.textDim,marginBottom:2}}>Hired: {hiredAppr.length}</div>
-            <div style={{fontSize:13,color:TH.textDim,marginBottom:2}}>Payroll: {hiredAppr.reduce((s,a)=>s+a.salary,0)}g/day</div>
-            <div style={{fontSize:13,color:TH.gold}}>Gold: {gold}g</div>
+            <div style={{fontSize:13,color:TH.textDim,marginBottom:2}}>Payroll: {fmtMoney(hiredAppr.reduce((s,a)=>s+a.salary,0))}/day</div>
+            <div style={{fontSize:13,color:TH.gold}}>Coin: {fmtMoney(gold)}</div>
           </div>
         </>}
       </div>
