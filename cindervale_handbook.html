@@ -312,20 +312,24 @@
   <li><strong>15 Factions</strong> &mdash; 3-4 per location (plus 3 external threats per location). Build reputation through quests, donations, and alignment for unique bonuses.</li>
   <li><strong>60 Feats</strong> in 8 categories &mdash; Permanent abilities earned one per level.</li>
   <li><strong>D20 Skill System</strong> &mdash; 17 skills across 5 ability scores. Roll d20 + modifier vs. DC for crafting, foraging, enchanting, social checks, and more.</li>
-  <li><strong>Pass the Torch</strong> &mdash; Retire your character and begin a new generation, carrying forward gold, recipes, reputation, and a legacy chain.</li>
+  <li><strong>Pass the Torch</strong> &mdash; Retire your character and begin a new generation, carrying forward coin, recipes, reputation, and a legacy chain.</li>
 </ul>
 
 <h3>The Game Loop</h3>
-<p>Each day you have a pool of <strong>Energy</strong> (base 4, increased by upgrades, class features, and feats) and <strong>Hours</strong> (base 4). Spend them on actions:</p>
+<p>Each day you have a pool of <strong>Energy</strong> (base 100, increased by upgrades, class features, and feats). Spend it on actions:</p>
 <ul>
   <li><strong>Brew Potions</strong> &mdash; Combine ingredients, roll a craft check vs. DC. Success produces potions to sell, shelf, or use in quests.</li>
-  <li><strong>Forage Ingredients</strong> &mdash; Travel to a region, spend hours extracting. Roll extraction checks per hour for ingredients.</li>
-  <li><strong>Enchant Items</strong> &mdash; Customers bring items for enchantment. Roll inscription checks to inscribe runes for gold.</li>
+  <li><strong>Forage Ingredients</strong> &mdash; Travel to a region, spend Energy extracting. Roll extraction checks per forage roll for ingredients.</li>
+  <li><strong>Enchant Items</strong> &mdash; Customers bring items for enchantment. Roll inscription checks to inscribe runes for coin.</li>
   <li><strong>Research</strong> &mdash; Study to discover new recipes and enchantment patterns.</li>
   <li><strong>Manage Staff</strong> &mdash; Hire apprentices and assign them to brew, forage, shopkeep, or research.</li>
   <li><strong>Complete Quests</strong> &mdash; NPCs post quests requiring specific potions, ingredients, or tasks.</li>
   <li><strong>Invest in Settlement</strong> &mdash; Build roads, markets, watchtowers, and more to improve the town.</li>
 </ul>
+
+<div class="note">
+<strong>💰 Coinage of the Realm.</strong> The four locations mint a shared standard: <strong>1 platinum (pp) = 10 gold (g) = 100 silver (s)</strong>. Prices and wages are quoted in the largest coins that fit &mdash; a day-laborer earns a few silver, a fine potion sells for a gold or two, and a grand workshop wing costs platinum. Copper pennies exist as street change, but no alchemist bothers tracking them. <em>(Veterans of the old ledgers: when the mints standardized the coinage, every "gold" in the old books was revalued as silver &mdash; your balance kept its full worth; only the labels changed.)</em>
+</div>
 
 <h3>Progression</h3>
 <p>Gain XP from every action. Level up to earn class levels, skill points (3 per level), and feats (1 per level). Choose specializations at class level 3. Pursue prestige classes when you meet their prerequisites. Build toward the Hollow March endgame event, then Pass the Torch to begin anew.</p>
@@ -457,12 +461,12 @@
 
 <div class="spec-block">
   <div class="spec-name">Apothecary (INU)</div>
-  <p>Healers and clinicians who run a <strong>Clinic</strong> from your workshop. Patients arrive daily with ailments that must be diagnosed (Attunement check, DC scaling with ailment tier) and treated with the right healing potion &mdash; successful treatments earn XP, gold, and reputation. From Lv6 you brew one free Healing Salve each morning; higher Apothecary levels also improve diagnosis accuracy (Lv6 grants partial diagnosis even on near-miss rolls, Lv10 always returns a full diagnosis). At Lv10, patients auto-diagnose, treatments pay 3&times; gold and XP, and once per day you can perform a Miracle Cure on any patient (5&times; reward).</p>
+  <p>Healers and clinicians who run a <strong>Clinic</strong> from your workshop. Patients arrive daily with ailments that must be diagnosed (Attunement check, DC scaling with ailment tier) and treated with the right healing potion &mdash; successful treatments earn XP, coin, and reputation. From Lv6 you brew one free Healing Salve each morning; higher Apothecary levels also improve diagnosis accuracy (Lv6 grants partial diagnosis even on near-miss rolls, Lv10 always returns a full diagnosis). At Lv10, patients auto-diagnose, treatments pay 3&times; coin and XP, and once per day you can perform a Miracle Cure on any patient (5&times; reward).</p>
   <table>
     <tr><th>Lv</th><th>Feature</th><th>Description</th></tr>
     <tr><td>3</td><td>Healer's Touch</td><td>+1 craft bonus when brewing recipes in the <em>healing</em> category (cures, salves, antidotes &mdash; restorations of any kind). All brews sell for +20% on top of that.</td></tr>
     <tr><td>6</td><td>Panacea</td><td>+1 daily customer slot. One free Healing Salve brewed each morning. Healing potions also restore staff morale. Reaching this level grants three curative recipes: Silver Salve, Mycelium Bandage, and Holy Flame.</td></tr>
-    <tr><td>10</td><td>Miracle Worker</td><td>Clinic patients auto-diagnosed. Clinic treatments pay 3x gold and XP. Once per day, Miracle Cure on any patient (5x reward). Healing potions 50% chance to produce bonus Masterwork copy.</td></tr>
+    <tr><td>10</td><td>Miracle Worker</td><td>Clinic patients auto-diagnosed. Clinic treatments pay 3x coin and XP. Once per day, Miracle Cure on any patient (5x reward). Healing potions 50% chance to produce bonus Masterwork copy.</td></tr>
   </table>
 </div>
 
@@ -479,7 +483,7 @@
 
 <div class="spec-block">
   <div class="spec-name">Venomist (TEC)</div>
-  <p>Brew volatile poisons and offensive concoctions. <strong>Venom Contracts</strong> appear on the Venom Lab panel of your workshop &mdash; shady clients post poison orders offering premium gold for specific volatile brews, with deadlines and tier-scaling rewards. Craft bonuses scale with level, and at Lv10 every fulfilled contract also reduces the buying guard faction's threat by 3 + 2&times; the contract tier.</p>
+  <p>Brew volatile poisons and offensive concoctions. <strong>Venom Contracts</strong> appear on the Venom Lab panel of your workshop &mdash; shady clients post poison orders offering premium coin for specific volatile brews, with deadlines and tier-scaling rewards. Craft bonuses scale with level, and at Lv10 every fulfilled contract also reduces the buying guard faction's threat by 3 + 2&times; the contract tier.</p>
   <table>
     <tr><th>Lv</th><th>Feature</th><th>Description</th></tr>
     <tr><td>3</td><td>Volatile Mixtures</td><td>+2 craft bonus and +30% sell value on all brews. Choosing this spec grants two volatile/explosive recipes: Magma Flask and Obsidian Bomb.</td></tr>
@@ -494,7 +498,7 @@
   <img class="class-portrait" src="handbook_portrait_enchanter.jpg" alt="Enchanter">
   <div class="class-name">Enchanter &#10024;</div>
   <p><em>Primary Stat: TEC &mdash; Proficient Skills: Inscription, Arcane Sensitivity</em></p>
-  <p>Turn mundane items into treasures with runes and inscriptions. Inscribe runes for premium gold from customers.</p>
+  <p>Turn mundane items into treasures with runes and inscriptions. Inscribe runes for premium coin from customers.</p>
 </div>
 
 <table>
@@ -504,45 +508,45 @@
   <tr><td>3</td><td>Specialization</td><td>Choose a specialization path. +5 inscription bonus.</td></tr>
   <tr><td>4</td><td>Arcane Mastery</td><td>+8 flat inscription bonus (flat inscription bonuses cap at +20). See customer satisfaction hints.</td></tr>
   <tr><td>5</td><td>Dual Inscription</td><td>Apply 2 enchantments to a single customer item (second at +3 DC).</td></tr>
-  <tr><td>6</td><td>Resonance</td><td>Enchanting customers pay 25% more gold. 20% chance to save enchanting materials. On reaching this level you are granted two resonance-themed patterns: Echo Strike and Runespark Array.</td></tr>
+  <tr><td>6</td><td>Resonance</td><td>Enchanting customers pay 25% more coin. 20% chance to save enchanting materials. On reaching this level you are granted two resonance-themed patterns: Echo Strike and Runespark Array.</td></tr>
   <tr><td>7</td><td>Overcharge</td><td>Natural 20 on an inscription roll produces a Masterwork enchantment &mdash; double XP and Masterwork-tier pricing.</td></tr>
   <tr><td>8</td><td>Archmage</td><td>DC 12 and below enchantments auto-succeed. +2 inscription (stacks).</td></tr>
   <tr><td>9</td><td>Rune Library</td><td>A vast personal archive accelerates your research. +25% discovery chance, +10% XP from all sources.</td></tr>
-  <tr><td>10</td><td>Reality Weaver</td><td>+12 flat inscription bonus, +50% gold from enchanting. Crits on 17+.</td></tr>
+  <tr><td>10</td><td>Reality Weaver</td><td>+12 flat inscription bonus, +50% coin from enchanting. Crits on 17+.</td></tr>
 </table>
 
 <h4>Specializations</h4>
 
 <div class="spec-block">
   <div class="spec-name">Runesmith (TEC)</div>
-  <p>Forge powerful weapon enchantments. The <strong>Runesmith Forge</strong> is a dedicated forging station that appears on your workshop screen where you craft magical weapons &mdash; you get a limited number of forge uses per day (1 at Lv3, scaling to 3 at Lv10). Forged weapons sell at premium prices, and weapon-category enchantments earn bonus inscription and gold value at every spec level.</p>
+  <p>Forge powerful weapon enchantments. The <strong>Runesmith Forge</strong> is a dedicated forging station that appears on your workshop screen where you craft magical weapons &mdash; you get a limited number of forge uses per day (1 at Lv3, scaling to 3 at Lv10). Forged weapons sell at premium prices, and weapon-category enchantments earn bonus inscription and coin value at every spec level.</p>
   <table>
     <tr><th>Lv</th><th>Feature</th><th>Description</th></tr>
-    <tr><td>3</td><td>Battle Runes</td><td>+1 inscription bonus and +15% gold when inscribing <em>weapon</em>-category enchantments. The bonus applies to both customer inscriptions and the Runesmith Forge.</td></tr>
+    <tr><td>3</td><td>Battle Runes</td><td>+1 inscription bonus and +15% coin when inscribing <em>weapon</em>-category enchantments. The bonus applies to both customer inscriptions and the Runesmith Forge.</td></tr>
     <tr><td>6</td><td>Runic Mastery</td><td>All enchantment material costs &minus;1. Inscription crits on 19+. Once per day, reroll a failed craft or inscription.</td></tr>
-    <tr><td>10</td><td>Legendary Arms</td><td>+50% gold when inscribing <em>weapon</em>-category enchantments. Inscriptions of any kind auto-succeed at DC 14 or below, and natural-20 crits produce Masterwork enchantments.</td></tr>
+    <tr><td>10</td><td>Legendary Arms</td><td>+50% coin when inscribing <em>weapon</em>-category enchantments. Inscriptions of any kind auto-succeed at DC 14 or below, and natural-20 crits produce Masterwork enchantments.</td></tr>
   </table>
 </div>
 
 <div class="spec-block">
   <div class="spec-name">Wardkeeper (DIS)</div>
-  <p>Specialize in defensive enchantments. <strong>Shield Commissions</strong> are defensive enchantment orders that arrive from clients needing warded armor and shields &mdash; the commission system tracks your active orders with deadlines, and inscription bonuses stack for defensive work. At Lv10, permanent wards auto-succeed at DC 15 and shield commissions pay 3&times; gold.</p>
+  <p>Specialize in defensive enchantments. <strong>Shield Commissions</strong> are defensive enchantment orders that arrive from clients needing warded armor and shields &mdash; the commission system tracks your active orders with deadlines, and inscription bonuses stack for defensive work. At Lv10, permanent wards auto-succeed at DC 15 and shield commissions pay 3&times; coin.</p>
   <table>
     <tr><th>Lv</th><th>Feature</th><th>Description</th></tr>
     <tr><td>3</td><td>Wards</td><td>+1 inscription bonus when inscribing <em>armor</em>-category enchantments. Failed inscriptions of any kind return 50% of their materials.</td></tr>
     <tr><td>6</td><td>Layered Wards</td><td>Apply two enchantments to a single customer item (second at +3 DC). 40% chance to save materials on a successful inscription.</td></tr>
-    <tr><td>10</td><td>Unbreakable</td><td>Auto-succeed inscriptions at DC 15 or below. +10 flat inscription bonus. 60% material save on successful inscriptions. Shield commissions pay 3&times; gold. A permanent Fortress Ward shields your shelves: bandits cannot steal overnight shelf sales while local bandit threat stays below 75.</td></tr>
+    <tr><td>10</td><td>Unbreakable</td><td>Auto-succeed inscriptions at DC 15 or below. +10 flat inscription bonus. 60% material save on successful inscriptions. Shield commissions pay 3&times; coin. A permanent Fortress Ward shields your shelves: bandits cannot steal overnight shelf sales while local bandit threat stays below 75.</td></tr>
   </table>
 </div>
 
 <div class="spec-block">
   <div class="spec-name">Spellweaver (INU)</div>
-  <p>Craft exotic utility enchantments and channel four extraplanar power sources through the <strong>Planar Focus interface</strong>. Each plane is a real tradeoff &mdash; a boon paired with a cost. The <em>Feywild</em>'s gold bonus on accessory/utility enchants (+30%) comes with a 10% per-success chance of a dissatisfied customer: a 10g refund and a point of standing lost with your aligned faction. <em>Shadowfell</em> strengthens armor inscriptions (+2) but hampers weapon ones (+3 DC). <em>Elemental Chaos</em> rewards risky work with a 20% per-success planar surge (+50% gold and +50% XP) but destroys all materials when an inscription fails. The <em>Astral Sea</em> reduces inscription DCs by 2 across the board at the cost of 15% gold. Attunement lasts 1 day (2 from Lv6). Standard spec bonuses focus on the "other" enchantment category (rings, cloaks, charms): +1 inscription at Lv3, +35% gold and +1 customer slot at Lv6. At Lv10, <strong>Planar Convergence</strong> unlocks &mdash; attune a second plane while the first is still active, fusing them into a combo (Twilight Veil, Wild Magic, Dreamweave, Void Storm, Null Space, or Primordial Order). The combo's effects <strong>replace</strong> both planes' individual effects &mdash; convergence is a mode switch, not additive stacking. Lv10 also grants inscription crits on 17+, +50% gold from enchanting overall, and +30% gold from potion customers.</p>
+  <p>Craft exotic utility enchantments and channel four extraplanar power sources through the <strong>Planar Focus interface</strong>. Each plane is a real tradeoff &mdash; a boon paired with a cost. The <em>Feywild</em>'s coin bonus on accessory/utility enchants (+30%) comes with a 10% per-success chance of a dissatisfied customer: a 1g refund and a point of standing lost with your aligned faction. <em>Shadowfell</em> strengthens armor inscriptions (+2) but hampers weapon ones (+3 DC). <em>Elemental Chaos</em> rewards risky work with a 20% per-success planar surge (+50% coin and +50% XP) but destroys all materials when an inscription fails. The <em>Astral Sea</em> reduces inscription DCs by 2 across the board at the cost of 15% coin. Attunement lasts 1 day (2 from Lv6). Standard spec bonuses focus on the "other" enchantment category (rings, cloaks, charms): +1 inscription at Lv3, +35% coin and +1 customer slot at Lv6. At Lv10, <strong>Planar Convergence</strong> unlocks &mdash; attune a second plane while the first is still active, fusing them into a combo (Twilight Veil, Wild Magic, Dreamweave, Void Storm, Null Space, or Primordial Order). The combo's effects <strong>replace</strong> both planes' individual effects &mdash; convergence is a mode switch, not additive stacking. Lv10 also grants inscription crits on 17+, +50% coin from enchanting overall, and +30% coin from potion customers.</p>
   <table>
     <tr><th>Lv</th><th>Feature</th><th>Description</th></tr>
     <tr><td>3</td><td>Exotic Inscriptions</td><td>+1 inscription bonus when inscribing <em>accessory/utility</em> enchantments (rings, cloaks, charms &mdash; the "other" category). +15% research discovery from all sources.</td></tr>
-    <tr><td>6</td><td>Planar Weave</td><td>+35% gold when inscribing <em>accessory/utility</em> ("other"-category) enchantments. +1 daily customer slot.</td></tr>
-    <tr><td>10</td><td>Planar Convergence</td><td>Inscription crits on 17+. +50% gold from enchanting. +30% gold from potion customers &mdash; planar patronage attracts wealthier clientele.</td></tr>
+    <tr><td>6</td><td>Planar Weave</td><td>+35% coin when inscribing <em>accessory/utility</em> ("other"-category) enchantments. +1 daily customer slot.</td></tr>
+    <tr><td>10</td><td>Planar Convergence</td><td>Inscription crits on 17+. +50% coin from enchanting. +30% coin from potion customers &mdash; planar patronage attracts wealthier clientele.</td></tr>
   </table>
 </div>
 
@@ -584,10 +588,10 @@
 
 <div class="spec-block">
   <div class="spec-name">Constructor (DIS)</div>
-  <p>Master workshop builder. The <strong>Blueprint Drafting</strong> system lets you draft and build custom workshop structures &mdash; each blueprint goes through a drafting phase (research) and a construction phase (staff assignment), and completed blueprints provide unique workshop bonuses unavailable through normal upgrades. Standard upgrades also cost dramatically less gold, and staff work harder.</p>
+  <p>Master workshop builder. The <strong>Blueprint Drafting</strong> system lets you draft and build custom workshop structures &mdash; each blueprint goes through a drafting phase (research) and a construction phase (staff assignment), and completed blueprints provide unique workshop bonuses unavailable through normal upgrades. Standard upgrades also cost dramatically less coin, and staff work harder.</p>
   <table>
     <tr><th>Lv</th><th>Feature</th><th>Description</th></tr>
-    <tr><td>3</td><td>Workshop Pro</td><td>Workshop upgrades cost 50% less gold. Staff efficiency +15%.</td></tr>
+    <tr><td>3</td><td>Workshop Pro</td><td>Workshop upgrades cost 50% less coin. Staff efficiency +15%.</td></tr>
     <tr><td>6</td><td>Assembly Floor</td><td>Batch brewing capacity +2 (brew up to 7 at once). Staff efficiency +20%.</td></tr>
     <tr><td>10</td><td>Master Builder</td><td>+50 Energy per day, +3&times; passive income from your shopfront, overnight auto-brewing of your most profitable recipe, and all construction completes in half time. Reaching this level grants three high-tier workshop upgrades drawn from a curated pool (Forge, Greenhouse, Ley Line Tap, Master's Cauldron, Arcane Nexus, Vault, Library) &mdash; you start with whichever three you don't already own.</td></tr>
   </table>
@@ -624,17 +628,17 @@
   <tr><td>7</td><td>Thesis Defense</td><td>+3 craft bonus, +15% discovery chance, +10% XP from all sources.</td></tr>
   <tr><td>8</td><td>Grand Theorem</td><td>+25% discovery chance from all sources. +1 free research action per day on top of all other sources.</td></tr>
   <tr><td>9</td><td>Polymath</td><td>+2 to all craft, inscription, and extraction checks. +10% XP from all sources.</td></tr>
-  <tr><td>10</td><td>Omniscience</td><td>+40% discovery chance. +2 craft from deep knowledge. +30% XP from all sources. Publish theoretical papers for passive gold.</td></tr>
+  <tr><td>10</td><td>Omniscience</td><td>+40% discovery chance. +2 craft from deep knowledge. +30% XP from all sources. Publish theoretical papers for passive coin.</td></tr>
 </table>
 
 <h4>Specializations</h4>
 
 <div class="spec-block">
   <div class="spec-name">Theorist (ACU)</div>
-  <p>The Theorist runs a <strong>Published Papers</strong> system &mdash; spend research Energy writing academic papers that generate passive gold income over time, scaling up as citations accumulate. Lv6 Peer Review adds +20% discovery to research studies and makes papers earn more over time. At Lv10, every research session yields 2 discoveries instead of 1, papers earn faction rep tied to the discovered recipe, and your published-paper count grants a permanent scaling craft bonus (+1 per 2 papers, capped at +4).</p>
+  <p>The Theorist runs a <strong>Published Papers</strong> system &mdash; spend research Energy writing academic papers that generate passive coin income over time, scaling up as citations accumulate. Lv6 Peer Review adds +20% discovery to research studies and makes papers earn more over time. At Lv10, every research session yields 2 discoveries instead of 1, papers earn faction rep tied to the discovered recipe, and your published-paper count grants a permanent scaling craft bonus (+1 per 2 papers, capped at +4).</p>
   <table>
     <tr><th>Lv</th><th>Feature</th><th>Description</th></tr>
-    <tr><td>3</td><td>Published Research</td><td>2x XP from research and experiments. Can publish papers for passive gold.</td></tr>
+    <tr><td>3</td><td>Published Research</td><td>2x XP from research and experiments. Can publish papers for passive coin.</td></tr>
     <tr><td>6</td><td>Peer Review</td><td>Research studies have +20% discovery chance. Papers earn more over time.</td></tr>
     <tr><td>10</td><td>Grand Unified Theory</td><td>Research sessions produce 2 discoveries instead of 1. +35% discovery chance. Papers earn faction rep. Published papers grant a scaling permanent craft bonus (+1 every 2 papers, capped at +4).</td></tr>
   </table>
@@ -653,11 +657,11 @@
 
 <div class="spec-block">
   <div class="spec-name">Archivist (DIS)</div>
-  <p>Pursue lore through a <strong>Lore Archive</strong>. Ancient lore fragments drop from quests and research; fragments belong to chains that, when completed, grant permanent passive bonuses (including +1 to a stat of your choice up to three times at Lv10). The Lore Archive tracks your collection and shows incomplete chains. Board quests refresh more often, pay bonus gold, and reward extra faction rep.</p>
+  <p>Pursue lore through a <strong>Lore Archive</strong>. Ancient lore fragments drop from quests and research; fragments belong to chains that, when completed, grant permanent passive bonuses (including +1 to a stat of your choice up to three times at Lv10). The Lore Archive tracks your collection and shows incomplete chains. Board quests refresh more often, pay bonus coin, and reward extra faction rep.</p>
   <table>
     <tr><th>Lv</th><th>Feature</th><th>Description</th></tr>
     <tr><td>3</td><td>Deep Records</td><td>+30% XP from quest turn-ins. Quest faction-rep payouts are boosted by +5&times; the standard amount.</td></tr>
-    <tr><td>6</td><td>Master Index</td><td>The notice board refreshes twice as often, producing more quests per cycle. +25% gold from quest turn-ins.</td></tr>
+    <tr><td>6</td><td>Master Index</td><td>The notice board refreshes twice as often, producing more quests per cycle. +25% coin from quest turn-ins.</td></tr>
     <tr><td>10</td><td>Living Archive</td><td>Completed lore chains grant permanent +1 to a stat (up to 3). 25% quest lore fragment chance. Board quests 3x daily with rare-ingredient quest. Faction alignment bonuses 50% stronger.</td></tr>
   </table>
 </div>
@@ -689,7 +693,7 @@
 
 <div class="spec-block">
   <div class="spec-name">Ranger (INU)</div>
-  <p>Befriend <strong>Wild Companions</strong> &mdash; wild creatures encountered during foraging expeditions. Each companion performs a daily action based on its role: gathering ingredients, earning gold, scouting, greeting customers, guarding, or inspiring research. Loyalty grows as you keep them active, unlocking secondary abilities and (at high loyalty) legendary powers. At Lv10, companions perform all actions twice per day, your highest-loyalty companion gains a role-specific Legendary ability, and any companion can be sent on a solo expedition from their card once per day at zero Energy cost.</p>
+  <p>Befriend <strong>Wild Companions</strong> &mdash; wild creatures encountered during foraging expeditions. Each companion performs a daily action based on its role: gathering ingredients, earning coin, scouting, greeting customers, guarding, or inspiring research. Loyalty grows as you keep them active, unlocking secondary abilities and (at high loyalty) legendary powers. At Lv10, companions perform all actions twice per day, your highest-loyalty companion gains a role-specific Legendary ability, and any companion can be sent on a solo expedition from their card once per day at zero Energy cost.</p>
   <table>
     <tr><th>Lv</th><th>Feature</th><th>Description</th></tr>
     <tr><td>3</td><td>Tracker</td><td>Target ingredients without yield penalty. Befriend wild creatures.</td></tr>
@@ -767,7 +771,7 @@
   <tr><td>2</td><td>Resonant Brew</td><td>Unlock Fortify infusion. Infusion DC penalty reduced by 1. 3 infusions per day.</td></tr>
   <tr><td>3</td><td>Essence Weaver</td><td>Unlock Prosperity infusion. 4 infusions per day. 25% chance to preserve the catalyst on any infusion brew &mdash; success or failure.</td></tr>
   <tr><td>4</td><td>Arcane Distiller</td><td>Unlock Lingering infusion. 5 infusions per day. Catalyst always preserved on a successful Masterwork (or higher) brew; failed Masterwork attempts have a 40% save chance.</td></tr>
-  <tr><td>5</td><td>Grand Spellbrewer</td><td>6 infusions per day. Infusion sale-multipliers are 50% more potent (e.g. Vigor 1.2&times; becomes 1.3&times;, Prosperity 1.5&times; becomes 1.75&times;) and infused items pay +30% gold. Infused shelf potions also attract +15% extra sell chance.</td></tr>
+  <tr><td>5</td><td>Grand Spellbrewer</td><td>6 infusions per day. Infusion sale-multipliers are 50% more potent (e.g. Vigor 1.2&times; becomes 1.3&times;, Prosperity 1.5&times; becomes 1.75&times;) and infused items pay +30% coin. Infused shelf potions also attract +15% extra sell chance.</td></tr>
 </table>
 
 <!-- Magitech Engineer -->
@@ -793,7 +797,7 @@
   <tr><td>2</td><td>Brand Recognition</td><td>Brands hold 3 recipes. +5 aligned faction rep per 10 branded sales. Sales tracker UI.</td></tr>
   <tr><td>3</td><td>Product Line</td><td>2nd brand slot. Brand orders appear (2x price). Branded shelf potions +10% sell chance.</td></tr>
   <tr><td>4</td><td>Premium Label</td><td>Brands hold 4 recipes. Famous tier unlocks (+60% sell). Branded MW+ potions extra +25%.</td></tr>
-  <tr><td>5</td><td>Legendary Brand</td><td>3rd brand slot. Every branded item sells for an additional +25% gold on top of the brand-level multipliers. 25% brand rep carries through Torch.</td></tr>
+  <tr><td>5</td><td>Legendary Brand</td><td>3rd brand slot. Every branded item sells for an additional +25% coin on top of the brand-level multipliers. 25% brand rep carries through Torch.</td></tr>
 </table>
 
 <!-- Wildcrafter -->
@@ -828,7 +832,7 @@
   <tr><td>2</td><td>Keen Appraisal</td><td>25% find chance. +3 appraisal bonus. See relic rarity before appraising.</td></tr>
   <tr><td>3</td><td>Collector's Network</td><td>Sell appraised relics at 3x value. Museum display unlocked. Collection set bonuses active.</td></tr>
   <tr><td>4</td><td>Relic Expertise</td><td>35% find chance. Auto-identify (no check). Staff can do Relic Hunt tasks.</td></tr>
-  <tr><td>5</td><td>Grand Collection</td><td>Complete all 5 sets for +10g/morning museum income. Legendary relics in diff 4+. Set bonuses doubled.</td></tr>
+  <tr><td>5</td><td>Grand Collection</td><td>Complete all 5 sets for +1g/morning museum income. Legendary relics in diff 4+. Set bonuses doubled.</td></tr>
 </table>
 
 <!-- Siege Engineer -->
@@ -862,7 +866,7 @@
 <table>
   <tr><th>Lv</th><th>Feature</th><th>Description</th></tr>
   <tr><td>1</td><td>Embassy</td><td>Double faction rep gains. Faction quests grant +10 bonus rep. Each morning, every faction at Friendly+ gains +1 rep &mdash; your embassy keeps relationships warm even when you're not actively questing.</td></tr>
-  <tr><td>2</td><td>Trade Agreements</td><td>+3 rare ingredients in daily shop restock. +30% gold from quest turn-ins. Each day, one signature ingredient from a Friendly+ faction's specialty pool also appears in your shop &mdash; your trade agreements bring exotic goods to your doorstep.</td></tr>
+  <tr><td>2</td><td>Trade Agreements</td><td>+3 rare ingredients in daily shop restock. +30% coin from quest turn-ins. Each day, one signature ingredient from a Friendly+ faction's specialty pool also appears in your shop &mdash; your trade agreements bring exotic goods to your doorstep.</td></tr>
   <tr><td>3</td><td>Faction Harmony</td><td>Build diplomatic bridges between faction pairs, creating harmony bonuses.</td></tr>
   <tr><td>4</td><td>Grand Alliance</td><td>+50% reputation gains and +25% sell prices from all factions. When all harmony pairs reach their maximum state, one legendary-tier ingredient also appears in your daily shop restock &mdash; your standing as a power broker among the factions opens trade in goods of legendary make.</td></tr>
   <tr><td>5</td><td>Ambassador</td><td>Faction harmony bonuses doubled. Cross-faction rep spillover 25%. Carries through Torch.</td></tr>
@@ -913,14 +917,14 @@
 <div class="feat-entry"><span class="feat-name">Shrewd Bargainer</span> &mdash; +5% sell prices.</div>
 <div class="feat-entry"><span class="feat-name">Bulk Buyer</span> &mdash; -10% buy prices.</div>
 <div class="feat-entry"><span class="feat-name">Artisan's Touch</span> &mdash; +2 XP per brew.</div>
-<div class="feat-entry"><span class="feat-name">Master Presenter</span> &mdash; +2g per potion sale. <span class="feat-req">(Req: Artisan's Touch)</span></div>
+<div class="feat-entry"><span class="feat-name">Master Presenter</span> &mdash; +2s per potion sale. <span class="feat-req">(Req: Artisan's Touch)</span></div>
 <div class="feat-entry"><span class="feat-name">Organized Shelves</span> &mdash; +4 shelf capacity.</div>
 <div class="feat-entry"><span class="feat-name">Preservation</span> &mdash; +5 spoil threshold.</div>
 <div class="feat-entry"><span class="feat-name">Deep Preservation</span> &mdash; +8 spoil threshold. <span class="feat-req">(Req: Preservation)</span></div>
 <div class="feat-entry"><span class="feat-name">Scholar's Memory</span> &mdash; +8 XP per quest turn-in.</div>
 <div class="feat-entry"><span class="feat-name">Quick Study</span> &mdash; Research Energy cost &minus;25%. <span class="feat-req">(Req: Scholar's Memory)</span></div>
-<div class="feat-entry"><span class="feat-name">Keen Eye</span> &mdash; +3g per enchant commission.</div>
-<div class="feat-entry"><span class="feat-name">Gem Cutter</span> &mdash; +1g per ingredient sold.</div>
+<div class="feat-entry"><span class="feat-name">Keen Eye</span> &mdash; +3s per enchant commission.</div>
+<div class="feat-entry"><span class="feat-name">Gem Cutter</span> &mdash; +1s per ingredient sold.</div>
 <div class="feat-entry"><span class="feat-name">Supplier Contacts</span> &mdash; 2 rare ingredients appear in shop daily.</div>
 <div class="feat-entry"><span class="feat-name">Regular Clientele</span> &mdash; +1 base customer per day.</div>
 <div class="feat-entry"><span class="feat-name">Showmanship</span> &mdash; Shelf potions +5% sell chance. <span class="feat-req">(Req: Regular Clientele)</span></div>
@@ -940,7 +944,7 @@
 
 <!-- Legacy Feats -->
 <div class="feat-category">Legacy (1 feat)</div>
-<div class="feat-entry"><span class="feat-name">Ancestral Wisdom</span> &mdash; Pass the Torch carries 25% gold (up from 15%), 5 recipes (up from 3), 50% rep (up from 33%). +25 Energy.</div>
+<div class="feat-entry"><span class="feat-name">Ancestral Wisdom</span> &mdash; Pass the Torch carries 25% coin (up from 15%), 5 recipes (up from 3), 50% rep (up from 33%). +25 Energy.</div>
 
 <!-- Combat/Survival Feats -->
 <div class="feat-category">Combat / Survival (2 feats)</div>
@@ -957,7 +961,7 @@
 <div class="feat-entry"><span class="feat-name">Focused Mind</span> &mdash; +1 skill point every other level (retroactive). +5% XP from all sources.</div>
 <div class="feat-entry"><span class="feat-name">Lorekeeper</span> &mdash; +25% XP from quests/board requests. Quest completion +5 faction rep.</div>
 <div class="feat-entry"><span class="feat-name">Relentless</span> &mdash; After a failed check, +2 to next check of same type. Stacks to +6.</div>
-<div class="feat-entry"><span class="feat-name">Crisis Responder</span> &mdash; During the Hollow March, crisis checks get +3. Brew/enchant solutions need 1 fewer item. Gold solutions cost 20% less.</div>
+<div class="feat-entry"><span class="feat-name">Crisis Responder</span> &mdash; During the Hollow March, crisis checks get +3. Brew/enchant solutions need 1 fewer item. Coin solutions cost 20% less.</div>
 <div class="feat-entry"><span class="feat-name">Fortified Workshop</span> &mdash; Threats grow 20% slower. Warning 2 days before 75+ threat events. Workshop upgrades can't be disabled by March failures.</div>
 
 <!-- ═══════════════════════════════════════ -->
@@ -1078,7 +1082,7 @@
   <tr><td>1</td><td>Guarded Zones</td><td>Unlock Ashwarden-guarded foraging zones.</td></tr>
   <tr><td>2</td><td>Protection Recipes</td><td>Unlock Ashwarden protection recipes.</td></tr>
   <tr><td>3</td><td>Warden Sigils</td><td>Quests occasionally reward bonus Warden Sigils.</td></tr>
-  <tr><td>4</td><td>Elite Contracts</td><td>+20% gold from all quest rewards.</td></tr>
+  <tr><td>4</td><td>Elite Contracts</td><td>+20% coin from all quest rewards.</td></tr>
   <tr><td>5</td><td>Defender</td><td>+1 to all craft checks. Protection enchants cost -1 ingredient.</td></tr>
 </table>
 
@@ -1167,7 +1171,7 @@
 <p><strong>Alignment Bonus:</strong> +15% sell prices, +2 combat, +25 Energy.</p>
 <table>
   <tr><th>Tier</th><th>Name</th><th>Effect</th></tr>
-  <tr><td>1</td><td>Dock Access</td><td>+10% gold from all sales.</td></tr>
+  <tr><td>1</td><td>Dock Access</td><td>+10% coin from all sales.</td></tr>
   <tr><td>2</td><td>Naval Escort</td><td>Unlocks Abyssal Trench. +20% danger reduction.</td></tr>
   <tr><td>3</td><td>Harbor Seal</td><td>Quests occasionally reward Harbor Seals.</td></tr>
   <tr><td>4</td><td>Fleet Commander</td><td>Supply chains +25% income.</td></tr>
@@ -1222,7 +1226,7 @@
   <tr><td>1</td><td>Mountain Guard</td><td>Unlock Skywarden-patrolled foraging zones.</td></tr>
   <tr><td>2</td><td>Alpine Tactics</td><td>Unlock Skywarden protection recipes.</td></tr>
   <tr><td>3</td><td>Skyward Seals</td><td>Quests occasionally reward bonus Skyward Seals.</td></tr>
-  <tr><td>4</td><td>Elite Contracts</td><td>+20% gold from all quest rewards.</td></tr>
+  <tr><td>4</td><td>Elite Contracts</td><td>+20% coin from all quest rewards.</td></tr>
   <tr><td>5</td><td>Sentinel</td><td>+1 to all craft checks. Protection enchants cost -1 ingredient.</td></tr>
 </table>
 
@@ -1274,7 +1278,7 @@
 <table>
   <tr><th>Role</th><th>Primary Action</th><th>Description</th></tr>
   <tr><td>Gatherer</td><td>Gather ingredients</td><td>Brings back ingredients from its home region daily. Yield scales with loyalty.</td></tr>
-  <tr><td>Shopkeeper</td><td>Earn gold</td><td>Tends the shop, generating passive gold income. Scales with loyalty.</td></tr>
+  <tr><td>Shopkeeper</td><td>Earn coin</td><td>Tends the shop, generating passive coin income. Scales with loyalty.</td></tr>
   <tr><td>Scout</td><td>Reduce danger</td><td>Patrols ahead, reducing expedition danger. At high loyalty, reduces travel time.</td></tr>
   <tr><td>Greeter</td><td>Attract customers</td><td>Charms visitors at the shop door, increasing daily customer count.</td></tr>
   <tr><td>Guardian</td><td>Boost morale</td><td>Protects and inspires staff. Prevents negative morning events at high loyalty.</td></tr>
@@ -1348,25 +1352,25 @@
 <div class="page-break"></div>
 <h2>Chapter 10: Settlement Investment</h2>
 
-<p>Build up the town around your workshop by investing gold and materials into settlement projects. Projects take multiple days to build and provide permanent bonuses. Some have prerequisites &mdash; you must build certain structures before others become available.</p>
+<p>Build up the town around your workshop by investing coin and materials into settlement projects. Projects take multiple days to build and provide permanent bonuses. Some have prerequisites &mdash; you must build certain structures before others become available.</p>
 
 <h3>Settlement Projects</h3>
 <table>
   <tr><th>Project</th><th>Cost</th><th>Build</th><th>Effect</th><th>Req</th></tr>
-  <tr><td>Paved Roads</td><td>300g + mats</td><td>3 days</td><td>Travel Energy cost &minus;25% to all regions.</td><td>&mdash;</td></tr>
-  <tr><td>Market Square</td><td>500g + mats</td><td>5 days</td><td>+2 customers/morning, +10% shelf sale, weekly Traveling Merchant.</td><td>&mdash;</td></tr>
-  <tr><td>Watchtower</td><td>400g + mats</td><td>4 days</td><td>Threats grow 15% slower, warning at 60+.</td><td>&mdash;</td></tr>
-  <tr><td>Herbalist Garden</td><td>600g + mats</td><td>5 days</td><td>2 random ingredients/morning, +1 spoilage threshold.</td><td>&mdash;</td></tr>
-  <tr><td>Guild Hall</td><td>800g + mats</td><td>6 days</td><td>+1 staff slot, +2 hire candidates, training costs halved.</td><td>&mdash;</td></tr>
-  <tr><td>Trade Depot</td><td>1000g + mats</td><td>7 days</td><td>Contract costs -40%, shop prices -15%, +1 customer/morning.</td><td>Market Square</td></tr>
-  <tr><td>Academy</td><td>1200g + mats</td><td>8 days</td><td>+10% XP permanently, research Energy cost &minus;25%, staff specialization.</td><td>&mdash;</td></tr>
-  <tr><td>Fortified Walls</td><td>1500g + mats</td><td>10 days</td><td>Threats capped at 80, events halved, +50g/morning.</td><td>Watchtower</td></tr>
-  <tr><td>Grand Library</td><td>2000g + mats</td><td>12 days</td><td>+25% discovery, +15% lore drops, 2x paper gold.</td><td>Academy</td></tr>
-  <tr><td>Monument</td><td>3000g + mats</td><td>15 days</td><td>+1 all stats, +1 all skills, +5 rep/day to all factions. Carries through Torch.</td><td>Fortified Walls</td></tr>
+  <tr><td>Paved Roads</td><td>3pp + mats</td><td>3 days</td><td>Travel Energy cost &minus;25% to all regions.</td><td>&mdash;</td></tr>
+  <tr><td>Market Square</td><td>5pp + mats</td><td>5 days</td><td>+2 customers/morning, +10% shelf sale, weekly Traveling Merchant.</td><td>&mdash;</td></tr>
+  <tr><td>Watchtower</td><td>4pp + mats</td><td>4 days</td><td>Threats grow 15% slower, warning at 60+.</td><td>&mdash;</td></tr>
+  <tr><td>Herbalist Garden</td><td>6pp + mats</td><td>5 days</td><td>2 random ingredients/morning, +1 spoilage threshold.</td><td>&mdash;</td></tr>
+  <tr><td>Guild Hall</td><td>8pp + mats</td><td>6 days</td><td>+1 staff slot, +2 hire candidates, training costs halved.</td><td>&mdash;</td></tr>
+  <tr><td>Trade Depot</td><td>10pp + mats</td><td>7 days</td><td>Contract costs -40%, shop prices -15%, +1 customer/morning.</td><td>Market Square</td></tr>
+  <tr><td>Academy</td><td>12pp + mats</td><td>8 days</td><td>+10% XP permanently, research Energy cost &minus;25%, staff specialization.</td><td>&mdash;</td></tr>
+  <tr><td>Fortified Walls</td><td>15pp + mats</td><td>10 days</td><td>Threats capped at 80, events halved, +5g/morning.</td><td>Watchtower</td></tr>
+  <tr><td>Grand Library</td><td>20pp + mats</td><td>12 days</td><td>+25% discovery, +15% lore drops, 2x paper income.</td><td>Academy</td></tr>
+  <tr><td>Monument</td><td>30pp + mats</td><td>15 days</td><td>+1 all stats, +1 all skills, +5 rep/day to all factions. Carries through Torch.</td><td>Fortified Walls</td></tr>
 </table>
 
 <div class="note">
-  <strong>Note:</strong> Material costs vary by location. Each zone uses its own local materials (e.g., Ashite in Cindervale, Sandstone Dust in Ashfall, Driftstone in Tidecrest, Skystone Chip in Skyreach). The gold cost is the same everywhere.
+  <strong>Note:</strong> Material costs vary by location. Each zone uses its own local materials (e.g., Ashite in Cindervale, Sandstone Dust in Ashfall, Driftstone in Tidecrest, Skystone Chip in Skyreach). The coin cost is the same everywhere.
 </div>
 
 <h3>Workshop Upgrades</h3>
@@ -1374,28 +1378,28 @@
 
 <table>
   <tr><th>Upgrade</th><th>Category</th><th>Effect</th><th>Cost</th></tr>
-  <tr><td>Reinforced Cauldron</td><td>Crafting</td><td>Fine brew DC -1.</td><td>50g + mats</td></tr>
-  <tr><td>Master's Cauldron</td><td>Crafting</td><td>Masterwork DC -1, +10% double batch.</td><td>150g + mats</td></tr>
-  <tr><td>Enchanting Bench</td><td>Crafting</td><td>Fine inscription DC -1.</td><td>60g + mats</td></tr>
-  <tr><td>Arcane Nexus</td><td>Crafting</td><td>Masterwork inscription DC -1.</td><td>200g + mats</td></tr>
-  <tr><td>Precision Mortar</td><td>Crafting</td><td>15% save ingredient.</td><td>35g + mats</td></tr>
-  <tr><td>Runic Tools</td><td>Crafting</td><td>+1 craft checks.</td><td>80g + mats</td></tr>
-  <tr><td>Shelves</td><td>Storage</td><td>+1 display slot for shelved potions.</td><td>25g + mats</td></tr>
-  <tr><td>Cellar</td><td>Storage</td><td>Spoilage threshold +2.</td><td>80g + mats</td></tr>
-  <tr><td>Preservation Jars</td><td>Storage</td><td>Spoilage threshold +2.</td><td>60g + mats</td></tr>
-  <tr><td>Vault</td><td>Storage</td><td>Double capacity.</td><td>200g + mats</td></tr>
-  <tr><td>Shop Front</td><td>Business</td><td>+5g/day passive.</td><td>40g + mats</td></tr>
-  <tr><td>Signage</td><td>Business</td><td>+1 enchant customer.</td><td>30g</td></tr>
-  <tr><td>Display Cases</td><td>Business</td><td>+15% sell.</td><td>70g + mats</td></tr>
-  <tr><td>Rep Board</td><td>Business</td><td>+5 all rep/day.</td><td>50g</td></tr>
-  <tr><td>Ledger</td><td>Business</td><td>+1 staff, +20% efficiency.</td><td>40g</td></tr>
-  <tr><td>Beds</td><td>Comfort</td><td>+25 Energy/day.</td><td>35g + mats</td></tr>
-  <tr><td>Hearth</td><td>Comfort</td><td>+25 Energy, +morale.</td><td>100g + mats</td></tr>
-  <tr><td>Garden</td><td>Comfort</td><td>Free daily herbs.</td><td>45g + mats</td></tr>
-  <tr><td>Greenhouse</td><td>Comfort</td><td>Free rare herbs.</td><td>150g + mats</td></tr>
-  <tr><td>Library</td><td>Advanced</td><td>Unlocks the Library room. Research Energy cost &minus;25%.</td><td>120g + mats</td></tr>
-  <tr><td>Forge</td><td>Advanced</td><td>+2 craft, +1 customer, +5% double batch.</td><td>180g + mats</td></tr>
-  <tr><td>Ley Line Tap</td><td>Advanced</td><td>+1 free research/day, daily veil shard.</td><td>300g + mats</td></tr>
+  <tr><td>Reinforced Cauldron</td><td>Crafting</td><td>Fine brew DC -1.</td><td>5g + mats</td></tr>
+  <tr><td>Master's Cauldron</td><td>Crafting</td><td>Masterwork DC -1, +10% double batch.</td><td>1pp 5g + mats</td></tr>
+  <tr><td>Enchanting Bench</td><td>Crafting</td><td>Fine inscription DC -1.</td><td>6g + mats</td></tr>
+  <tr><td>Arcane Nexus</td><td>Crafting</td><td>Masterwork inscription DC -1.</td><td>2pp + mats</td></tr>
+  <tr><td>Precision Mortar</td><td>Crafting</td><td>15% save ingredient.</td><td>3g 5s + mats</td></tr>
+  <tr><td>Runic Tools</td><td>Crafting</td><td>+1 craft checks.</td><td>8g + mats</td></tr>
+  <tr><td>Shelves</td><td>Storage</td><td>+1 display slot for shelved potions.</td><td>2g 5s + mats</td></tr>
+  <tr><td>Cellar</td><td>Storage</td><td>Spoilage threshold +2.</td><td>8g + mats</td></tr>
+  <tr><td>Preservation Jars</td><td>Storage</td><td>Spoilage threshold +2.</td><td>6g + mats</td></tr>
+  <tr><td>Vault</td><td>Storage</td><td>Double capacity.</td><td>2pp + mats</td></tr>
+  <tr><td>Shop Front</td><td>Business</td><td>+5s/day passive.</td><td>4g + mats</td></tr>
+  <tr><td>Signage</td><td>Business</td><td>+1 enchant customer.</td><td>3g</td></tr>
+  <tr><td>Display Cases</td><td>Business</td><td>+15% sell.</td><td>7g + mats</td></tr>
+  <tr><td>Rep Board</td><td>Business</td><td>+5 all rep/day.</td><td>5g</td></tr>
+  <tr><td>Ledger</td><td>Business</td><td>+1 staff, +20% efficiency.</td><td>4g</td></tr>
+  <tr><td>Beds</td><td>Comfort</td><td>+25 Energy/day.</td><td>3g 5s + mats</td></tr>
+  <tr><td>Hearth</td><td>Comfort</td><td>+25 Energy, +morale.</td><td>1pp + mats</td></tr>
+  <tr><td>Garden</td><td>Comfort</td><td>Free daily herbs.</td><td>4g 5s + mats</td></tr>
+  <tr><td>Greenhouse</td><td>Comfort</td><td>Free rare herbs.</td><td>1pp 5g + mats</td></tr>
+  <tr><td>Library</td><td>Advanced</td><td>Unlocks the Library room. Research Energy cost &minus;25%.</td><td>1pp 2g + mats</td></tr>
+  <tr><td>Forge</td><td>Advanced</td><td>+2 craft, +1 customer, +5% double batch.</td><td>1pp 8g + mats</td></tr>
+  <tr><td>Ley Line Tap</td><td>Advanced</td><td>+1 free research/day, daily veil shard.</td><td>3pp + mats</td></tr>
 </table>
 
 <div class="note">
@@ -1407,9 +1411,9 @@
 
 <table>
   <tr><th>Room</th><th>Foundation</th><th>Cost</th><th>Effect</th><th>Unlocks</th></tr>
-  <tr><td>Storefront</td><td>🪟 Shop Front</td><td>40g + 4 Ironroot Bark</td><td>+5g/day passive income</td><td>Signage, Display Cases, Rep Board</td></tr>
-  <tr><td>Quarters</td><td>🛏️ Beds</td><td>35g + 3 Ironroot Bark</td><td>+25 Energy/day</td><td>Hearth</td></tr>
-  <tr><td>Grounds</td><td>🌱 Garden</td><td>45g + 5 Ashbloom</td><td>Free daily herbs</td><td>Greenhouse</td></tr>
+  <tr><td>Storefront</td><td>🪟 Shop Front</td><td>4g + 4 Ironroot Bark</td><td>+5s/day passive income</td><td>Signage, Display Cases, Rep Board</td></tr>
+  <tr><td>Quarters</td><td>🛏️ Beds</td><td>3g 5s + 3 Ironroot Bark</td><td>+25 Energy/day</td><td>Hearth</td></tr>
+  <tr><td>Grounds</td><td>🌱 Garden</td><td>4g 5s + 5 Ashbloom</td><td>Free daily herbs</td><td>Greenhouse</td></tr>
 </table>
 
 <div class="callout">
@@ -1418,7 +1422,7 @@
 </div>
 
 <div class="note">
-  <strong>Tip:</strong> Shop Front pays for itself in eight days at +5g/day and gates the entire Business tree. If you're early-game and short on coin, build it first &mdash; Beds and Garden can wait until you have spare gold and the right materials.
+  <strong>Tip:</strong> Shop Front pays for itself in eight days at +5s/day and gates the entire Business tree. If you're early-game and short on coin, build it first &mdash; Beds and Garden can wait until you have spare coin and the right materials.
 </div>
 
 <!-- ═══════════════════════════════════════ -->
@@ -1471,7 +1475,7 @@
 <h3>Enchanting (Inscription)</h3>
 <p>Customers bring items for enchantment. Roll d20 + Inscription skill vs. the enchantment pattern's DC. Requires materials (reduced by Enchanter features and workshop upgrades).</p>
 <ul>
-  <li><strong>Success</strong> &mdash; Earn gold from the customer. Beat DC by 5+ for Fine quality (1.5x gold). Beat by 10+ for Masterwork (2x gold).</li>
+  <li><strong>Success</strong> &mdash; Earn coin from the customer. Beat DC by 5+ for Fine quality (1.5x coin). Beat by 10+ for Masterwork (2x coin).</li>
   <li><strong>Failure</strong> &mdash; No payment. Materials consumed (unless recycler effects apply).</li>
 </ul>
 
@@ -1566,7 +1570,7 @@
   <tr><td>Corruption Plague</td><td>Magical sickness spreading. Brew cures, enchant purification wards, forage rare remedies, or fund healers.</td></tr>
   <tr><td>Siege Assault</td><td>The horde at the gates. Fortify defenses, enchant armor, lead a sortie, or buy war supplies.</td></tr>
   <tr><td>Supply Crisis</td><td>Supply lines cut. Brew sustenance, emergency forage, deploy staff, or buy provisions.</td></tr>
-  <tr><td>Morale Collapse</td><td>Fear spreads. Brew courage draughts, rally the people, or stabilize through gold.</td></tr>
+  <tr><td>Morale Collapse</td><td>Fear spreads. Brew courage draughts, rally the people, or stabilize through coin.</td></tr>
 </table>
 
 <h3>Solution Types</h3>
@@ -1575,19 +1579,19 @@
   <li><strong>Skill Check</strong> &mdash; Roll d20 + relevant skill vs. crisis DC. Beating DC by 5+ earns mastery bonus rewards.</li>
   <li><strong>Potion Delivery</strong> &mdash; Provide specific potions (quantity scales with wave).</li>
   <li><strong>Ingredient Delivery</strong> &mdash; Provide raw materials for the solution.</li>
-  <li><strong>Gold Payment</strong> &mdash; Pay mercenaries or healers (cost escalates steeply).</li>
+  <li><strong>Coin Payment</strong> &mdash; Pay mercenaries or healers (cost escalates steeply).</li>
   <li><strong>Staff Deployment</strong> &mdash; Send your workforce to handle the crisis.</li>
 </ul>
 
 <h3>Consequences</h3>
 <ul>
-  <li><strong>Success</strong> &mdash; XP, gold, and threat reduction per crisis solved.</li>
-  <li><strong>Mastery (beat DC by 5+)</strong> &mdash; Bonus XP, gold, and extra threat reduction.</li>
-  <li><strong>Failure</strong> &mdash; Threat spike (+12-22), staff injuries, ingredient loss, gold loss. At wave 6+, workshop upgrades can be disabled for 3 days.</li>
+  <li><strong>Success</strong> &mdash; XP, coin, and threat reduction per crisis solved.</li>
+  <li><strong>Mastery (beat DC by 5+)</strong> &mdash; Bonus XP, coin, and extra threat reduction.</li>
+  <li><strong>Failure</strong> &mdash; Threat spike (+12-22), staff injuries, ingredient loss, coin loss. At wave 6+, workshop upgrades can be disabled for 3 days.</li>
 </ul>
 
 <h3>Final Stand (Wave 10)</h3>
-<p>The ultimate challenge: 6 crises in rapid succession at +4 DC on top of normal wave DC (total DC 28). Completing the Final Stand earns 3000 XP, 800 gold, the title "Defender of the Vale," and permanently caps all threats at 25.</p>
+<p>The ultimate challenge: 6 crises in rapid succession at +4 DC on top of normal wave DC (total DC 28). Completing the Final Stand earns 3000 XP, 80 gold, the title "Defender of the Vale," and permanently caps all threats at 25.</p>
 
 <h3>The March and Your Build</h3>
 <div class="note">
@@ -1605,7 +1609,7 @@
 <h3>What Carries Forward</h3>
 <table>
   <tr><th>Legacy Element</th><th>Base Amount</th><th>With Ancestral Wisdom Feat</th></tr>
-  <tr><td>Gold</td><td>15% (cap 150g)</td><td>25% (cap increased)</td></tr>
+  <tr><td>Coin</td><td>15% (cap 15g)</td><td>25% (cap increased)</td></tr>
   <tr><td>Recipes</td><td>Top 3 most-brewed</td><td>Top 5 recipes</td></tr>
   <tr><td>Faction Reputation</td><td>1/3 of total rep</td><td>50% of total rep</td></tr>
   <tr><td>Legacy Feature Chain</td><td>1 chosen feature chain (class, spec, or prestige)</td><td>Same + 1 additional (with Mentor&rsquo;s Gift)</td></tr>

@@ -112,7 +112,7 @@ _All still-open logged design questions across the project as of session end. Cl
 
 **Recon:** `money_system_recon.md` (repo root). ~150-170 display sites in index.html across 3 grep-able pattern families; 79 `setGold` + checks + `GOLD_MULT` explicitly untouched; 25 literal suffix strings in game-data; 48 handbook mentions + a planned "Coinage of the Realm" sidebar. Phased build plan with grep-lint verification; estimate 1-2 sessions, low risk.
 
-**Status: RECON COMPLETE — build pending Jim's go.**
+**Status: CLOSED 2026-07-21 — all four phases shipped same day.** Phase 1 (formatter + wallet/market/report/quests), Phase 2 (the ~75-site long sweep + the staff-report parser decoupling), Phase 3 (game-data literals hand-denominated + gold→coin word pass), Phase 4 (handbook conversion + "Coinage of the Realm" sidebar with the diegetic revaluation note). Full record in `money_system_recon.md`. The economy now displays as 1pp = 10g = 100s over the unchanged integer wallet; zero save migration was needed.
 
 ---
 
