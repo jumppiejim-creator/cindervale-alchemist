@@ -1,4 +1,4 @@
-const CACHE_NAME = 'cindervale-v1';
+const CACHE_NAME = 'cindervale-v2'; // bump to force-clear old caches on the next visit
 const ASSETS = [
   './',
   './index.html',
@@ -58,10 +58,10 @@ self.addEventListener('fetch', e => {
     return;
   }
 
-  // Network-first for HTML and game-data (get latest, fall back to cache)
+  // Network-first for the page and all of our own scripts/data (get latest, fall back to cache offline).
+  // Cache-first here would pin returning players to stale portraits.js / npc-portraits.js etc.
   if (e.request.destination === 'document' ||
-      url.pathname.endsWith('game-data.js') ||
-      url.pathname.endsWith('index.html')) {
+      (url.origin === self.location.origin && /\.(html|js|json)$/.test(url.pathname))) {
     e.respondWith(
       fetch(e.request)
         .then(r => {

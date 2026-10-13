@@ -14,6 +14,18 @@ var TH={bg:'#0d0b08',panel:'#14110c',panelAlt:'#1a1610',panelLight:'#201c15',
   statCre:'#e06890',statInu:'#60b0d0',statAcu:'#50b060',statTec:'#d0a040',statCom:'#d07840',statDis:'#9080c0',
 };
 
+// ─── MONEY FORMATTER ───
+// The wallet integer is SILVER (the coinage standardization: values formerly suffixed "g" were
+// silver all along). 1g = 10s, 1pp = 10g. Copper is flavor-only. Renders the two largest
+// non-zero denominations. All math stays in raw integers — format at display time only.
+var fmtMoney=function(n){
+  const neg=n<0?'-':'';n=Math.abs(Math.floor(n||0));
+  const pp=Math.floor(n/100),g=Math.floor((n%100)/10),s=n%10;
+  if(pp>0)return neg+pp+'pp'+(g?' '+g+'g':'');
+  if(g>0)return neg+g+'g'+(s?' '+s+'s':'');
+  return neg+s+'s';
+};
+
 // ═══ RACES ═══
 var RACES={
   human:{id:'human',name:'Human',icon:'👤',desc:'Versatile and adaptable. Humans thrive in any discipline.',
@@ -221,7 +233,7 @@ var CLASSES={
         ]},
       archivist:{id:'archivist',name:'Archivist',desc:'Pursue lore fragments and quest chains. Board quests refresh faster, and deep knowledge grants permanent stats.',mechDesc:'Lore Fragments. Discover ancient lore fragments during quests and research. Fragments form chains that, when completed, grant permanent passive bonuses. The Lore Archive tracks your collection and shows incomplete chains. Board quests refresh more often and reward bonus reputation.',icon:'📜',color:'#c0a060',bStat:'dis',bSkills:['research','focus'],
         features:[
-          {classLv:3,name:'Deep Records',desc:'+30% XP from quest turn-ins, and +5× the standard faction-rep payout on quests.',effects:{questRepBonus:5,questXPBonus:0.30}},
+          {classLv:3,name:'Deep Records',desc:'+30% XP from quest turn-ins, and +5 faction rep on quests.',effects:{questRepBonus:5,questXPBonus:0.30}},
           {classLv:6,name:'Master Index',desc:'The notice board refreshes twice as often (more quests per cycle). +25% coin from quest turn-ins.',effects:{doubleQuestRefresh:true,questGoldBonus:0.25}},
           {classLv:10,name:'Living Archive',desc:'Completed lore chains grant permanent +1 to a stat of your choice (up to 3 total). Quest turn-ins have 25% chance to also reward a lore fragment. Board quests refresh 3× daily with at least one rare-ingredient quest. Faction alignment bonuses are 50% stronger.',effects:{questXPBonus:0.50,doubleRep:true,loreStatBonus:true,loreDropChance:0.25,tripleBoardRefresh:true,alignmentBoost:0.50}},
         ]},
@@ -327,7 +339,7 @@ var FEATS={
   // ── Social/Faction ──
   faction_diplomat:{id:'faction_diplomat',name:'Faction Diplomat',icon:'🤝',cat:'social',desc:'+15% reputation gains from all sources.',effects:{repGainBonus:0.15}},
   cross_faction_charm:{id:'cross_faction_charm',name:'Cross-Faction Charm',icon:'🌐',cat:'social',desc:'10% rep spillover to non-aligned factions.',effects:{repSpillover:0.10},req:{feat:'faction_diplomat'}},
-  master_trainer:{id:'master_trainer',name:'Master Trainer',icon:'👨‍🏫',cat:'social',desc:'Apprentices gain 2× XP.',effects:{staffXPBonus:1.0}},
+  master_trainer:{id:'master_trainer',name:'Master Trainer',icon:'👨‍🏫',cat:'social',desc:'Apprentices gain 2× XP. Unlocks the Staff Academy: train staff stats, run 3-day curricula, and teach traits.',effects:{staffXPBonus:1.0}},
   inspiring_presence:{id:'inspiring_presence',name:'Inspiring Presence',icon:'🌟',cat:'social',desc:'Staff morale +10%.',effects:{healMorale:10}},
   // ── Legacy ──
   ancestral_wisdom:{id:'ancestral_wisdom',name:'Ancestral Wisdom',icon:'🕯️',cat:'legacy',desc:'Pass the Torch carries 25% coin (up from 15%), 5 recipes (up from 3), 50% rep (up from 33%). +25 Energy.',effects:{torchGoldBonus:0.10,torchRecipeBonus:2,torchRepBonus:0.17,torchEnergyBonus:25}},
@@ -385,19 +397,8 @@ var UPGRADES={
 // room's upgrade list below. Each room has 3 art tiers driven by how many of
 // its upgrades the player owns:
 //   owned >= t3 → Grand (3) ; owned >= t2 → Established (2) ; else Humble (1)
-// Tour order = the order ROOM_DEFS is declared in. All 22 upgrades are mapped
-// exactly once (verified against UPGRADES keys). Tier is computed on the fly
-// from owned-upgrade state; no new persisted save data.
-var ROOM_OF={
-  cauldron_2:'laboratory',cauldron_3:'laboratory',mortar:'laboratory',
-  runic_tools:'forge',forge:'forge',
-  bench_1:'enchanting',bench_2:'enchanting',
-  shelves:'vault',cellar:'vault',preserveJars:'vault',vault:'vault',
-  shopfront:'storefront',signage:'storefront',display:'storefront',rep_board:'storefront',ledger:'storefront',
-  garden:'greenhouse',garden_2:'greenhouse',
-  quarters:'quarters',hearth:'quarters',
-  library:'library',leyline:'library',
-};
+// Room layout: ROOM_DEFS order is the tour order; each upgrade belongs to exactly one room.
+// Tier is computed on the fly from owned-upgrade state.
 var ROOM_TIER_LABELS=['','Humble','Established','Grand'];
 var ROOM_DEFS=[
   {id:'laboratory',displayName:'Laboratory',icon:'⚗️',upgrades:['cauldron_2','cauldron_3','mortar'],t2:2,t3:3},
@@ -419,7 +420,7 @@ function getRoomTier(ownedCount,roomDef){
 // ═══ APPRENTICES ═══
 // (Workshop visual layout removed 2026-05-16 — v1 WS_ZONES/WS_POS replaced
 //  by the room-hero + scoped-upgrade-list workshop screen. Room metadata
-//  for the new layout lives in ROOM_OF / ROOM_DEFS above. UPGRADES[].cat
+//  for the new layout lives in ROOM_DEFS above. UPGRADES[].cat
 //  is still authored for data taxonomy but no longer drives layout.)
 
 // ═══ TRAIT EFFECTS ═══
@@ -446,6 +447,9 @@ var TRAIT_FX={
   'Impatient':{moraleDelta:-1,desc:'-1 morale/day'},
   'Master Brewer':{brewEff:0.18,desc:'+18% brewing efficiency'},
   'Set in Ways':{researchEff:-0.12,desc:'-12% research efficiency'},
+  'Haggler':{shopEff:0.12,desc:'+12% shopkeeping efficiency'},
+  'Devout':{moraleDelta:1,patrolEff:0.08,desc:'+1 morale/day, +8% patrol efficiency'},
+  'Stubborn':{moraleDelta:1,effMult:-0.04,desc:'+1 morale/day, -4% task efficiency'},
   'Fleet-Footed':{forageEff:0.10,desc:'+10% foraging efficiency'},
   'Restless':{moraleDelta:-1,effMult:0.04,desc:'-1 morale/day, +4% efficiency'},
   'Inventive':{brewEff:0.10,researchEff:0.08,desc:'+10% brew, +8% research efficiency'},
@@ -516,19 +520,19 @@ var TASK_TYPES={
 };
 
 // ═══ GAME DATA ═══
-var INGR={ashbloom:{name:'Ashbloom',icon:'🌿',val:5,skyreach:'cloud_moss'},embercap:{name:'Embercap',icon:'🍄',val:8,skyreach:'hanging_lichen'},hearthstone:{name:'Hearthstone',icon:'💎',val:14,skyreach:'lake_crystal'},volcanic_essence:{name:'Volcanic Ess.',icon:'🔥',val:20,skyreach:'bolt_crystal'},moonpetal:{name:'Moonpetal',icon:'🌸',val:16,skyreach:'summit_coral'},ironroot_bark:{name:'Ironroot',icon:'🪵',val:7,skyreach:'thin_air_lichen'},gloomcap:{name:'Gloomcap',icon:'🫧',val:12,skyreach:'mist_silk'},embervein:{name:'Embervein',icon:'🔶',val:18,skyreach:'aurora_lichen'},starwort:{name:'Starwort',icon:'⭐',val:15,skyreach:'meltwater_pearl'},ashite:{name:'Ashite',icon:'🪨',val:10,skyreach:'rime_dust'},warden_sigil:{name:'Warden Sigil',icon:'🔰',val:22,skyreach:'skyward_seal'},sacred_ember:{name:'Sacred Ember',icon:'🕯️',val:25,skyreach:'starcaller_seal'},veil_shard:{name:'Veil Shard',icon:'🔮',val:30,skyreach:'celestial_essence'},deep_crystal:{name:'Deep Crystal',icon:'💠',val:35,skyreach:'zenith_stone'},
+var INGR={ashbloom:{name:'Ashbloom',icon:'🌿',val:5},embercap:{name:'Embercap',icon:'🍄',val:8},hearthstone:{name:'Hearthstone',icon:'💎',val:14},volcanic_essence:{name:'Volcanic Ess.',icon:'🔥',val:20},moonpetal:{name:'Moonpetal',icon:'🌸',val:16},ironroot_bark:{name:'Ironroot',icon:'🪵',val:7},gloomcap:{name:'Gloomcap',icon:'🫧',val:12},embervein:{name:'Embervein',icon:'🔶',val:18},starwort:{name:'Starwort',icon:'⭐',val:15},ashite:{name:'Ashite',icon:'🪨',val:10},warden_sigil:{name:'Warden Sigil',icon:'🔰',val:22},sacred_ember:{name:'Sacred Ember',icon:'🕯️',val:25},veil_shard:{name:'Veil Shard',icon:'🔮',val:30},deep_crystal:{name:'Deep Crystal',icon:'💠',val:35},
   // New region ingredients
-  ash_salt:{name:'Ash Salt',icon:'🧂',val:4,skyreach:'summit_grass'},cinder_moss:{name:'Cinder Moss',icon:'🌱',val:5,skyreach:'windstone'},
-  ironwood_sap:{name:'Ironwood Sap',icon:'🫗',val:7},thornvine:{name:'Thornvine',icon:'🌾',val:8,skyreach:'hanging_lichen'},
-  spore_dust:{name:'Spore Dust',icon:'💨',val:10,skyreach:'vapor_fern'},cave_lichen:{name:'Cave Lichen',icon:'🟢',val:9},
-  crystal_shard:{name:'Crystal Shard',icon:'🔷',val:13,skyreach:'skystone_chip'},mineral_clay:{name:'Mineral Clay',icon:'🟤',val:11,skyreach:'wind_iron'},
-  nightdew:{name:'Nightdew',icon:'💧',val:14,skyreach:'tempest_moss'},lunar_moss:{name:'Lunar Moss',icon:'🌑',val:15},
-  sulfur_bloom:{name:'Sulfur Bloom',icon:'💛',val:18,skyreach:'lightning_shard'},magma_salt:{name:'Magma Salt',icon:'🧡',val:19},
-  deep_iron:{name:'Deep Iron',icon:'⬛',val:20,skyreach:'thunder_iron'},shadow_quartz:{name:'Shadow Quartz',icon:'◼️',val:22,skyreach:'eclipse_shard'},
+  ash_salt:{name:'Ash Salt',icon:'🧂',val:4},cinder_moss:{name:'Cinder Moss',icon:'🌱',val:5},
+  ironwood_sap:{name:'Ironwood Sap',icon:'🫗',val:7},thornvine:{name:'Thornvine',icon:'🌾',val:8},
+  spore_dust:{name:'Spore Dust',icon:'💨',val:10},cave_lichen:{name:'Cave Lichen',icon:'🟢',val:9},
+  crystal_shard:{name:'Crystal Shard',icon:'🔷',val:13},mineral_clay:{name:'Mineral Clay',icon:'🟤',val:11},
+  nightdew:{name:'Nightdew',icon:'💧',val:14},lunar_moss:{name:'Lunar Moss',icon:'🌑',val:15},
+  sulfur_bloom:{name:'Sulfur Bloom',icon:'💛',val:18},magma_salt:{name:'Magma Salt',icon:'🧡',val:19},
+  deep_iron:{name:'Deep Iron',icon:'⬛',val:20},shadow_quartz:{name:'Shadow Quartz',icon:'◼️',val:22},
   forge_scale:{name:'Forge Scale',icon:'⚖️',val:28},primordial_ash:{name:'Primordial Ash',icon:'⚫',val:32},
   // New region-specific resources
-  char_root:{name:'Char Root',icon:'🫚',val:3,skyreach:'eagle_down'},wind_dust:{name:'Wind Dust',icon:'🌬️',val:4,skyreach:'sky_clover'},
-  bark_resin:{name:'Bark Resin',icon:'🪹',val:6,skyreach:'alpine_mint'},moss_amber:{name:'Moss Amber',icon:'🟡',val:7},
+  char_root:{name:'Char Root',icon:'🫚',val:3},wind_dust:{name:'Wind Dust',icon:'🌬️',val:4},
+  bark_resin:{name:'Bark Resin',icon:'🪹',val:6},moss_amber:{name:'Moss Amber',icon:'🟡',val:7},
   biolumen_gel:{name:'Biolumen Gel',icon:'💚',val:9},mycelium_thread:{name:'Mycelium Thread',icon:'🧵',val:10},
   geode_dust:{name:'Geode Dust',icon:'🔹',val:12},resonance_ore:{name:'Resonance Ore',icon:'🔔',val:13},
   dew_crystal:{name:'Dew Crystal',icon:'🌟',val:15},silver_lichen:{name:'Silver Lichen',icon:'🥈',val:14},
@@ -536,21 +540,21 @@ var INGR={ashbloom:{name:'Ashbloom',icon:'🌿',val:5,skyreach:'cloud_moss'},emb
   echo_stone:{name:'Echo Stone',icon:'🔊',val:21},dark_amber:{name:'Dark Amber',icon:'🍫',val:20},
   phoenix_ash:{name:'Phoenix Ash',icon:'🐦',val:30},runespark:{name:'Runespark',icon:'✨',val:28},
   // Expansion wave 2 — 2 per region
-  ember_petal:{name:'Ember Petal',icon:'🌺',val:3,skyreach:'breeze_seed'},soot_crystal:{name:'Soot Crystal',icon:'🔸',val:4,skyreach:'frost_daisy'},
-  amber_sap:{name:'Amber Sap',icon:'🍯',val:6,skyreach:'alpine_mint'},beetle_shell:{name:'Beetle Shell',icon:'🐞',val:7,skyreach:'mistwood_bark'},
-  echo_fungus:{name:'Echo Fungus',icon:'🔉',val:9,skyreach:'fog_orchid'},ghost_silk:{name:'Ghost Silk',icon:'🕸️',val:11,skyreach:'canopy_dew'},
+  ember_petal:{name:'Ember Petal',icon:'🌺',val:3},soot_crystal:{name:'Soot Crystal',icon:'🔸',val:4},
+  amber_sap:{name:'Amber Sap',icon:'🍯',val:6},beetle_shell:{name:'Beetle Shell',icon:'🐞',val:7},
+  echo_fungus:{name:'Echo Fungus',icon:'🔉',val:9},ghost_silk:{name:'Ghost Silk',icon:'🕸️',val:11},
   singing_quartz:{name:'Singing Quartz',icon:'🎵',val:13},copper_vein:{name:'Copper Vein',icon:'🟫',val:12},
-  moth_scale:{name:'Moth Scale',icon:'🦋',val:15},dream_pollen:{name:'Dream Pollen',icon:'💤',val:16,skyreach:'sky_rune_fragment'},
+  moth_scale:{name:'Moth Scale',icon:'🦋',val:15},dream_pollen:{name:'Dream Pollen',icon:'💤',val:16},
   lava_pearl:{name:'Lava Pearl',icon:'🔴',val:19},pyrestone:{name:'Pyrestone',icon:'🟧',val:20},
   mithril_dust:{name:'Mithril Dust',icon:'⬜',val:22},void_salt:{name:'Void Salt',icon:'🟪',val:21},
   heartstone_sliver:{name:'Heartstone Sliver',icon:'❤️',val:32},titan_bone:{name:'Titan Bone',icon:'🦴',val:31},
   // ═══ ASHFALL EXPANSION INGREDIENTS ═══
   // Common (val 1-5)
-  dried_cactus:{name:'Dried Cactus',icon:'🌵',val:3,skyreach:'breeze_seed'},sand_glass:{name:'Sand Glass',icon:'⌛',val:4,skyreach:'frost_daisy'},salt_flake:{name:'Salt Flake',icon:'❇️',val:3,skyreach:'eagle_down'},
+  dried_cactus:{name:'Dried Cactus',icon:'🌵',val:3},sand_glass:{name:'Sand Glass',icon:'⌛',val:4},salt_flake:{name:'Salt Flake',icon:'❇️',val:3},
   // Uncommon (val 6-12)
-  fire_ant_chitin:{name:'Fire Ant Chitin',icon:'🐜',val:7,skyreach:'mistwood_bark'},desert_iron:{name:'Desert Iron',icon:'⛏️',val:9,skyreach:'cliff_quartz'},scarab_shell:{name:'Scarab Shell',icon:'🪲',val:8,skyreach:'glacial_silt'},
-  red_clay:{name:'Red Clay',icon:'🏺',val:6,skyreach:'cloud_berry'},heatstone:{name:'Heatstone',icon:'🔆',val:10,skyreach:'rime_dust'},palm_resin:{name:'Palm Resin',icon:'🌴',val:7,skyreach:'thin_air_lichen'},
-  sandstone_dust:{name:'Sandstone Dust',icon:'🏜️',val:6,skyreach:'cloud_berry'},sulfur_crystal:{name:'Sulfur Crystal',icon:'⚗️',val:11},
+  fire_ant_chitin:{name:'Fire Ant Chitin',icon:'🐜',val:7},desert_iron:{name:'Desert Iron',icon:'⛏️',val:9},scarab_shell:{name:'Scarab Shell',icon:'🪲',val:8},
+  red_clay:{name:'Red Clay',icon:'🏺',val:6},heatstone:{name:'Heatstone',icon:'🔆',val:10},palm_resin:{name:'Palm Resin',icon:'🌴',val:7},
+  sandstone_dust:{name:'Sandstone Dust',icon:'🏜️',val:6},sulfur_crystal:{name:'Sulfur Crystal',icon:'⚗️',val:11},
   // Rare (val 13-20)
   sun_diamond:{name:'Sun Diamond',icon:'🌞',val:18},venom_silk:{name:'Venom Silk',icon:'🕷️',val:14},storm_glass:{name:'Storm Glass',icon:'⚡',val:16},
   molten_pearl:{name:'Molten Pearl',icon:'🫨',val:19},fire_opal:{name:'Fire Opal',icon:'🪔',val:17},desert_rose:{name:'Desert Rose',icon:'🌹',val:13},
@@ -873,13 +877,13 @@ var REGIONS=[
     flavor:['Stone doors grind open on hinges that have not moved in a thousand years.']},
   // ═══ TIDECREST HARBOR ═══
   {id:'driftwood_shores',loc:'tidecrest',name:'Driftwood Shores',icon:'🏖️',color:'#4a6a5a',
-    ingr:['driftwood','sea_salt','kelp_frond','sand_dollar','tide_moss','sea_glass','foam_bloom','dried_seaweed','crab_shell','barnacle'],pick:3,sites:[
+    ingr:['driftwood','sea_salt','kelp_frond','sand_dollar','tide_moss','sea_glass','foam_bloom','dried_seaweed','crab_shell','barnacle','tidal_herb'],pick:3,sites:[
       {id:'tc_beachhead',name:'The Beachhead',icon:'🏖️',desc:'A wide stretch of sand littered with ocean debris and shells.',
-        weights:{driftwood:25,sea_salt:22,kelp_frond:14,sand_dollar:12,tide_moss:10,sea_glass:7,foam_bloom:5,dried_seaweed:3,crab_shell:4,barnacle:3}},
+        weights:{driftwood:25,sea_salt:22,kelp_frond:14,sand_dollar:12,tide_moss:10,sea_glass:7,foam_bloom:5,dried_seaweed:3,crab_shell:4,barnacle:3,tidal_herb:3}},
       {id:'tc_tideline',name:'Tideline Walk',icon:'🐚',desc:'The narrow strip where ocean meets land. Best picking at low tide.',
-        weights:{sand_dollar:24,sea_glass:22,foam_bloom:18,kelp_frond:12,driftwood:10,tide_moss:6,sea_salt:4,dried_seaweed:8,crab_shell:3,barnacle:3}},
+        weights:{sand_dollar:24,sea_glass:22,foam_bloom:18,kelp_frond:12,driftwood:10,tide_moss:6,sea_salt:4,dried_seaweed:8,crab_shell:3,barnacle:3,tidal_herb:3}},
       {id:'tc_dune_pools',name:'Dune Pools',icon:'💧',desc:'Shallow pools behind the dunes where rare specimens collect.',
-        weights:{tide_moss:28,foam_bloom:22,dried_seaweed:16,sea_salt:12,kelp_frond:8,sand_dollar:6,driftwood:4,sea_glass:4,crab_shell:5,barnacle:5}},
+        weights:{tide_moss:28,foam_bloom:22,dried_seaweed:16,sea_salt:12,kelp_frond:8,sand_dollar:6,driftwood:4,sea_glass:4,crab_shell:5,barnacle:5,tidal_herb:3}},
     ],diff:1,unlock:0,time:5,yield:[2,4],dc:8,
     flavor:['Salt spray mists your face as waves crash against the rocky shore.','The beach is littered with treasures the sea no longer wants.']},
   {id:'tidal_pools',loc:'tidecrest',name:'Tidal Pools',icon:'🪸',color:'#3a7a6a',
@@ -893,63 +897,63 @@ var REGIONS=[
     ],diff:2,unlock:1,time:10,yield:[2,4],dc:10,
     flavor:['The pools are tiny worlds — each one holding secrets the ocean left behind.']},
   {id:'kelp_forest',loc:'tidecrest',name:'Kelp Forest',icon:'🌊',color:'#2a5a4a',
-    ingr:['jellyfish_essence','nautilus_shell','kelp_frond','phosphor_moss','anglerfish_lure','sea_amber','pearl_dust','driftstone'],pick:3,sites:[
+    ingr:['jellyfish_essence','nautilus_shell','kelp_frond','phosphor_moss','anglerfish_lure','sea_amber','pearl_dust','driftstone','echo_shell'],pick:3,sites:[
       {id:'tc_canopy',name:'Kelp Canopy',icon:'🌿',desc:'The sunlit upper reaches where kelp fronds dance with the current.',
-        weights:{kelp_frond:32,phosphor_moss:20,jellyfish_essence:16,nautilus_shell:10,sea_amber:8,anglerfish_lure:5,pearl_dust:5,driftstone:9}},
+        weights:{kelp_frond:32,phosphor_moss:20,jellyfish_essence:16,nautilus_shell:10,sea_amber:8,anglerfish_lure:5,pearl_dust:5,driftstone:9,echo_shell:3}},
       {id:'tc_midwater',name:'Midwater Columns',icon:'🐟',desc:'Shadowy passages between towering kelp stalks. Fish school in the gloom.',
-        weights:{jellyfish_essence:30,nautilus_shell:26,phosphor_moss:14,anglerfish_lure:10,sea_amber:6,kelp_frond:6,pearl_dust:5,driftstone:8}},
+        weights:{jellyfish_essence:30,nautilus_shell:26,phosphor_moss:14,anglerfish_lure:10,sea_amber:6,kelp_frond:6,pearl_dust:5,driftstone:8,echo_shell:3}},
       {id:'tc_holdfast',name:'The Holdfast',icon:'⚓',desc:'The rocky base where kelp anchors to the seafloor. Dense and dark.',
-        weights:{driftstone:28,phosphor_moss:24,anglerfish_lure:18,pearl_dust:12,sea_amber:10,kelp_frond:5,jellyfish_essence:5,nautilus_shell:5}},
+        weights:{driftstone:28,phosphor_moss:24,anglerfish_lure:18,pearl_dust:12,sea_amber:10,kelp_frond:5,jellyfish_essence:5,nautilus_shell:5,echo_shell:3}},
     ],diff:2,unlock:2,time:15,yield:[2,4],dc:12,
     flavor:['You descend into an underwater cathedral of swaying green pillars.']},
   {id:'fog_hollows',loc:'tidecrest',name:'Fog Hollows',icon:'🌫️',color:'#5a5a7a',
-    ingr:['cave_pearl','bat_guano','phosphor_moss','brine_crystal','drip_mineral','fog_essence','echo_coral','blind_shrimp','salt_crystal','cave_lichen_tc'],pick:3,sites:[
+    ingr:['cave_pearl','bat_guano','phosphor_moss','brine_crystal','drip_mineral','fog_essence','echo_coral','blind_shrimp','salt_crystal','cave_lichen_tc','cave_coral'],pick:3,sites:[
       {id:'tc_grotto',name:'Brine Grotto',icon:'🕳️',desc:'A salt-encrusted cave where the ocean breathes in and out with the tide.',
-        weights:{brine_crystal:26,cave_pearl:22,drip_mineral:14,phosphor_moss:12,fog_essence:8,bat_guano:6,echo_coral:4,blind_shrimp:4,salt_crystal:5,cave_lichen_tc:4}},
+        weights:{brine_crystal:26,cave_pearl:22,drip_mineral:14,phosphor_moss:12,fog_essence:8,bat_guano:6,echo_coral:4,blind_shrimp:4,salt_crystal:5,cave_lichen_tc:4,cave_coral:3}},
       {id:'tc_echo_cave',name:'Echo Cavern',icon:'🦇',desc:'Sounds carry strangely here. Bats and strange crystalline formations.',
-        weights:{echo_coral:26,bat_guano:22,fog_essence:16,cave_pearl:12,brine_crystal:8,phosphor_moss:6,drip_mineral:4,blind_shrimp:4,salt_crystal:4,cave_lichen_tc:5}},
+        weights:{echo_coral:26,bat_guano:22,fog_essence:16,cave_pearl:12,brine_crystal:8,phosphor_moss:6,drip_mineral:4,blind_shrimp:4,salt_crystal:4,cave_lichen_tc:5,cave_coral:3}},
       {id:'tc_phosphor_tunnel',name:'Phosphor Tunnel',icon:'✨',desc:'Walls glow with bioluminescent organisms. Beautiful and eerie.',
-        weights:{phosphor_moss:28,fog_essence:22,blind_shrimp:14,cave_pearl:10,brine_crystal:8,echo_coral:6,drip_mineral:4,bat_guano:4,salt_crystal:4,cave_lichen_tc:6}},
+        weights:{phosphor_moss:28,fog_essence:22,blind_shrimp:14,cave_pearl:10,brine_crystal:8,echo_coral:6,drip_mineral:4,bat_guano:4,salt_crystal:4,cave_lichen_tc:6,cave_coral:3}},
     ],diff:3,unlock:3,time:20,yield:[2,4],dc:14,
     flavor:['The fog is thick enough to cut. Every sound echoes back distorted.','Somewhere deep in the cave, water drips in a rhythm that sounds almost like speech.']},
   {id:'coral_labyrinth',loc:'tidecrest',name:'Coral Labyrinth',icon:'🐚',color:'#6a3a5a',
-    ingr:['deep_coral','abyssal_pearl','giant_clam','sea_fan','pearl_dust','siren_tear','nautilus_shell','tidal_diamond','coral_shard'],pick:3,sites:[
+    ingr:['deep_coral','abyssal_pearl','giant_clam','sea_fan','pearl_dust','siren_tear','nautilus_shell','tidal_diamond','coral_shard','reef_crystal'],pick:3,sites:[
       {id:'tc_pearl_beds',name:'Pearl Beds',icon:'🦪',desc:'Vast oyster beds where the finest pearls in the known world grow.',
-        weights:{abyssal_pearl:28,pearl_dust:24,giant_clam:14,deep_coral:12,sea_fan:8,nautilus_shell:5,siren_tear:4,tidal_diamond:4,coral_shard:6}},
+        weights:{abyssal_pearl:28,pearl_dust:24,giant_clam:14,deep_coral:12,sea_fan:8,nautilus_shell:5,siren_tear:4,tidal_diamond:4,coral_shard:6,reef_crystal:3}},
       {id:'tc_siren_arch',name:'Siren Arch',icon:'🧜',desc:'A natural coral archway where strange songs echo through the water.',
-        weights:{siren_tear:32,deep_coral:18,sea_fan:14,abyssal_pearl:10,giant_clam:8,pearl_dust:6,nautilus_shell:5,tidal_diamond:4,coral_shard:8}},
+        weights:{siren_tear:32,deep_coral:18,sea_fan:14,abyssal_pearl:10,giant_clam:8,pearl_dust:6,nautilus_shell:5,tidal_diamond:4,coral_shard:8,reef_crystal:3}},
       {id:'tc_fan_gallery',name:'Fan Gallery',icon:'🌸',desc:'Towering sea fans filter the current. Rare specimens hide in their shadows.',
-        weights:{sea_fan:30,deep_coral:22,giant_clam:12,abyssal_pearl:10,siren_tear:8,pearl_dust:6,nautilus_shell:5,tidal_diamond:4,coral_shard:8}},
+        weights:{sea_fan:30,deep_coral:22,giant_clam:12,abyssal_pearl:10,siren_tear:8,pearl_dust:6,nautilus_shell:5,tidal_diamond:4,coral_shard:8,reef_crystal:3}},
     ],diff:3,unlock:4,time:25,yield:[2,4],dc:15,faction:'pearl_divers',fReq:1,
     flavor:['The reef twists and turns like a living maze. Without a diver\'s instinct, you\'d be lost in minutes.']},
   {id:'shipwreck_graveyard',loc:'tidecrest',name:'Shipwreck Graveyard',icon:'⚓',color:'#4a4a3a',
-    ingr:['rust_iron','waterlogged_timber','ships_tar','cannon_bronze','sharktooth','barnacle_cluster','ghost_lantern','compass_needle','rusted_anchor'],pick:3,sites:[
+    ingr:['rust_iron','waterlogged_timber','ships_tar','cannon_bronze','sharktooth','barnacle_cluster','ghost_lantern','compass_needle','rusted_anchor','cursed_doubloon'],pick:3,sites:[
       {id:'tc_flagship',name:'The Flagship',icon:'🚢',desc:'A massive warship half-buried in sand. Its holds still contain treasures.',
-        weights:{cannon_bronze:24,compass_needle:22,ships_tar:14,rust_iron:12,waterlogged_timber:8,ghost_lantern:8,sharktooth:5,barnacle_cluster:4,rusted_anchor:8}},
+        weights:{cannon_bronze:24,compass_needle:22,ships_tar:14,rust_iron:12,waterlogged_timber:8,ghost_lantern:8,sharktooth:5,barnacle_cluster:4,rusted_anchor:8,cursed_doubloon:3}},
       {id:'tc_debris_field',name:'Debris Field',icon:'🪵',desc:'Scattered wreckage from dozens of ships. A salvager\'s paradise.',
-        weights:{rust_iron:24,waterlogged_timber:24,ships_tar:14,barnacle_cluster:12,sharktooth:10,cannon_bronze:6,compass_needle:4,ghost_lantern:4,rusted_anchor:8}},
+        weights:{rust_iron:24,waterlogged_timber:24,ships_tar:14,barnacle_cluster:12,sharktooth:10,cannon_bronze:6,compass_needle:4,ghost_lantern:4,rusted_anchor:8,cursed_doubloon:3}},
       {id:'tc_captains_quarters',name:'Captain\'s Quarters',icon:'🗝️',desc:'Sealed cabins where personal effects and alchemical stores survive.',
-        weights:{ghost_lantern:28,compass_needle:22,cannon_bronze:14,ships_tar:10,rust_iron:8,waterlogged_timber:6,sharktooth:5,barnacle_cluster:4,rusted_anchor:8}},
+        weights:{ghost_lantern:28,compass_needle:22,cannon_bronze:14,ships_tar:10,rust_iron:8,waterlogged_timber:6,sharktooth:5,barnacle_cluster:4,rusted_anchor:8,cursed_doubloon:3}},
     ],diff:4,unlock:5,time:30,yield:[2,4],dc:16,
     flavor:['Broken masts jut from the water like the ribs of dead giants.','Every wreck holds a story — and usually something valuable.']},
   {id:'abyssal_trench',loc:'tidecrest',name:'Abyssal Trench',icon:'🦑',color:'#1a2a4a',
-    ingr:['kraken_ink','leviathan_scale','abyssal_vent_mineral','anglerfish_lure','blind_shrimp','trident_shard','harbor_seal','diver_token'],pick:3,sites:[
+    ingr:['kraken_ink','leviathan_scale','abyssal_vent_mineral','anglerfish_lure','blind_shrimp','trident_shard','harbor_seal','diver_token','volcanic_vent_mineral'],pick:3,sites:[
       {id:'tc_vent_field',name:'Hydrothermal Vents',icon:'♨️',desc:'Superheated mineral-rich water erupts from the ocean floor.',
-        weights:{abyssal_vent_mineral:34,leviathan_scale:18,kraken_ink:14,trident_shard:10,anglerfish_lure:8,blind_shrimp:6,harbor_seal:5,diver_token:10}},
+        weights:{abyssal_vent_mineral:34,leviathan_scale:18,kraken_ink:14,trident_shard:10,anglerfish_lure:8,blind_shrimp:6,harbor_seal:5,diver_token:10,volcanic_vent_mineral:3}},
       {id:'tc_leviathan_pass',name:'Leviathan Pass',icon:'🐋',desc:'Massive creatures traverse this corridor. Shed scales litter the path.',
-        weights:{leviathan_scale:34,kraken_ink:26,trident_shard:14,abyssal_vent_mineral:10,anglerfish_lure:6,blind_shrimp:4,harbor_seal:4,diver_token:7}},
+        weights:{leviathan_scale:34,kraken_ink:26,trident_shard:14,abyssal_vent_mineral:10,anglerfish_lure:6,blind_shrimp:4,harbor_seal:4,diver_token:7,volcanic_vent_mineral:3}},
       {id:'tc_ink_pools',name:'Ink Pools',icon:'🖊️',desc:'Dark pools of concentrated kraken secretion. Valuable but dangerous.',
-        weights:{kraken_ink:34,leviathan_scale:22,abyssal_vent_mineral:14,trident_shard:10,anglerfish_lure:8,blind_shrimp:5,harbor_seal:4,diver_token:8}},
+        weights:{kraken_ink:34,leviathan_scale:22,abyssal_vent_mineral:14,trident_shard:10,anglerfish_lure:8,blind_shrimp:5,harbor_seal:4,diver_token:8,volcanic_vent_mineral:3}},
     ],diff:4,unlock:6,time:35,yield:[2,4],dc:17,faction:'harbormasters',fReq:2,
     flavor:['The pressure is crushing. Only the most prepared divers venture this deep.','Light fades to nothing. Your alchemical lantern is the only star in this abyss.']},
   {id:'drowned_sanctum',loc:'tidecrest',name:'Drowned Sanctum',icon:'🏛️',color:'#2a3a5a',
-    ingr:['sea_crown_jewel','drowned_god_relic','leviathan_heart','primordial_brine','tidekeeper_sigil','trident_shard','abyssal_diamond','siren_tear','trade_manifest','oracle_tear'],pick:3,sites:[
+    ingr:['sea_crown_jewel','drowned_god_relic','leviathan_heart','primordial_brine','tidekeeper_sigil','trident_shard','abyssal_diamond','siren_tear','trade_manifest','oracle_tear','trench_pearl'],pick:3,sites:[
       {id:'tc_nave',name:'The Nave',icon:'⚱️',desc:'The central hall of the sunken temple. Pillars carved with tidal runes.',
-        weights:{drowned_god_relic:24,tidekeeper_sigil:20,sea_crown_jewel:14,primordial_brine:10,trident_shard:10,abyssal_diamond:8,leviathan_heart:5,siren_tear:4,trade_manifest:4,oracle_tear:6}},
+        weights:{drowned_god_relic:24,tidekeeper_sigil:20,sea_crown_jewel:14,primordial_brine:10,trident_shard:10,abyssal_diamond:8,leviathan_heart:5,siren_tear:4,trade_manifest:4,oracle_tear:6,trench_pearl:3}},
       {id:'tc_reliquary',name:'The Reliquary',icon:'🔱',desc:'Sealed vaults where the temple\'s holiest artifacts were stored.',
-        weights:{sea_crown_jewel:28,abyssal_diamond:22,leviathan_heart:14,drowned_god_relic:10,primordial_brine:8,tidekeeper_sigil:6,trident_shard:4,siren_tear:4,trade_manifest:4,oracle_tear:5}},
+        weights:{sea_crown_jewel:28,abyssal_diamond:22,leviathan_heart:14,drowned_god_relic:10,primordial_brine:8,tidekeeper_sigil:6,trident_shard:4,siren_tear:4,trade_manifest:4,oracle_tear:5,trench_pearl:3}},
       {id:'tc_oracle_pool',name:'Oracle Pool',icon:'🌀',desc:'A still pool where the ancients communed with the deep. It still whispers.',
-        weights:{primordial_brine:26,siren_tear:20,oracle_tear:14,leviathan_heart:12,tidekeeper_sigil:10,drowned_god_relic:6,sea_crown_jewel:4,abyssal_diamond:4,trident_shard:4,trade_manifest:5}},
+        weights:{primordial_brine:26,siren_tear:20,oracle_tear:14,leviathan_heart:12,tidekeeper_sigil:10,drowned_god_relic:6,sea_crown_jewel:4,abyssal_diamond:4,trident_shard:4,trade_manifest:5,trench_pearl:3}},
     ],diff:5,unlock:8,time:40,yield:[2,4],dc:18,
     flavor:['The temple breathes with the tide. Water flows through corridors like blood through veins.','Ancient murals depict a civilization that lived beneath the waves.']},
 
@@ -1636,7 +1640,6 @@ var RELIC_CATS=[
   {id:'weapons',name:'Weapons',icon:'🗡️',set:'Arsenal Collection',
     names:{common:['Rusted Blade','Broken Arrowhead','Dented Shield Boss'],uncommon:['Ceremonial Dagger','Warden\'s Badge','Etched Spearhead'],rare:['Enchanted Shortsword','Captain\'s Sigil','Runic Waraxe'],legendary:['Heartforge Hammer','Primordial Blade']}},
 ];
-var RELIC_RARITIES=['common','uncommon','rare','legendary'];
 var RELIC_VALUES={common:[15,40],uncommon:[25,60],rare:[40,100],legendary:[80,200]};
 var RELIC_APPRAISE_DC={common:8,uncommon:11,rare:14,legendary:17};
 var RELIC_SETS={
@@ -1662,21 +1665,21 @@ var generateRelic=(regionDiff,regionName)=>{
 
 // ═══ EXTERNAL THREATS ═══
 var THREAT_FACTIONS={
-  reavers:{id:'reavers',name:'Ashland Reavers',icon:'🏴',color:'#cc4444',loc:'cindervale',
+  reavers:{id:'reavers',mitigatedBy:['ashwardens'],name:'Ashland Reavers',icon:'🏴',color:'#cc4444',loc:'cindervale',
     desc:'Bandits preying on trade routes and foraging expeditions.',
     penalties:{
       rising:{expDangerMult:1.10,staffYieldMult:0.90},
       dangerous:{expDangerMult:1.25,staffYieldMult:0.75,shelfTheftChance:0.10},
       critical:{expDangerMult:1.40,staffYieldMult:0.60,shelfTheftChance:0.20},
     }},
-  blight:{id:'blight',name:'The Blight',icon:'🦠',color:'#60a040',loc:'cindervale',
+  blight:{id:'blight',mitigatedBy:['cinderfolk'],name:'The Blight',icon:'🦠',color:'#60a040',loc:'cindervale',
     desc:'Creeping fungal corruption from the deep caves.',
     penalties:{
       rising:{spoilMult:1.25},
       dangerous:{spoilMult:1.50,contaminateChance:0.10},
       critical:{spoilMult:2.0,contaminateChance:0.20,ingrLossChance:0.10},
     }},
-  veilbreakers:{id:'veilbreakers',name:'Veilbreakers',icon:'💜',color:'#9060c0',loc:'cindervale',
+  veilbreakers:{id:'veilbreakers',mitigatedBy:['veilwalkers'],name:'Veilbreakers',icon:'💜',color:'#9060c0',loc:'cindervale',
     desc:'Rogue mages destabilizing the magical fabric around Cindervale.',
     penalties:{
       rising:{enchDCBonus:1,discoveryMult:0.95},
@@ -1684,21 +1687,21 @@ var THREAT_FACTIONS={
       critical:{enchDCBonus:3,discoveryMult:0.75,enchPayMult:0.75,custDropChance:0.10},
     }},
   // ═══ ASHFALL RIVAL FACTIONS ═══
-  sand_raiders:{id:'sand_raiders',name:'Sand Raiders',icon:'⚔️',color:'#cc6633',loc:'ashfall',
+  sand_raiders:{id:'sand_raiders',mitigatedBy:['dustwalkers'],name:'Sand Raiders',icon:'⚔️',color:'#cc6633',loc:'ashfall',
     desc:'Ruthless desert bandits who prey on caravans and isolated workshops.',
     penalties:{
       rising:{expDangerMult:1.10,staffYieldMult:0.90},
       dangerous:{expDangerMult:1.25,staffYieldMult:0.75,shelfTheftChance:0.10},
       critical:{expDangerMult:1.40,staffYieldMult:0.60,shelfTheftChance:0.20},
     }},
-  the_scorch:{id:'the_scorch',name:'The Scorch',icon:'🌡️',color:'#d08020',loc:'ashfall',
+  the_scorch:{id:'the_scorch',mitigatedBy:['flamekeepers'],name:'The Scorch',icon:'🌡️',color:'#d08020',loc:'ashfall',
     desc:'A creeping heat corruption that withers ingredients and warps alchemy.',
     penalties:{
       rising:{spoilMult:1.25},
       dangerous:{spoilMult:1.50,contaminateChance:0.10},
       critical:{spoilMult:2.0,contaminateChance:0.20,ingrLossChance:0.10},
     }},
-  cult_of_buried:{id:'cult_of_buried',name:'Cult of the Buried',icon:'💀',color:'#8a6040',loc:'ashfall',
+  cult_of_buried:{id:'cult_of_buried',mitigatedBy:['flamekeepers'],name:'Cult of the Buried',icon:'💀',color:'#8a6040',loc:'ashfall',
     desc:'Fanatical priests channeling forbidden temple magic to reclaim the Crossing.',
     penalties:{
       rising:{enchDCBonus:1,discoveryMult:0.95},
@@ -1706,21 +1709,21 @@ var THREAT_FACTIONS={
       critical:{enchDCBonus:3,discoveryMult:0.75,enchPayMult:0.75,custDropChance:0.10},
     }},
   // ═══ TIDECREST RIVAL FACTIONS ═══
-  corsairs:{id:'corsairs',name:'The Corsairs',icon:'☠️',color:'#cc4444',loc:'tidecrest',
+  corsairs:{id:'corsairs',mitigatedBy:['harbormasters'],name:'The Corsairs',icon:'☠️',color:'#cc4444',loc:'tidecrest',
     desc:'Pirates raiding the harbor, stealing cargo and extorting merchants.',
     penalties:{
       rising:{expDangerMult:1.10,staffYieldMult:0.90},
       dangerous:{expDangerMult:1.25,staffYieldMult:0.75,shelfTheftChance:0.10},
       critical:{expDangerMult:1.40,staffYieldMult:0.60,shelfTheftChance:0.20},
     }},
-  the_murk:{id:'the_murk',name:'The Murk',icon:'🦑',color:'#406080',loc:'tidecrest',
+  the_murk:{id:'the_murk',mitigatedBy:['tidekeepers'],name:'The Murk',icon:'🦑',color:'#406080',loc:'tidecrest',
     desc:'A deep-sea corruption that pollutes the waters and warps sea life.',
     penalties:{
       rising:{spoilMult:1.25},
       dangerous:{spoilMult:1.50,contaminateChance:0.10},
       critical:{spoilMult:2.0,contaminateChance:0.20,ingrLossChance:0.10},
     }},
-  drowned_cult:{id:'drowned_cult',name:'Cult of the Drowned',icon:'🌀',color:'#6040a0',loc:'tidecrest',
+  drowned_cult:{id:'drowned_cult',mitigatedBy:['tidekeepers'],name:'Cult of the Drowned',icon:'🌀',color:'#6040a0',loc:'tidecrest',
     desc:'Fanatics worshipping a sunken deity, channeling dark tidal magic to drag the harbor beneath the waves.',
     penalties:{
       rising:{enchDCBonus:1,discoveryMult:0.95},
@@ -1729,21 +1732,21 @@ var THREAT_FACTIONS={
     }},
 
   // ═══ SKYREACH THREAT FACTIONS ═══
-  sky_raiders:{id:'sky_raiders',loc:'skyreach',name:'Sky Raiders',icon:'🦅',color:'#8a4040',
+  sky_raiders:{id:'sky_raiders',mitigatedBy:['skywardens'],loc:'skyreach',name:'Sky Raiders',icon:'🦅',color:'#8a4040',
     desc:'Renegade climbers and exiled Windrunners who prey on supply caravans and isolated workshops.',
     start:5,growth:0.8,penalties:{
       rising:{expDangerMult:1.10,staffYieldMult:0.90},
       dangerous:{expDangerMult:1.25,staffYieldMult:0.75,shelfTheftChance:0.10},
       critical:{expDangerMult:1.40,staffYieldMult:0.60,shelfTheftChance:0.20},
     }},
-  the_gale:{id:'the_gale',loc:'skyreach',name:'The Gale',icon:'🌪️',color:'#5a6a8a',
+  the_gale:{id:'the_gale',mitigatedBy:['windrunners'],loc:'skyreach',name:'The Gale',icon:'🌪️',color:'#5a6a8a',
     desc:'An unnatural perpetual storm that creeps across the peaks, warping stone and corrupting ingredients.',
     start:8,growth:0.6,penalties:{
       rising:{spoilMult:1.15,contaminateChance:0.03},
       dangerous:{spoilMult:1.50,contaminateChance:0.10},
       critical:{spoilMult:2.0,contaminateChance:0.20,ingrLossChance:0.10},
     }},
-  eclipse_covenant:{id:'eclipse_covenant',loc:'skyreach',name:'Eclipse Covenant',icon:'🌑',color:'#3a2a4a',
+  eclipse_covenant:{id:'eclipse_covenant',mitigatedBy:['starcallers'],loc:'skyreach',name:'Eclipse Covenant',icon:'🌑',color:'#3a2a4a',
     desc:'A secretive cult that worships the dark between stars. They seek to reactivate the observatory.',
     start:12,growth:0.5,penalties:{
       rising:{enchDCBonus:1,discoveryMult:0.95},
@@ -1766,6 +1769,9 @@ var FORTRESS_TYPES={
   corsair_lighthouse:{id:'corsair_lighthouse',name:'Signal Lighthouse',icon:'🏮',threat:'corsairs',cap:50,cost:200,loc:'tidecrest',desc:'Permanently caps Corsair threat at 50.'},
   murk_purifier:{id:'murk_purifier',name:'Tidal Purifier',icon:'💧',threat:'the_murk',cap:50,cost:200,loc:'tidecrest',desc:'Permanently caps Murk threat at 50.'},
   drowned_ward:{id:'drowned_ward',name:'Drowned Ward',icon:'🔱',threat:'drowned_cult',cap:50,cost:200,loc:'tidecrest',desc:'Permanently caps Cult of the Drowned threat at 50.'},
+  skyguard_aerie:{id:'skyguard_aerie',name:'Skyguard Aerie',icon:'🦅',threat:'sky_raiders',cap:50,cost:200,loc:'skyreach',desc:'Permanently caps Sky Raider threat at 50.'},
+  storm_anchor:{id:'storm_anchor',name:'Storm Anchor',icon:'⚡',threat:'the_gale',cap:50,cost:200,loc:'skyreach',desc:'Permanently caps The Gale threat at 50.'},
+  starlight_seal:{id:'starlight_seal',name:'Starlight Seal',icon:'🌟',threat:'eclipse_covenant',cap:50,cost:200,loc:'skyreach',desc:'Permanently caps Eclipse Covenant threat at 50.'},
 };
 
 // ═══ FORAGE FAILURE FLAVOR (Phase 3) ═══
@@ -1967,8 +1973,6 @@ var qualPotId=(recipeId,q)=>q==='fine'?recipeId+'_F':q==='mw'?recipeId+'_M':q===
 var getMasteryDiscount=(brewCounts,recipeId,bonusCap)=>{const bc=brewCounts[recipeId]||0;const base=bc>=25?2:bc>=10?1:0;const extra=bonusCap>0?(bc>=50?Math.min(bonusCap,2):bc>=35?Math.min(bonusCap,1):0):0;return base+extra;};
 
 // Spoilage color coding for inventory display
-var getSpoilColor=(qty,threshold)=>qty>16?'#c04040':qty>12?'#d08030':qty>8?'#c0a040':'';
-var getSpoilLabel=(qty,threshold)=>qty>threshold+8?'Spoils imminent':qty>threshold+4?'Spoilage likely':qty>threshold?'Getting full':'';
 
 var ENCH_CATS={weapon:{name:'Weapon',icon:'⚔️'},armor:{name:'Armor',icon:'🛡️'},other:{name:'Accessory',icon:'💍'}};
 var CUST_ITEMS=[
@@ -2099,15 +2103,20 @@ var CLINIC_AILMENTS=[
 
   // ═══ SKYREACH AILMENTS ═══
   {id:'altitude_sickness',loc:'skyreach',name:'Altitude Sickness',icon:'🫁',desc:'"Everything\'s spinning and I can\'t catch my breath. The air is too thin."',
-    treatments:[{potion:'altitude_tonic',effectiveness:0.9,response:'"The tonic steadied me immediately. I can breathe again."'}],difficulty:1},
+    category:'respiratory',tier:1,great:['altitude_tonic'],good:['healing_salve','ashveil'],
+    hints:{fail:'The symptoms are unclear.',partial:'Short of breath — something that steadies the lungs.',full:'Textbook altitude sickness. An Altitude Tonic will have them breathing easy.'}},
   {id:'frostbite_sr',loc:'skyreach',name:'Frostbite',icon:'🥶',desc:'"My fingers went white on the glacier. They\'re turning black now."',
-    treatments:[{potion:'glacier_salve',effectiveness:0.95,response:'"The warmth is spreading back. I can feel my fingers again."'}],difficulty:2},
+    category:'exposure',tier:2,great:['glacier_salve'],good:['healing_salve','celestial_balm'],
+    hints:{fail:'The symptoms are unclear.',partial:'Cold damage to the extremities — something warming.',full:'Frostbite, caught in time. Glacier Salve will bring the warmth back.'}},
   {id:'wind_burn',loc:'skyreach',name:'Wind Burn',icon:'🌬️',desc:'"The gale stripped the skin right off my face. Everything stings."',
-    treatments:[{potion:'breeze_balm',effectiveness:0.85,response:'"The balm took the sting out immediately. Thank the peaks."'}],difficulty:1},
+    category:'injury',tier:1,great:['breeze_balm'],good:['healing_salve','ash_poultice'],
+    hints:{fail:'The symptoms are unclear.',partial:'Raw, chapped skin — a soothing balm should help.',full:'Wind burn from the high passes. Breeze Balm is exactly right.'}},
   {id:'storm_shock',loc:'skyreach',name:'Storm Shock',icon:'⚡',desc:'"Lightning hit a rock near me. My hands won\'t stop shaking."',
-    treatments:[{potion:'thunder_draught',effectiveness:0.9,response:'"The shaking stopped. I feel... calm. Grounded."'}],difficulty:3},
+    category:'arcane',tier:3,great:['thunder_draught'],good:['celestial_balm','holy_flame'],
+    hints:{fail:'The symptoms are unclear.',partial:'Nerves still crackling — something grounding.',full:'Residual storm charge. A Thunder Draught will ground them.'}},
   {id:'vertigo_sr',loc:'skyreach',name:'Mountain Vertigo',icon:'🌀',desc:'"I looked down from the cliffs and the world tilted. Can\'t walk straight."',
-    treatments:[{potion:'fog_tincture',effectiveness:0.85,response:'"My vision cleared and the ground steadied. Thank you."'}],difficulty:1},
+    category:'chronic',tier:1,great:['fog_tincture'],good:['healing_salve','crystal_lens'],
+    hints:{fail:'The symptoms are unclear.',partial:'Balance is off — something calming for the senses.',full:'Mountain vertigo. A Fog Tincture will steady the world again.'}},
 ];
 
 // ═══ VENOMIST CONTRACTS SYSTEM ═══
@@ -2230,31 +2239,31 @@ var PLANAR_COMBOS={
 var GADGET_BLUEPRINTS=[
   {id:'gd_compass',name:'Ingredient Compass',icon:'🧭',tier:1,dc:10,
     matCost:{hearthstone:2,ironroot_bark:1},desc:'A magnetized crystal vial that pulses near alchemical reagents.',
-    effect:'forageBonus',values:[1,2,3],effectDesc:['+1 forage ingredient','+2 forage ingredients','+3 forage ingredients']},
+    effect:'forageYieldBonus',values:[1,2,3],effectDesc:['+1 forage ingredient','+2 forage ingredients','+3 forage ingredients']},
   {id:'gd_stirrer',name:'Auto-Stirrer',icon:'🌀',tier:1,dc:10,
     matCost:{ironroot_bark:2,bark_resin:1},desc:'A clockwork arm that maintains perfect brew rotation.',
     effect:'craftBonus',values:[1,2,3],effectDesc:['+1 craft bonus','+2 craft bonus','+3 craft bonus']},
   {id:'gd_furnace',name:'Pocket Furnace',icon:'🔥',tier:1,dc:12,
     matCost:{embercap:2,hearthstone:1},desc:'A palm-sized crucible that burns with alchemical fire.',
-    effect:'freeBrewsPerDay',values:[1,2,3],effectDesc:['1 free brew/day','2 free brews/day','3 free brews/day']},
+    effect:'firstBrewFree',values:[1,2,3],effectDesc:['1 free brew/day','2 free brews/day','3 free brews/day']},
   {id:'gd_assistant',name:'Clockwork Assistant',icon:'🤖',tier:2,dc:14,
     matCost:{ashite:2,ironroot_bark:2,hearthstone:1},desc:'A mechanical helper that follows simple instructions.',
     effect:'clockworkStaff',values:[0,1,2],effectDesc:['Staff member (no stars)','Staff member (★)','Staff member (★★)']},
   {id:'gd_salvager',name:'Salvage Reclaimer',icon:'♻️',tier:2,dc:13,
     matCost:{ashite:1,embervein:1,bark_resin:1},desc:'A filter that recovers usable reagents from failed experiments.',
-    effect:'salvageBonus',values:[0.25,0.50,0.75],effectDesc:['+25% salvage','+50% salvage','+75% salvage']},
+    effect:'salvagePercent',values:[0.25,0.50,0.75],effectDesc:['+25% salvage','+50% salvage','+75% salvage']},
   {id:'gd_detector',name:'Resonance Detector',icon:'📡',tier:2,dc:14,
     matCost:{moonpetal:2,hearthstone:1},desc:'A tuning fork that hums near rare mineral deposits.',
     effect:'rareForageBonus',values:[0.10,0.20,0.30],effectDesc:['+10% rare finds','+20% rare finds','+30% rare finds']},
   {id:'gd_regulator',name:'Efficiency Regulator',icon:'⚙️',tier:1,dc:11,
     matCost:{ironroot_bark:2,ashbloom:2},desc:'A timing mechanism that optimizes staff workflow.',
-    effect:'staffEffBonus',values:[0.15,0.30,0.45],effectDesc:['+15% staff efficiency','+30% staff efficiency','+45% staff efficiency']},
+    effect:'staffEfficiencyBonus',values:[0.15,0.30,0.45],effectDesc:['+15% staff efficiency','+30% staff efficiency','+45% staff efficiency']},
   {id:'gd_perpetual',name:'Perpetual Motion Engine',icon:'♾️',tier:3,dc:20,legendary:true,
     matCost:{embervein:3,deep_crystal:2,volcanic_essence:1},desc:'A device that defies natural law — self-sustaining energy.',
-    effect:'perpetual',values:[null,null,[75,2]],effectDesc:['—','—','+75 Energy/day AND 2 free crafts']},
+    effect:'perpetual',effects:{bonusEnergyPerDay:75,freeCraft:2},values:[null,null,[75,2]],effectDesc:['—','—','+75 Energy/day AND 2 free crafts']},
   {id:'gd_probability',name:'Probability Manipulator',icon:'🎲',tier:3,dc:20,legendary:true,
     matCost:{starwort:2,deep_crystal:2,moonpetal:2},desc:'A crystalline device that nudges fate in your favor.',
-    effect:'rerollsPerDay',values:[null,null,2],effectDesc:['—','—','Reroll 2 failed checks/day']},
+    effect:'checkReroll',values:[null,null,2],effectDesc:['—','—','Reroll 2 failed checks/day']},
 ];
 
 // ═══ CONSTRUCTOR BLUEPRINT WORKSHOP ═══
@@ -2527,109 +2536,109 @@ var ALL_LORE_FRAGMENTS=Object.values(LORE_CHAINS).flatMap(c=>c.fragments.map(f=>
 
 // ═══ RANGER COMPANION SYSTEM ═══
 var RANGER_COMPANIONS=[
-  {id:'rc_fox',name:'Cinder Fox',icon:'🦊',region:'ashfields',role:'gatherer',color:'#d08040',
+  {id:'rc_fox',img:'companion_rc_fox.jpg',name:'Cinder Fox',icon:'🦊',region:'ashfields',role:'gatherer',color:'#d08040',
     desc:'A rust-furred fox that thrives in the ash. Knows every hidden bloom.',
     primary:{type:'gather',ingr:['ashbloom','char_root','ash_salt','ember_petal'],baseYield:[5,8,12,16,20]},
     secondary:{type:'scout_gather',desc:'Also gathers from adjacent regions',unlockLv:3},
     legendary:'Once/day: bring back a rare ingredient from any region',passive:{extractionBonus:1,forageYieldBonus:0.10}},
-  {id:'rc_monkey',name:'Cave Monkey',icon:'🐒',region:'fungal_caves',role:'shopkeeper',color:'#a07050',
+  {id:'rc_monkey',img:'companion_rc_monkey.jpg',name:'Cave Monkey',icon:'🐒',region:'fungal_caves',role:'shopkeeper',color:'#a07050',
     desc:'A clever primate that mimics your movements. Surprisingly good with shelves.',
     primary:{type:'shop',baseGold:[10,18,28,40,55]},
     secondary:{type:'organize',desc:'+1 potion shelf capacity per loyalty level',unlockLv:3},
     legendary:'Automatically stocks shelves from your potion supply each morning',passive:{sellBonus:0.05,customerPayBonus:0.05}},
-  {id:'rc_hawk',name:'Ash Hawk',icon:'🦅',region:'ironwood',role:'scout',color:'#6090c0',
+  {id:'rc_hawk',img:'companion_rc_hawk.jpg',name:'Ash Hawk',icon:'🦅',region:'ironwood',role:'scout',color:'#6090c0',
     desc:'A keen-eyed raptor that rides the thermal updrafts above the canopy.',
     primary:{type:'danger_reduce',values:[0.25,0.40,0.50,0.60,0.75]},
     secondary:{type:'travel_reduce',desc:'−25 Energy travel cost to scouted region',unlockLv:3},
     legendary:'Once/day: instant travel (0 Energy) to any region',passive:{reducedRisk:0.15,energyCostMultiplier:{travel:-0.25}}},
-  {id:'rc_hound',name:'Ridge Hound',icon:'🐕',region:'crystal_hollow',role:'greeter',color:'#c09040',
+  {id:'rc_hound',img:'companion_rc_hound.jpg',name:'Ridge Hound',icon:'🐕',region:'crystal_hollow',role:'greeter',color:'#c09040',
     desc:'A loyal hound with crystalline eyes. Customers love petting it at the door.',
     primary:{type:'customers',values:[1,2,2,3,4]},
     secondary:{type:'morale_aura',desc:'+5 staff morale per morning',unlockLv:3},
     legendary:'Premium customers pay 15% more (charmed by the hound)',passive:{customerBonus:1,repGainBonus:0.10}},
-  {id:'rc_salamander',name:'Fire Salamander',icon:'🦎',region:'volcanic_vents',role:'guardian',color:'#d04040',
+  {id:'rc_salamander',img:'companion_rc_salamander.jpg',name:'Fire Salamander',icon:'🦎',region:'volcanic_vents',role:'guardian',color:'#d04040',
     desc:'A heat-resistant lizard that glows with inner fire. Protective and watchful.',
     primary:{type:'staff_morale',values:[8,12,16,20,25]},
     secondary:{type:'guard',desc:'Prevents negative morning events that cost coin',unlockLv:3},
     legendary:'Staff never drop below 50% morale while guardian is active',passive:{healMorale:3,staffEfficiencyBonus:0.10}},
-  {id:'rc_moth',name:'Silver Moth',icon:'🦋',region:'moonlit_glade',role:'muse',color:'#9080c0',
+  {id:'rc_moth',img:'companion_rc_moth.jpg',name:'Silver Moth',icon:'🦋',region:'moonlit_glade',role:'muse',color:'#9080c0',
     desc:'A luminous moth drawn to magical resonance. Its presence sharpens the mind.',
     primary:{type:'research',values:[0.08,0.12,0.16,0.20,0.25]},
     secondary:{type:'xp_aura',desc:'+5% XP from all sources',unlockLv:3},
     legendary:'Research auto-discovers on first attempt each day',passive:{xpMultiplier:0.05,discoveryChanceBonus:0.05}},
-  {id:'rc_phoenix',name:'Phoenix Hatchling',icon:'🔥',region:'heartforge_rim',role:'legendary',color:'#d4a420',legendary_only:true,
+  {id:'rc_phoenix',img:'companion_rc_phoenix.jpg',name:'Phoenix Hatchling',icon:'🔥',region:'heartforge_rim',role:'legendary',color:'#d4a420',legendary_only:true,
     desc:'A newborn phoenix, impossibly rare. Its feathers contain primordial fire.',
     primary:{type:'gather',ingr:['phoenix_ash','volcanic_essence','primordial_ash','forge_scale'],baseYield:[5,8,12,16,20]},
     secondary:{type:'resurrect',desc:'Once/day: retry a failed craft check',unlockLv:3},
     legendary:'Passively generates 1 Heartforge ingredient every morning',passive:{craftBonus:1,xpMultiplier:0.10}},
   // Ashfall companions
-  {id:'rc_sandcat',name:'Dune Cat',icon:'🐈',region:'sunscorch_flats',role:'gatherer',color:'#c0a060',
+  {id:'rc_sandcat',img:'companion_rc_sandcat.jpg',name:'Dune Cat',icon:'🐈',region:'sunscorch_flats',role:'gatherer',color:'#c0a060',
     desc:'A sand-colored feline that vanishes into the dunes. Brings back desert treasures.',
     primary:{type:'gather',ingr:['sunpetal','dustite','scorchroot','ash_salt'],baseYield:[5,8,12,16,20]},
     secondary:{type:'scout_gather',desc:'Also gathers from adjacent desert regions',unlockLv:3},
     legendary:'Once/day: bring back a rare ingredient from any Ashfall region',passive:{extractionBonus:1,forageYieldBonus:0.10}},
-  {id:'rc_scorpion',name:'Crystal Scorpion',icon:'🦂',region:'salt_caverns',role:'guardian',color:'#60a0a0',
+  {id:'rc_scorpion',img:'companion_rc_scorpion.jpg',name:'Crystal Scorpion',icon:'🦂',region:'salt_caverns',role:'guardian',color:'#60a0a0',
     desc:'A translucent scorpion whose stinger glows with salt crystal energy. Fiercely loyal.',
     primary:{type:'staff_morale',values:[8,12,16,20,25]},
     secondary:{type:'guard',desc:'Prevents negative morning events that cost coin',unlockLv:3},
     legendary:'Staff never drop below 50% morale while guardian is active',passive:{healMorale:3,staffEfficiencyBonus:0.10}},
-  {id:'rc_vulture',name:'Obsidian Vulture',icon:'🦅',region:'obsidian_wastes',role:'scout',color:'#404040',
+  {id:'rc_vulture',img:'companion_rc_vulture.jpg',name:'Obsidian Vulture',icon:'🦅',region:'obsidian_wastes',role:'scout',color:'#404040',
     desc:'A massive black bird that circles the wastes. Nothing escapes its gaze.',
     primary:{type:'danger_reduce',values:[0.25,0.40,0.50,0.60,0.75]},
     secondary:{type:'travel_reduce',desc:'−25 Energy travel cost to scouted region',unlockLv:3},
     legendary:'Once/day: instant travel (0 Energy) to any Ashfall region',passive:{reducedRisk:0.15,energyCostMultiplier:{travel:-0.25}}},
-  {id:'rc_sandworm',name:'Burrowing Grub',icon:'🪱',region:'sandworm_tunnels',role:'shopkeeper',color:'#a08060',
+  {id:'rc_sandworm',img:'companion_rc_sandworm.jpg',name:'Burrowing Grub',icon:'🪱',region:'sandworm_tunnels',role:'shopkeeper',color:'#a08060',
     desc:'A juvenile sandworm that tunnels through soft earth. Surprisingly useful around the shop.',
     primary:{type:'shop',baseGold:[10,18,28,40,55]},
     secondary:{type:'organize',desc:'+1 potion shelf capacity per loyalty level',unlockLv:3},
     legendary:'Automatically stocks shelves from your potion supply each morning',passive:{sellBonus:0.05,customerPayBonus:0.05}},
-  {id:'rc_gecko',name:'Oasis Gecko',icon:'🦎',region:'oasis_grove',role:'greeter',color:'#40a060',
+  {id:'rc_gecko',img:'companion_rc_gecko.jpg',name:'Oasis Gecko',icon:'🦎',region:'oasis_grove',role:'greeter',color:'#40a060',
     desc:'A vibrantly colored gecko found only near desert oases. Customers find it charming.',
     primary:{type:'customers',values:[1,2,2,3,4]},
     secondary:{type:'morale_aura',desc:'+5 staff morale per morning',unlockLv:3},
     legendary:'Premium customers pay 15% more (charmed by the gecko)',passive:{customerBonus:1,repGainBonus:0.10}},
-  {id:'rc_firebeetle',name:'Molten Beetle',icon:'🪲',region:'molten_vents',role:'muse',color:'#d06020',
+  {id:'rc_firebeetle',img:'companion_rc_firebeetle.jpg',name:'Molten Beetle',icon:'🪲',region:'molten_vents',role:'muse',color:'#d06020',
     desc:'A heat-resistant beetle whose shell shimmers with volcanic energy. Inspires creativity.',
     primary:{type:'research',values:[0.08,0.12,0.16,0.20,0.25]},
     secondary:{type:'xp_boost',desc:'+5% XP from all sources per loyalty level',unlockLv:3},
     legendary:'Research auto-discovers at Soulbound loyalty',passive:{xpMultiplier:0.05,discoveryChanceBonus:0.05}},
-  {id:'rc_sphinx',name:'Desert Sphinx',icon:'🐱',region:'buried_temple',role:'legendary',color:'#d4a420',legendary_only:true,
+  {id:'rc_sphinx',img:'companion_rc_sphinx.jpg',name:'Desert Sphinx',icon:'🐱',region:'buried_temple',role:'legendary',color:'#d4a420',legendary_only:true,
     desc:'An ancient creature of myth guarding the Buried Temple. Speaks in riddles.',
     primary:{type:'gather',ingr:['ancient_resin','temple_gold','deep_crystal','mirage_dust'],baseYield:[5,8,12,16,20]},
     secondary:{type:'resurrect',desc:'Once/day: retry a failed craft check',unlockLv:3},
     legendary:'Passively generates 1 Buried Temple ingredient every morning',passive:{craftBonus:1,xpMultiplier:0.10}},
   // ═══ TIDECREST HARBOR COMPANIONS ═══
-  {id:'rc_seahawk',name:'Tidecrest Hawk',icon:'🦅',region:'driftwood_shores',role:'scout',color:'#6090b0',
+  {id:'rc_seahawk',img:'companion_rc_seahawk.jpg',name:'Tidecrest Hawk',icon:'🦅',region:'driftwood_shores',role:'scout',color:'#6090b0',
     desc:'A coastal raptor that circles above the waves, spotting treasures and dangers.',
     primary:{type:'danger_reduce',values:[0.25,0.40,0.50,0.60,0.75]},
     secondary:{type:'discovery',bonusPerLoyalty:0.05,unlockLv:2,desc:'+5% discovery chance per loyalty level'},
     legendary:'Danger events auto-avoided at Soulbound loyalty',passive:{reducedRisk:0.15,energyCostMultiplier:{travel:-0.25}}},
-  {id:'rc_dolphin',name:'Harbor Dolphin',icon:'🐬',region:'tidal_pools',role:'gather',color:'#40a0d0',
+  {id:'rc_dolphin',img:'companion_rc_dolphin.jpg',name:'Harbor Dolphin',icon:'🐬',region:'tidal_pools',role:'gather',color:'#40a0d0',
     desc:'A friendly dolphin that retrieves ingredients from the seafloor.',
     primary:{type:'gather',ingr:['coral_shard','pearl_dust','nautilus_shell','sea_amber','deep_coral'],baseYield:[5,8,12,16,20]},
     secondary:{type:'yield',bonusPerLoyalty:0.10,unlockLv:2,desc:'+10% forage yield per loyalty level'},
     legendary:'Double yield once per expedition at Soulbound loyalty',passive:{extractionBonus:1,forageYieldBonus:0.15}},
-  {id:'rc_crab',name:'Hermit Crab',icon:'🦀',region:'kelp_forest',role:'greeter',color:'#d08060',
+  {id:'rc_crab',img:'companion_rc_crab.jpg',name:'Hermit Crab',icon:'🦀',region:'kelp_forest',role:'greeter',color:'#d08060',
     desc:'An enormous hermit crab that follows you around, clicking encouragement.',
     primary:{type:'customers',values:[1,2,2,3,4]},
     secondary:{type:'craft',bonusPerLoyalty:1,unlockLv:3,desc:'+1 craft bonus per loyalty level (max +3)'},
     legendary:'+3 craft bonus at Soulbound loyalty',passive:{customerBonus:1,customerPayBonus:0.08}},
-  {id:'rc_eel',name:'Fog Hollow Eel',icon:'🐍',region:'fog_hollows',role:'combat',color:'#5a5a7a',
+  {id:'rc_eel',img:'companion_rc_eel.jpg',name:'Fog Hollow Eel',icon:'🐍',region:'fog_hollows',role:'combat',color:'#5a5a7a',
     desc:'A bioluminescent eel that navigates the darkest caves by electric sense.',
     primary:{type:'danger_reduce',values:[0.20,0.35,0.45,0.55,0.70]},
     secondary:{type:'discovery',bonusPerLoyalty:0.08,unlockLv:2,desc:'+8% discovery chance per loyalty level'},
     legendary:'Auto-maps one hidden area at Soulbound loyalty',passive:{reducedRisk:0.20,discoveryChanceBonus:0.08}},
-  {id:'rc_octopus',name:'Reef Octopus',icon:'🐙',region:'coral_labyrinth',role:'research',color:'#a06080',
+  {id:'rc_octopus',img:'companion_rc_octopus.jpg',name:'Reef Octopus',icon:'🐙',region:'coral_labyrinth',role:'research',color:'#a06080',
     desc:'Brilliantly intelligent. Manipulates tools, opens jars, and occasionally steals your lunch.',
     primary:{type:'research',values:[0.10,0.15,0.20,0.25,0.30]},
     secondary:{type:'craft',bonusPerLoyalty:1,unlockLv:3,desc:'+1 craft bonus per loyalty level (max +3)'},
     legendary:'Research auto-discovers at Soulbound loyalty',passive:{craftBonus:1,discoveryChanceBonus:0.10}},
-  {id:'rc_seal',name:'Harbor Seal',icon:'🦭',region:'shipwreck_graveyard',role:'trade',color:'#7a7a5a',
+  {id:'rc_seal',img:'companion_rc_seal.jpg',name:'Harbor Seal',icon:'🦭',region:'shipwreck_graveyard',role:'trade',color:'#7a7a5a',
     desc:'A sleek harbor seal that charms merchants and finds lost cargo.',
     primary:{type:'customers',values:[1,2,2,3,4]},
     secondary:{type:'yield',bonusPerLoyalty:0.08,unlockLv:2,desc:'+8% forage yield per loyalty level'},
     legendary:'Doubles coin from shelf sales at Soulbound loyalty',passive:{sellBonus:0.08,customerBonus:1}},
-  {id:'rc_leviathan_calf',name:'Leviathan Calf',icon:'🐋',region:'drowned_sanctum',role:'legendary',color:'#2050a0',legendary_only:true,
+  {id:'rc_leviathan_calf',img:'companion_rc_leviathan_calf.jpg',name:'Leviathan Calf',icon:'🐋',region:'drowned_sanctum',role:'legendary',color:'#2050a0',legendary_only:true,
     desc:'A juvenile leviathan that has bonded with you. The deep itself follows where it swims.',
     primary:{type:'gather',ingr:['abyssal_pearl','leviathan_scale','tidal_diamond','primordial_brine'],baseYield:[5,8,12,16,20]},
     secondary:{type:'resurrect',desc:'Once/day: retry a failed craft check',unlockLv:3},
@@ -4285,6 +4294,7 @@ var NPCS={
     portrait:{bg:['#5c2020','#3a1515'],ring:'#cc5544',accent:'#cc5544'},
     lines:['"The vents are more active every season. Something down there is waking up, and my soldiers are the only thing between it and this village."','"Ironhide saves lives. I\'ve seen a potion turn a killing blow into a bad bruise. Never underestimate good alchemy."','"The Ashwardens don\'t give trust easily. We earn it in blood and ash. But those who earn it find us loyal to the last."','"I was born in Cindervale. I\'ll die here too, if that\'s what it takes. But I\'d rather live to see it bloom again."']},
   marta:{name:'Marta',loc:'tavern',icon:'🍺',title:'Tavern Keeper · Hearthkeeper',
+    portrait:{bg:['#4a3a28','#2e2418'],ring:'#d0a030',accent:'#d0a030'},
     lines:['"Part tavern, part chapel — that\'s how we do things in Cindervale. A warm drink and a warm prayer go hand in hand."','"My niece Wren has nimble fingers. If you need help in the workshop, she\'d love the work."','"The Ember & Anvil has stood since before the Heartforge went cold. These walls have stories in them."','"Keep the faith, alchemist. Cindervale has survived worse than this. Probably."']},
   gretta:{name:'Gretta',loc:'chapel',icon:'⛏️',title:'Cinderfolk Guild Representative',
     portrait:{bg:['#4a4040','#2e2828'],ring:'#aa8866',accent:'#aa8866'},
@@ -4480,15 +4490,26 @@ var H_EVENTS=[
 var MILESTONES={
   first_brew:{id:'first_brew',name:'First Brew',icon:'⚗️',desc:'Brewed your first potion. Every master starts somewhere.'},
   heartforge:{id:'heartforge',name:'The Heartforge Burns Again',icon:'⚡',desc:'You rekindled the ancient Heartforge. Cindervale will never be the same.'},
-  all_quests:{id:'all_quests',name:'Pillar of the Community',icon:'🏛️',desc:'Completed every quest. Cindervale depends on you.'},
+  all_quests:{id:'all_quests',name:'Pillar of the Community',icon:'🏛️',desc:'Completed every quest in town. Everyone here depends on you.'},
   all_factions:{id:'all_factions',name:'Trusted by All',icon:'🤝',desc:'Reached Trusted status with every faction.'},
   ash_chain:{id:'ash_chain',name:'Ashwarden Champion',icon:'🛡️',desc:'Completed the Ashwarden quest chain.'},
   hk_chain:{id:'hk_chain',name:'Hearthkeeper Devotee',icon:'🔥',desc:'Completed the Hearthkeeper quest chain.'},
   vw_chain:{id:'vw_chain',name:'Veilseer Initiate',icon:'👁️',desc:'Completed the Veilwalker quest chain.'},
   cf_chain:{id:'cf_chain',name:'Stone Sibling',icon:'⛏️',desc:'Completed the Cinderfolk quest chain.'},
+  sand_merchants_chain:{id:'sand_merchants_chain',name:'Merchant Prince',icon:'💰',desc:'Completed the Sand Merchants quest chain.'},
+  flamekeepers_chain:{id:'flamekeepers_chain',name:'Keeper of the Flame',icon:'🕯️',desc:'Completed the Flamekeeper quest chain.'},
+  dustwalkers_chain:{id:'dustwalkers_chain',name:'Dune Strider',icon:'🏜️',desc:'Completed the Dustwalker quest chain.'},
+  harbormasters_chain:{id:'harbormasters_chain',name:'Harbor Guardian',icon:'⚓',desc:'Completed the Harbor Guard quest chain.'},
+  pearl_divers_chain:{id:'pearl_divers_chain',name:'Deep Diver',icon:'🦪',desc:'Completed the Pearl Diver quest chain.'},
+  tidekeepers_chain:{id:'tidekeepers_chain',name:'Tide Sworn',icon:'🌊',desc:'Completed the Tidekeeper quest chain.'},
+  merchant_marine_chain:{id:'merchant_marine_chain',name:'Fleet Captain',icon:'⛵',desc:'Completed the Merchant Marine quest chain.'},
+  skywardens_chain:{id:'skywardens_chain',name:'Sentinel of the Peaks',icon:'🛡️',desc:'Completed the Skywarden quest chain.'},
+  starcallers_chain:{id:'starcallers_chain',name:'Starcaller Adept',icon:'✨',desc:'Completed the Starcaller quest chain.'},
+  windrunners_chain:{id:'windrunners_chain',name:'Swift as the Wind',icon:'🌬️',desc:'Completed the Windrunner quest chain.'},
+  cloud_traders_chain:{id:'cloud_traders_chain',name:'Cloud Broker',icon:'☁️',desc:'Completed the Cloud Trader quest chain.'},
   faction_aligned:{id:'faction_aligned',name:'Sworn Allegiance',icon:'⚔️',desc:'Aligned with a faction. Your path is chosen.'},
   master_alch:{id:'master_alch',name:'Grand Alchemist',icon:'🧪',desc:'Reached Level 10. Your name is known beyond Cindervale.'},
-  all_recipes:{id:'all_recipes',name:'Living Encyclopedia',icon:'📚',desc:'Discovered every recipe in your craft.'},
+  all_recipes:{id:'all_recipes',name:'Living Encyclopedia',icon:'📚',desc:'Discovered every recipe you can brew in this town.'},
   full_workshop:{id:'full_workshop',name:'Master Builder',icon:'🏗️',desc:'Built every upgrade. Your workshop is legendary.'},
   wealthy:{id:'wealthy',name:'Golden Touch',icon:'💰',desc:'Accumulated 50 gold. Prosperity follows your work.'},
   mentor:{id:'mentor',name:'Mentor',icon:'👥',desc:'Hired 4 apprentices. You are shaping the next generation.'},
@@ -4501,13 +4522,13 @@ var TOWN_EVENTS=[
   {id:'te_merchant',loc:'cindervale',vibe:'trade',prob:.15,minLv:0,text:'A traveling merchant arrives with a cart full of rare herbs.',
     effect:(s)=>{const picks=['moonpetal','starwort','gloomcap','embervein'];var id=picks[Math.floor(Math.random()*picks.length)];return{items:{[id]:2},msg:`You barter for 2× ${INGR[id]?.icon}${INGR[id]?.name}.`};}},
   {id:'te_tax',loc:'cindervale',vibe:'official',prob:.06,minLv:3,text:'The village council levies a small tax to fund road repairs.',
-    effect:(s)=>{const amt=Math.min(s.gold,5+s.level*2);return{gold:-amt,msg:`You contribute ${amt}g to the village fund. (+5 rep with all factions)`,rep_all:5};}},
+    effect:(s)=>{const amt=Math.min(s.gold,5+s.level*2);return{gold:-amt,msg:`You contribute ${fmtMoney(amt)} to the village fund. (+5 rep with all factions)`,rep_all:5};}},
   {id:'te_demand',vibe:'trade',prob:.10,minLv:2,text:'Word of your craft is spreading. A courier arrives with advance payment!',
-    effect:(s)=>{const g=10+s.level*3;return{gold:g,xp:20,msg:`+${g}g advance payment, +20 XP from the reputation boost.`};}},
+    effect:(s)=>{const g=10+s.level*3;return{gold:g,xp:20,msg:`+${fmtMoney(g)} advance payment, +20 XP from the reputation boost.`};}},
   {id:'te_bargain',loc:'cindervale',vibe:'trade',prob:.08,minLv:1,text:'Brenna has surplus stock — she\'s selling ingredients at half price today.',
     effect:()=>({flag:'bargain_day',msg:'Brenna\'s shop prices halved today! Visit the market.'})},
   {id:'te_donation',vibe:'trade',prob:.05,minLv:4,text:'An anonymous benefactor leaves a pouch of gold at your workshop door.',
-    effect:(s)=>{const g=15+s.level*2;return{gold:g,msg:`+${g}g found in the pouch.`};}},
+    effect:(s)=>{const g=15+s.level*2;return{gold:g,msg:`+${fmtMoney(g)} found in the pouch.`};}},
   {id:'te_ashstorm',loc:'cindervale',vibe:'danger',negative:true,prob:.08,minLv:0,text:'A heavy ash storm blankets Cindervale. The wilds will be treacherous today.',
     effect:()=>({flag:'ash_storm',msg:'Expedition travel +⚡25 today. Plan accordingly.'})},
   {id:'te_clearsky',loc:'cindervale',vibe:'nature',prob:.08,minLv:0,text:'Crystal-clear skies — perfect foraging weather.',
@@ -4560,7 +4581,7 @@ var TOWN_EVENTS=[
   {id:'te_af_ventsurge',vibe:'danger',loc:'ashfall',prob:.05,minLv:5,text:'The Molten Vents erupt violently. Ash and heat wash over the crossing.',
     effect:()=>({items:{volcanic_essence:1,living_ember:1},msg:'Shaken loose by the eruption: 1× 🌋Volcanic Ess. + 1× 🔥Living Ember'})},
   {id:'te_af_donation',vibe:'trade',loc:'ashfall',prob:.05,minLv:4,text:'A grateful caravan master leaves a pouch of gold at your workshop. You saved his crew last season.',
-    effect:(s)=>{const g=15+s.level*2;return{gold:g,msg:`+${g}g found in the pouch. Desert gratitude is real.`};}},
+    effect:(s)=>{const g=15+s.level*2;return{gold:g,msg:`+${fmtMoney(g)} found in the pouch. Desert gratitude is real.`};}},
   {id:'te_af_clearsky',vibe:'nature',loc:'ashfall',prob:.08,minLv:0,text:'Cool winds from the north — the heat breaks for a blessed day.',
     effect:()=>({flag:'clear_sky',msg:'Extraction DCs reduced by 2 today! The desert is merciful.'})},
   {id:'te_af_moonrise',vibe:'mystical',loc:'ashfall',prob:.04,minLv:4,text:'A blood-red moon rises over the desert. The Buried Temple hums with energy.',
@@ -4582,7 +4603,7 @@ var TOWN_EVENTS=[
   {id:'te_af_camel_caravan',vibe:'trade',loc:'ashfall',prob:.06,minLv:1,text:'A massive camel caravan arrives from the far coast, laden with exotic goods and eager to trade.',
     effect:()=>{const picks=['crystal_salt','sandsilk','obsidian_shard','thornvine'];var id=picks[Math.floor(Math.random()*picks.length)];return{items:{[id]:3},gold:5,msg:`The traders share 3× ${INGR[id]?.icon}${INGR[id]?.name} and 5s in good faith.`};}},
   {id:'te_af_tax',vibe:'official',loc:'ashfall',prob:.06,minLv:3,text:'The Sand Merchants Guild levies a trade fee to maintain the caravan routes.',
-    effect:(s)=>{const amt=Math.min(s.gold,5+s.level*2);return{gold:-amt,msg:`You contribute ${amt}g to the route maintenance fund. (+5 rep with all factions)`,rep_all:5};}},
+    effect:(s)=>{const amt=Math.min(s.gold,5+s.level*2);return{gold:-amt,msg:`You contribute ${fmtMoney(amt)} to the route maintenance fund. (+5 rep with all factions)`,rep_all:5};}},
   // ═══ TIDECREST HARBOR TOWN EVENTS ═══
   {id:'te_tc_bargain',vibe:'trade',loc:'tidecrest',prob:.08,minLv:1,text:'Finn has surplus stock — shop prices halved today.',
     effect:()=>({flag:'bargain_day',msg:'Finn\'s shop prices halved today! Visit the Harbor Market.'})},
@@ -4611,7 +4632,7 @@ var TOWN_EVENTS=[
   {id:'te_tc_dive_contest',vibe:'social',loc:'tidecrest',prob:.04,minLv:3,text:'The Pearl Divers hold their annual diving contest. Prizes for observers too.',
     effect:()=>({rep:{pearl_divers:10},xp:25,msg:'+10 Pearl Diver rep, +25 XP. You pick up some diving techniques.'})},
   {id:'te_tc_tax',vibe:'official',loc:'tidecrest',prob:.06,minLv:3,text:'The Harbor Council levies a docking fee to fund breakwater repairs.',
-    effect:(s)=>{const amt=Math.min(s.gold,5+s.level*2);return{gold:-amt,msg:`You contribute ${amt}g to breakwater repairs. (+5 rep with all factions)`,rep_all:5};}},
+    effect:(s)=>{const amt=Math.min(s.gold,5+s.level*2);return{gold:-amt,msg:`You contribute ${fmtMoney(amt)} to breakwater repairs. (+5 rep with all factions)`,rep_all:5};}},
   {id:'te_tc_refugee',vibe:'social',loc:'tidecrest',prob:.05,minLv:2,text:'Shipwrecked sailors wash ashore, battered and salt-sick. They need healing.',
     effect:(s)=>{if((s.pots.brine_tonic||0)>0)return{pots:{brine_tonic:-1},gold:20,xp:50,rep:{tidekeepers:15},msg:'You donate a Brine Tonic. +2g, +50 XP, +15 Tidekeeper rep.'};return{msg:'They need brine tonics, but you have none to spare.'};}},
   {id:'te_tc_gossip',vibe:'gossip',loc:'tidecrest',prob:.18,minLv:0,text:'Old Anchor shares harbor gossip over a mug of grog.',
@@ -4760,7 +4781,7 @@ var CRISIS_TEMPLATES=[
     solutions:[
       {id:'brew_repel',label:'Brew Repellents',icon:'⚗️',skill:'attunement',stat:'inu',costType:'potion',desc:'Brew potions to drive them back through the breach.'},
       {id:'seal_breach',label:'Seal the Breach',icon:'✨',skill:'inscription',stat:'acu',costType:'enchant',desc:'Inscribe warding runes to close the tear.'},
-      {id:'hold_line',label:'Hold the Line',icon:'🛡️',skill:'discipline',stat:'dis',costType:'combat',desc:'Lead the defense. Endure the onslaught until the breach closes.'},
+      {id:'hold_line',label:'Hold the Line',icon:'🛡️',skill:'endurance',stat:'dis',costType:'combat',desc:'Lead the defense. Endure the onslaught until the breach closes.'},
       {id:'hire_mercs',label:'Hire Mercenaries',icon:'💰',skill:null,stat:null,costType:'gold',desc:'Gold solves everything. Pay sellswords to plug the gap.'},
     ]},
   {id:'plague',name:'Corruption Plague',icon:'🦠',narrative:'A wave of magical corruption sickens the settlement. People are collapsing.',
