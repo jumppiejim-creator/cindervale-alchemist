@@ -1,0 +1,12852 @@
+// Cindervale Alchemist — the game app (React + JSX). This is the source you edit.
+// Browsers don't run this file directly: dev/build.js compiles it to game.js, which index.html loads
+// (so phones no longer compile ~1MB of JSX on every visit). After editing:  node dev/build.js
+// To try an edit without building, serve the folder locally and open index.html?src — that compiles
+// this file in the browser the old way.
+const { useState, useEffect, useCallback, useRef, Component, createElement } = React;
+const Tone = window.Tone;
+
+// ═══ CRITICAL: Detect if game-data.js failed to load ═══
+if(typeof FACTIONS==='undefined'||typeof CLASSES==='undefined'||typeof RECIPES==='undefined'){
+  console.error('⚠️ GAME-DATA.JS FAILED TO LOAD! Check that game-data.js is deployed and accessible. Attempting to show error...');
+  document.getElementById('root').innerHTML='<div style="padding:40px;color:#c0b088;font-family:serif;text-align:center;background:#0d0b08;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center"><h1 style="color:#d4a420">⚠️ game-data.js Failed to Load</h1><p>The game data file did not load properly. This is usually a caching issue.</p><p><b>Fix:</b> Hard refresh (Ctrl+Shift+R), clear browser cache, or open in incognito/private window.</p><p style="color:#6a6050;font-size:14px">If the problem persists, verify that game-data.js is deployed alongside index.html on your server.</p><button onclick="location.reload(true)" style="margin-top:20px;padding:10px 30px;font-size:18px;background:#d4a420;color:#0d0b08;border:none;border-radius:6px;cursor:pointer;font-family:serif">🔄 Force Reload</button></div>';
+  throw new Error('game-data.js not loaded');
+}
+
+
+// ═══════════════════════════════════════════════════════════════
+//  CINDERVALE ALCHEMIST
+// ═══════════════════════════════════════════════════════════════
+
+// ── Threat Alert Vibes (extend EVENT_VIBES from game-data.js) ──
+if(typeof EVENT_VIBES!=='undefined'){
+  EVENT_VIBES.threat_rise={bg:'linear-gradient(160deg,#1a1008,#2a1a0a)',border:'#c08030',text:'#e8c060',
+    scene:'⚠️',sceneSize:48,title:'Threat Rising',ambiance:'Troubling reports from the frontier...',
+    particles:['⚔️','🔥','💀','🌑','⚠️','🏴']};
+  EVENT_VIBES.threat_danger={bg:'linear-gradient(160deg,#1a0808,#2a0a0a)',border:'#c03030',text:'#e86060',
+    scene:'🚨',sceneSize:48,title:'Threat Escalation',ambiance:'The situation grows dire. Prepare your defenses.',
+    particles:['💀','🔥','⚔️','🩸','🚨','☠️']};
+  EVENT_VIBES.threat_critical={bg:'linear-gradient(160deg,#1a0018,#2a0020)',border:'#a020a0',text:'#e060e0',
+    scene:'☠️',sceneSize:48,title:'CRITICAL THREAT',ambiance:'Devastation looms if nothing is done.',
+    particles:['☠️','💀','🔥','⚡','🌑','💢']};
+  EVENT_VIBES.threat_decrease={bg:'linear-gradient(160deg,#081a10,#0a2a1a)',border:'#30c060',text:'#60e890',
+    scene:'🛡️',sceneSize:48,title:'Threat Subsiding',ambiance:'Your efforts are paying off.',
+    particles:['🛡️','✨','🌿','💚','🕊️','⭐']};
+}
+
+
+// ═══ PORTRAITS ═══
+const _portraitCache={};
+const getPortraitKey=(race,gender)=>`${race}_${gender}`;
+const getPortrait=(cls,race,gender)=>{
+  const k=`${cls}/${race}_${gender}`;
+  if(_portraitCache[k])return _portraitCache[k];
+  if(typeof PORTRAITS!=='undefined'&&PORTRAITS[cls]){
+    const p=PORTRAITS[cls][getPortraitKey(race,gender)];
+    if(p){_portraitCache[k]=p;return p;}
+  }
+  return null;
+};
+const Portrait=({cls,race,gender,size=120,style:extraStyle={}})=>{
+  const src=getPortrait(cls,race,gender);
+  if(!src)return <div style={{width:size,height:size*1.335,background:'#1a1610',borderRadius:8,border:'2px solid #332c22',display:'flex',alignItems:'center',justifyContent:'center',fontSize:size*0.3,...extraStyle}}>{RACES[race]?.icon||'👤'}</div>;
+  return <img src={src} alt={`${race} ${gender} ${cls}`} style={{width:size,height:size*1.335,objectFit:'cover',borderRadius:8,border:'2px solid #9a7a20',boxShadow:'0 0 20px #d4a42044',...extraStyle}}/>;
+};
+
+const d20=()=>Math.floor(Math.random()*20)+1;
+const XP_TBL=[0,400,1040,2800,5200,8800,14000,20800,29600,41600,57600,78400,105600,140800,188000,252000,340000];
+const getLvl=xp=>{let l=0;for(let i=0;i<XP_TBL.length;i++)if(xp>=XP_TBL[i])l=i;return l;};
+const nxtXP=xp=>{const l=getLvl(xp);return l>=XP_TBL.length-1?null:XP_TBL[l+1];};
+const profB=lvl=>Math.floor(lvl/4)+2;
+const getMod=s=>Math.floor((s-10)/2);
+const RANKS=['Untrained','Trained','Expert','Master'];
+const computeRankProg=(curRank,curProg,added)=>{let r=curRank,p=curProg+added;while(r<3&&p>=r+1){p-=(r+1);r++;}return{rank:r,prog:p};};
+const rankB=(r,pb)=>[0,pb,Math.floor(pb*1.5),pb*2][r]||0;
+
+// ═══ SAVE HELPERS ═══
+const SAVE_VERSION=2;const BUILD_VERSION='2026.10.13b'; // shown on the title screen — bump when deploying
+const SP='cindervale-save';const AK=`${SP}:auto`;const sK=n=>`${SP}:slot-${n}`;
+const _useLocalStorage=(()=>{try{localStorage.setItem('_test','1');localStorage.removeItem('_test');return true;}catch(e){return false;}})();
+const hasStorage=()=>_useLocalStorage;
+async function sSet(k,d){if(!hasStorage())return false;const payload=JSON.stringify({...d,_v:SAVE_VERSION,_at:new Date().toISOString()});try{localStorage.setItem(k,payload);return true;}catch(e){console.warn('Save err:',e);return false;}}
+async function sGet(k){if(!hasStorage())return null;try{const v=localStorage.getItem(k);return v?JSON.parse(v):null;}catch(e){console.warn('Load err:',e);return null;}}
+async function sDel(k){if(!hasStorage())return false;try{localStorage.removeItem(k);return true;}catch(e){return false;}}
+
+// ═══ FIREBASE CLOUD SAVES ═══
+firebase.initializeApp({apiKey:"AIzaSyCZ0l8fTtSItJh0ebuD08b21PhVhS1gD1c",authDomain:"cindervale-alchemist.firebaseapp.com",projectId:"cindervale-alchemist",storageBucket:"cindervale-alchemist.firebasestorage.app",messagingSenderId:"105486053508",appId:"1:105486053508:web:5a0b420de6364221dc52d1",measurementId:"G-VGP6BM36NT"});
+const fbAuth=firebase.auth();
+const fbDb=firebase.firestore();
+fbDb.enablePersistence({synchronizeTabs:true}).catch(()=>{});
+
+async function cloudSet(uid,key,data){
+  try{const ts=data._at||new Date().toISOString();const withTs={...data,_at:ts};await fbDb.collection('users').doc(uid).collection('slots').doc(key).set({data:JSON.stringify(withTs),_at:ts,updatedAt:firebase.firestore.FieldValue.serverTimestamp()});console.log('[CloudSave]',key,'ts=',ts);return true;}
+  catch(e){console.warn('Cloud save err:',e);return false;}
+}
+async function cloudGet(uid,key){
+  try{const doc=await fbDb.collection('users').doc(uid).collection('slots').doc(key).get();if(!doc.exists)return null;const raw=doc.data();const parsed=JSON.parse(raw.data);if(!parsed._at){const docAt=raw._at;parsed._at=docAt&&typeof docAt.toDate==='function'?docAt.toDate().toISOString():typeof docAt==='number'?new Date(docAt).toISOString():docAt||new Date().toISOString();}console.log('[CloudGet]',key,'ts=',parsed._at);return parsed;}
+  catch(e){console.warn('Cloud load err:',e);return null;}
+}
+async function cloudDel(uid,key){
+  try{await fbDb.collection('users').doc(uid).collection('slots').doc(key).delete();return true;}catch(e){return false;}
+}
+
+// ═══ AUDIO ENGINE ═══
+let _toneStarted=false;
+async function ensureTone(){if(!_toneStarted){await Tone.start();_toneStarted=true;}}
+// Sound effects are best-effort: a Tone.js scheduling error (e.g. rapid repeat triggers) must never abort the game action that played them.
+
+function sfxDiceRoll(volDb=0){try{
+  const now=Tone.now();
+  const noise=new Tone.NoiseSynth({noise:{type:"white"},envelope:{attack:0.001,decay:0.02,sustain:0,release:0.01}}).toDestination();
+  noise.volume.value=-12+volDb;
+  const times=[];let t=0;
+  for(let i=0;i<14;i++){times.push(t);t+=0.03+i*0.008+Math.random()*0.015;}
+  times.forEach(time=>noise.triggerAttackRelease("32n",now+time));
+  const thud=new Tone.MembraneSynth({pitchDecay:0.03,octaves:3,envelope:{attack:0.001,decay:0.15,sustain:0,release:0.05}}).toDestination();
+  thud.volume.value=-15+volDb;thud.triggerAttackRelease("C2","16n",now+t+0.02);
+  setTimeout(()=>{noise.dispose();thud.dispose();},2000);
+}catch(e){console.warn('[sfx]',e?.message);}
+}
+function sfxSuccess(volDb=0){try{
+  const now=Tone.now();
+  const sy=new Tone.PolySynth(Tone.Synth,{oscillator:{type:"triangle"},envelope:{attack:0.01,decay:0.3,sustain:0.1,release:0.8}}).toDestination();
+  sy.volume.value=-10+volDb;
+  sy.triggerAttackRelease("C5","8n",now);sy.triggerAttackRelease("E5","8n",now+0.08);
+  sy.triggerAttackRelease("G5","8n",now+0.16);sy.triggerAttackRelease("C6","4n",now+0.24);
+  const sh=new Tone.Synth({oscillator:{type:"sine"},envelope:{attack:0.1,decay:0.6,sustain:0,release:0.5}}).toDestination();
+  sh.volume.value=-18+volDb;sh.triggerAttackRelease("G6","4n",now+0.3);
+  setTimeout(()=>{sy.dispose();sh.dispose();},3000);
+}catch(e){console.warn('[sfx]',e?.message);}
+}
+function sfxFailure(volDb=0){try{
+  const now=Tone.now();
+  const s1=new Tone.Synth({oscillator:{type:"triangle"},envelope:{attack:0.01,decay:0.4,sustain:0.05,release:0.6}}).toDestination();
+  s1.volume.value=-10+volDb;s1.triggerAttackRelease("Eb4","8n",now);
+  const s2=new Tone.Synth({oscillator:{type:"triangle"},envelope:{attack:0.01,decay:0.5,sustain:0.05,release:0.8}}).toDestination();
+  s2.volume.value=-10+volDb;s2.triggerAttackRelease("Bb3","4n",now+0.2);
+  const th=new Tone.MembraneSynth({pitchDecay:0.05,octaves:4,envelope:{attack:0.001,decay:0.3,sustain:0,release:0.2}}).toDestination();
+  th.volume.value=-14+volDb;th.triggerAttackRelease("G1","8n",now+0.35);
+  setTimeout(()=>{s1.dispose();s2.dispose();th.dispose();},3000);
+}catch(e){console.warn('[sfx]',e?.message);}
+}
+
+// Convert 0-100 slider to gain (0=silent, 100=full)
+function volToGain(pct){return Math.max(0,Math.min(1,pct/100));}
+function volToDb(pct){if(pct<=0)return -Infinity;return 20*Math.log10(pct/100);}
+// fmtMoney (the money formatter) lives in game-data.js so data text can use it too.
+
+function createBgMusic(volPct){
+  const gain=new Tone.Gain(volToGain(volPct)).toDestination();
+  const marimba=new Tone.Synth({oscillator:{type:"triangle"},envelope:{attack:0.003,decay:0.35,sustain:0,release:0.3}}).connect(gain);
+  marimba.volume.value=-12;
+  const marimba2=new Tone.Synth({oscillator:{type:"sine"},envelope:{attack:0.005,decay:0.4,sustain:0,release:0.35}}).connect(gain);
+  marimba2.volume.value=-14;
+  const banjo=new Tone.Synth({oscillator:{type:"square"},envelope:{attack:0.001,decay:0.15,sustain:0,release:0.1}}).connect(gain);
+  banjo.volume.value=-20;
+  const flute=new Tone.Synth({oscillator:{type:"sine"},envelope:{attack:0.15,decay:0.8,sustain:0.3,release:1.0}}).connect(gain);
+  flute.volume.value=-18;
+  const strings=new Tone.PolySynth(Tone.Synth,{oscillator:{type:"triangle"},envelope:{attack:1.0,decay:0.6,sustain:0.4,release:1.5}}).connect(gain);
+  strings.volume.value=-24;
+  const bass=new Tone.Synth({oscillator:{type:"sine"},envelope:{attack:0.02,decay:0.4,sustain:0.2,release:0.5}}).connect(gain);
+  bass.volume.value=-16;
+
+  const chords=[
+    {notes:["F3","A3","C4"],bass:"F2"},{notes:["Bb2","D3","F3"],bass:"Bb1"},
+    {notes:["C3","E3","G3"],bass:"C2"},{notes:["F3","A3","C4"],bass:"F2"},
+    {notes:["Bb2","D3","F3"],bass:"Bb1"},{notes:["D3","F3","A3"],bass:"D2"},
+    {notes:["C3","E3","G3"],bass:"C2"},{notes:["F3","A3","C4"],bass:"F2"},
+  ];
+  const callP=[
+    ["F4","A4","C5",null,"Bb4","A4",null,"G4","F4",null,"G4","A4",null,"C5",null,null],
+    ["C5","D5",null,"C5","Bb4",null,"A4","G4","F4",null,null,"A4","G4",null,"F4",null],
+    ["A4","C5",null,"D5","C5","Bb4",null,"A4","G4","F4",null,"G4",null,"A4",null,null],
+    ["D5",null,"C5","Bb4",null,"A4","G4",null,"A4",null,"Bb4","C5",null,null,"F4",null],
+  ];
+  const respP=[
+    [null,null,null,null,null,null,null,null,"C4",null,"D4","F4",null,"G4","A4",null],
+    [null,null,null,null,null,null,null,null,"A4","G4",null,"F4",null,"D4",null,"C4"],
+    [null,null,null,null,null,null,null,null,"F4","G4",null,"A4","Bb4",null,"C5",null],
+    [null,null,null,null,null,null,null,null,"C5","Bb4",null,"A4",null,"F4","G4",null],
+  ];
+  const fluteN=[
+    ["C5",null,null,null,null,null,null,null,null,null,null,null,null,null,null,null],
+    [null,null,null,null,"F5",null,null,null,null,null,null,null,null,null,null,null],
+    [null,null,null,null,null,null,null,null,"D5",null,null,null,null,null,null,null],
+    ["A4",null,null,null,null,null,null,null,null,null,null,null,"G4",null,null,null],
+  ];
+  const banjoPat=[1,0,1,0,0,1,0,1,1,0,0,1,0,1,0,0];
+  let cIdx=0,step=0,pIdx=0,running=true;
+  const bpm=130,eighth=60/bpm/2;
+
+  // Loop bodies are wrapped: a Tone scheduling error (e.g. after a quick stop/start) must not surface as an uncaught error.
+  const chordLoop=new Tone.Loop(time=>{
+    if(!running)return;
+    try{const ch=chords[cIdx%chords.length];
+    strings.triggerAttackRelease(ch.notes,"2.5",time);}catch(e){}
+    cIdx++;
+  },16*eighth);
+
+  const stepLoop=new Tone.Loop(time=>{
+    if(!running)return;
+    const ls=step%16,ch=chords[cIdx%chords.length]||chords[0];
+    try{
+    const cn=callP[pIdx%callP.length][ls];if(cn)marimba.triggerAttackRelease(cn,"16n",time);
+    const rn=respP[pIdx%respP.length][ls];if(rn)marimba2.triggerAttackRelease(rn,"16n",time);
+    const fn=fluteN[pIdx%fluteN.length][ls];if(fn)flute.triggerAttackRelease(fn,"2n",time);
+    if(banjoPat[ls]){const bn=ch.notes[Math.floor(Math.random()*ch.notes.length)];banjo.triggerAttackRelease(Tone.Frequency(bn).transpose(12).toNote(),"32n",time);}
+    if(ls%4===0)bass.triggerAttackRelease(ch.bass,"8n",time);
+    }catch(e){}
+    step++;if(step%16===0)pIdx++;
+  },eighth);
+
+  chordLoop.start(0);stepLoop.start(0);Tone.getTransport().start();
+  return{
+    setVol:(pct)=>{gain.gain.rampTo(volToGain(pct),0.1);},
+    stop:()=>{running=false;chordLoop.stop();stepLoop.stop();Tone.getTransport().stop();strings.releaseAll();
+    setTimeout(()=>{marimba.dispose();marimba2.dispose();banjo.dispose();flute.dispose();strings.dispose();bass.dispose();gain.dispose();chordLoop.dispose();stepLoop.dispose();},2000);}};
+}
+
+
+// ═══ ERROR BOUNDARY ═══
+class EB extends Component{constructor(p){super(p);this.state={e:null,info:null};}
+  static getDerivedStateFromError(e){return{e};}
+  componentDidCatch(e,info){this.setState({info});}
+  render(){if(this.state.e)return createElement('div',{style:{padding:40,color:'#f44',background:'#111',fontFamily:'monospace',whiteSpace:'pre-wrap',fontSize:16}},
+    '⚠️ Cindervale crashed. Error:\n\n'+this.state.e?.message+'\n\n'+this.state.e?.stack?.split('\n').slice(0,8).join('\n')+
+    '\n\nComponent stack: '+(this.state.info?.componentStack||'N/A'));
+  return this.props.children;}
+}
+
+// ═══════════════════════════════════════
+//  MAIN COMPONENT — ALL HOOKS AT TOP
+// ═══════════════════════════════════════
+function CindervaleAlchemistInner(){
+  // ─── ALL STATE ───
+  const [gameStarted,setGameStarted]=useState(false);
+  const [lineage,setLineage]=useState(null); // Lineage data persisted across runs
+  const [showLocationSelect,setShowLocationSelect]=useState(false);
+  const [newGameLegacy,setNewGameLegacy]=useState(null);
+  const [newGameHeirloom,setNewGameHeirloom]=useState(null);
+  const [newGameStep,setNewGameStep]=useState(0);
+  const [torchApprentice,setTorchApprentice]=useState(null);
+  const [torchStep,setTorchStep]=useState(0); // 0=closed, 1=apprentice, 2=heirloom, 3=legacy, 4=location
+  const [torchHeirloom,setTorchHeirloom]=useState(null);
+  const [torchLegacy,setTorchLegacy]=useState(null);
+  const [showHandbookIntro,setShowHandbookIntro]=useState(false);
+
+  // ═══ LINEAGE PERSISTENCE ═══
+  const LINEAGE_KEY='cindervale_lineage';
+  const loadLineage=()=>{try{const d=localStorage.getItem(LINEAGE_KEY);return d?JSON.parse(d):null;}catch(e){return null;}};
+  const saveLineage=(data)=>{try{localStorage.setItem(LINEAGE_KEY,JSON.stringify(data));}catch(e){}if(fbUserRef.current)cloudSet(fbUserRef.current.uid,'lineage',data);};
+  // Lineage now loaded from save file, not standalone localStorage
+
+  // Compute cumulative mentor bonuses from lineage
+  const getMentorBonuses=()=>{
+    if(!lineage?.generations?.length)return{};
+    const bonuses={};
+    lineage.generations.forEach(gen=>{
+      if(gen.mentorBonus){
+        const t=gen.mentorBonus.type==='brewBonus'?'craftBonus':gen.mentorBonus.type; // older lineages stored the Alchemist mentor as 'brewBonus'
+        bonuses[t]=(bonuses[t]||0)+gen.mentorBonus.val;
+      }
+      // torchEnergyBonus: inherited energy from previous generation
+      if(gen.torchEnergyBonus)bonuses.bonusEnergyPerDay=(bonuses.bonusEnergyPerDay||0)+gen.torchEnergyBonus;
+    });
+    // Cap each at +3 (energy is in energy units, so its cap is 75 — three old "hours")
+    Object.keys(bonuses).forEach(k=>{bonuses[k]=Math.min(k==='bonusEnergyPerDay'?75:3,bonuses[k]);});
+    return bonuses;
+  };
+  const mentorBonuses=getMentorBonuses();
+
+  const MENTOR_TYPES={
+    alchemist:{type:'craftBonus',val:1,desc:'+1 all brew checks',icon:'⚗️'},
+    enchanter:{type:'enchantBonus',val:1,desc:'+1 all inscription checks',icon:'✨'},
+    scholar:{type:'researchBonus',val:1,desc:'+1 all research checks',icon:'📚'},
+    warden:{type:'extractionBonus',val:1,desc:'+1 extraction checks',icon:'🌲'},
+    artificer:{type:'craftBonus',val:1,desc:'+1 all craft checks',icon:'🔧'},
+    // Prestige mentor types — each unique to the prestige identity
+    cartographer:{type:'discoveryChanceBonus',val:0.05,desc:'+5% discovery chance (Cartographer legacy)',icon:'🗺️'},
+    spellbrewer:{type:'enchantMatSave',val:0.10,desc:'+10% enchant material save (Spellbrewer legacy)',icon:'⚗️'},
+    magitech:{type:'experimentBonus',val:0.08,desc:'+8% experiment success (Magitech legacy)',icon:'🤖'},
+    arcanist:{type:'enchantSuccessFlat',val:3,desc:'+3 inscription bonus (Arcanist legacy)',icon:'🔮'},
+    brandmaster:{type:'customerPayBonus',val:0.08,desc:'+8% customer pay (Brand Master legacy)',icon:'🏷️'},
+    wildcrafter:{type:'yieldMultiplier',val:0.10,desc:'+10% foraging yield (Wildcrafter legacy)',icon:'🌿'},
+    antiquarian:{type:'xpMultiplier',val:0.05,desc:'+5% XP from all sources (Antiquarian legacy)',icon:'📖'},
+    siegeengineer:{type:'staffEfficiencyBonus',val:0.10,desc:'+10% staff efficiency (Siege Engineer legacy)',icon:'🏗️'},
+    diplomat:{type:'repGainBonus',val:0.10,desc:'+10% faction rep gains (Diplomat legacy)',icon:'🤝'},
+  };
+  const [saveSlots,setSaveSlots]=useState([null,null]);
+  const [autoSaveData,setAutoSaveData]=useState(null);
+  const [loadingSlots,setLoadingSlots]=useState(true);
+  const [saveMsg,setSaveMsg]=useState(null);
+  const [showSaveMenu,setShowSaveMenu]=useState(false);
+  const [showJournal,setShowJournal]=useState(false);
+  const [confirmDelete,setConfirmDelete]=useState(null);
+  const [fbUser,setFbUser]=useState(null);
+  const fbUserRef=useRef(null);
+  const [fbSyncing,setFbSyncing]=useState(false);
+  const [debugMode,setDebugMode]=useState(false);
+  const [showDebug,setShowDebug]=useState(false);
+  // Activate dev tools: tap the ⚗️ title 5 times rapidly
+  const [,setDevTaps]=useState(0);const devTapTimer=useRef(null);
+  const handleDevTap=()=>{setDevTaps(p=>{const n=p+1;clearTimeout(devTapTimer.current);devTapTimer.current=setTimeout(()=>setDevTaps(0),2000);if(n>=5){setDebugMode(true);setShowDebug(true);return 0;}return n;});};
+
+  const [phase,setPhase]=useState('identity');
+  const [charName,setCharName]=useState('');
+  const [charRace,setCharRace]=useState(null);
+  const [charGender,setCharGender]=useState(null);
+  const [stats,setStats]=useState({cre:10,inu:10,acu:10,tec:10,dis:10});
+  const [ptsLeft,setPtsLeft]=useState(12);
+  const [skRanks,setSkRanks]=useState({});
+  const [skPts,setSkPts]=useState(0);
+  const [skProgress,setSkProgress]=useState({});
+  const [classLevels,setClassLevels]=useState({});       // { alchemist: 5, warden: 3 }
+  // torchClassLevels/torchSpecs removed in V2 torch rework — inheritance is now via legacyFeature only
+  const [specs,setSpecs]=useState({});                    // { alchemist: 'apothecary' }
+  const [playerFeats,setPlayerFeats]=useState([]);        // ['careful_hands','early_riser']
+  const [asiSpent,setAsiSpent]=useState([]);              // [{lv:4,choices:{inu:2}}]
+  const [startingClass,setStartingClass]=useState(null);  // 'alchemist'
+  const [classPreview,setClassPreview]=useState(null);    // hover preview during class select
+  const [classDetail,setClassDetail]=useState(null);      // full class info popup
+  const [pendingLevelUp,setPendingLevelUp]=useState(null);// level-up wizard state; `_minimized:true` hides the modal while preserving all in-progress choices
+  // Queue of stacked level-ups awaiting resolution. When the player has an active `pendingLevelUp` (open or minimized)
+  // and gains another level, the new wizard payload is pushed here instead of overwriting the current one. The queue
+  // is drained on commit: when `pendingLevelUp` is cleared, the next queued entry (if any) is shifted in to take its place.
+  const [pendingLevelUpQueue,setPendingLevelUpQueue]=useState([]);
+  const [featureGrantsApplied,setFeatureGrantsApplied]=useState([]); // keys like "alchemist:7" or "apothecary:6" — tracks one-time recipe/enchant grants
+  const [screen,setScreen]=useState('map');
+  const [day,setDay]=useState(1);
+  const [energy,setEnergy]=useState(100);
+  // maxEnergy mirrors newDay()'s `baseE` (the day's energy cap) so render-scope JSX can show "current/max".
+  // Updated by newDay() and seeded from save via _computeBaseEFromSave on restore. Pre-Phase-1 saves and
+  // first-launch sessions default to 100.
+  const [maxEnergy,setMaxEnergy]=useState(100);
+  const [xp,setXp]=useState(0);
+  const [gold,setGold]=useState(15);
+  const [inv,setInv]=useState({ashbloom:3,hearthstone:1,embercap:1});
+  const [pots,setPots]=useState({});
+  const [known,setKnown]=useState(['healing_salve']);
+  const [aQ,setAQ]=useState([]);
+  const [doneQ,setDoneQ]=useState([]);
+  const [log,setLog]=useState([]);
+  const [selHex,setSelHex]=useState(null);
+  const [zonePopup,setZonePopup]=useState(null); // region id for zone detail popup
+  const [gameLocation,setGameLocation]=useState('cindervale');
+  const [selectedSite,setSelectedSite]=useState(null); // {regId, siteId} for weighted foraging
+  const [targetIngr,setTargetIngr]=useState(null); // ingredient id to target during foraging
+  const [selFlavor,setSelFlavor]=useState('');
+  const [expBench,setExpBench]=useState([]);  // ingredients on experiment bench
+  const [brewTierSel,setBrewTierSel]=useState({}); // {healing_salve:'fine', firebrew:'mw'}
+  const [brewInfSel,setBrewInfSel]=useState({}); // {healing_salve:'vigor'}
+  const [infusionsUsedToday,setInfusionsUsedToday]=useState(0);
+  const [fieldBrewPhase,setFieldBrewPhase]=useState(null);
+  const [wildcraftsUsedToday,setWildcraftsUsedToday]=useState(0);
+  const [seasonalOverride,setSeasonalOverride]=useState(null); // {region:'ashfields',season:'spring'}
+  const [wildAlly,setWildAlly]=useState(null); // {compId:'rc_fox',daysLeft:2,role:'gatherer',primary:{...},passive:{...}}
+  const [wcPickRegion,setWcPickRegion]=useState(null); // region ID for Seasonal Bypass picker
+  const [brands,setBrands]=useState([]);
+  const [relics,setRelics]=useState([]); // [{id,category,rarity,name,value,appraised,displayed,region}]
+  // Cartographer L3 "Familiar Territory" — tracks expeditions launched to each region. Used to grant a forage
+  // DC reduction at well-trodden regions for Cartographer-prestige characters. Other systems may read this later.
+  const [regionVisits,setRegionVisits]=useState({}); // {ashfields: 7, ironwood: 3, ...}
+  const [museum,setMuseum]=useState({pottery:0,tablets:0,jewelry:0,mechanisms:0,weapons:0});
+  const [threats,setThreats]=useState({});
+  const [outposts,setOutposts]=useState([]); // [{id,regionId,built,daysLeft,recipe,storedIngr,fortress}]
+  const [ingredientContracts,setIngredientContracts]=useState([]); // [{id,ingrId,qty,dailyCost,setupDay}]
+  const [settlementProjects,setSettlementProjects]=useState([]); // completed project IDs
+  const [settlementConstruction,setSettlementConstruction]=useState(null); // {projectId,daysLeft,staffAssigned}
+  const [defenseQuests,setDefenseQuests]=useState([]); // [{id,threatId,type,target,qty,reward,desc}] // [{id,name,icon,recipes:[recipeId,...],sold:0}]
+  const [hollowMarch,setHollowMarch]=useState(DEF?.hollowMarch||{active:false,wave:0,nextWaveDay:0,demands:[],history:[],finalStandAvailable:false,finalStandComplete:false,marchRecipesUnlocked:[]});
+  const [legacyFeature,setLegacyFeature]=useState(null); // {name,desc,icon,color,source,effects}
+  const [showBrandMgr,setShowBrandMgr]=useState(false);
+  const [brandOrders,setBrandOrders]=useState([]); // [{brandId,recipeId,qty,price,expires}] // {haul:{ashbloom:3,...}, brewsLeft:2, regDiff:3}
+  const [txSource,setTxSource]=useState(null); // transmute source ingredient
+  const [txTarget,setTxTarget]=useState(null); // transmute target ingredient
+  // Potion Transmutation (Transmuter Lv10 capstone): 'ing' shows ingredient flow, 'pot' shows potion flow.
+  // 'pot' mode is only visible when canPotionTransmute is true (Lv10 Transmuter).
+  const [txMode,setTxMode]=useState('ing');
+  const [txPotSource,setTxPotSource]=useState(null); // potion source ID (full encoded, with suffixes)
+  const [txPotTarget,setTxPotTarget]=useState(null); // potion target = base recipe ID
+  const [pubPapers,setPubPapers]=useState([]); // published research papers [{id,type,day}]
+  // ═══ LOCATION FILTERING ═══
+  const locRegions=REGIONS.filter(r=>!r.loc||r.loc===gameLocation);
+  const locThreatIds=THREAT_IDS_BY_LOC[gameLocation]||THREAT_IDS;
+  const locName=LOCATIONS[gameLocation]?.name||'Cindervale';
+  const li=id=>locIngr(id,gameLocation);
+  // Per-zone names/NPCs/flavour (game-data.js ZONE_UI), and a picker for per-zone ingredient pools:
+  // byZone({tidecrest:[..],ashfall:[..],base:[..]}) — base is the Cindervale list, mapped to the local
+  // substitutes (Skyreach) through li unless another mapper is given.
+  const zui=ZONE_UI[gameLocation]||ZONE_UI.cindervale;
+  const byZone=(o,map=li)=>o[gameLocation]||o.base.map(map);
+  const lmc=cost=>locMatCost(cost,gameLocation);
+  const lia=arr=>locIngrArr(arr,gameLocation);
+  const lf=id=>locFaction(id,gameLocation);
+  const lt=id=>locThreat(id,gameLocation);
+  const locFactions=Object.fromEntries(Object.entries(FACTIONS).filter(([,f])=>!f.loc||f.loc===gameLocation));
+  const locQuests=QUESTS.filter(q=>{if(q.id.startsWith('aq'))return gameLocation==='ashfall';if(q.id.startsWith('tq'))return gameLocation==='tidecrest';if(q.id.startsWith('sr_'))return gameLocation==='skyreach';if(q.id.startsWith('q')&&!q.id.startsWith('q '))return gameLocation==='cindervale';if(q.id.startsWith('fc_')){const ashChains=['fc_sm','fc_fk','fc_dw'];const tcChains=['fc_hg','fc_pd','fc_tk','fc_mm'];if(ashChains.some(p=>q.id.startsWith(p)))return gameLocation==='ashfall';if(tcChains.some(p=>q.id.startsWith(p)))return gameLocation==='tidecrest';return gameLocation==='cindervale';}return true;});
+  const locApprentices=AP_POOL.filter(a=>!a.loc||a.loc===gameLocation);
+  // Effective class levels and specs: own only (torch rework removed inherited class levels)
+  const eCL=(cid)=>classLevels[cid]||0;
+  const eSpec=(cid)=>specs[cid]||null;
+
+  // ─── PRESTIGE PREREQ HELPERS ───
+  const RANK_MIN={trained:1,expert:2,master:3};
+  const checkPrestigeReq=(req)=>{
+    for(const [k,v] of Object.entries(req)){
+      if(k==='skillRank'){
+        for(const [skId,rankName] of Object.entries(v)){
+          if((skRanks[skId]||0)<(RANK_MIN[rankName]||1))return false;
+        }
+      } else if(k==='feat'){
+        const feats=Array.isArray(v)?v:[v];
+        if(!feats.every(fid=>playerFeats.includes(fid)))return false;
+      } else if(k==='anyTwoClasses'){
+        const baseClasses=Object.keys(CLASSES);
+        const atLevel=baseClasses.filter(cid=>eCL(cid)>=v);
+        if(atLevel.length<2)return false;
+      } else if(CLASSES[k]){
+        if(eCL(k)<v)return false;
+      }
+    }
+    return true;
+  };
+  const formatPrestigeReq=(req)=>{
+    const parts=[];
+    for(const [k,v] of Object.entries(req)){
+      if(k==='skillRank'){
+        for(const [skId,rankName] of Object.entries(v)){
+          const sk=SKILLS[skId];parts.push((sk?.icon||'')+' '+(sk?.name||skId)+' ('+rankName+')');
+        }
+      } else if(k==='feat'){
+        const feats=Array.isArray(v)?v:[v];
+        feats.forEach(fid=>{const f=FEATS[fid];parts.push('🌟 '+(f?.name||fid));});
+      } else if(k==='anyTwoClasses'){
+        parts.push('Any 2 classes at Lv'+v);
+      } else if(CLASSES[k]){
+        parts.push(CLASSES[k].icon+' '+CLASSES[k].name+' '+v);
+      }
+    }
+    return parts.join(' + ');
+  };
+  const formatPrestigeReqShort=(req)=>{
+    const parts=[];
+    for(const [k,v] of Object.entries(req)){
+      if(k==='skillRank'){
+        for(const [skId,rankName] of Object.entries(v)){
+          const sk=SKILLS[skId];parts.push((sk?.icon||'')+rankName.charAt(0).toUpperCase());
+        }
+      } else if(k==='feat'){
+        const feats=Array.isArray(v)?v:[v];
+        feats.forEach(fid=>parts.push('🌟'));
+      } else if(k==='anyTwoClasses'){
+        parts.push('2×Lv'+v);
+      } else if(CLASSES[k]){
+        parts.push(CLASSES[k].icon+v);
+      }
+    }
+    return parts.join('+');
+  };
+
+
+  // ─── INGREDIENT SOURCE INFO ───
+  const getIngrSource=React.useCallback((id)=>{
+    const src=[];
+    // Regions (with sites)
+    locRegions.forEach(reg=>{
+      if(reg.ingr.includes(id)){
+        const siteNames=reg.sites?reg.sites.filter(s=>s.weights&&s.weights[id]).map(s=>s.name):[];
+        const fac=reg.faction?FACTIONS[reg.faction]:null;
+        const facNote=fac?' ('+fac.icon+' '+fac.name+' rep)':'';
+        src.push({type:'region',text:reg.icon+' '+reg.name+(siteNames.length?' ('+siteNames.join(', ')+')':'')+facNote});
+      }
+    });
+    // Hidden regions
+    if(typeof HIDDEN_REGIONS!=='undefined'){
+      HIDDEN_REGIONS.filter(hr=>locRegions.some(r=>r.id===hr.region)).forEach(hr=>{
+        if(hr.ingr.includes(id))src.push({type:'hidden',text:'🗺️ '+hr.name+' (hidden — requires mapping)'});
+      });
+    }
+    // Shop
+    if(SHOP_I.find(si=>si.id===id&&(!si.loc||si.loc===gameLocation)))src.push({type:'shop',text:'🏪 Available at the market'});
+    // Seasonal — check all seasons for this location
+    const locSeasons=SEASONS[gameLocation]||[];
+    locSeasons.forEach(s=>{
+      const si=getSeasonalIngr(s,gameLocation);
+      if(si.includes(id))src.push({type:'seasonal',text:s.icon+' Seasonal: '+s.name,seasonId:s.id});
+    });
+    return src;
+  },[locRegions,gameLocation]);
+
+  const getIngrSeasonWarn=React.useCallback((id)=>{
+    const locSeasons=SEASONS[gameLocation]||[];
+    const curS=getSeason(day,gameLocation);
+    const curSeasonal=getSeasonalIngr(curS,gameLocation,!!getFeatureVal('allSeasonIngr'));
+    if(curSeasonal.includes(id))return null; // currently in season
+    for(const s of locSeasons){
+      if(getSeasonalIngr(s,gameLocation).includes(id))return{season:s.name,icon:s.icon};
+    }
+    return null;
+  },[gameLocation,day]);
+
+  const pickHex=(regId)=>{setSelHex(regId);setZonePopup(regId);const reg=locRegions.find(r=>r.id===regId);setSelFlavor(reg?.flavor?reg.flavor[Math.floor(Math.random()*reg.flavor.length)]:'');};
+  const [dlgNpc,setDlgNpc]=useState(null);
+  const [dlgLine,setDlgLine]=useState(0);
+  const [showShop,setShowShop]=useState(false);
+  const [questDlg,setQuestDlg]=useState(null); // {qId, mode:'offer'|'accepted'|'turnIn'|'complete', lineIdx:0}
+  const [milestones,setMilestones]=useState([]);
+  const [newMilestone,setNewMilestone]=useState(null);
+  const [fRep,setFRep]=useState({ashwardens:0,hearthkeepers:0,veilwalkers:0,cinderfolk:0});
+  const [factionAlign,setFactionAlign]=useState(null); // null or faction id string
+  const [enchQ,setEnchQ]=useState([]);
+  const [potCustQ,setPotCustQ]=useState([]);
+  const [clinicPatients,setClinicPatients]=useState([]);
+  const [venomContracts,setVenomContracts]=useState([]);
+  const [forgedWeapons,setForgedWeapons]=useState([]);
+  const [shieldCommissions,setShieldCommissions]=useState([]);
+  const [planarFocus,setPlanarFocus]=useState(null); // {planeIds:['feywild'], day:1}
+  const [gadgets,setGadgets]=useState([]); // [{blueprintId:'gd_compass',mk:1,equipped:true}]
+  const [blueprints,setBlueprints]=useState([]); // [{bpId:'bp_training',drafted:true,buildProgress:0,complete:false}]
+  const [fieldJournal,setFieldJournal]=useState([]); // ['fd_ash_bloom_cycle','fd_cinder_beetle',...]
+  const [loreFragments,setLoreFragments]=useState([]); // ['lf_hf1','lf_vw2',...]
+  const [companions,setCompanions]=useState([]); // [{compId:'rc_fox',loyalty:1,active:true}]
+  const [caravans,setCaravans]=useState([]); // [{routeId:'cr_ashfield',sentDay:1,returnDay:4,cargo:{}}]
+  const [supplyChains,setSupplyChains]=useState([]); // [{partnerId:'sp_hunters',tier:1,runsCompleted:3}]
+  const [caravanRuns,setCaravanRuns]=useState({}); // {cr_ashfield:2,cr_crystal:1}
+  const [trainingSessions,setTrainingSessions]=useState({}); // {apprId: {stat:'tec', daysLeft:2}}
+  const [factionHarmony,setFactionHarmony]=useState({}); // {fp_ash_cind: 2, fp_hk_vw: 1}
+  const [prestigeLevels,setPrestigeLevels]=useState({}); // {cartographer: 2, spellbrewer: 1}
+  const [automata,setAutomata]=useState([]); // [{id:'auto_1',name:'Unit Alpha',task:{type:'brew',target:'healing_salve'},xp:0}]
+  const [customPatterns,setCustomPatterns]=useState([]); // [{id:'cp_1',name:'Arcane Sigil',effects:['pe_dmg_fire'],power:0,cat:'weapon',xp:30,dc:12}]
+  const [mappedRegions,setMappedRegions]=useState([]); // ['hr_ash_geysers','hr_iron_canopy',...]
+  const [activeBuffs,setActiveBuffs]=useState({}); // {prismatic_elixir: {daysLeft:3}, canopy_draught: {daysLeft:2}}
+  const [debt,setDebt]=useState(0); // Accumulated debt when gold < 0
+  const [disabledUpgrades,setDisabledUpgrades]=useState([]); // Upgrades out of action (repossessed for debt, or damaged)
+  const [disabledUntil,setDisabledUntil]=useState({}); // {uid: day it comes back} for timed (damage) disables; debt repossessions have no entry
+  const [shopLocked,setShopLocked]=useState(false); // Shop padlocked at debt > 200
+  const [injuryPenalty,setInjuryPenalty]=useState(0); // Energy penalty from expedition injuries (applied next morning)
+  const [staffInjuries,setStaffInjuries]=useState({}); // {ap_korrin: {daysLeft:2}}
+  const [pendingCompDec,setPendingCompDec]=useState([]); // [{comp:{id,name,icon,...},check:{roll,total,...}}]
+  const [shelves,setShelves]=useState({});
+  const [lastCheck,setLastCheck]=useState(null);
+  const [resultPopup,setResultPopup]=useState(null); // {title,detail,type}
+  const [expQ,setExpQ]=useState([]); // expedition hour popup queue
+  // Ingredients available at current location (computed from locRegions + mapped hidden areas).
+  // Must sit below the prestigeLevels/mappedRegions state it reads.
+  const locIngredients=React.useMemo(()=>{
+    const s=new Set();
+    locRegions.forEach(r=>r.ingr.forEach(id=>s.add(id)));
+    // Cartographer: mapped hidden areas make their ingredients locally available
+    if((prestigeLevels?.cartographer||0)>=1&&typeof HIDDEN_REGIONS!=='undefined'){
+      HIDDEN_REGIONS.filter(hr=>{
+        const parentReg=locRegions.find(r=>r.id===hr.region);
+        return parentReg&&mappedRegions.includes(hr.id);
+      }).forEach(hr=>hr.ingr.forEach(id=>s.add(id)));
+    }
+    return s;
+  },[locRegions,mappedRegions,prestigeLevels]);
+  const canCraftAtLocation=(ingrList)=>ingrList.every(id=>locIngredients.has(locIngr(id,gameLocation)));
+  // ─── PHASE 3: IMMERSIVE EXPEDITIONS ───
+  // Tracks an in-progress forage expedition. Player enters expedition mode after travel is paid,
+  // then chooses to Forage Again (10⚡/roll, +1 DC per prior roll) or Return to Town. Save is blocked
+  // while active=true (Task 2). Crash-recovery only — disallowed mid-trip via the disabled save UI.
+  const [expedition,setExpedition]=useState({active:false,regionId:null,siteId:null,siteIsHidden:false,targetIngr:null,
+    rollCount:0,cumG:{},cumXp:0,baseDC:0,travelCost:0,maxDCMet:0,lastRoll:null,lastFlavorIdx:-1,startedDay:0});
+  const [expSummary,setExpSummary]=useState(null); // End-of-expedition summary panel data
+  const [boardQ,setBoardQ]=useState([]); // available board quests
+  const [activeBQ,setActiveBQ]=useState([]); // accepted board quests
+  const [doneBQCount,setDoneBQCount]=useState(0); // total completed
+  const [dayFlags,setDayFlags]=useState([]); // temporary daily flags (clear_sky, ash_storm, bargain_day)
+  const [knownEnch,setKnownEnch]=useState(['e_sharp','e_glow','e_ironbark','e_feather','e_windwalk','e_rootbind']); // discovered enchantments
+  const [brewCounts,setBrewCounts]=useState({}); // times each recipe brewed (for adaptation)
+  const [procureItems,setProcureItems]=useState([]); // daily rare shop items from procurement
+  const [constructProgress,setConstructProgress]=useState({}); // {upgradeId: 0-100} progress from engineer task
+  const [skillTip,setSkillTip]=useState(null); // skill id for info overlay
+  const [tapInfo,setTapInfo]=useState(null); // global tap-to-reveal: string key of currently open info panel
+  // Tap-to-reveal for phones (hover `title` text never shows on touch screens). Put onClick={tapToggle(key)} and
+  // title={tip} on the element and render {tapText(key,tip)} inside it. Desktop keeps the hover title.
+  const tapToggle=key=>e=>{e.stopPropagation();setTapInfo(t=>t===key?null:key);};
+  const tapText=(key,tip)=>tapInfo===key?<div style={{fontSize:11,color:TH.text,marginTop:2,fontStyle:'italic',whiteSpace:'pre-line',fontWeight:'normal'}}>{tip}</div>:null;
+  // Season tooltip: hover (desktop) OR tap (touch) shows current season's gameplay effects.
+  // Two pieces of state — pinned (click-toggle, persists across mouseLeave) and hovered (transient).
+  // Tooltip visible when either is true. Data source: SEASONS[loc] (game-data.js:1790).
+  const [seasonTipPinned,setSeasonTipPinned]=useState(false);
+  const [seasonTipHover,setSeasonTipHover]=useState(false);
+  const [showDoneQ,setShowDoneQ]=useState(false);
+  const [showTaskGuide,setShowTaskGuide]=useState(true);
+  // Workshop upgrades screen — selected room index. Ephemeral UI state only;
+  // tier is computed on the fly from `upgrades` ownership, no persisted save data.
+  const [workshopRoomIdx,setWorkshopRoomIdx]=useState(0);
+  const [showReport,setShowReport]=useState(true);
+  const [confirmFire,setConfirmFire]=useState(null);
+  const [upgrades,setUpgrades]=useState([]);
+  const [hiredAppr,setHiredAppr]=useState([]);
+  const [apprTasks,setApprTasks]=useState({});
+  const [apprXP,setApprXP]=useState({});
+  const [dailyReport,setDailyReport]=useState([]);
+  const [morningReport,setMorningReport]=useState(null);
+  const [companionReport,setCompanionReport]=useState(null);
+  const [eventPopup,setEventPopup]=useState(null); // {events:[...], idx:0}
+  const [undoStack,setUndoStack]=useState([]);
+  const [musicOn,setMusicOn]=useState(false);
+  const [sfxOn,setSfxOn]=useState(true);
+  const [musicVol,setMusicVol]=useState(50);
+  const [sfxVol,setSfxVol]=useState(70);
+  const [showAudioPanel,setShowAudioPanel]=useState(false);
+  const [wsOpen,setWsOpen]=useState({}); // workshop section open state — keys present = open
+  const toggleWs=(id)=>setWsOpen(p=>({...p,[id]:!p[id]}));
+  const isWsOpen=(id)=>!!wsOpen[id]; // default closed
+  // Header row for the collapsible cards (tap to open/close; open state lives in wsOpen)
+  const wsHead=(id,title,style)=><div style={{...S.cT,cursor:'pointer',userSelect:'none',...style}} onClick={()=>toggleWs(id)}><span style={{display:'flex',justifyContent:'space-between',width:'100%'}}><span>{title}</span><span style={{fontSize:13,color:TH.textDim}}>{isWsOpen(id)?'▲':'▼'}</span></span></div>;
+  const musicRef=useRef(null);
+  const [confirmRest,setConfirmRest]=useState(false);
+  const [confirmAlign,setConfirmAlign]=useState(null); // null or faction id
+  const [nightExpPending,setNightExpPending]=useState(false); // show night expedition picker after rest
+  const [deferredNewDay,setDeferredNewDay]=useState(false); // delay newDay() until after night expedition completes
+  const [news,setNews]=useState([]);
+
+  // ─── ALL REFS ───
+  const prevLvl=useRef(0);
+  const autoSaveRef=useRef(null);
+  const failStreakRef=useRef(0);
+
+  // ─── DERIVED ───
+  const level=getLvl(xp);const displayLevel=level+1;const nextXp=nxtXP(xp);const pb=profB(level);
+  const hasClass=cid=>(classLevels[cid]||0)>0;
+
+  // ─── REGION MASTERY (Naturalist Lv10 Region Mastery — design lock §2/§3) ──────────────────────
+  // Two pure derivation helpers, NEVER persisted. They are computed live every read because the
+  // result legitimately changes with `canGeo` (Scholar Lv6 toggles whether geological entries are
+  // "available" for a zone). Caching this state is a silent permanent-desync bug — do not.
+  // Mirrors the per-region `allDone` computation in the Field Journal panel.
+  const REGION_MASTERY_ENERGY_PER_ZONE=1;
+  const REGION_MASTERY_ENERGY_PER_LOCATION=5;
+  const getZonesMastered=()=>{
+    if(typeof FIELD_DISCOVERIES==='undefined')return 0;
+    const canGeo=(classLevels.scholar||0)>=6;
+    let count=0;
+    for(const zid of Object.keys(FIELD_DISCOVERIES)){
+      const discs=FIELD_DISCOVERIES[zid];
+      const avail=discs.filter(d=>d.type!=='geological'||canGeo);
+      if(avail.length>0&&avail.every(d=>fieldJournal.includes(d.id)))count++;
+    }
+    return count;
+  };
+  const getLocationsComplete=()=>{
+    if(typeof FIELD_DISCOVERIES==='undefined'||typeof REGIONS==='undefined')return 0;
+    const canGeo=(classLevels.scholar||0)>=6;
+    // 1) Per-zone mastery map (compute once, not double-iterated).
+    const zoneMastered={};
+    for(const zid of Object.keys(FIELD_DISCOVERIES)){
+      const discs=FIELD_DISCOVERIES[zid];
+      const avail=discs.filter(d=>d.type!=='geological'||canGeo);
+      zoneMastered[zid]=avail.length>0&&avail.every(d=>fieldJournal.includes(d.id));
+    }
+    // 2) Group REGIONS by their `loc` field (this is the existing zone→location mapping).
+    const locZones={};
+    for(const reg of REGIONS){
+      if(!locZones[reg.loc])locZones[reg.loc]=[];
+      locZones[reg.loc].push(reg.id);
+    }
+    // 3) Count locations where every journaled zone is mastered.
+    let complete=0;
+    for(const zoneIds of Object.values(locZones)){
+      const journaled=zoneIds.filter(zid=>FIELD_DISCOVERIES[zid]&&FIELD_DISCOVERIES[zid].length>0);
+      if(journaled.length===0)continue;
+      if(journaled.every(zid=>zoneMastered[zid]))complete++;
+    }
+    return complete;
+  };
+
+  // Feature/effect queries across all classes + specs + feats
+  // Faction Harmony bonuses (Diplomat Embassy, FACTION_PAIRS). Defined ahead of getFeatureVal because
+  // getFeatureVal calls it — that single call site is what applies harmony to every read of
+  // shopRestockBonus / buyDiscount / repGainBonus / sellBonus, so no per-site wiring is needed.
+  // Grand Alliance: every faction pair in this town at Harmony 3. The length guard matters — .every() on an
+  // empty list is vacuously true. Pass `harmony` to test a not-yet-saved value.
+  const isGrandAlliance=(harmony=factionHarmony)=>{const p=FACTION_PAIRS.filter(fp=>!fp.loc||fp.loc===gameLocation);return p.length>0&&p.every(fp=>(harmony[fp.id]||0)>=3);};
+  const getHarmonyBonus=(effectKey)=>{
+    if(typeof FACTION_PAIRS==='undefined')return 0;
+    let total=0,pairFx=0;
+    const locPairs=FACTION_PAIRS.filter(fp=>(!fp.loc||fp.loc===gameLocation));
+    locPairs.forEach(pair=>{
+      const h=factionHarmony[pair.id]||0;
+      if(h>=1&&effectKey==='shopRestockBonus')total+=2;
+      if(h>=2&&effectKey==='buyDiscount')total+=0.15;
+      if(h>=3&&effectKey==='repGainBonus')total+=0.25;
+      // Pair-specific tier-3 reward (pair.effect). Kept in a separate accumulator: each effect
+      // exists on exactly one pair, so it is exempt from the Lv5 doubling and HARMONY_CAPS below.
+      if(h>=3&&pair.effect&&pair.effect[effectKey]!=null){const v=pair.effect[effectKey];pairFx+=typeof v==='number'?v:v===true?1:0;}
+    });
+    // Grand Alliance bonus
+    const allMax=isGrandAlliance();
+    if(allMax){
+      if(effectKey==='repGainBonus')total+=0.50;
+      if(effectKey==='sellBonus')total+=0.25;
+    }
+    // Diplomat Lv5 Ambassador: harmony bonuses doubled
+    if((prestigeLevels?.diplomat||0)>=5)total*=2;
+    // Zone-total ceiling per effect key (HARMONY_CAPS, game-data.js) — applied after the doubling.
+    if(typeof HARMONY_CAPS!=='undefined'&&HARMONY_CAPS[effectKey]!=null)total=Math.min(total,HARMONY_CAPS[effectKey]);
+    return total+pairFx;
+  };
+  // Prestige effect keys read generically by getFeatureVal (Diplomat Lv2-4 trade/rep bonuses).
+  const PRESTIGE_GENERIC_KEYS=['repGainBonus','buyDiscount','shopRestockBonus'];
+  // Equipped Tinkerer gadgets. A blueprint's `effect` is an engine key (forageYieldBonus, craftBonus, …) with a
+  // per-Mk value; the legendary Perpetual Engine instead carries an `effects` map at Mk III.
+  // Masterwork Calibration (Tinkerer Lv10): equipped Mk III gadgets run at 150% output (numeric values only).
+  const getGadgetEffect=(effectKey,calib)=>gadgets.filter(g=>g.equipped).reduce((sum,g)=>{
+    const bp=GADGET_BLUEPRINTS.find(b=>b.id===g.blueprintId);if(!bp)return sum;
+    let v=0;
+    if(bp.effects){if(g.mk>=3&&typeof bp.effects[effectKey]==='number')v=bp.effects[effectKey];}
+    else if(bp.effect===effectKey){const val=bp.values[g.mk-1];v=typeof val==='number'?val:0;}
+    if(v&&g.mk>=3&&calib)v*=1.5;
+    return sum+v;
+  },0);
+  // Museum set bonuses (Antiquarian) — computed before getFeatureVal, which folds them in.
+  const getMuseumSetBonus=(setId)=>{
+    const s=RELIC_SETS[setId];if(!s)return{};
+    const count=museum[setId]||0;
+    if(count<s.needed)return{};
+    const mult=(prestigeLevels.antiquarian||0)>=5?2:1;
+    const bonus={};
+    Object.entries(s.bonus).forEach(([k,v])=>{bonus[k]=(typeof v==='number'?v*mult:v);});
+    return bonus;
+  };
+  const getAllMuseumBonuses=()=>{
+    const bonuses={};
+    Object.keys(RELIC_SETS).forEach(setId=>{
+      const sb=getMuseumSetBonus(setId);
+      Object.entries(sb).forEach(([k,v])=>{bonuses[k]=(bonuses[k]||0)+(typeof v==='number'?v:v===true?1:0);});
+    });
+    return bonuses;
+  };
+  const museumBonuses=getAllMuseumBonuses();
+  const getFeatureVal=useCallback((effectKey)=>{
+    let total=0;
+    for(const [cid,lv] of Object.entries(classLevels)){
+      const cls=CLASSES[cid];if(!cls)continue;
+      for(const f of cls.features){if(f.classLv<=lv&&f.effects?.[effectKey]!=null){const v=f.effects[effectKey];total+=typeof v==='number'?v:v===true?1:0;}}
+      const specId=specs[cid];
+      if(specId&&cls.specs?.[specId]){for(const sf of cls.specs[specId].features){if(sf.classLv<=lv&&sf.effects?.[effectKey]!=null){const v=sf.effects[effectKey];total+=typeof v==='number'?v:v===true?1:0;}}}
+    }
+    for(const fid of playerFeats){const f=FEATS[fid];if(f&&f.effects?.[effectKey]!=null){const v=f.effects[effectKey];total+=typeof v==='number'?v:v===true?1:0;}}
+    // Pre-compute alignmentBoost from class/feat sources to amplify faction alignment effects
+    let _abVal=0;for(const [cid2,lv2] of Object.entries(classLevels)){const cls2=CLASSES[cid2];if(!cls2)continue;for(const f2 of cls2.features){if(f2.classLv<=lv2&&f2.effects?.alignmentBoost)_abVal+=f2.effects.alignmentBoost;}const sp2=specs[cid2];if(sp2&&cls2.specs?.[sp2]){for(const sf2 of cls2.specs[sp2].features){if(sf2.classLv<=lv2&&sf2.effects?.alignmentBoost)_abVal+=sf2.effects.alignmentBoost;}}}for(const fid2 of playerFeats){const ft2=FEATS[fid2];if(ft2?.effects?.alignmentBoost)_abVal+=ft2.effects.alignmentBoost;}
+    const fEfx=getFactionEffects(fRep,factionAlign,_abVal);if(fEfx[effectKey])total+=fEfx[effectKey];
+    // Archivist lore chain completed bonuses
+    for(const [,chain] of Object.entries(LORE_CHAINS)){
+      if(chain.reward[effectKey]&&chain.fragments.every(f=>loreFragments.includes(f.id))){total+=chain.reward[effectKey];}
+    }
+    // Active elixir buffs
+    for(const [buffId,buff] of Object.entries(activeBuffs)){
+      if(buff.daysLeft>0&&ELIXIR_BUFFS[buffId]?.effects[effectKey]){total+=ELIXIR_BUFFS[buffId].effects[effectKey];}
+    }
+    // Museum collection bonuses (Antiquarian)
+    if(museumBonuses&&museumBonuses[effectKey])total+=museumBonuses[effectKey];
+    // Mentor bonuses from lineage
+    if(mentorBonuses[effectKey])total+=mentorBonuses[effectKey];
+    // Legacy feature from mentor (inherited via Pass the Torch)
+    if(legacyFeature?.effects?.[effectKey]!=null){const v=legacyFeature.effects[effectKey];total+=typeof v==='number'?v:v===true?1:0;}
+    // Dynamic state-dependent bonuses
+    if(effectKey==='craftBonus'){
+      // citationCraftBonus (Theorist Lv10): published papers grant a scaling craft bonus (+1 per 2 papers, max +4)
+      const hasCitation=Object.entries(classLevels).some(([c,l])=>{const sp=CLASSES[c]?.specs?.[specs[c]];return sp&&sp.features.some(f=>f.classLv<=l&&f.effects?.citationCraftBonus);});
+      if(hasCitation){const ccb=pubPapers?.length||0;const citBonus=Math.min(4,Math.floor(ccb/2));if(citBonus>0)total+=citBonus;}
+      // journalCraftBonus: field journal entries grant craft bonus
+      const fjLen=fieldJournal?.length||0;if(fjLen>0){let jBonus=0;for(const [cid3,lv3] of Object.entries(classLevels)){const cls3=CLASSES[cid3];if(!cls3)continue;const sp3=specs[cid3];if(sp3&&cls3.specs?.[sp3]){for(const sf3 of cls3.specs[sp3].features){if(sf3.classLv<=lv3&&sf3.effects?.journalCraftBonus)jBonus+=sf3.effects.journalCraftBonus;}}}if(jBonus>0)total+=Math.min(jBonus*2,Math.floor(fjLen/3)*jBonus);}
+    }
+    if(effectKey==='bonusEnergyPerDay'){
+      // regionMasteryBonus: Naturalist Lv10 capstone. Adds +1 Energy per fully-documented zone +
+      // +5 Energy per location with every zone complete. Gate placement mirrors `journalCraftBonus`:
+      // checked per-spec-feature against the player's class level, so non-Naturalists never get it.
+      let hasRegionMastery=false;
+      for(const [cidR,lvR] of Object.entries(classLevels)){
+        const clsR=CLASSES[cidR];if(!clsR)continue;
+        const spR=specs[cidR];
+        if(spR&&clsR.specs?.[spR]){
+          for(const sfR of clsR.specs[spR].features){
+            if(sfR.classLv<=lvR&&sfR.effects?.regionMasteryBonus){hasRegionMastery=true;break;}
+          }
+        }
+        if(hasRegionMastery)break;
+      }
+      if(hasRegionMastery){
+        total+=getZonesMastered()*REGION_MASTERY_ENERGY_PER_ZONE+getLocationsComplete()*REGION_MASTERY_ENERGY_PER_LOCATION;
+      }
+    }
+    // Companion passive bonuses (always-on while companion is active)
+    if(companions?.length>0&&typeof RANGER_COMPANIONS!=='undefined'){companions.filter(cc=>cc.active).forEach(cc=>{const comp=RANGER_COMPANIONS.find(r=>r.id===cc.compId);if(comp?.passive?.[effectKey]!=null){const v=comp.passive[effectKey];total+=typeof v==='number'?v:v===true?1:0;}});}
+    // Wild Ally passive bonuses (Wildcrafter temporary companion)
+    if(wildAlly?.passive?.[effectKey]!=null){const v=wildAlly.passive[effectKey];total+=typeof v==='number'?v:v===true?1:0;}
+    // Settlement project effects
+    if(settlementProjects?.length>0&&typeof SETTLEMENT_PROJECTS!=='undefined'){settlementProjects.forEach(pid=>{const proj=SETTLEMENT_PROJECTS.find(p=>p.id===pid);if(proj?.effect?.[effectKey]!=null){const v=proj.effect[effectKey];total+=typeof v==='number'?v:v===true?1:0;}});}
+    // Faction Harmony (Diplomat Embassy) — shopRestockBonus/buyDiscount/repGainBonus/sellBonus
+    total+=getHarmonyBonus(effectKey);
+    // Equipped Tinkerer gadgets (calibration is never a gadget effect, so this recursion is one level deep)
+    if(effectKey!=='masterworkCalibration'&&gadgets?.length)total+=getGadgetEffect(effectKey,getFeatureVal('masterworkCalibration')>0);
+    // Prestige features: their `effects` are running totals per level, so the highest unlocked level's value counts.
+    // Only keys that aren't hand-wired elsewhere through prestigeLevels are folded in here.
+    if(PRESTIGE_GENERIC_KEYS.includes(effectKey)){
+      for(const [pid,plv] of Object.entries(prestigeLevels||{})){const pc=PRESTIGE_CLASSES[pid];if(!pc||!plv)continue;
+        let best=null;for(const f of pc.features){if(f.lv<=plv&&typeof f.effects?.[effectKey]==='number')best=f.effects[effectKey];}
+        if(best!=null)total+=best;}
+    }
+    return total;
+  },[classLevels,specs,playerFeats,fRep,factionAlign,loreFragments,activeBuffs,mentorBonuses,museum,legacyFeature,pubPapers,fieldJournal,companions,wildAlly,settlementProjects,factionHarmony,gameLocation,prestigeLevels,gadgets]);
+  // Category-scoped bonus aggregator. kind is 'brew' (reads categoricalBrewBonus) or 'enchant' (reads categoricalEnchantBonus).
+  // activeCat is the recipe's or enchant's `cat` field (e.g. 'healing', 'weapon', 'armor', 'other').
+  // Returns sum of matching values from base-class + spec features.
+  const getCategoricalBonus=useCallback((kind,activeCat,effectKey)=>{
+    if(!activeCat)return 0;
+    const fieldName=kind==='brew'?'categoricalBrewBonus':'categoricalEnchantBonus';
+    let total=0;
+    for(const [cid,lv] of Object.entries(classLevels)){
+      const cls=CLASSES[cid];if(!cls)continue;
+      for(const f of cls.features){
+        const cb=f[fieldName]?.[activeCat]?.[effectKey];
+        if(f.classLv<=lv&&cb!=null)total+=typeof cb==='number'?cb:cb===true?1:0;
+      }
+      const specId=specs[cid];
+      if(specId&&cls.specs?.[specId]){
+        for(const sf of cls.specs[specId].features){
+          const cb=sf[fieldName]?.[activeCat]?.[effectKey];
+          if(sf.classLv<=lv&&cb!=null)total+=typeof cb==='number'?cb:cb===true?1:0;
+        }
+      }
+    }
+    // Faction Harmony pair-specific categorical rewards (tier 3) — e.g. weapon enchant gold,
+    // healing potion value. Same pair.effect blocks getHarmonyBonus reads for flat keys.
+    if(typeof FACTION_PAIRS!=='undefined'){
+      FACTION_PAIRS.filter(fp=>(!fp.loc||fp.loc===gameLocation)).forEach(fp=>{
+        if((factionHarmony[fp.id]||0)>=3){
+          const cb=fp.effect?.[fieldName]?.[activeCat]?.[effectKey];
+          if(cb!=null)total+=typeof cb==='number'?cb:cb===true?1:0;
+        }
+      });
+    }
+    return total;
+  },[classLevels,specs,factionHarmony,gameLocation]);
+
+
+  // ─── ALL CALLBACKS (before any return!) ───
+  const addLog=useCallback((t,type='info')=>setLog(p=>[...p.slice(-60),{text:t,type}]),[]);
+  const showResult=useCallback((title,type='info',detail='',check=null)=>{addLog(title,type);setResultPopup({title,type,detail,check,t:Date.now()});},[addLog]);
+
+  // Apply a feature's one-time recipe/enchant grants. featureKey is "<classOrSpecId>:<level>" (e.g. "alchemist:7", "apothecary:6").
+  // No-op if already applied. Marks applied even if 0 picks were granted (player already knew everything in the pool).
+  const applyFeatureGrants=useCallback((feature,featureKey,featureLabel)=>{
+    if(!feature||(!feature.grantRecipes&&!feature.grantEnchants&&!feature.grantUpgrades))return;
+    if(featureGrantsApplied.includes(featureKey))return;
+    if(feature.grantRecipes){
+      const cfg=feature.grantRecipes;
+      setKnown(prev=>{
+        const n=[...prev];
+        const picks=cfg.pool.filter(id=>!n.includes(id)&&RECIPES.find(r=>r.id===id)).slice(0,cfg.count);
+        picks.forEach(id=>n.push(id));
+        if(picks.length>0){
+          const names=picks.map(id=>{const r=RECIPES.find(rx=>rx.id===id);return r?r.icon+' '+r.name:id;}).join(', ');
+          addLog(`📖 ${featureLabel}: ${names}`,'quest');
+        }
+        return n;
+      });
+    }
+    if(feature.grantEnchants){
+      const cfg=feature.grantEnchants;
+      setKnownEnch(prev=>{
+        const n=[...prev];
+        const picks=cfg.pool.filter(id=>!n.includes(id)&&ENCHANTMENTS.find(e=>e.id===id)).slice(0,cfg.count);
+        picks.forEach(id=>n.push(id));
+        if(picks.length>0){
+          const names=picks.map(id=>{const e=ENCHANTMENTS.find(ex=>ex.id===id);return e?e.icon+' '+e.name:id;}).join(', ');
+          addLog(`📖 ${featureLabel}: ${names}`,'quest');
+        }
+        return n;
+      });
+    }
+    if(feature.grantUpgrades){
+      const cfg=feature.grantUpgrades;
+      setUpgrades(prev=>{
+        const n=[...prev];
+        const picks=cfg.pool.filter(id=>!n.includes(id)&&UPGRADES[id]).slice(0,cfg.count);
+        picks.forEach(id=>n.push(id));
+        if(picks.length>0){
+          const names=picks.map(id=>{const u=UPGRADES[id];return u?u.icon+' '+u.name:id;}).join(', ');
+          addLog(`🏗️ ${featureLabel}: ${names}`,'quest');
+        }
+        return n;
+      });
+    }
+    setFeatureGrantsApplied(prev=>prev.includes(featureKey)?prev:[...prev,featureKey]);
+  },[featureGrantsApplied,addLog]);
+
+  const gatherState=useCallback(()=>({
+    phase,charName,charRace,charGender,stats,ptsLeft,skRanks,skPts,skProgress,classLevels,specs,playerFeats,asiSpent,startingClass,
+    screen,day,energy,maxEnergy,gameLocation,xp,gold,inv,pots,known,aQ,doneQ,
+    log:log.slice(-30),milestones,fRep,factionAlign,upgrades,hiredAppr,apprTasks,apprXP,enchQ,potCustQ,clinicPatients,venomContracts,forgedWeapons,shieldCommissions,planarFocus,gadgets,blueprints,fieldJournal,loreFragments,companions,caravans,supplyChains,caravanRuns,trainingSessions,factionHarmony,prestigeLevels,automata,customPatterns,mappedRegions,regionVisits,activeBuffs,debt,disabledUpgrades,disabledUntil,shopLocked,injuryPenalty,staffInjuries,shelves,dailyReport,
+    boardQ,activeBQ,doneBQCount,dayFlags,knownEnch,brewCounts,procureItems,pubPapers,selectedSite,constructProgress,lineage,brands,brandOrders,relics,museum,threats,outposts,ingredientContracts,settlementProjects,settlementConstruction,defenseQuests,hollowMarch,legacyFeature,seasonalOverride,wildAlly,featureGrantsApplied,
+    // persist daily counters that were previously losing state on reload.
+    infusionsUsedToday,wildcraftsUsedToday,
+    // persist only when active (so the player resumes mid-trip if browser dies).
+    expedition:expedition.active?expedition:null,
+    // Level-up wizard state — persists across save/reload so a pending advancement (open, minimized, or queued)
+    // survives the browser dying mid-flow. Null when no pending; otherwise the full wizard payload object.
+    pendingLevelUp,pendingLevelUpQueue,
+    saveVersion:2,
+  }),[gameLocation,pubPapers,regionVisits,phase,charName,charRace,charGender,stats,ptsLeft,skRanks,skPts,skProgress,classLevels,specs,playerFeats,asiSpent,startingClass,screen,day,energy,maxEnergy,xp,gold,inv,pots,known,aQ,doneQ,log,milestones,fRep,factionAlign,upgrades,hiredAppr,apprTasks,apprXP,enchQ,potCustQ,clinicPatients,venomContracts,forgedWeapons,shieldCommissions,planarFocus,gadgets,blueprints,fieldJournal,loreFragments,companions,caravans,supplyChains,caravanRuns,trainingSessions,factionHarmony,prestigeLevels,automata,customPatterns,mappedRegions,activeBuffs,debt,disabledUpgrades,disabledUntil,shopLocked,injuryPenalty,staffInjuries,shelves,dailyReport,boardQ,activeBQ,doneBQCount,dayFlags,knownEnch,brewCounts,procureItems,constructProgress,selectedSite,lineage,brands,brandOrders,relics,museum,threats,outposts,ingredientContracts,settlementProjects,settlementConstruction,defenseQuests,hollowMarch,legacyFeature,seasonalOverride,wildAlly,featureGrantsApplied,infusionsUsedToday,wildcraftsUsedToday,expedition,pendingLevelUp,pendingLevelUpQueue]);
+
+  const restoreState=useCallback((s,opts={})=>{
+    if(!s)return;
+    if(!opts.keepUndo)setUndoStack([]);
+    // Migrate old save format (pClass/sClass/spec) to new (classLevels/specs)
+    if(s.pClass&&!s.classLevels){
+      const oldLvl=getLvl(s.xp||0);
+      s.classLevels={[s.pClass]:oldLvl};
+      s.startingClass=s.pClass;
+      s.specs={};
+      if(s.spec&&s.pClass)s.specs[s.pClass]=s.spec;
+      s.playerFeats=s.playerFeats||[];
+      s.asiSpent=s.asiSpent||[];
+    }
+    // V2 migration: remove COM stat, removed skills, merchant class
+    if(s.stats?.com!==undefined){const{com,...rest}=s.stats;s.stats=rest;if(!s.stats.dis)s.stats.dis=10;}
+    const _removedSkills=['aesthetics','haggling','stockpiling','efficiency','lore','appraisal','procurement'];
+    if(s.skRanks){_removedSkills.forEach(sk=>{delete s.skRanks[sk];});}
+    if(s.skProgress){_removedSkills.forEach(sk=>{delete s.skProgress[sk];});}
+    // V2 migration: clean merchant from specs
+    if(s.specs?.merchant)delete s.specs.merchant;
+    // V2 torch rework: strip old torchClassLevels/torchSpecs from saves (inheritance is now via legacyFeature only)
+    delete s.torchClassLevels;delete s.torchSpecs;
+    // pre-v2 saves used `hours` (0–4 range); v2+ saves use `energy` (0–100 range, 25× scale).
+    if(s.energy===undefined&&s.hours!==undefined){s.energy=s.hours*25;}
+    setPhase(s.phase||'identity');setCharName(s.charName||'');setCharRace(s.charRace||null);setCharGender(s.charGender||null);setStats(s.stats||DEF.stats);
+    setPtsLeft(s.ptsLeft??12);setSkRanks(s.skRanks||{});setSkPts(s.skPts||0);setSkProgress(s.skProgress||{});
+    const _cl=s.classLevels||{};const cleanCL={};Object.entries(_cl).forEach(([k,v])=>{if(CLASSES[k])cleanCL[k]=v;});
+    setClassLevels(cleanCL);
+    setSpecs(s.specs||{});setPlayerFeats(s.playerFeats||[]);setAsiSpent(s.asiSpent||[]);setStartingClass(s.startingClass||null);
+    // when energy is genuinely missing (not migrated, not stored),
+    // compute the character's baseE from the save object directly. Mirrors the newDay() baseE formula
+    // for the common contributors (upgrade bonusEnergy, class-feature bonusEnergy / bonusEnergyPerDay / freeAction).
+    const _computeBaseEFromSave=(saved)=>{
+      let be=100;
+      (saved.upgrades||[]).forEach(uid=>{const u=UPGRADES[uid];if(u?.effect?.bonusEnergy)be+=u.effect.bonusEnergy;});
+      const cl=saved.classLevels||{};const sp=saved.specs||{};
+      Object.entries(cl).forEach(([cid,lv])=>{const cls=CLASSES[cid];if(!cls)return;
+        cls.features.forEach(f=>{if(f.classLv<=lv&&f.effects){if(f.effects.bonusEnergy)be+=f.effects.bonusEnergy;if(f.effects.bonusEnergyPerDay)be+=f.effects.bonusEnergyPerDay;if(f.effects.freeAction)be+=25;}});
+        const specId=sp[cid];if(specId&&cls.specs?.[specId]){cls.specs[specId].features.forEach(sf=>{if(sf.classLv<=lv&&sf.effects){if(sf.effects.bonusEnergy)be+=sf.effects.bonusEnergy;if(sf.effects.bonusEnergyPerDay)be+=sf.effects.bonusEnergyPerDay;}});}
+      });
+      // Floor to base energy; defensive against future refactors that could subtract below 100.
+      return Math.max(100,be);
+    };
+    if(!opts.keepScreen)setScreen(s.screen||'map');
+    setDay(s.day||1);setEnergy(s.energy!=null?s.energy:_computeBaseEFromSave(s));
+    // Seed maxEnergy from save if present (newer saves), else recompute via the same formula newDay() uses so
+    // the expedition view's "current/max" meter renders correctly on crash-recovery loads.
+    setMaxEnergy(s.maxEnergy!=null?s.maxEnergy:_computeBaseEFromSave(s));
+    setGameLocation(s.gameLocation||'cindervale');
+    setXp(s.xp!=null?s.xp:0);setGold(s.gold!=null?s.gold:15);setInv(s.inv||{});setPots(s.pots||{});
+    setKnown(s.known||['healing_salve']);setAQ(s.aQ||[]);setDoneQ(s.doneQ||[]);
+    setLog(s.log||[]);setMilestones(s.milestones||[]);setFRep(s.fRep||DEF.fRep);setFactionAlign(s.factionAlign||null);
+    setUpgrades(s.upgrades||[]);setHiredAppr(s.hiredAppr||[]);
+    setApprTasks(s.apprTasks||{});setApprXP(s.apprXP||{});
+    prevLvl.current=getLvl(s.xp||0);
+    setDailyReport(s.dailyReport||[]);setEnchQ(s.enchQ||[]);setPotCustQ(s.potCustQ||[]);setClinicPatients(s.clinicPatients||[]);setVenomContracts(s.venomContracts||[]);setForgedWeapons(s.forgedWeapons||[]);setShieldCommissions(s.shieldCommissions||[]);setPlanarFocus(s.planarFocus||null);setGadgets(s.gadgets||[]);setBlueprints(s.blueprints||[]);setFieldJournal(s.fieldJournal||[]);setLoreFragments(s.loreFragments||[]);setCompanions(s.companions||[]);setCaravans(s.caravans||[]);setSupplyChains(s.supplyChains||[]);setCaravanRuns(s.caravanRuns||{});setTrainingSessions(s.trainingSessions||{});setFactionHarmony(s.factionHarmony||{});setPrestigeLevels(s.prestigeLevels||{});setAutomata(s.automata||[]);setCustomPatterns(s.customPatterns||[]);setMappedRegions(s.mappedRegions||[]);setRegionVisits(s.regionVisits||{});setActiveBuffs(s.activeBuffs||{});setDebt(s.debt||0);setDisabledUpgrades(s.disabledUpgrades||[]);setDisabledUntil(s.disabledUntil||{});setShopLocked(s.shopLocked||false);setInjuryPenalty(s.injuryPenalty||0);setStaffInjuries(s.staffInjuries||{});setShelves(s.shelves||{});setLastCheck(null);setNews([]);setMorningReport(null);setCompanionReport(null);
+    setBoardQ(s.boardQ||[]);setActiveBQ(s.activeBQ||[]);setDoneBQCount(s.doneBQCount||0);setDayFlags(s.dayFlags||[]);setKnownEnch(s.knownEnch&&s.knownEnch.length>0?s.knownEnch:(LOCATIONS[s.gameLocation||'cindervale']?.startEnch||['e_sharp','e_glow','e_ironbark','e_feather','e_windwalk','e_rootbind']));
+    setBrewCounts(s.brewCounts||{});setProcureItems(s.procureItems||[]);setPubPapers(s.pubPapers||[]);setConstructProgress(s.constructProgress||{});
+    setSelHex(null);setDlgNpc(null);setShowShop(false);setQuestDlg(null);setPendingLevelUp(null);setSelectedSite(s.selectedSite||null);setLineage(prev=>{const sl=s.lineage||null;if(prev&&(!sl||(prev.totalGenerations||0)>(sl.totalGenerations||0)))return prev;return sl;});/* never roll lineage back to an older copy */setBrands(s.brands||[]);setBrandOrders(s.brandOrders||[]);setRelics(s.relics||[]);setMuseum(s.museum||{pottery:0,tablets:0,jewelry:0,mechanisms:0,weapons:0});setThreats(s.threats||Object.fromEntries((THREAT_IDS_BY_LOC[s.gameLocation||'cindervale']||THREAT_IDS).map(t=>[t,0])));setOutposts(s.outposts||[]);setIngredientContracts(s.ingredientContracts||[]);setSettlementProjects(s.settlementProjects||[]);setSettlementConstruction(s.settlementConstruction||null);setDefenseQuests(s.defenseQuests||[]);setHollowMarch(s.hollowMarch||DEF?.hollowMarch||{active:false,wave:0,nextWaveDay:0,demands:[],history:[],finalStandAvailable:false,finalStandComplete:false,marchRecipesUnlocked:[]});setLegacyFeature(s.legacyFeature||null);setSeasonalOverride(s.seasonalOverride||null);setWildAlly(s.wildAlly||null);setFeatureGrantsApplied(s.featureGrantsApplied||[]);
+    // persist daily counters across save reloads. Default 0 for pre-v2 saves.
+    setInfusionsUsedToday(s.infusionsUsedToday||0);setWildcraftsUsedToday(s.wildcraftsUsedToday||0);
+    // Restore in-progress expedition (crash recovery). Inactive by default for older saves and on fresh chars.
+    setExpedition(s.expedition&&s.expedition.active?s.expedition:{active:false,regionId:null,siteId:null,siteIsHidden:false,targetIngr:null,rollCount:0,cumG:{},cumXp:0,baseDC:0,travelCost:0,maxDCMet:0,lastRoll:null,lastFlavorIdx:-1,startedDay:0});
+    setExpSummary(null);
+    // Level-up wizard state persists across save/reload (pending advancement preserved if browser crashed mid-flow,
+    // or if the player minimized the wizard and quit). Defaults to null/[] for fresh characters and older saves.
+    setPendingLevelUp(s.pendingLevelUp||null);
+    setPendingLevelUpQueue(Array.isArray(s.pendingLevelUpQueue)?s.pendingLevelUpQueue:[]);
+  },[]);
+
+  // ─── ALL EFFECTS (before any return!) ───
+  // (scroll removed — was jarring during multi-action sequences)
+
+
+  // Retroactive sync: existing characters who already reached a class/spec level with grantRecipes/grantEnchants
+  // never received their grant. On first eligible render (game running, classes loaded), scan and apply any missing grants.
+  useEffect(()=>{
+    if(!gameStarted||!classLevels||Object.keys(classLevels).length===0)return;
+    Object.entries(classLevels).forEach(([cid,lv])=>{
+      const cls=CLASSES[cid];if(!cls)return;
+      cls.features.forEach(f=>{
+        if(f.classLv<=lv&&(f.grantRecipes||f.grantEnchants||f.grantUpgrades)){
+          applyFeatureGrants(f,cid+':'+f.classLv,cls.name+' Lv'+f.classLv);
+        }
+      });
+      const specId=specs[cid];
+      if(specId&&cls.specs?.[specId]){
+        cls.specs[specId].features.forEach(sf=>{
+          if(sf.classLv<=lv&&(sf.grantRecipes||sf.grantEnchants||sf.grantUpgrades)){
+            applyFeatureGrants(sf,specId+':'+sf.classLv,cls.specs[specId].name+' Lv'+sf.classLv);
+          }
+        });
+      }
+    });
+  },[gameStarted,classLevels,specs,applyFeatureGrants]);
+
+  // Retroactive sync: ensure all mapped hidden areas have their recipes/enchantments in known lists
+  useEffect(()=>{
+    if(!mappedRegions||mappedRegions.length===0||typeof HIDDEN_REGIONS==='undefined')return;
+    const toLearnR=[];const toLearnE=[];
+    mappedRegions.forEach(hrId=>{
+      const hr=HIDDEN_REGIONS.find(h=>h.id===hrId);if(!hr)return;
+      const hrIngr=new Set(hr.ingr);
+      RECIPES.filter(r=>!known.includes(r.id)&&r.buff&&r.ingr.some(id=>hrIngr.has(id))).forEach(r=>toLearnR.push(r.id));
+      ENCHANTMENTS.filter(e=>!knownEnch.includes(e.id)&&e.ingr.some(id=>hrIngr.has(id))).forEach(e=>toLearnE.push(e.id));
+    });
+    if(toLearnR.length>0){setKnown(prev=>{const n=[...prev];toLearnR.forEach(id=>{if(!n.includes(id))n.push(id);});return n;});addLog('📜 Mentor\'s notes reveal forgotten recipes: '+toLearnR.map(id=>{const r=RECIPES.find(rx=>rx.id===id);return r?r.icon+' '+r.name:id;}).join(', '),'quest');}
+    if(toLearnE.length>0){setKnownEnch(prev=>{const n=[...prev];toLearnE.forEach(id=>{if(!n.includes(id))n.push(id);});return n;});addLog('📜 Ancient patterns emerge from mapped terrain: '+toLearnE.map(id=>{const e=ENCHANTMENTS.find(ex=>ex.id===id);return e?e.icon+' '+e.name:id;}).join(', '),'quest');}
+  },[mappedRegions.length]); // Only re-run when mappedRegions count changes
+
+  useEffect(()=>{
+    (async()=>{
+      setLoadingSlots(true);
+      const slots=[];
+      for(let i=1;i<=2;i++){try{slots.push(await sGet(sK(i)));}catch(e){slots.push(null);}}
+      let auto=null;try{auto=await sGet(AK);}catch(e){}
+      setSaveSlots(slots);setAutoSaveData(auto);setLoadingSlots(false);
+      // Load lineage: try save data first, then localStorage fallback
+      if(auto?.lineage)setLineage(auto.lineage);
+      else if(slots.find(s=>s?.lineage))setLineage(slots.find(s=>s?.lineage).lineage);
+      else{const lsLineage=loadLineage();if(lsLineage)setLineage(lsLineage);}
+    })();
+  },[]);
+
+  useEffect(()=>{
+    if(phase==='play'&&gameStarted){
+      if(autoSaveRef.current)clearTimeout(autoSaveRef.current);
+      autoSaveRef.current=setTimeout(async()=>{
+        const state=gatherState();state._at=new Date().toISOString();
+        const ok=await sSet(AK,state);
+        setAutoSaveData(state); // keep Title → Continue pointing at the latest autosave
+        if(fbUserRef.current)cloudSet(fbUserRef.current.uid,'auto',state);
+        if(ok)setSaveMsg(fbUserRef.current?'☁️ Auto-saved':'Auto-saved');
+        setTimeout(()=>setSaveMsg(null),2000);
+      },500);
+    }
+    return()=>{if(autoSaveRef.current)clearTimeout(autoSaveRef.current);};
+  },[day,phase,gameStarted,gatherState]);
+
+  useEffect(()=>{
+    if(level>prevLvl.current&&phase==='play'){
+      // One wizard payload per level gained — a single big XP award can cross more than one threshold.
+      // The first goes to `pendingLevelUp` (unless one is already open/minimized); the rest queue behind it.
+      const payloads=[];const nw=[];
+      for(let newLv=prevLvl.current+1;newLv<=level;newLv++){
+        payloads.push({
+          newCharLevel:newLv,step:'overview',
+          chosenClass:null,chosenSpec:null,asiChoices:null,chosenFeat:null,
+          skillPointsSpent:{},needsASI:ASI_LEVELS.includes(newLv),needsFeat:FEAT_LEVELS.includes(newLv),needsSpec:false,skillPointsAvailable:3+(getFeatureVal('bonusSkillEveryOther')&&newLv%2===0?1:0),
+        });
+        addLog(`⬆ Level ${newLv+1}! Time to advance your training.`,'level');
+        nw.push({icon:'⬆',text:`Level ${newLv+1}! Choose how to advance.`,color:TH.goldBright});
+        const newRegions=locRegions.filter(r=>r.unlock===newLv);
+        if(newRegions.length>0)nw.push({icon:'🗺️',text:`New region${newRegions.length>1?'s':''} unlocked: ${newRegions.map(r=>`${r.icon}${r.name}`).join(', ')}`,to:'worldmap',label:'🗺️ Explore',color:TH.teal});
+        const newRecipes=RECIPES.filter(r=>r.unlock===newLv&&(!r.faction||getRL(r.faction)>=(r.fReq||0)));
+        if(newRecipes.length>0)nw.push({icon:'⚗️',text:`New recipe${newRecipes.length>1?'s':''} available: ${newRecipes.map(r=>`${r.icon}${r.name}`).join(', ')}`,to:'workshop',label:'⚗️ Workshop',color:TH.green});
+      }
+      if(pendingLevelUp){setPendingLevelUpQueue(q=>[...q,...payloads]);}
+      else{setPendingLevelUp(payloads[0]);if(payloads.length>1)setPendingLevelUpQueue(q=>[...q,...payloads.slice(1)]);}
+      setNews(p=>[...p,...nw]);
+      if(level>=10)earnMilestone('master_alch');
+      if(level>=15)earnMilestone('legend');
+      prevLvl.current=level;
+    }
+  },[level,phase,addLog,pendingLevelUp]);
+
+  // Close the current level-up wizard and open the next queued one (if any).
+  const advanceLevelUpQueue=()=>{setPendingLevelUp(pendingLevelUpQueue[0]||null);setPendingLevelUpQueue(pendingLevelUpQueue.slice(1));};
+  // Skill rank a level-up wizard should build on: current rank, plus the rank-1 floor this level grants via a new
+  // class's proficiency skills or a newly chosen spec's bonus skills.
+  const levelUpBaseRank=(lu,sk)=>{
+    let r=skRanks[sk]||0;if(!lu?.chosenClass)return r;
+    const isP=lu.chosenClass.startsWith('prestige_');const cid=isP?lu.prestigeParentClass:lu.chosenClass;const c=CLASSES[cid];if(!c)return r;
+    if(!(classLevels[cid]>0)&&c.profSkills?.includes(sk))r=Math.max(r,1);
+    if(lu.chosenSpec&&c.specs?.[lu.chosenSpec]?.bSkills?.includes(sk))r=Math.max(r,1);
+    return r;
+  };
+
+  // ─── UNDO SYSTEM ───
+  // An undo snapshot is the full save payload (gatherState), so every piece of persisted state is covered and
+  // undo can never half-restore an action. Rest (newDay), loading, new game and Pass the Torch clear the stack.
+  const snapshot=()=>{setUndoStack(p=>[...p.slice(-4),gatherState()]);};
+
+  // ═══ AUDIO CONTROLS ═══
+  const toggleMusic=useCallback(async()=>{
+    await ensureTone();
+    if(musicRef.current){musicRef.current.stop();musicRef.current=null;setMusicOn(false);}
+    else{musicRef.current=createBgMusic(musicVol);setMusicOn(true);}
+  },[musicVol]);
+  useEffect(()=>{if(musicRef.current)musicRef.current.setVol(musicVol);},[musicVol]);
+  useEffect(()=>()=>{if(musicRef.current){musicRef.current.stop();musicRef.current=null;}},[]);
+  // Workshop upgrades screen keyboard nav: ← / → step rooms while the screen
+  // is active; handler registered on enter, torn down on leave. Ignores key
+  // events while focus is in an input/textarea/select so typing is unaffected.
+  useEffect(()=>{
+    if(screen!=='upgrades'||typeof ROOM_DEFS==='undefined')return;
+    const onKey=e=>{
+      const tag=(e.target&&e.target.tagName||'').toLowerCase();
+      if(tag==='input'||tag==='textarea'||tag==='select')return;
+      if(e.key==='ArrowLeft')setWorkshopRoomIdx(i=>(i-1+ROOM_DEFS.length)%ROOM_DEFS.length);
+      else if(e.key==='ArrowRight')setWorkshopRoomIdx(i=>(i+1)%ROOM_DEFS.length);
+    };
+    window.addEventListener('keydown',onKey);
+    return()=>window.removeEventListener('keydown',onKey);
+  },[screen]);
+  const sfxDb=volToDb(sfxVol);
+  const playSfx=useCallback(async(fn)=>{if(!sfxOn)return;await ensureTone();fn(sfxDb);},[sfxOn,sfxDb]);
+
+  const undo=()=>{
+    if(undoStack.length===0)return;
+    const snap=undoStack[undoStack.length-1];
+    setUndoStack(p=>p.slice(0,-1));
+    restoreState(snap,{keepUndo:true,keepScreen:true});
+    setLastCheck(null);
+    addLog('↩️ Time seems to blur — you find yourself a moment before, as if the last action never happened.','info');
+  };
+
+  // ─── HELPERS ───
+  const eStat=sid=>{
+    let v=stats[sid]||10;
+    // Add all spec stat bonuses (+2 from each spec's bStat)
+    for(const [cid,specId] of Object.entries(specs)){const sp=CLASSES[cid]?.specs?.[specId];if(sp?.bStat===sid)v+=2;}
+    // Add ASIs
+    for(const asi of asiSpent){v+=(asi.choices[sid]||0);}
+    // Add class/feat stat bonuses (e.g. acuBonus, disBonus)
+    v+=getFeatureVal(sid+'Bonus');
+    // weakStatBonus: +1 to lowest ability score modifier
+    const wsb=getFeatureVal('weakStatBonus');
+    if(wsb>0){const sids=Object.keys(STATS);const baseVals=sids.map(s=>{let bv=stats[s]||10;for(const [cid2,sp2] of Object.entries(specs)){const spc=CLASSES[cid2]?.specs?.[sp2];if(spc?.bStat===s)bv+=2;}for(const asi2 of asiSpent){bv+=(asi2.choices[s]||0);}bv+=getFeatureVal(s+'Bonus');return{s,v:bv};});baseVals.sort((a,b)=>a.v-b.v);if(baseVals[0]?.s===sid)v+=wsb;}
+    // loreStatBonus: completed lore chains grant +1 permanent stat (cycles through stats)
+    if(typeof LORE_CHAINS!=='undefined'&&getFeatureVal('loreStatBonus')){const sids=Object.keys(STATS);let ci=0;for(const [,chain] of Object.entries(LORE_CHAINS)){if(chain.fragments.every(f=>loreFragments.includes(f.id))){if(sids[ci%sids.length]===sid)v+=1;ci++;}}}
+    // allStatBonus: flat bonus to all stats (Monument)
+    v+=getFeatureVal('allStatBonus');
+    return v;
+  };
+  const getRaceSkBonus=skId=>{const r=RACES[charRace];if(!r||!r.skillBonus)return 0;return r.skillBonus[skId]||0;};
+  const getSkMod=skId=>{const sk=SKILLS[skId];if(!sk)return 0;let v=getMod(eStat(sk.stat))+rankB(skRanks[skId]||0,pb)+getRaceSkBonus(skId);if(skId==='danger_sense')v+=getFeatureVal('dangerSenseBonus');return v;};
+  // ─── SKILL CHECKS ───
+  // One d20 core for every check: stat mod + rank bonus + race bonus, plus Untrained (feat) and Monument
+  // (settlement) bonuses. Nat 1 always fails, nat 20 always succeeds. doCheck also shows the result in the
+  // check banner; pureCheck is the silent version used inside multi-roll flows (expeditions, crises).
+  const rollSkill=(skId,dc)=>{
+    const sk=SKILLS[skId];if(!sk)return{success:false,total:0,roll:0,name:'?',mod:0,rb:0,dc,statName:'',icon:'',extras:[]};
+    const roll=d20();const mod=getMod(eStat(sk.stat));const rb=rankB(skRanks[skId]||0,pb);let total=roll+mod+rb;
+    const extras=[];
+    const race=getRaceSkBonus(skId);if(race){total+=race;extras.push({label:(RACES[charRace]?.icon||'')+' Race',val:race});}
+    const utb=(skRanks[skId]||0)===0?getFeatureVal('untrainedBonus'):0;if(utb){total+=utb;extras.push({label:'🃏 Untrained',val:utb});}
+    const asb=getFeatureVal('allSkillBonus');if(asb){total+=asb;extras.push({label:'🏆 Monument',val:'+'+asb});}
+    return{roll,mod,rb,total,dc,success:roll===1?false:roll===20?true:total>=dc,name:sk.name,icon:sk.icon,statName:STATS[sk.stat]?.name||'',extras};
+  };
+  const doCheck=(skId,dc)=>{const r=rollSkill(skId,dc);setLastCheck(r);return r;};
+  const hasUp=id=>upgrades.includes(id); // owned (purchase checks)
+  const upActive=id=>upgrades.includes(id)&&!disabledUpgrades.includes(id); // owned and working (effect checks)
+  const upEff=key=>{let v=0;upgrades.filter(uid=>!disabledUpgrades.includes(uid)).forEach(uid=>{const u=UPGRADES[uid];if(u?.effect?.[key])v+=typeof u.effect[key]==='number'?u.effect[key]:(u.effect[key]?1:0);});if(v>0&&getFeatureVal('upgradeDoubleBonus'))v*=2;return v;};
+  // Quality-tier DC shift: the tier's own dcMod plus the cauldron (brew) or inscription (ench) upgrades —
+  // the Fine upgrade helps every tier above Standard, the Masterwork upgrade helps MW and GM.
+  const qualDCMod=(q,kind)=>{const [f,m]=kind==='ench'?['fineEnchDC','mwEnchDC']:['fineDCBonus','mwDCBonus'];return (QUALITY[q]||QUALITY.std).dcMod+(q&&q!=='std'?upEff(f):0)+(q==='mw'||q==='gm'?upEff(m):0);};
+  // Night expedition numbers (Sentinel): rounds (25 energy-hours per round), DC penalty, danger reduction
+  const getNightInfo=()=>({rounds:Math.floor((getFeatureVal('nightBonusHours')||75)/25),dcPen:Math.max(1,4-Math.floor(getFeatureVal('nightDCReduction'))),dangerRed:getFeatureVal('nightDangerReduction')});
+  // Percentage modifier capability (Phase 2, expanded in Phase 4). Sums an `energyCostMultiplier[actionType]`
+  // (signed decimal) across all sources that getFeatureVal also walks: upgrades, active class/spec features,
+  // prestige features, feats, active companion passives, active wild ally passive, settlement projects, faction
+  // alignBonus + earned tierBonuses, active elixir buffs, lineage mentor bonuses, and legacyFeature. Applies the
+  // sum to baseCost (additive stacking, capped at −99% so an action never costs 0). Caller is responsible for any
+  // game-design floors (e.g. research's Math.max(25, ...)) and any flat modifiers that still subtract afterwards.
+  // Action types in active use (Phase 4): 'research', 'travel'. The helper accepts any string — features can target
+  // new action types (e.g. 'brew', 'inscribe') without code changes here.
+  const getActionEnergyCost=(actionType,baseCost)=>{
+    let mult=0;
+    upgrades.filter(uid=>!disabledUpgrades.includes(uid)).forEach(uid=>{
+      const m=UPGRADES[uid]?.effect?.energyCostMultiplier?.[actionType];
+      if(typeof m==='number')mult+=m;
+    });
+    for(const [cid,lv] of Object.entries(classLevels)){
+      const cls=CLASSES[cid];if(!cls)continue;
+      for(const f of cls.features){const m=f.effects?.energyCostMultiplier?.[actionType];if(f.classLv<=lv&&typeof m==='number')mult+=m;}
+      const specId=specs[cid];
+      if(specId&&cls.specs?.[specId]){
+        for(const sf of cls.specs[specId].features){const m=sf.effects?.energyCostMultiplier?.[actionType];if(sf.classLv<=lv&&typeof m==='number')mult+=m;}
+      }
+    }
+    for(const [pid,plv] of Object.entries(prestigeLevels||{})){
+      const pc=PRESTIGE_CLASSES?.[pid];if(!pc)continue;
+      for(const pf of pc.features||[]){const m=pf.effects?.energyCostMultiplier?.[actionType];if((pf.lv||pf.classLv)<=plv&&typeof m==='number')mult+=m;}
+    }
+    for(const fid of playerFeats){const m=FEATS[fid]?.effects?.energyCostMultiplier?.[actionType];if(typeof m==='number')mult+=m;}
+    // Phase 4 extensions — mirror getFeatureVal's source list so e.g. Ranger Hawk's travel reduction is honored.
+    if(companions?.length>0&&typeof RANGER_COMPANIONS!=='undefined'){
+      companions.filter(cc=>cc.active).forEach(cc=>{
+        const comp=RANGER_COMPANIONS.find(r=>r.id===cc.compId);
+        const m=comp?.passive?.energyCostMultiplier?.[actionType];
+        if(typeof m==='number')mult+=m;
+      });
+    }
+    if(wildAlly?.passive?.energyCostMultiplier?.[actionType]!=null){
+      const m=wildAlly.passive.energyCostMultiplier[actionType];if(typeof m==='number')mult+=m;
+    }
+    if(settlementProjects?.length>0&&typeof SETTLEMENT_PROJECTS!=='undefined'){
+      settlementProjects.forEach(pid=>{
+        const proj=SETTLEMENT_PROJECTS.find(p=>p.id===pid);
+        const m=proj?.effect?.energyCostMultiplier?.[actionType];
+        if(typeof m==='number')mult+=m;
+      });
+    }
+    // Faction alignBonus + earned tier bonuses (alignment-locked + per-tier).
+    if(typeof FACTIONS!=='undefined'){
+      for(const [fid,fac] of Object.entries(FACTIONS)){
+        const aligned=factionAlign===fid;
+        if(aligned){const m=fac.alignBonus?.effects?.energyCostMultiplier?.[actionType];if(typeof m==='number')mult+=m;}
+        const tier=Math.min(fac.tierBonuses?.length||0,Math.floor((fRep?.[fid]||0)/25));
+        for(let t=0;t<tier;t++){const m=fac.tierBonuses[t]?.effects?.energyCostMultiplier?.[actionType];if(typeof m==='number')mult+=m;}
+      }
+    }
+    // Active elixir buffs (drink-effect that boosts a single action type, e.g. brew).
+    if(typeof ELIXIR_BUFFS!=='undefined'){
+      for(const [buffId,buff] of Object.entries(activeBuffs||{})){
+        if(buff?.daysLeft>0){const m=ELIXIR_BUFFS[buffId]?.effects?.energyCostMultiplier?.[actionType];if(typeof m==='number')mult+=m;}
+      }
+    }
+    // Lineage mentor bonus (Pass-the-Torch inheritance).
+    if(mentorBonuses?.energyCostMultiplier?.[actionType]!=null){
+      const m=mentorBonuses.energyCostMultiplier[actionType];if(typeof m==='number')mult+=m;
+    }
+    if(legacyFeature?.effects?.energyCostMultiplier?.[actionType]!=null){
+      const m=legacyFeature.effects.energyCostMultiplier[actionType];if(typeof m==='number')mult+=m;
+    }
+    if(mult<-0.99)mult=-0.99;
+    return Math.max(1,Math.round(baseCost*(1+mult)));
+  };
+  const modInv=(id,a)=>setInv(p=>{const n={...p};n[id]=(n[id]||0)+a;if(n[id]<=0)delete n[id];return n;});
+  const modPot=(id,a)=>setPots(p=>{const n={...p};n[id]=(n[id]||0)+a;if(n[id]<=0)delete n[id];return n;});
+  // Count potions across inventory AND shelves (all quality variants)
+  // Every stock variant of a recipe — Standard/Fine/MW/GM, field-fresh and infused — counts and can be consumed.
+  const potVariants=(src,baseId)=>Object.keys(src).filter(pid=>(src[pid]||0)>0&&getBaseRecipeId(pid)===baseId);
+  const countAllPots=(baseId)=>potVariants(pots,baseId).reduce((s,pid)=>s+pots[pid],0)+potVariants(shelves,baseId).reduce((s,pid)=>s+shelves[pid],0);
+  // Consume potions: inventory first, then shelves; plainest variants first (std→fine→mw→gm, special variants last).
+  // Returns the quality breakdown of what was used.
+  const consumePots=(baseId,qty)=>{
+    let rem=qty;const consumed={std:0,fine:0,mw:0,gm:0};
+    const order=pid=>({'':0,_F:1,_M:2,_G:3}[pid.slice(baseId.length)]??4);
+    const take=(src,isShelf)=>potVariants(src,baseId).sort((a,b)=>order(a)-order(b)).forEach(pid=>{
+      if(rem<=0)return;const n=Math.min(rem,src[pid]);rem-=n;
+      const tier=getPotQuality(pid);consumed[consumed[tier]!=null?tier:'std']+=n;
+      if(isShelf)setShelves(p=>{const m={...p};m[pid]=(m[pid]||0)-n;if(m[pid]<=0)delete m[pid];return m;});else modPot(pid,-n);
+    });
+    take(pots,false);if(rem>0)take(shelves,true);
+    return consumed;
+  };
+  // Calculate quality bonus multiplier from consumed breakdown: avg of QUALITY.sellMult across consumed potions
+  const qualityBonusMult=(consumed)=>{
+    const total=consumed.std+consumed.fine+consumed.mw+consumed.gm;if(total===0)return{mult:1,label:''};
+    const mults={std:1,fine:QUALITY.fine?.sellMult||1.5,mw:QUALITY.mw?.sellMult||2,gm:QUALITY.gm?.sellMult||3};
+    const avg=(consumed.std*mults.std+consumed.fine*mults.fine+consumed.mw*mults.mw+consumed.gm*mults.gm)/total;
+    if(avg<=1.01)return{mult:1,label:''};
+    const parts=[];if(consumed.fine)parts.push(consumed.fine+'× Fine');if(consumed.mw)parts.push(consumed.mw+'× Masterwork');if(consumed.gm)parts.push(consumed.gm+'× Grandmaster');
+    return{mult:avg,label:parts.length>0?' | ✨ Quality bonus ('+parts.join(', ')+'): ×'+avg.toFixed(1):''};
+  };
+  const gainXP=(base)=>{const cartoXp=(prestigeLevels?.cartographer||0)>=3?0.10:0;const mult=1+getFeatureVal('xpMultiplier')+getFeatureVal('xpBonus')+cartoXp;setXp(x=>x+Math.floor(base*mult));};
+  const getBuyPrice=(basePrice)=>{const disc=getFeatureVal('buyDiscount')+getFeatureVal('shopDiscount');return Math.max(1,Math.floor(basePrice*(1-disc)));};
+  const regUnlock=(reg)=>Math.max(0,reg.unlock-getFeatureVal('bonusRegionSlot'));
+  const addRep=(fid,a)=>{const dipLv=prestigeLevels?.diplomat||0;const repB=1+getFeatureVal('repGainBonus');const dblRep=(getFeatureVal('doubleRep')||dipLv>=1)?2:1;const persRank=skRanks['persuasion']||0;const persMod=Math.min(0.30,persRank*0.06+getMod(eStat('inu'))*0.01);const repSpill=getFeatureVal('repSpillover')+(dipLv>=5?0.25:0);const gain=Math.floor(a*repB*dblRep*(1+persMod));setFRep(p=>{const n={...p};const oldRep=n[fid]||0;const newRep=Math.max(0,oldRep+gain);const oldLvl=getRepLvl(oldRep);const newLvl=getRepLvl(newRep);if(newLvl>oldLvl){const f=FACTIONS[fid];const tb=f?.tierBonuses?.[newLvl-1];if(tb)addLog(`🏛️ ${f.icon} ${f.name}: ${REP_LVS[newLvl]} unlocked — ${tb.name}!`,'quest');}n[fid]=newRep;if(repSpill>0||persRank>0){const spillChance=repSpill>0?repSpill:Math.min(0.10,persRank*0.02);if(Math.random()<spillChance){const others=Object.keys(n).filter(f=>f!==fid&&FACTIONS[f]);if(others.length>0){const spillFid=others[Math.floor(Math.random()*others.length)];n[spillFid]=(n[spillFid]||0)+1;}}}return n;});};
+  const getRL=fid=>getRepLvl(fRep[fid]||0);
+
+  // Plain function (not memoised): it reads a lot of state and is only called from newDay/newGame.
+  const genCust=()=>{
+    const isEnch=hasClass('enchanter');
+    const netB=getSkMod('networking');
+    const custBonusF=getFeatureVal('customerBonus');
+    const custPayBF=getFeatureVal('customerPayBonus');
+    const potN=(known.length>=1&&!shopLocked)?(1+Math.floor(Math.random()*(1+Math.floor(netB/3)+Math.floor(level/5)))+custBonusF):0;
+    // Local customers only (CUST_DATA entries without a loc appear everywhere)
+    const custNames=(()=>{const n=CUST_NAMES_BY_LOC(gameLocation);return n.length?n:CUST_NAMES;})();
+    const pickCustName=()=>custNames[Math.floor(Math.random()*custNames.length)];
+    // Magic-threat penalty: some customers don't show up
+    const noShow=getThreatPenalty(locThreatIds[2],'custDropChance');
+    const pQ=[];
+    const availPots=potN>0?RECIPES.filter(r=>known.includes(r.id)&&!r.fieldOnly&&!r.buff&&canCraftAtLocation(r.ingr)):[];
+    if(potN>0&&availPots.length>0){
+      for(let i=0;i<potN;i++){
+        if(Math.random()<noShow)continue;
+        const name=pickCustName();
+        const cd=CUST_DATA[name]||{title:'Villager'};
+        const r=availPots[Math.floor(Math.random()*availPots.length)];
+        const qty=1+Math.floor(Math.random()*(level>=6?3:level>=3?2:1));
+        const basePay=r.xp+getFeatureVal('potionSaleBonus')+Math.floor(upEff('sellBonus')*r.xp);
+        const payPer=Math.floor(basePay*(1+custPayBF+getFeatureVal('potionValueBonus')+getCategoricalBonus('brew',r.cat,'potionValueBonus'))*GOLD_MULT);
+        const pl=POT_LINES[name];
+        pQ.push({kind:'potion',customer:name,title:cd.title,potionId:r.id,potionName:r.name,potionIcon:r.icon,
+          qty,payPer,xpPer:Math.floor(r.xp*0.3),
+          line:pl?pl[Math.floor(Math.random()*pl.length)]:'"I need some potions. What do you have?"',
+          id:'pc_'+Math.random().toString(36).slice(2)});
+      }
+    }
+    setPotCustQ(pQ);
+    // Enchanting customers — all classes get them; enchanters get bonus
+    const enchBonus=isEnch?1:0;
+    const forgeBonus=forgedWeapons.filter(w=>w.displayed).length; // Named weapons attract customers
+    const compCustBonus=companions.filter(c=>c.active&&RANGER_COMPANIONS.find(r=>r.id===c.compId)?.primary.type==='customers').reduce((s,c)=>{const comp=RANGER_COMPANIONS.find(r=>r.id===c.compId);return s+(comp?.primary.values[Math.min(c.loyalty-1,4)]||0);},0);
+    const seasonCustMod=(getSeason(day,gameLocation).customerMod||0);
+    const n=shopLocked?0:1+Math.floor(Math.random()*2)+upEff('extraCustomers')+enchBonus+custBonusF+Math.min(3,forgeBonus)+compCustBonus+seasonCustMod+getFeatureVal('premiumCustomers');
+    const q=[];
+    const effKnownEnch=knownEnch.length>0?knownEnch:(LOCATIONS[gameLocation]?.startEnch||['e_sharp','e_glow','e_ironbark','e_feather','e_windwalk','e_rootbind']);
+    for(let i=0;i<n;i++){const mT=level>=7?3:level>=4?2:1;const items=CUST_ITEMS.filter(it=>it.tier<=mT);
+      if(Math.random()<noShow)continue;
+      const name=pickCustName();
+      const cd=CUST_DATA[name]||{title:'Villager',lines:['"Can you enchant this for me?"']};
+      const item=items[Math.floor(Math.random()*items.length)];
+      // Pick 1-3 specific enchantments matching item category from known enchantments
+      const catEnchs=ENCHANTMENTS.filter(e=>e.cat===item.cat&&effKnownEnch.includes(e.id)&&(!e.faction||getRL(e.faction)>=(e.fReq||0))&&canCraftAtLocation(e.ingr));
+      // Include custom Arcanist patterns matching this category
+      const catCustom=customPatterns.filter(cp=>cp.cat===item.cat);
+      const allCatEnchs=[...catEnchs,...catCustom.map(cp=>({id:'custom_'+cp.id,name:cp.name,icon:'✨',cat:cp.cat,ingr:[],xp:cp.xp,dc:cp.dc,desc:cp.effectDescs,isCustom:true,customId:cp.id}))];
+      if(allCatEnchs.length===0){
+        // Fallback: try a different category item
+        const anyCatWithEnch=ENCHANTMENTS.filter(e=>effKnownEnch.includes(e.id)&&(!e.faction||getRL(e.faction)>=(e.fReq||0))&&canCraftAtLocation(e.ingr));
+        const anyCustom=customPatterns.map(cp=>({id:'custom_'+cp.id,name:cp.name,icon:'✨',cat:cp.cat,ingr:[],xp:cp.xp,dc:cp.dc,desc:cp.effectDescs,isCustom:true,customId:cp.id}));
+        const allAny=[...anyCatWithEnch,...anyCustom];
+        if(allAny.length===0)continue;
+        const fallbackCat=allAny[0].cat;
+        const fallbackItems=items.filter(it=>it.cat===fallbackCat);
+        if(fallbackItems.length===0)continue;
+        const fbItem=fallbackItems[Math.floor(Math.random()*fallbackItems.length)];
+        const fbEnchs=allAny.filter(e=>e.cat===fallbackCat);
+        const reqCount=Math.min(fbEnchs.length,1+Math.floor(Math.random()*(level>=6?3:level>=3?2:1)));
+        const shuffledE=[...fbEnchs].sort(()=>Math.random()-0.5);
+        const reqEnch=shuffledE.slice(0,reqCount).map(e=>e.id);
+        const reqQual1=day>=40&&Math.random()<0.10?'gm':day>=26&&Math.random()<0.20?'mw':day>=11&&Math.random()<0.30?'fine':'std';
+        q.push({...fbItem,customer:name,title:cd.title,
+          line:cd.lines[Math.floor(Math.random()*cd.lines.length)],
+          reqEnch,reqQuality:reqQual1,id:Math.random().toString(36).slice(2)});
+        continue;
+      }
+      const reqCount=Math.min(allCatEnchs.length,1+Math.floor(Math.random()*(level>=6?3:level>=3?2:1)));
+      const shuffledE=[...allCatEnchs].sort(()=>Math.random()-0.5);
+      const reqEnch=shuffledE.slice(0,reqCount).map(e=>e.id);
+      const reqQual2=day>=40&&Math.random()<0.10?'gm':day>=26&&Math.random()<0.20?'mw':day>=11&&Math.random()<0.30?'fine':'std';
+      q.push({...item,customer:name,title:cd.title,
+        line:cd.lines[Math.floor(Math.random()*cd.lines.length)],
+        reqEnch,reqQuality:reqQual2,
+        id:Math.random().toString(36).slice(2)});}
+    setEnchQ(q);
+    // ═══ CLINIC PATIENTS (Apothecary spec) ═══
+    const isApoth=eSpec('alchemist')==='apothecary';
+    let clinicN=0;
+    if(isApoth){
+      const apothLv=eCL('alchemist');
+      clinicN=apothLv>=10?3:apothLv>=6?2:1;
+      const maxTier=apothLv>=10?3:apothLv>=6?2:1;
+      const available=CLINIC_AILMENTS.filter(a=>a.tier<=maxTier&&(!a.loc||a.loc===gameLocation));
+      const patients=[];
+      const patientNames=zui.patients;
+      for(let i=0;i<clinicN&&available.length>0;i++){
+        const ailment=available[Math.floor(Math.random()*available.length)];
+        const pName=patientNames[Math.floor(Math.random()*patientNames.length)];
+        const autoExam=getFeatureVal('clinicAutoDiagnose');
+        patients.push({id:'cl_'+Math.random().toString(36).slice(2),ailmentId:ailment.id,patientName:pName,examined:!!autoExam,diagLevel:autoExam?2:0,prescribed:false});
+      }
+      setClinicPatients(patients);
+    } else { setClinicPatients([]); }
+    // ═══ VENOMIST CONTRACTS ═══
+    const isVenom=eSpec('alchemist')==='venomist';
+    let contractN=0;
+    if(isVenom){
+      const venLv=eCL('alchemist');
+      contractN=venLv>=10?3:venLv>=6?2:1;
+      const maxTier=venLv>=10?3:venLv>=6?2:1;
+      const available=VENOM_CONTRACTS.filter(c=>c.tier<=maxTier);
+      const contracts=[];
+      for(let i=0;i<contractN&&available.length>0;i++){
+        const contract=available[Math.floor(Math.random()*available.length)];
+        contracts.push({id:'vc_'+Math.random().toString(36).slice(2),contractId:contract.id,fulfilled:false,chosenPotency:null});
+      }
+      setVenomContracts(contracts);
+    } else { setVenomContracts([]); }
+    // ═══ WARDKEEPER SHIELD COMMISSIONS ═══
+    const isWardkeeper=eSpec('enchanter')==='wardkeeper';
+    let commissionN=0;
+    if(isWardkeeper){
+      const wkLv=eCL('enchanter');
+      commissionN=(wkLv>=10?3:wkLv>=6?2:1)+dayFlags.filter(f=>f==='shield_referral').length; // + referrals from yesterday's perfect work
+      const maxTier=wkLv>=10?3:wkLv>=6?2:1;
+      const maxLayers=wkLv>=6?3:2;
+      const available=SHIELD_COMMISSIONS.filter(c=>c.tier<=maxTier&&c.layers.length<=maxLayers&&!c.threatReq);
+      const commissions=[];
+      const commNames=zui.commissioners;
+      for(let i=0;i<commissionN&&available.length>0;i++){
+        const comm=available[Math.floor(Math.random()*available.length)];
+        const cName=commNames[Math.floor(Math.random()*commNames.length)];
+        commissions.push({id:'sc_'+Math.random().toString(36).slice(2),commissionId:comm.id,clientName:cName,
+          layersCompleted:0,layersFailed:0,retryUsed:false,done:false});
+      }
+      // ── Threat Ward Commissions (bonus, appear when threats Rising+) ──
+      const curThreats=threats||Object.fromEntries(locThreatIds.map(t=>[t,0]));
+      locThreatIds.forEach(tid=>{
+        const tVal=curThreats[tid]||0;
+        if(tVal>=25){
+          // Match local threat back to base threat for commission lookup
+          const threatComms=SHIELD_COMMISSIONS.filter(c=>c.threatReq&&lt(c.threatReq)===tid&&(!c.threatMin||tVal>=c.threatMin)&&c.layers.length<=maxLayers+2);
+          if(threatComms.length>0){
+            const tc=threatComms[Math.floor(Math.random()*threatComms.length)];
+            const tf=THREAT_FACTIONS[tid];
+            commissions.push({id:'sc_tw_'+Math.random().toString(36).slice(2),commissionId:tc.id,
+              clientName:tf?.name||'Settlement Defense',isThreatWard:true,
+              layersCompleted:0,layersFailed:0,retryUsed:false,done:false});
+          }
+        }
+      });
+      setShieldCommissions(commissions);
+    } else { setShieldCommissions([]); }
+    return{ench:q.length,pot:pQ.length,clinic:clinicN,contracts:contractN,commissions:commissionN};
+  };
+  const maxAppr=(()=>{const base=1+Math.floor(level/3)+(upActive('ledger')?1:0);const cap=getFeatureVal('maxStaff');return cap>0?Math.max(base,cap):base;})();
+  const hasMilestone=id=>milestones.includes(id);
+  const earnMilestone=(id)=>{
+    if(hasMilestone(id))return;const m=MILESTONES[id];if(!m)return;
+    setMilestones(p=>[...p,id]);setNewMilestone(m);
+    addLog(`🏆 Milestone: ${m.icon} ${m.name} — ${m.desc}`,'story');
+  };
+
+  // ─── SAVE/LOAD ───
+  const manualSave=async(slot)=>{const state=gatherState();state._at=new Date().toISOString();const ok=await sSet(sK(slot),state);if(fbUserRef.current)cloudSet(fbUserRef.current.uid,'slot-'+slot,state);if(ok){setSaveSlots(p=>{const n=[...p];n[slot-1]=state;return n;});setSaveMsg(fbUserRef.current?`☁️ Saved to Slot ${slot}!`:`Saved to Slot ${slot}!`);}else setSaveMsg('Save failed!');setTimeout(()=>setSaveMsg(null),2500);};
+  const loadSave=(data)=>{if(data){restoreState(data);setGameStarted(true);}};
+  const loadSlot=async(slot)=>{const d=saveSlots[slot-1]||await sGet(sK(slot));if(d){restoreState(d);setGameStarted(true);}};
+  const deleteSave=async(slot)=>{await sDel(sK(slot));if(fbUserRef.current)cloudDel(fbUserRef.current.uid,'slot-'+slot);setSaveSlots(p=>{const n=[...p];n[slot-1]=null;return n;});setConfirmDelete(null);};
+  const newGame=(loc='cindervale',inheritData=null)=>{
+    const locData=LOCATIONS[loc]||LOCATIONS.cindervale;
+    const defState={...DEF,
+      gameLocation:loc,
+      gold:inheritData?.gold||locData.startGold,
+      inv:inheritData?.inv||{...locData.startInv},
+      known:[...new Set([...locData.startRecipes,...(inheritData?.recipes||[])])],
+      upgrades:inheritData?.heirloom?[inheritData.heirloom]:[],
+      knownEnch:[...(locData.startEnch||['e_sharp','e_glow','e_ironbark','e_feather','e_windwalk','e_rootbind'])],
+      fRep:(()=>{
+        const locFacs=Object.fromEntries((ZONE_UI[loc]||ZONE_UI.cindervale).factions.map(f=>[f,0]));
+        if(inheritData?.fRep){Object.keys(locFacs).forEach(fid=>{if(inheritData.fRep[fid])locFacs[fid]=inheritData.fRep[fid];});}
+        return locFacs;
+      })(),
+      lineage:lineage||null,
+      museum:inheritData?.museum||{pottery:0,tablets:0,jewelry:0,mechanisms:0,weapons:0},
+      threats:Object.fromEntries((THREAT_IDS_BY_LOC[loc]||THREAT_IDS).map(t=>[t,0])),outposts:[],ingredientContracts:[],settlementProjects:[],settlementConstruction:null,defenseQuests:[],
+    };
+    restoreState(defState);setLog([]);setGameStarted(true);
+    if(inheritData?.legacyFeature)setLegacyFeature(inheritData.legacyFeature);
+    else setLegacyFeature(null);
+    if(inheritData?.intro)addLog(inheritData.intro,'story');
+    else addLog(locData.intro,'story');
+    if(inheritData?.legacyFeature){
+      const lf=inheritData.legacyFeature;
+      addLog(`📜 Mentor's Legacy: ${lf.icon} ${lf.name} — ${lf.desc} (from ${lf.source})`,'story');
+    }
+  };
+
+  const passTorch=(apprentice,heirloomUpgrade,selectedLoc,selectedLegacy)=>{
+    // Build generation record
+    const torchRecBonus=getFeatureVal('torchRecipeBonus');
+    const topRecipes=Object.entries(brewCounts).sort((a,b)=>b[1]-a[1]).slice(0,3+torchRecBonus).map(([id])=>id);
+    // Determine mentor type from highest-invested class — prestige first (since prestige also inflates parent class levels)
+    const prestigeEntries=Object.entries(prestigeLevels||{}).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]);
+    const baseEntries=Object.entries(classLevels).sort((a,b)=>b[1]-a[1]);
+    const mentorClassId=prestigeEntries.length>0?prestigeEntries[0][0]:baseEntries[0]?baseEntries[0][0]:'alchemist';
+    const mentorType=MENTOR_TYPES[mentorClassId]||MENTOR_TYPES[startingClass]||MENTOR_TYPES.alchemist;
+    const gen={
+      name:charName,race:charRace,gender:charGender,
+      class:startingClass,mentorClass:mentorClassId,spec:Object.values(specs).filter(Boolean)[0]||'',allSpecs:{...specs},
+      classLevels:{...classLevels},prestigeLevels:{...(prestigeLevels||{})},
+      level:getLvl(xp)+1,location:gameLocation,
+      daysPlayed:day,goldEarned:gold,potionsBrewed:Object.values(brewCounts).reduce((s,v)=>s+v,0),
+      topRecipes,mentorBonus:{type:mentorType.type,val:mentorType.val},
+      torchEnergyBonus:getFeatureVal('torchEnergyBonus')||0,
+      heirloomUpgrade,apprenticeName:apprentice.name,
+      legacyFeature:selectedLegacy||null,
+    };
+    // Build or extend lineage
+    const newLineage=lineage?{...lineage,generations:[...lineage.generations,gen],totalGenerations:lineage.totalGenerations+1}
+      :{id:'lineage_'+Date.now(),name:charName+"'s Legacy",generations:[gen],totalGenerations:1,unlockedLocations:['cindervale','ashfall','tidecrest','skyreach']};
+    setLineage(newLineage);saveLineage(newLineage);
+    // Compute inheritance
+    const torchGoldPct=0.15+getFeatureVal('torchGoldBonus');
+    const torchRepMult=0.33+getFeatureVal('torchRepBonus');
+    const torchEnergyB=getFeatureVal('torchEnergyBonus');
+    const inheritData={
+      gold:Math.min(300,Math.floor(gold*torchGoldPct)),
+      recipes:topRecipes.filter(id=>RECIPES.find(r=>r.id===id)),
+      heirloom:heirloomUpgrade||null,
+      fRep:Object.fromEntries(Object.entries(fRep).map(([k,v])=>([k,Math.floor(v*torchRepMult)]))),
+      museum:museum||{pottery:0,tablets:0,jewelry:0,mechanisms:0,weapons:0},
+      intro:apprentice.name+' sets out from '+LOCATIONS[gameLocation]?.name+', carrying the lessons of '+charName+'. A new chapter begins.',
+      legacyFeature:selectedLegacy||null,
+      torchEnergyBonus:torchEnergyB,
+    };
+    // Start new game at selected location
+    setTorchApprentice(null);setTorchStep(0);setTorchHeirloom(null);setTorchLegacy(null);
+    newGame(selectedLoc,inheritData);
+  };
+  // Compute available legacy features from current build
+  // Legacy-feature choices for Pass the Torch. `build` defaults to the current character; the new-game screen
+  // passes the last generation's saved build instead.
+  const getLegacyOptions=(build={classLevels,specs,prestigeLevels,legacyFeature})=>{
+    const {classLevels,specs,prestigeLevels,legacyFeature}=build;
+    const options=[];
+    // Base class features: merge ALL features up to highest unlocked level
+    Object.entries(classLevels).forEach(([cid,clsLv])=>{
+      if(clsLv<1)return;
+      const cls=CLASSES[cid];if(!cls)return;
+      const eligible=cls.features.filter(f=>f.classLv<=clsLv&&f.effects);
+      if(eligible.length===0)return;
+      const best=eligible.reduce((a,b)=>b.classLv>a.classLv?b:a);
+      const mergedEffects={};
+      const featureChain=eligible.sort((a,b)=>a.classLv-b.classLv);
+      featureChain.forEach(f=>{Object.entries(f.effects).forEach(([k,v])=>{
+        if(typeof v==='boolean')mergedEffects[k]=true;
+        else mergedEffects[k]=(mergedEffects[k]||0)+v;
+      });});
+      options.push({
+        type:'class',classId:cid,name:cls.name+' Legacy',desc:best.name+' (Lv'+best.classLv+') and all prerequisite features.',lv:best.classLv,
+        icon:cls.icon,color:cls.color,
+        source:`${cls.icon} ${cls.name} Lv${best.classLv}`,
+        effects:mergedEffects,
+        featureChain:featureChain.map(f=>({name:f.name,lv:f.classLv,desc:f.desc})),
+      });
+    });
+    // Specialization features: merge ALL features up to highest unlocked level
+    Object.entries(specs).forEach(([cid,specId])=>{
+      if(!specId)return;
+      const cls=CLASSES[cid];if(!cls)return;
+      const spec=cls.specs?.[specId];if(!spec)return;
+      const clsLv=classLevels[cid]||0;
+      const eligible=spec.features.filter(f=>f.classLv<=clsLv&&f.effects);
+      if(eligible.length===0)return;
+      const best=eligible.reduce((a,b)=>b.classLv>a.classLv?b:a);
+      // Merge ALL effects from all features up to this level
+      const mergedEffects={};
+      const featureChain=eligible.sort((a,b)=>a.classLv-b.classLv);
+      featureChain.forEach(f=>{Object.entries(f.effects).forEach(([k,v])=>{
+        if(typeof v==='boolean')mergedEffects[k]=true;
+        else mergedEffects[k]=(mergedEffects[k]||0)+v;
+      });});
+      options.push({
+        type:'spec',classId:cid,specId,name:spec.name+' Legacy',desc:best.name+' (Lv'+best.classLv+') and all prerequisite features.',lv:best.classLv,
+        icon:spec.icon,color:spec.color||cls.color,
+        source:`${cls.icon} ${cls.name} — ${spec.icon} ${spec.name} Lv${best.classLv}`,
+        effects:mergedEffects,
+        featureChain:featureChain.map(f=>({name:f.name,lv:f.classLv,desc:f.desc})),
+      });
+    });
+    // Prestige features: merge ALL features up to highest unlocked level
+    Object.entries(prestigeLevels||{}).forEach(([pcId,pcLv])=>{
+      if(pcLv<1)return;
+      const pc=PRESTIGE_CLASSES?.[pcId];if(!pc)return;
+      const eligible=pc.features.filter(f=>f.lv<=pcLv);
+      if(eligible.length===0)return;
+      const best=eligible.reduce((a,b)=>b.lv>a.lv?b:a);
+      const mergedEffects={};
+      const featureChain=eligible.sort((a,b)=>a.lv-b.lv);
+      // Prestige effect values are running totals per level, so take the highest value (not the sum).
+      // legacyEffects (when present) is the inheritable form; fall back to effects.
+      featureChain.forEach(f=>{
+        const efx=(f.legacyEffects&&Object.keys(f.legacyEffects).length)?f.legacyEffects:f.effects;if(!efx)return;
+        Object.entries(efx).forEach(([k,v])=>{
+          if(typeof v==='boolean')mergedEffects[k]=true;
+          else if(typeof v==='number')mergedEffects[k]=Math.max(mergedEffects[k]||0,v);
+        });
+      });
+      if(Object.keys(mergedEffects).length===0)return;
+      options.push({
+        type:'prestige',prestigeId:pcId,name:pc.name+' Legacy',desc:best.name+' (Lv'+best.lv+') and all prerequisite features.',lv:best.lv,
+        icon:pc.icon,color:pc.color,
+        source:`${pc.icon} ${pc.name} Lv${best.lv}`,
+        effects:mergedEffects,
+        featureChain:featureChain.map(f=>({name:f.name,lv:f.lv,desc:f.desc})),
+      });
+    });
+    // Re-pass: if this character inherited a legacy feature, offer it as an option to carry forward
+    if(legacyFeature&&legacyFeature.effects){
+      const alreadyListed=options.some(o=>o.source===legacyFeature.source);
+      if(!alreadyListed){
+        options.push({...legacyFeature,name:(legacyFeature.name||'Inherited Legacy')+' (re-pass)',desc:'Carry forward your mentor\'s legacy to the next generation.'});
+      }
+    }
+    return options;
+  };
+  const [showImport,setShowImport]=useState(false);
+  const [importText,setImportText]=useState('');
+  const [importInput,setImportInput]=useState('');
+  const exportSave=(data)=>{
+    try{
+      const state=data||gatherState();
+      if(!state.charName){setSaveMsg("No save to export");setTimeout(()=>setSaveMsg(null),3000);return;}
+      const slim={...state,log:(state.log||[]).slice(-5),dailyReport:[],milestones:(state.milestones||[]).slice(-10)};
+      delete slim._at;delete slim._v;delete slim._export;
+      const json=JSON.stringify(slim);
+      const b64=btoa(unescape(encodeURIComponent(json)));
+      const code='CV1~'+b64;
+      if(navigator.clipboard&&navigator.clipboard.writeText){
+        navigator.clipboard.writeText(code).then(()=>setSaveMsg("Save code copied! ("+Math.round(code.length/1024)+"KB)")).catch(()=>setSaveMsg("Export ready. Copy from the box below."));
+      }else{setSaveMsg("Export ready. Copy from the box below.");}
+      setImportText(code);setShowImport(true);
+    }catch(e){setSaveMsg("Export failed: "+e.message);}
+    setTimeout(()=>setSaveMsg(null),5000);
+  };
+  const importSave=(str)=>{
+    if(!str||!str.trim()){setSaveMsg('Paste a save code first');setTimeout(()=>setSaveMsg(null),3000);return;}
+    try{
+      let clean=str.replace(/[\s\u200B\uFEFF]/g,'');
+      if(clean.startsWith('CV1~'))clean=clean.slice(4);
+      let json;
+      try{json=decodeURIComponent(escape(atob(clean)));}catch(decErr){
+        try{json=str.trim();JSON.parse(json);}catch(e2){
+          setSaveMsg('Import failed: code appears corrupted ('+clean.length+' chars). Try re-exporting.');
+          setTimeout(()=>setSaveMsg(null),5000);return;
+        }
+      }
+      const data=JSON.parse(json);
+      if(!data.charName||!data.day){setSaveMsg('Invalid save data');setTimeout(()=>setSaveMsg(null),3000);return;}
+      restoreState(data);
+      setGameStarted(true);setShowImport(false);setImportInput('');setImportText('');
+      setSaveMsg('Loaded: '+data.charName+' — Day '+data.day);setTimeout(()=>setSaveMsg(null),4000);
+    }catch(e){setSaveMsg('Import failed: '+e.message);setTimeout(()=>setSaveMsg(null),5000);}
+  };
+
+  // ═══ LINEAGE EXPORT / IMPORT ═══
+  const [lineageMsg,setLineageMsg]=useState(null);
+  const [showLineageTransfer,setShowLineageTransfer]=useState(false);
+  const [lineageImportInput,setLineageImportInput]=useState('');
+  const exportLineage=()=>{
+    if(!lineage||!lineage.generations?.length){setLineageMsg('No lineage to export.');setTimeout(()=>setLineageMsg(null),3000);return;}
+    try{
+      const json=JSON.stringify(lineage);
+      const b64=btoa(unescape(encodeURIComponent(json)));
+      const code='LIN1~'+b64;
+      if(navigator.clipboard?.writeText){
+        navigator.clipboard.writeText(code).then(()=>setLineageMsg('Lineage code copied! ('+lineage.generations.length+' generation'+(lineage.generations.length!==1?'s':'')+')')).catch(()=>setLineageMsg('Export ready — copy from box.'));
+      }else{setLineageMsg('Export ready — copy from box.');}
+      setLineageImportInput(code);setShowLineageTransfer(true);
+    }catch(e){setLineageMsg('Export failed: '+e.message);}
+    setTimeout(()=>setLineageMsg(null),5000);
+  };
+  const importLineage=(str)=>{
+    if(!str||!str.trim()){setLineageMsg('Paste a lineage code first.');setTimeout(()=>setLineageMsg(null),3000);return;}
+    try{
+      let clean=str.replace(/[\s\u200B\uFEFF]/g,'');
+      if(clean.startsWith('LIN1~'))clean=clean.slice(5);
+      let json;
+      try{json=decodeURIComponent(escape(atob(clean)));}catch(e){
+        try{json=str.trim();JSON.parse(json);}catch(e2){
+          setLineageMsg('Import failed: code appears corrupted.');setTimeout(()=>setLineageMsg(null),5000);return;
+        }
+      }
+      const data=JSON.parse(json);
+      if(!data.generations||!data.totalGenerations){setLineageMsg('Invalid lineage data.');setTimeout(()=>setLineageMsg(null),3000);return;}
+      setLineage(data);saveLineage(data);
+      setLineageMsg('Imported: '+data.name+' — '+data.totalGenerations+' generation'+(data.totalGenerations!==1?'s':''));
+      setLineageImportInput('');setShowLineageTransfer(false);
+      setTimeout(()=>setLineageMsg(null),4000);
+    }catch(e){setLineageMsg('Import failed: '+e.message);setTimeout(()=>setLineageMsg(null),5000);}
+  };
+  const deleteLineage=async()=>{
+    if(!confirm('Permanently delete your lineage? All generation history, mentor bonuses, and legacy features will be lost. This cannot be undone.'))return;
+    setLineage(null);
+    try{localStorage.removeItem(LINEAGE_KEY);}catch(e){}
+    if(fbUserRef.current)cloudDel(fbUserRef.current.uid,'lineage');
+    // Strip lineage from existing save slots and auto-save so it doesn't reappear on reload
+    const uid=fbUserRef.current?.uid;
+    setAutoSaveData(prev=>{
+      if(prev?.lineage){const cleaned={...prev};delete cleaned.lineage;delete cleaned.torchClassLevels;delete cleaned.torchSpecs;delete cleaned.legacyFeature;sSet(AK,cleaned);if(uid)cloudSet(uid,'auto',cleaned);return cleaned;}return prev;
+    });
+    setSaveSlots(prev=>{
+      const n=[...prev];
+      for(let i=0;i<n.length;i++){if(n[i]?.lineage){n[i]={...n[i]};delete n[i].lineage;delete n[i].torchClassLevels;delete n[i].torchSpecs;delete n[i].legacyFeature;sSet(sK(i+1),n[i]);if(uid)cloudSet(uid,'slot-'+(i+1),n[i]);}}
+      return n;
+    });
+    setLineageMsg('Lineage deleted.');setTimeout(()=>setLineageMsg(null),3000);
+  };
+
+  // ═══ FIREBASE AUTH & CLOUD SYNC ═══
+  const fbSignIn=async()=>{
+    try{const provider=new firebase.auth.GoogleAuthProvider();await fbAuth.signInWithPopup(provider);}
+    catch(e){if(e.code!=='auth/popup-closed-by-user')setSaveMsg('Sign-in failed: '+e.message);setTimeout(()=>setSaveMsg(null),4000);}
+  };
+  const fbSignOut=async()=>{await fbAuth.signOut();setSaveMsg('Signed out — using local saves');setTimeout(()=>setSaveMsg(null),3000);};
+
+  const syncFromCloud=async(uid)=>{
+    setFbSyncing(true);
+    const safeTs=v=>{if(!v)return 0;if(typeof v==='number')return v;if(v&&typeof v.toDate==='function')return v.toDate().getTime();const d=new Date(v);return isNaN(d.getTime())?0:d.getTime();};
+    try{
+      // Sync auto-save
+      const cloudAuto=await cloudGet(uid,'auto');
+      setAutoSaveData(prev=>{
+        const ct=safeTs(cloudAuto?._at),lt=safeTs(prev?._at);
+        console.log('[Sync:auto] cloud_ts=',cloudAuto?._at,'('+ct+') local_ts=',prev?._at,'('+lt+') →',ct>lt?'USE CLOUD':lt>ct?'USE LOCAL':'KEEP LOCAL (tie/equal)');
+        if(cloudAuto&&ct>lt){return cloudAuto;}
+        if(prev&&lt>ct){cloudSet(uid,'auto',prev);}
+        return prev;
+      });
+      // Sync save slots
+      for(let i=1;i<=2;i++){
+        const cloudSlot=await cloudGet(uid,'slot-'+i);
+        setSaveSlots(prev=>{
+          const n=[...prev];const local=n[i-1];
+          const ct=safeTs(cloudSlot?._at),lt=safeTs(local?._at);
+          console.log('[Sync:slot'+i+'] cloud_ts=',cloudSlot?._at,'('+ct+') local_ts=',local?._at,'('+lt+') →',ct>lt?'USE CLOUD':lt>ct?'USE LOCAL':'KEEP LOCAL (tie/equal)');
+          if(cloudSlot&&ct>lt){n[i-1]=cloudSlot;}
+          else if(local&&lt>ct){cloudSet(uid,'slot-'+i,local);}
+          return n;
+        });
+      }
+      // Sync lineage
+      const cloudLin=await cloudGet(uid,'lineage');
+      setLineage(prev=>{
+        if(cloudLin&&!prev)return cloudLin;
+        if(cloudLin&&prev){
+          if((cloudLin.totalGenerations||0)>(prev.totalGenerations||0))return cloudLin;
+          if((prev.totalGenerations||0)>(cloudLin.totalGenerations||0)){cloudSet(uid,'lineage',prev);return prev;}
+        }
+        if(prev&&!cloudLin){cloudSet(uid,'lineage',prev);}
+        return prev;
+      });
+      setSaveMsg('☁️ Cloud sync complete');setTimeout(()=>setSaveMsg(null),2500);
+    }catch(e){console.warn('Cloud sync err:',e);}
+    setFbSyncing(false);
+  };
+
+  useEffect(()=>{
+    const unsub=fbAuth.onAuthStateChanged(user=>{
+      setFbUser(user);fbUserRef.current=user;
+      if(user&&!loadingSlots)syncFromCloud(user.uid);
+    });
+    return()=>unsub();
+  },[loadingSlots]);
+
+  // ─── HARVEST (Hour-by-Hour Expedition) ───
+  const getExpeditionInfo=(reg)=>{
+    if(!reg)return null;
+    // Travel cost: all values in energy units (25 energy = 1 "hour" equivalent).
+    // percentage travel reductions (Trailblazer, Trailblazer's Boots, Hawk/Vulture/Seahawk/Falcon companions,
+    // Paved Roads, Legend of the Wild) are aggregated via getActionEnergyCost('travel', baseCost). The flat day-flag
+    // and ash_storm/seasonal modifiers still subtract afterwards so they retain their flat character.
+    let travelTime=getActionEnergyCost('travel',reg.time);
+    if(dayFlags.includes('trailblazer_tonic'))travelTime=Math.max(0,travelTime-25);
+    const weatherReduc=getFeatureVal('weatherReduction');
+    if(dayFlags.includes('ash_storm'))travelTime+=Math.max(0,Math.ceil(25*(1-weatherReduc)));
+    // Seasonal travel modifier (in energy units after Phase 1 scaling)
+    const season=getSeason(day,gameLocation);
+    if(season.travelMod&&(!season.travelMinDiff||reg.diff>=season.travelMinDiff)){
+      travelTime=Math.max(0,travelTime+season.travelMod);
+    }
+    // gatherHours = number of 10⚡ forage rolls affordable after paying travel (an expedition needs at least 1)
+    const gatherHours=Math.max(0,Math.floor((energy-travelTime)/10));
+    return{travelTime,gatherHours,season};
+  };
+  // Weighted discovery pick — favors lower-unlock recipes/enchantments
+  const weightedDiscPick=(arr)=>{
+    if(arr.length<=1)return arr[0];
+    const maxUn=Math.max(...arr.map(x=>x.unlock||x.dc||0));
+    const weights=arr.map(x=>{const un=x.unlock!=null?x.unlock:(x.dc||10);return Math.max(1,maxUn-un+3);});
+    const total=weights.reduce((s,w)=>s+w,0);
+    let roll=Math.random()*total;
+    for(let i=0;i<arr.length;i++){roll-=weights[i];if(roll<=0)return arr[i];}
+    return arr[arr.length-1];
+  };
+  // Pure check — no state side effects, for pre-computation
+  const pureCheck=(skId,dc)=>{
+    // Clear skies: -2 DC on extraction rolls
+    const clear=skId==='extraction'&&dayFlags.includes('clear_sky');
+    const r=rollSkill(skId,clear?dc-2:dc);
+    if(clear){r.dcNote='☀️ -2';}else r.dcNote='';
+    return r;
+  };
+  // ─── PHASE 3: FAILURE FLAVOR PICKER ───
+  // Picks a random index into FORAGE_FAILURES, avoiding immediate repeats. Falls back to 0 if the pool is missing.
+  const _pickFailureFlavor=(lastIdx)=>{
+    const pool=typeof FORAGE_FAILURES!=='undefined'?FORAGE_FAILURES:['You find nothing.'];
+    if(pool.length<=1)return 0;
+    let idx=lastIdx;let tries=0;
+    while(idx===lastIdx&&tries<6){idx=Math.floor(Math.random()*pool.length);tries++;}
+    return idx;
+  };
+  // ─── PHASE 3: EXPEDITION ENTRY ───
+  // Replaces the legacy `setEnergy(0); pre-compute all rolls` flow. Validates the region, pays only the
+  // one-way travel cost, and enters expedition mode. The first (and every subsequent) roll fires via
+  // _forageAgain() inside the immersive ExpeditionView. Skill-check internals and per-roll perks (Naturalist,
+  // Cartographer, Ranger encounters, Danger Sense, every existing event) are preserved by _executeForageRoll.
+  const doHarvest=()=>{
+    const reg=locRegions.find(r=>r.id===selHex);if(!reg)return;
+    const info=getExpeditionInfo(reg);if(!info||info.gatherHours<1)return;
+    if(reg.faction&&getRL(reg.faction)<(reg.fReq||0)){addLog(`The ${FACTIONS[reg.faction]?.name||'locals'} eye you with suspicion. You haven't earned their trust to forage here.`,'error');return;}
+    snapshot();
+    // pay travel only. The per-roll 10⚡ cost is applied inside _forageAgain().
+    setEnergy(e=>Math.max(0,e-info.travelTime));
+    if(dayFlags.includes('trailblazer_tonic'))setDayFlags(f=>{const i=f.indexOf('trailblazer_tonic');return i<0?f:[...f.slice(0,i),...f.slice(i+1)];}); // tonic covers one trip
+    const fl=reg.flavor?reg.flavor[Math.floor(Math.random()*reg.flavor.length)]:'';
+    if(fl)addLog(fl,'story');
+    const curSiteName=selectedSite?.regId===reg.id?(selectedSite.isHidden?HIDDEN_REGIONS.find(hr=>hr.id===selectedSite.siteId)?.name:reg.sites?.find(s=>s.id===selectedSite.siteId)?.name):null;
+    if(curSiteName)addLog(`📍 Foraging at ${curSiteName}.`,'info');
+    if(targetIngr&&reg.ingr.includes(targetIngr))addLog(`🎯 Targeting ${INGR[targetIngr]?.icon||''}${INGR[targetIngr]?.name||targetIngr}${getFeatureVal('targetNoYieldPenalty')?' (Tracker: no penalty!)':' (-25% yield)'}.`,'info');
+    // Tag expedition difficulty for Blight tracking (was inside the legacy loop with h===0 guard).
+    setDayFlags(f=>[...f,'exp_diff_'+reg.diff]);
+    // Cartographer L3 Familiar Territory — tick the visit counter for this region. Once a region reaches
+    // 5+ visits, Cartographer-prestige characters get -1 forage DC there (applied inside `_executeForageRoll`).
+    setRegionVisits(p=>({...p,[reg.id]:(p[reg.id]||0)+1}));
+    setExpedition({active:true,regionId:reg.id,
+      siteId:selectedSite?.regId===reg.id?selectedSite.siteId:null,
+      siteIsHidden:!!(selectedSite?.regId===reg.id&&selectedSite?.isHidden),
+      targetIngr:targetIngr||null,rollCount:0,cumG:{},cumXp:0,baseDC:reg.dc,
+      travelCost:info.travelTime,maxDCMet:0,lastRoll:null,lastFlavorIdx:-1,startedDay:day});
+  };
+  // ─── PHASE 3: PER-ROLL FORAGE LOGIC ───
+  // Single-iteration version of the legacy loop body. Effective DC = reg.dc + rollIndex (linear +1 per prior
+  // roll, the "diminishing returns" tension mechanic). Returns the queue-entry shape the ExpeditionHourPopup
+  // expects. The caller (`_forageAgain`) is responsible for pushing to expQ and updating expedition state.
+  const _executeForageRoll=(reg,rollIndex,prevCumG,prevCumXp)=>{
+    const cumG={...prevCumG};let cumXp=prevCumXp;
+    // Cartographer L3 Familiar Territory: -1 DC at regions visited 5+ times. The visit counter is
+    // incremented in doHarvest before this roll fires, so the 5th visit benefits from this trip.
+    const familiarTerritory=(prestigeLevels?.cartographer||0)>=3&&(regionVisits[reg.id]||0)>=5?1:0;
+    const effectiveDC=reg.dc+rollIndex-familiarTerritory;
+    const hourNum=rollIndex+1;
+    const ext=pureCheck('extraction',effectiveDC);
+      const extB=getFeatureVal('extractionBonus');
+      if(extB){ext.total+=extB;ext.success=ext.roll===1?false:ext.roll===20?true:ext.total>=ext.dc;ext.extras.push({label:'🌿 Extraction',val:extB});}
+      const isCrit=ext.roll===20;
+      const hourG={};
+      const pickN=reg.pick||reg.ingr.length;
+      const curSite=selectedSite?.regId===reg.id&&!selectedSite.isHidden?reg.sites?.find(s=>s.id===selectedSite.siteId):null;
+      const curHiddenSite=selectedSite?.regId===reg.id&&selectedSite.isHidden?HIDDEN_REGIONS.find(hr=>hr.id===selectedSite.siteId):null;
+      // track per-roll side effects locally and return them to the caller. The legacy loop
+      // mutated `mappedRegions`/`localNewDiscs`/`localNewComps`/companion-loyalty in-place; we keep
+      // that information in the return value so `_forageAgain` can apply state updates cleanly.
+      const localNewDiscs=[];const localNewComps=[];const localNewMaps=[];const localLoyaltyLoss=[];
+      // Targeted foraging: build weighted pick with 2x target, 0.5x others
+      let picked;
+      if(curHiddenSite){
+        // Hidden area: unique ingredients weighted heavily, plus region ingredients at low weight
+        const hidWeights={};
+        curHiddenSite.ingr.forEach(id=>{hidWeights[id]=35;});
+        reg.ingr.forEach(id=>{if(!hidWeights[id])hidWeights[id]=Math.floor(30/reg.ingr.length)||1;});
+        picked=weightedPick(hidWeights,pickN);
+      }
+      else if(curSite){picked=weightedPick(curSite.weights,pickN);}
+      else if(targetIngr&&reg.ingr.includes(targetIngr)){
+        const tgtWeights={};reg.ingr.forEach(id=>{tgtWeights[id]=id===targetIngr?60:10;});
+        picked=weightedPick(tgtWeights,pickN);
+      } else {picked=[...reg.ingr].sort(()=>Math.random()-0.5).slice(0,Math.min(pickN,reg.ingr.length));}
+      // Targeting yield penalty (-25% unless Tracker)
+      const tgtPenalty=(targetIngr&&reg.ingr.includes(targetIngr)&&!getFeatureVal('targetNoYieldPenalty'))?0.75:1;
+      const yieldMult=(1+Math.min(getFeatureVal('yieldMultiplier'),2))*tgtPenalty;
+      // Seasonal yield modifier (Wildcraft Seasonal Bypass override)
+      let fSeason=getSeason(day,gameLocation);
+      if(seasonalOverride&&seasonalOverride.region===reg.id){
+        const overrideSeason=SEASONS[gameLocation]?.find(s=>s.id===seasonalOverride.season);
+        if(overrideSeason){fSeason=overrideSeason;if(rollIndex===0)addLog('🍃 Seasonal Bypass active — foraging as if it\'s '+overrideSeason.name+'.','craft');}
+      }
+      const seasonYieldMod=(fSeason.yieldMod||0)+(fSeason.floraYieldBonus&&reg.ingr.some(id=>INGR[id]?.icon==='🌿'||INGR[id]?.icon==='🌸'||INGR[id]?.icon==='🌻'||INGR[id]?.icon==='🍄')?(fSeason.floraYieldBonus||0):0);
+      const critMult=isCrit?(1+getFeatureVal('critExtractionMulti')):1;
+      if(ext.success){
+        const baseTotal=isCrit?(10+Math.floor(Math.random()*4)):(4+Math.floor(Math.random()*6));
+        const total=Math.max(1,Math.floor(baseTotal*yieldMult*critMult)+Math.floor(getFeatureVal('forageYieldBonus'))+seasonYieldMod);
+        // Guarantee at least 3 distinct resources (1 each), then distribute remainder randomly
+        const minDistinct=Math.min(3,picked.length);
+        for(let d=0;d<minDistinct;d++){hourG[picked[d]]=(hourG[picked[d]]||0)+1;}
+        for(let t=0;t<total-minDistinct;t++){const id=picked[Math.floor(Math.random()*picked.length)];hourG[id]=(hourG[id]||0)+1;}
+        // Seasonal ingredient drops (15% chance per hour, boosted to 40% with Seasonal Bypass override)
+        const seasonalIngr=getSeasonalIngr(fSeason,gameLocation,!!getFeatureVal('allSeasonIngr'));
+        const _seasonDropChance=(seasonalOverride&&seasonalOverride.region===reg.id)?0.40:0.15;
+        if(seasonalIngr.length>0&&Math.random()<_seasonDropChance){const sid=seasonalIngr[Math.floor(Math.random()*seasonalIngr.length)];hourG[sid]=(hourG[sid]||0)+1;}
+        // Field Journal discovery bonuses — permanent extra yields from documented flora/geological
+        const regDiscs=FIELD_DISCOVERIES[reg.id]||[];
+        regDiscs.forEach(d=>{if(fieldJournal.includes(d.id)&&d.bonus.extraYield&&d.bonus.ingredient){
+          hourG[d.bonus.ingredient]=(hourG[d.bonus.ingredient]||0)+d.bonus.extraYield;}});
+      } else {
+        // Failed extraction: ~41.5% chance to salvage 1 ingredient (was 35% + a 10% second roll)
+        if(Math.random()<0.415){const id=picked[Math.floor(Math.random()*picked.length)];hourG[id]=1;}
+      }
+      const hxpBase=ext.success?(reg.diff*18+level*2):Math.floor(reg.diff*5);const hxp=Math.floor(hxpBase*(1+getFeatureVal('forageXPBonus')));
+      // Divination: bonus ingredient from full region list on success
+      const divRank=skRanks['divination']||0;const divChance=Math.min(0.40,divRank*0.10+getMod(eStat('inu'))*0.02);
+      let divBonus=null;
+      if(ext.success&&divChance>0&&Math.random()<divChance){
+        const divId=reg.ingr[Math.floor(Math.random()*reg.ingr.length)];
+        hourG[divId]=(hourG[divId]||0)+1;divBonus={id:divId,icon:INGR[divId]?.icon||'',name:INGR[divId]?.name||divId};
+      }
+      // luckyFindChance: random bonus ingredient per hour
+      const luckyFind=getFeatureVal('luckyFindChance');
+      let luckyBonus=null;
+      if(luckyFind>0&&Math.random()<luckyFind){
+        const luckyId=reg.ingr[Math.floor(Math.random()*reg.ingr.length)];
+        hourG[luckyId]=(hourG[luckyId]||0)+1;luckyBonus={id:luckyId,icon:INGR[luckyId]?.icon||'',name:INGR[luckyId]?.name||luckyId};
+      }
+      // Naturalist Field Guide: bonus forage chance, drawn from region's pool
+      const bonusForageChance=getFeatureVal('bonusForageChance');
+      if(ext.success&&bonusForageChance>0&&Math.random()<bonusForageChance){
+        const bId=reg.ingr[Math.floor(Math.random()*reg.ingr.length)];
+        hourG[bId]=(hourG[bId]||0)+1;
+        if(!luckyBonus)luckyBonus={id:bId,icon:INGR[bId]?.icon||'',name:INGR[bId]?.name||bId};
+      }
+      // Faction Harmony pair reward: bonus yield in specific regions (regionForage_<regionId>)
+      const harmRegB=getFeatureVal('regionForage_'+reg.id);
+      if(ext.success&&harmRegB>0){
+        const hrId=reg.ingr[Math.floor(Math.random()*reg.ingr.length)];
+        hourG[hrId]=(hourG[hrId]||0)+harmRegB;
+      }
+      // Attuned Foraging: bonus ingredient from most-brewed recipe
+      let attuneBonus=null;
+      if(ext.success&&getFeatureVal('attunedForaging')&&Math.random()<0.3){
+        const topRecipe=RECIPES.filter(r=>known.includes(r.id)).sort((a,b)=>(brewCounts[b.id]||0)-(brewCounts[a.id]||0))[0];
+        if(topRecipe){const atId=topRecipe.ingr[Math.floor(Math.random()*topRecipe.ingr.length)];
+          if(reg.ingr.includes(atId)){hourG[atId]=(hourG[atId]||0)+1;attuneBonus={id:atId,icon:INGR[atId]?.icon||'',name:INGR[atId]?.name||atId};}}
+      }
+      // Event check — one event per hour max
+      let event=null;
+      const riskReduc=getFeatureVal('reducedRisk');
+      const threatDangerMult=threatExpDangerMult||1;
+      const seasonDangerPct=(fSeason.dangerMod||0)/100;
+      const posMulti=1+getFeatureVal('positiveEventMulti');
+      for(const ev of H_EVENTS){
+        if(ev.loc&&ev.loc!==gameLocation)continue; // Skip events for wrong location
+        if(ev.minDiff&&reg.diff<ev.minDiff)continue; // Skip events above region danger level
+        let evProb=ev.prob;
+        if(riskReduc>0&&ev.good===false)evProb*=(1-riskReduc);
+        if(ev.good===false&&threatDangerMult>1)evProb*=threatDangerMult;
+        if(ev.good===false&&seasonDangerPct>0)evProb*=(1+seasonDangerPct);
+        if(ev.good===false&&seasonDangerPct<0)evProb*=Math.max(0.5,1+seasonDangerPct);
+        // Field Journal fauna discoveries reduce danger in this region
+        if(ev.good===false){const faunaDiscs=(FIELD_DISCOVERIES[reg.id]||[]).filter(d=>d.type==='fauna'&&fieldJournal.includes(d.id));
+          faunaDiscs.forEach(d=>{if(d.bonus.dangerReduce)evProb*=(1-d.bonus.dangerReduce);});}
+        // Ranger companion hawk danger reduction
+        if(ev.good===false){companions.filter(c=>c.active).forEach(c=>{const comp=RANGER_COMPANIONS.find(r=>r.id===c.compId);
+          if(comp?.primary.type==='danger_reduce'){evProb*=(1-comp.primary.values[Math.min(c.loyalty-1,4)]);}});}
+        if(posMulti>1&&ev.good!==false)evProb*=posMulti;
+        if(Math.random()>=evProb)continue;
+        event={text:ev.text,good:ev.good!==false,check:null,resultText:null,effect:null,effectDetail:null,effectItems:null,effectXp:0,effectRep:null,dangerSensed:false};
+        if(ev.check){
+          // Skill check event
+          const evCh=pureCheck(ev.check.skill,ev.check.dc);
+          event.check=evCh;
+          if(evCh.success){
+            event.resultText=ev.successText;event.good=true;
+            event.effect=ev.successEffect||'none';
+          } else {
+            event.resultText=ev.failText;event.good=false;
+            event.effect=ev.failEffect||'none';
+          }
+        } else {
+          // Simple event — no check
+          event.effect=ev.effect;
+          if(ev.faction)event.effectRep={faction:ev.faction,amount:15};
+        }
+        // Danger Sense: chance to negate bad effects. Iron Will (`dangerSenseBonus`) feeds in at the same ratio
+        // as a skill rank — +2 from the feat ≈ +12% additional proc chance, still capped at 50% total.
+        const dsRank=skRanks['danger_sense']||0;const dsChance=Math.min(0.50,dsRank*0.12+getMod(eStat('inu'))*0.02+getFeatureVal('dangerSenseBonus')*0.06);
+        if(dsChance>0&&(event.effect==='lose_some'||event.effect==='lose_time')&&Math.random()<dsChance){
+          event.dangerSensed=true;event.effectDetail='⚠️ Danger Sense! You sensed the threat and avoided the worst.';event.effect='none';event.good=true;
+        }
+        // Legendary Scout: auto-negate all danger events today
+        if(!event.good&&dayFlags.includes('legendary_scout')){
+          event.dangerSensed=true;event.effectDetail='👑 Legendary Scout negated the danger!';event.effect='none';event.good=true;
+        }
+        // Warden: immune to time loss events
+        if(event.effect==='lose_time'&&getFeatureVal('immuneTimeLossEvents')){
+          event.dangerSensed=true;event.effectDetail='🛡️ Warden training: unshaken by delays.';event.effect='none';event.good=true;
+        }
+        // Apply effect to this hour's data
+        if(event.effect==='bonus'){
+          const adj={};const id=picked[Math.floor(Math.random()*picked.length)];adj[id]=2;hourG[id]=(hourG[id]||0)+2;
+          event.effectItems=adj;event.effectDetail='+2 bonus items';
+        } else if(event.effect==='lose_some'){
+          const evDmgReduc=getFeatureVal('eventDamageReduction');
+          const adj={};picked.forEach(id=>{
+            const maxLoss=evDmgReduc>0?Math.max(0,Math.ceil((hourG[id]||0)*(1-evDmgReduc))):Math.min(hourG[id]||0,1);
+            const lost=Math.min(hourG[id]||0,maxLoss);
+            if(lost>0){adj[id]=-lost;hourG[id]=Math.max(0,(hourG[id]||0)-lost);}
+          });
+          event.effectItems=adj;event.effectDetail='Lost some gathered items';
+        } else if(event.effect==='lose_time'){
+          // legacy 'cyclesLeft--' is no longer meaningful (player chooses when to stop).
+          // Translate the time-loss bite into 10⚡ extra (one roll's worth) so the event still stings.
+          setEnergy(en=>Math.max(0,en-10));
+          event.effectDetail='Lost ground — 10 Energy wasted';
+        } else if(event.effect==='bonus_xp'){
+          event.effectXp=50;event.effectDetail='+50 bonus XP';
+        } else if(event.effect==='rep'&&ev.faction){
+          event.effectRep={faction:ev.faction,amount:15};
+          event.effectDetail='+15 '+FACTIONS[ev.faction]?.name+' reputation';
+        }
+        // ─── NEW DANGER EFFECTS ───
+        if(event.effect==='injury_light'){
+          // Light injury: -25 energy tomorrow
+          event.effectDetail='🩹 Light injury: -25 Energy tomorrow';
+          event.injuryPenalty=25;
+        } else if(event.effect==='injury_heavy'){
+          // Heavy injury: -50 energy tomorrow
+          event.effectDetail='🩹 Heavy injury: -50 Energy tomorrow';
+          event.injuryPenalty=50;
+        }
+        if(event.effect==='gadget_damage'){
+          event.effectDetail='🔧 Equipment damaged: a gadget may need repair';
+          event.gadgetDamage=true;
+        }
+        // Lose pack: lose 1-3 items from cumulative gathered this expedition
+        if(ev.failLoot==='lose_pack'&&!event.good){
+          const lostItems={};
+          const cumKeys=Object.keys(cumG).filter(k=>cumG[k]>0);
+          if(cumKeys.length>0){
+            const lossCount=Math.min(cumKeys.length,1+Math.floor(Math.random()*3));
+            for(let k=0;k<lossCount;k++){
+              const lk=cumKeys[Math.floor(Math.random()*cumKeys.length)];
+              const lossAmt=Math.min(cumG[lk],1+Math.floor(Math.random()*2));
+              cumG[lk]=Math.max(0,cumG[lk]-lossAmt);
+              hourG[lk]=Math.max(0,(hourG[lk]||0)-lossAmt);
+              lostItems[lk]=(lostItems[lk]||0)+lossAmt;
+            }
+            event.lostItems=lostItems;
+            const lostDesc=Object.entries(lostItems).map(([id,q])=>(INGR[id]?.icon||'')+INGR[id]?.name+' ×'+q).join(', ');
+            event.effectDetail=(event.effectDetail||'')+' | Lost from pack: '+lostDesc;
+          }
+        }
+        // Companion loyalty loss on failed dangerous events (diff 3+)
+        if(!event.good&&reg.diff>=3&&companions.filter(c=>c.active).length>0){
+          const activeComps=companions.filter(c=>c.active);
+          if(activeComps.length>0&&Math.random()<0.3){
+            const comp=activeComps[Math.floor(Math.random()*activeComps.length)];
+            const compData=RANGER_COMPANIONS.find(r=>r.id===comp.compId);
+            if(comp.loyalty>1){
+              // report the loss to the caller; the legacy code mutated comp.loyalty in-place
+              // which is unreliable because `companions` is React state. Caller applies via setCompanions.
+              localLoyaltyLoss.push({compId:comp.compId});
+              event.companionLoss={name:compData?.name||'Companion',icon:compData?.icon||'🐾'};
+              event.effectDetail=(event.effectDetail||'')+' | '+compData?.icon+' '+compData?.name+' loyalty -1 (frightened)';
+            }
+          }
+        }
+        break;
+      }
+      // ═══ NATURALIST FIELD DISCOVERY ═══
+      let discovery=null;
+      const isNaturalist=eSpec('scholar')==='naturalist';
+      if(isNaturalist&&ext.success){
+        const natLv=eCL('scholar');
+        const discChance=natLv>=10?0.40:natLv>=6?0.30:0.20;
+        const canGeo=natLv>=6;
+        const regionDiscs=FIELD_DISCOVERIES[reg.id]||[];
+        const undiscovered=regionDiscs.filter(d=>!fieldJournal.includes(d.id)&&!localNewDiscs.includes(d.id)&&(d.type!=='geological'||canGeo));
+        if(undiscovered.length>0&&Math.random()<discChance){
+          const disc=undiscovered[Math.floor(Math.random()*undiscovered.length)];
+          // Research check to document it — Lv10 auto-succeeds
+          const docDC=10+reg.diff*2;
+          const autoDoc=natLv>=10;
+          let documented=autoDoc;
+          if(!autoDoc){const docCh=pureCheck('research',docDC);const rb=getFeatureVal('craftBonus');if(rb)docCh.total+=rb;documented=docCh.roll!==1&&docCh.total>=docDC;}
+          if(documented){
+            localNewDiscs.push(disc.id); // track locally, state update after loop
+            discovery={...disc,documented:true};
+            // Apply bonus yield immediately for this hour
+            if(disc.bonus.extraYield&&disc.bonus.ingredient&&hourG[disc.bonus.ingredient]!==undefined){
+              hourG[disc.bonus.ingredient]=(hourG[disc.bonus.ingredient]||0)+disc.bonus.extraYield;
+            }
+          } else {
+            discovery={...disc,documented:false};
+          }
+        }
+      }
+      // ═══ CARTOGRAPHER HIDDEN REGION DISCOVERY ═══
+      let hiddenDisc=null;
+      const isCartographer=(prestigeLevels.cartographer||0)>=1||!!getFeatureVal('hiddenForageBonus');
+      if(isCartographer&&ext.success){
+        const cLv=Math.max(prestigeLevels.cartographer||0,getFeatureVal('hiddenForageBonus')?1:0);
+        const discChance=cLv>=2?0.40:0.25;
+        const regionHidden=HIDDEN_REGIONS.filter(hr=>hr.region===reg.id&&!mappedRegions.includes(hr.id)&&(!hr.legendary||cLv>=5));
+        if(regionHidden.length>0&&Math.random()<discChance){
+          const hr=regionHidden[Math.floor(Math.random()*regionHidden.length)];
+          // Research check to map it
+          const mapDC=hr.dc;
+          const mapCh=pureCheck('research',mapDC);
+          if(mapCh.roll!==1&&mapCh.total>=mapDC){
+            localNewMaps.push(hr.id);
+            hiddenDisc={...hr,mapped:true};
+            // Grant bonus ingredients from the hidden area immediately
+            const yieldN=hr.yieldRange[0]+Math.floor(Math.random()*(hr.yieldRange[1]-hr.yieldRange[0]+1));
+            for(let i=0;i<yieldN;i++){const id=hr.ingr[Math.floor(Math.random()*hr.ingr.length)];hourG[id]=(hourG[id]||0)+1;}
+            // ═══ AUTO-LEARN: Tag recipes & enchantments for post-loop learning ═══
+            const hrIngr=new Set(hr.ingr);
+            const newRecipes=RECIPES.filter(r=>!known.includes(r.id)&&r.ingr.some(id=>hrIngr.has(id))&&r.buff);
+            const newEnch=ENCHANTMENTS.filter(e=>!knownEnch.includes(e.id)&&e.ingr.some(id=>hrIngr.has(id)));
+            if(newRecipes.length>0||newEnch.length>0){
+              const learned=[];
+              newRecipes.forEach(r=>learned.push(r.icon+' '+r.name));
+              newEnch.forEach(e=>learned.push(e.icon+' '+e.name));
+              hiddenDisc.learnedRecipes=learned;
+              hiddenDisc._newRecipeIds=newRecipes.map(r=>r.id);
+              hiddenDisc._newEnchIds=newEnch.map(e=>e.id);
+            }
+          } else {
+            hiddenDisc={...hr,mapped:false};
+          }
+        }
+      }
+      // Mapped regions: bonus ingredients from previously discovered hidden areas
+      if(isCartographer){
+        const bonusPerMapped=(prestigeLevels.cartographer||0)>=2?1:0;
+        if(bonusPerMapped>0){
+          // Include this-roll discoveries so the bonus kicks in immediately.
+          const effMapped=[...mappedRegions,...localNewMaps];
+          HIDDEN_REGIONS.filter(hr=>hr.region===reg.id&&effMapped.includes(hr.id)).forEach(hr=>{
+            for(let i=0;i<bonusPerMapped;i++){const id=hr.ingr[Math.floor(Math.random()*hr.ingr.length)];hourG[id]=(hourG[id]||0)+1;}
+          });
+        }
+      }
+      // ═══ RANGER COMPANION ENCOUNTER ═══
+      let companionEnc=null;
+      const isRanger=eSpec('warden')==='ranger';
+      if(isRanger){
+        const rngLv=eCL('warden');
+        const encChance=(rngLv>=10?0.40:rngLv>=6?0.30:0.20)+getFeatureVal('companionEncounterBonus');
+        const owned=[...companions.map(c=>c.compId),...localNewComps.map(c=>c.compId)];
+        const regionComps=RANGER_COMPANIONS.filter(c=>c.region===reg.id&&!owned.includes(c.id)&&(!c.legendary_only||rngLv>=10));
+        if(regionComps.length>0&&Math.random()<encChance){
+          const comp=regionComps[Math.floor(Math.random()*regionComps.length)];
+          // Attunement check to approach
+          const tameDC=10+reg.diff*2;
+          const tameCh=pureCheck('attunement',tameDC);
+          if(tameCh.roll!==1&&tameCh.total>=tameDC){
+            // Approachable! Store for post-expedition decision (don't auto-tame)
+            localNewComps.push({compId:comp.id});
+            companionEnc={...comp,approachable:true,check:tameCh};
+          } else {
+            companionEnc={...comp,approachable:false,check:tameCh};
+          }
+        }
+      }
+      // Accumulate this roll into the running cum totals returned to the caller.
+      Object.entries(hourG).forEach(([id,q])=>{cumG[id]=(cumG[id]||0)+q;});
+      cumXp+=hxp+(event?.effectXp||0);
+      // Relic discovery (Antiquarian) — per-roll chance, unchanged from legacy.
+      const aqLv=prestigeLevels.antiquarian||0;
+      const relicChance=aqLv>=4?0.35:aqLv>=2?0.25:aqLv>=1?0.15:0;
+      let foundRelic=null;
+      if(relicChance>0&&Math.random()<relicChance){
+        const canLegendary=aqLv>=5&&reg.diff>=4;
+        foundRelic=generateRelic(reg.diff,reg.name);
+        if(!canLegendary&&foundRelic.rarity==='legendary')foundRelic.rarity='rare';
+      }
+      const hr={
+        hourNum,totalHours:hourNum,regId:reg.id,
+        regName:curHiddenSite?reg.name+' — 🗺️ '+curHiddenSite.name:curSite?reg.name+' — '+curSite.name:reg.name,
+        regIcon:reg.icon,travelTime:0,diff:reg.diff||1,
+        ext,gathered:{...hourG},xp:hxp+(event?.effectXp||0),event,foundRelic,
+        cumGathered:{...cumG},cumXp,isFinal:true,divBonus,luckyBonus,attuneBonus,discovery,companionEnc,hiddenDisc,
+      };
+      return{hr,cumG,cumXp,localNewDiscs,localNewComps,localNewMaps,localLoyaltyLoss};
+  };
+  // ─── PHASE 3: FORAGE AGAIN ───
+  // Pay 10⚡ (with Endurance/Early-Riser refund), run one roll, push to expQ for animation, update expedition state,
+  // and commit per-roll side effects (field journal, mapped regions, injuries, gadget damage, companion loyalty losses).
+  const _forageAgain=()=>{
+    if(!expedition.active)return;
+    const reg=locRegions.find(r=>r.id===expedition.regionId);if(!reg)return;
+    const earlyR=getFeatureVal('firstActionFree')&&!dayFlags.includes('first_action_used');
+    if(energy<10&&!earlyR)return;
+    spendEnergy(10);
+    const result=_executeForageRoll(reg,expedition.rollCount,expedition.cumG,expedition.cumXp);
+    if(!result)return;
+    const {hr,cumG,cumXp,localNewDiscs,localNewMaps,localLoyaltyLoss}=result;
+    // Per-roll side effects (each was previously batched at end-of-expedition).
+    if(hr.discovery?.documented&&localNewDiscs.length>0){setFieldJournal(prev=>[...new Set([...prev,...localNewDiscs])]);}
+    if(hr.companionEnc?.approachable){setPendingCompDec(p=>[...(p||[]),hr.companionEnc]);}
+    if(localNewMaps.length>0){
+      setMappedRegions(prev=>[...new Set([...prev,...localNewMaps])]);
+      // Auto-learn recipes & enchantments from newly mapped hidden areas.
+      const allNewRecipeIds=hr.hiddenDisc?._newRecipeIds||[];
+      const allNewEnchIds=hr.hiddenDisc?._newEnchIds||[];
+      if(allNewRecipeIds.length>0)setKnown(prev=>{const n=[...prev];allNewRecipeIds.forEach(id=>{if(!n.includes(id))n.push(id);});return n;});
+      if(allNewEnchIds.length>0)setKnownEnch(prev=>{const n=[...prev];allNewEnchIds.forEach(id=>{if(!n.includes(id))n.push(id);});return n;});
+      if(allNewRecipeIds.length>0||allNewEnchIds.length>0){
+        const allLearned=[...allNewRecipeIds.map(id=>{const r=RECIPES.find(rx=>rx.id===id);return r?r.icon+' '+r.name:id;}),...allNewEnchIds.map(id=>{const e=ENCHANTMENTS.find(ex=>ex.id===id);return e?e.icon+' '+e.name:id;})];
+        addLog('📜 Hidden area knowledge unlocked: '+allLearned.join(', '),'quest');
+      }
+    }
+    if(hr.event?.injuryPenalty){setInjuryPenalty(prev=>prev+hr.event.injuryPenalty);addLog('🩹 Expedition injury: -'+hr.event.injuryPenalty+' Energy tomorrow.','error');}
+    if(hr.event?.gadgetDamage&&gadgets.length>0&&!getFeatureVal('masterworkCalibration')){
+      const activeG=gadgets.filter(g=>g.equipped!==false);
+      if(activeG.length>0){
+        const victim=activeG[Math.floor(Math.random()*activeG.length)];
+        setGadgets(prev=>prev.map(g=>g.id===victim.id?{...g,damaged:true,equipped:false}:g));
+        addLog('🔧 '+victim.name+' was damaged! Unequipped until repaired.','error');
+      }
+    }
+    if(localLoyaltyLoss.length>0){
+      setCompanions(prev=>prev.map(c=>{
+        const hit=localLoyaltyLoss.find(l=>l.compId===c.compId);
+        return hit?{...c,loyalty:Math.max(1,(c.loyalty||1)-1)}:c;
+      }));
+    }
+    // Failure flavor selection — re-roll to avoid repeating the previous message.
+    const newFlavorIdx=hr.ext.success?expedition.lastFlavorIdx:_pickFailureFlavor(expedition.lastFlavorIdx);
+    setExpedition(prev=>({...prev,
+      rollCount:prev.rollCount+1,
+      cumG,cumXp,
+      maxDCMet:hr.ext.success?Math.max(prev.maxDCMet,hr.ext.dc):prev.maxDCMet,
+      lastRoll:{roll:hr.ext.roll,total:hr.ext.total,dc:hr.ext.dc,success:hr.ext.success,
+        ingredients:{...hr.gathered},flavorIdx:newFlavorIdx,xp:hr.xp,
+        eventText:hr.event?.text||null,discovery:hr.discovery||null,companionEnc:hr.companionEnc||null,hiddenDisc:hr.hiddenDisc||null},
+      lastFlavorIdx:newFlavorIdx,
+    }));
+    // Push to expQ so the existing ExpeditionHourPopup animates the d20 reveal.
+    setExpQ([hr]);
+  };
+  // ─── PHASE 3: RETURN TO TOWN ───
+  // Exits expedition mode. Applies per-expedition perks that legacy applied at end-of-queue:
+  // guaranteedRare backstop, faction rareForageBonus, forageDiscovery chance, and Wildcrafter Field Brew phase.
+  // Builds the summary panel (travel + forage breakdown, total rolls, highest DC met).
+  const _returnToTown=()=>{
+    if(!expedition.active)return;
+    // Seasonal Bypass lasts for one foraging trip to its region
+    if(seasonalOverride&&seasonalOverride.region===expedition.regionId)setSeasonalOverride(null);
+    const reg=locRegions.find(r=>r.id===expedition.regionId);
+    const cumG={...expedition.cumG};
+    if(reg){
+      // guaranteedRare: backstop if no rare ingredient was found this trip.
+      if(getFeatureVal('guaranteedRare')>0&&reg.diff>=2){
+        const rareIds=reg.ingr.filter(id=>(INGR[id]?.val||0)>=8);
+        if(rareIds.length>0){
+          const hasRare=Object.keys(cumG).some(id=>rareIds.includes(id)&&cumG[id]>0);
+          if(!hasRare){
+            const rId=rareIds[Math.floor(Math.random()*rareIds.length)];
+            cumG[rId]=(cumG[rId]||0)+1;modInv(rId,1);
+            addLog('🌿 Guaranteed Rare: '+(INGR[rId]?.icon||'')+(INGR[rId]?.name||rId)+' surfaced before you left!','craft');
+          }
+        }
+      }
+      // Faction rareForageBonus: per-trip extra-rare chance.
+      const rfb=getFeatureVal('rareForageBonus');
+      if(rfb>0&&Math.random()<rfb){
+        const rareIds2=reg.ingr.filter(id=>(INGR[id]?.val||0)>=6);
+        if(rareIds2.length>0){
+          const rId=rareIds2[Math.floor(Math.random()*rareIds2.length)];
+          cumG[rId]=(cumG[rId]||0)+1;modInv(rId,1);
+          addLog('🌿 Faction contacts smuggled an extra '+(INGR[rId]?.icon||'')+(INGR[rId]?.name||rId)+' into your pack.','craft');
+        }
+      }
+      // Wildcrafter L2 Fresh Reagents: +1 bonus ingredient per expedition. Duplicates one of the rolled-this-trip
+      // ingredients (picked at random) — represents the wildcrafter's eye for the best specimen in the pile.
+      // Edge case (a): if cumG is empty (all rolls failed), skip the bonus — "bonus" implies a base to amplify.
+      if((prestigeLevels?.wildcrafter||0)>=2){
+        const wcBonusPool=Object.keys(cumG).filter(id=>cumG[id]>0);
+        if(wcBonusPool.length>0){
+          const wcPick=wcBonusPool[Math.floor(Math.random()*wcBonusPool.length)];
+          cumG[wcPick]=(cumG[wcPick]||0)+1;modInv(wcPick,1);
+          addLog('🌿 Fresh Reagents: picked an extra '+(INGR[wcPick]?.icon||'')+(INGR[wcPick]?.name||wcPick)+' from the day\'s haul.','craft');
+        }
+      }
+      // forageDiscovery: chance per expedition to discover a new recipe.
+      const fdChance=getFeatureVal('forageDiscovery');
+      if(fdChance>0&&Math.random()<fdChance){
+        const und=RECIPES.filter(r=>!known.includes(r.id)&&level>=r.unlock&&(!r.faction||getRL(r.faction)>=(r.fReq||0))&&canCraftAtLocation(r.ingr)&&!r.fieldOnly);
+        if(und.length>0){const fd=weightedDiscPick(und);setKnown(p=>[...p,fd.id]);addLog(`🌿 Field Discovery: The expedition revealed the secret of ${fd.icon}${fd.name}!`,'quest');}
+      }
+      // Wildcrafter Field Brew phase — only if the trip actually produced a haul.
+      if((prestigeLevels.wildcrafter||0)>=1&&Object.values(cumG).some(q=>q>0)){
+        const wcLv=prestigeLevels.wildcrafter||0;
+        const maxBrews=wcLv>=5?4:wcLv>=3?3:wcLv>=2?2:1;
+        setFieldBrewPhase({haul:{...cumG},brewsLeft:maxBrews,regDiff:reg.diff||1});
+      }
+    }
+    // Build summary panel.
+    setExpSummary({
+      regionName:reg?.name||'Wilds',regionIcon:reg?.icon||'🌿',
+      rollCount:expedition.rollCount,cumG,
+      travelCost:expedition.travelCost,forageCost:expedition.rollCount*10,
+      totalCost:expedition.travelCost+expedition.rollCount*10,
+      maxDCMet:expedition.maxDCMet,cumXp:expedition.cumXp,
+    });
+    if(expedition.rollCount>0){
+      const haulStr=Object.entries(cumG).filter(([,q])=>q>0).map(([id,q])=>(INGR[id]?.icon||'')+(INGR[id]?.name||id)+' ×'+q).join(', ')||'Nothing usable';
+      addLog(`🏠 Returned from ${reg?.icon||''}${reg?.name||'the wilds'}: ${expedition.rollCount} roll${expedition.rollCount===1?'':'s'}, ${haulStr} (+${expedition.cumXp} XP)`,'harvest');
+    } else {
+      addLog(`🏠 Returned from ${reg?.icon||''}${reg?.name||'the wilds'} without foraging.`,'info');
+    }
+    setExpedition({active:false,regionId:null,siteId:null,siteIsHidden:false,targetIngr:null,
+      rollCount:0,cumG:{},cumXp:0,baseDC:0,travelCost:0,maxDCMet:0,lastRoll:null,lastFlavorIdx:-1,startedDay:0});
+  };
+  // Advance expedition — apply one hour's effects, shift queue
+  const advanceExpedition=()=>{
+    if(expQ.length===0)return;
+    const hr=expQ[0];
+    Object.entries(hr.gathered).forEach(([id,q])=>{if(q>0)modInv(id,q);});
+    gainXP(hr.xp);
+    if(hr.foundRelic){setRelics(p=>[...p,hr.foundRelic]);addLog('📖 Found a relic: '+RELIC_CATS.find(c=>c.id===hr.foundRelic.category)?.icon+' '+(hr.foundRelic.appraised?hr.foundRelic.name:'Mystery Object')+' (from '+hr.foundRelic.region+')','craft');}
+    if(hr.event?.effectRep)addRep(hr.event.effectRep.faction,hr.event.effectRep.amount);
+    addLog(`⛏️ Roll ${hr.hourNum}: ${hr.ext.success?'✅':'❌'} ${Object.entries(hr.gathered).filter(([,q])=>q>0).map(([id,q])=>INGR[id]?.icon+INGR[id]?.name+' ×'+q).join(', ')||'nothing'}${hr.divBonus?' | 👁️ Divination: +1 '+hr.divBonus.icon+hr.divBonus.name:''}${hr.luckyBonus?' | 🍀 Lucky: +1 '+hr.luckyBonus.icon+hr.luckyBonus.name:''}${hr.attuneBonus?' | 🎯 Attuned: +1 '+hr.attuneBonus.icon+hr.attuneBonus.name:''}${hr.discovery?(hr.discovery.documented?' | 🌿 Discovered: '+hr.discovery.icon+' '+hr.discovery.name+'!':' | 🌿 Noticed something, but couldn\'t document it...'):''}${hr.companionEnc?(hr.companionEnc.approachable?' | 🦊 Approached: '+hr.companionEnc.icon+' '+hr.companionEnc.name+'!':' | 🦊 Spotted '+hr.companionEnc.icon+' '+hr.companionEnc.name+' but it fled...'):''}${hr.hiddenDisc?(hr.hiddenDisc.mapped?' | 🗺️ MAPPED: '+hr.hiddenDisc.icon+' '+hr.hiddenDisc.name+'!':' | 🗺️ Glimpsed a hidden path...'):''}${hr.event?(hr.event.dangerSensed?' | ⚠️ Danger Sense saved you!':' | '+hr.event.text):''}`,'harvest');
+    const rest=expQ.slice(1);
+    setExpQ(rest);
+    // when an expedition is active, the player is mid-trip and the "Forage Again" loop will
+    // refill expQ on the next click. We skip the field-brew popup and the "Expedition Complete!" summary
+    // here — both fire instead from _returnToTown() when the player chooses to leave.
+    if(rest.length===0&&!expedition.active){
+      if((prestigeLevels.wildcrafter||0)>=1){
+        const wcLv=prestigeLevels.wildcrafter||0;
+        const maxBrews=wcLv>=5?4:wcLv>=3?3:wcLv>=2?2:1;
+        setFieldBrewPhase({haul:{...hr.cumGathered},brewsLeft:maxBrews,regDiff:hr.diff||1});
+      }
+      setLastCheck(hr.ext);
+      const totalHaul=Object.entries(hr.cumGathered).filter(([,q])=>q>0).map(([id,q])=>INGR[id]?.icon+INGR[id]?.name+' ×'+q).join(', ')||'Nothing usable';
+      showResult(hr.regIcon+hr.regName+' — Expedition Complete!','harvest',
+        hr.totalHours+' forage roll'+(hr.totalHours===1?'':'s')+' (+⚡'+hr.travelTime+' travel)\nTotal haul: '+totalHaul+'\nTotal XP: +'+hr.cumXp);
+    } else if(rest.length===0&&expedition.active){
+      // Animation ended for this roll. Update lastCheck for the worldmap dice readout. The expedition
+      // view stays mounted; the player can Forage Again or Return to Town.
+      setLastCheck(hr.ext);
+    }
+  };
+  // Skip all remaining energy at once
+  const skipAllExpedition=()=>{
+    if(expQ.length===0)return;
+    const last=expQ[expQ.length-1];
+    // Apply everything
+    expQ.forEach(hr=>{
+      Object.entries(hr.gathered).forEach(([id,q])=>{if(q>0)modInv(id,q);});
+      gainXP(hr.xp);
+      if(hr.foundRelic){setRelics(p=>[...p,hr.foundRelic]);addLog('📖 Relic found: '+RELIC_CATS.find(c=>c.id===hr.foundRelic.category)?.icon+' Mystery Object','craft');}
+      if(hr.event?.effectRep)addRep(hr.event.effectRep.faction,hr.event.effectRep.amount);
+    });
+    addLog(`⛏️ Expedition complete: ${last.totalHours}h at ${last.regIcon}${last.regName}.`,'harvest');
+    // Clear Wildcraft seasonal override after use
+    if(seasonalOverride&&seasonalOverride.region===last.regId)setSeasonalOverride(null);
+    setExpQ([]);setLastCheck(last.ext);
+    // Trigger Field Brew phase (Wildcrafter)
+    if((prestigeLevels.wildcrafter||0)>=1){
+      const wcLv=prestigeLevels.wildcrafter||0;
+      const maxBrews=wcLv>=5?4:wcLv>=3?3:wcLv>=2?2:1;
+      setFieldBrewPhase({haul:{...last.cumGathered},brewsLeft:maxBrews,regDiff:last.diff||1});
+    }
+    const totalHaul=Object.entries(last.cumGathered).filter(([,q])=>q>0).map(([id,q])=>INGR[id]?.icon+INGR[id]?.name+' ×'+q).join(', ')||'Nothing usable';
+    showResult(last.regIcon+last.regName+' — Expedition Complete!','harvest',
+      last.totalHours+' forage roll'+(last.totalHours===1?'':'s')+' (+⚡'+last.travelTime+' travel)\nTotal haul: '+totalHaul+'\nTotal XP: +'+last.cumXp);
+  };
+
+  // ─── CRAFT ───
+  const CRAFT_SUCCESS=['The mixture bubbles and settles into a perfect brew.','Your hands move with practiced confidence. Another fine creation.','Steam rises as the ingredients bind together beautifully.','The workshop fills with a satisfying aroma as the potion takes form.','You hold the vial to the light — clear, potent, exactly right.'];
+  const CRAFT_FAIL=['The mixture turns an ugly brown and dissolves into sludge.','A sharp crack — something went wrong. The compound is ruined.','The ingredients resist each other, refusing to bind.','Smoke billows from the cauldron. Not your finest hour.'];
+  // ═══ RELIC HELPERS (Antiquarian) ═══
+
+  const appraiseRelic=(relicId)=>{
+    const relic=relics.find(r=>r.id===relicId);if(!relic||relic.appraised)return;
+    const aqLv=prestigeLevels.antiquarian||0;
+    // Auto-identify at Lv4+
+    if(aqLv>=4){
+      setRelics(p=>p.map(r=>r.id===relicId?{...r,appraised:true}:r));
+      addLog('📖 Auto-identified: '+RELIC_CATS.find(c=>c.id===relic.category)?.icon+' '+relic.name+' ('+relic.rarity+', '+fmtMoney(relic.value)+').','craft');
+      return;
+    }
+    snapshot();
+    const dc=RELIC_APPRAISE_DC[relic.rarity]||11;
+    const ch=doCheck('research',dc);
+    const apBonus=aqLv>=2?3:0;
+    if(apBonus){ch.total+=apBonus;ch.extras.push({label:'📖 Appraisal',val:apBonus});}
+    ch.success=ch.roll===1?false:ch.roll===20?true:ch.total>=dc;
+    if(ch.success){
+      setRelics(p=>p.map(r=>r.id===relicId?{...r,appraised:true}:r));
+      const cat=RELIC_CATS.find(c=>c.id===relic.category);
+      showResult(cat?.icon+' '+relic.name+' — Appraised!','craft','Value: '+fmtMoney(relic.value)+' ('+relic.rarity+')\nFrom: '+relic.region+'\nSet: '+cat?.set,ch);
+    } else {
+      showResult('📖 Appraisal Failed','error','You can\'t quite identify this piece. Try again tomorrow.',ch);
+    }
+  };
+
+  const sellRelic=(relicId)=>{
+    const relic=relics.find(r=>r.id===relicId);if(!relic||!relic.appraised||relic.displayed)return;
+    const aqLv=prestigeLevels.antiquarian||0;
+    const mult=aqLv>=3?3:1;
+    const gold_gain=relic.value*mult;
+    setGold(g=>g+gold_gain);
+    setRelics(p=>p.filter(r=>r.id!==relicId));
+    const cat=RELIC_CATS.find(c=>c.id===relic.category);
+    addLog('💰 Sold '+cat?.icon+' '+relic.name+' for '+fmtMoney(gold_gain)+(mult>1?' ('+mult+'× collector price)':'')+'!','quest');
+  };
+
+  const displayRelic=(relicId)=>{
+    const relic=relics.find(r=>r.id===relicId);if(!relic||!relic.appraised||relic.displayed)return;
+    const aqLv=prestigeLevels.antiquarian||0;
+    if(aqLv<3){addLog('Collector\'s Network (Antiquarian Lv3) required for museum display.','error');return;}
+    setRelics(p=>p.map(r=>r.id===relicId?{...r,displayed:true}:r));
+    setMuseum(p=>{const n={...p};n[relic.category]=(n[relic.category]||0)+1;return n;});
+    const cat=RELIC_CATS.find(c=>c.id===relic.category);
+    const setData=RELIC_SETS[relic.category];
+    const newCount=(museum[relic.category]||0)+1;
+    addLog('🏛️ Displayed '+cat?.icon+' '+relic.name+' in museum! '+setData?.name+': '+newCount+'/'+setData?.needed,'craft');
+    if(newCount>=setData?.needed)addLog('✨ '+setData?.name+' COMPLETE! Bonus: '+setData?.desc,'quest');
+  };
+
+    // ═══ THREAT HELPERS ═══
+  // Penalty value for a threat's current tier (THREAT_FACTIONS[id].penalties). `vals` lets newDay pass the
+  // freshly-updated threat levels instead of the start-of-day state.
+  const getThreatPenalty=(threatId,key,vals=threats)=>{
+    const val=vals?.[threatId]||0;
+    const tier=getThreatTier(val);
+    if(tier==='calm')return key.includes('Mult')?1:0;
+    const tf=THREAT_FACTIONS[threatId];
+    const p=tf?.penalties[tier];
+    return p?.[key]||(key.includes('Mult')?1:0);
+  };
+  // Bandit-type (reavers / sand_raiders), corruption-type (blight / the_scorch), magic-type (veilbreakers / cult_of_buried)
+  const threatExpDangerMult=getThreatPenalty(locThreatIds[0],'expDangerMult');
+  const threatStaffYieldMult=getThreatPenalty(locThreatIds[0],'staffYieldMult');
+  const threatContaminate=getThreatPenalty(locThreatIds[1],'contaminateChance');
+  const threatEnchDC=getThreatPenalty(locThreatIds[2],'enchDCBonus');
+  const threatDiscoveryMult=getThreatPenalty(locThreatIds[2],'discoveryMult');
+  const threatEnchPayMult=getThreatPenalty(locThreatIds[2],'enchPayMult');
+
+  // Overnight staff forage: a staff day is 100 energy; travel to the region eats into it and each gather
+  // round costs 25. Further regions give fewer rounds (minimum 1). Shared by newDay and the Staff screen.
+  const staffForageRounds=(reg)=>Math.max(1,Math.floor((100-(reg.time||0))/25));
+
+  // Safe-storage limit before overnight spoilage, per ingredient. Single source of truth for newDay's spoilage
+  // roll and every "safe storage" marker in the UI. Uses tonight's season (spoilage happens overnight).
+  const getSpoilThreshold=(id)=>{
+    let nat=0;
+    if(fieldJournal&&typeof FIELD_DISCOVERIES!=='undefined')Object.values(FIELD_DISCOVERIES).flat().forEach(d=>{if(d.type==='flora'&&d.bonus?.ingredient===id&&fieldJournal.includes(d.id))nat+=3;}); // Naturalist flora notes
+    if(HIDDEN_INGR&&HIDDEN_INGR[id])return 12+nat; // hidden-region ingredients keep a flat 12
+    const base=Math.max(4,8+getFeatureVal('spoilThreshold')+upEff('spoilThreshold')+(getSeason(day+1,gameLocation).spoilMod||0));
+    const blight=getThreatPenalty(locThreatIds[1],'spoilMult');
+    return (blight>1?Math.max(4,Math.floor(base/blight)):base)+nat;
+  };
+
+  // ═══ OUTPOST HELPERS ═══
+  const seLv=prestigeLevels.siegeengineer||0;
+  const maxOutpostSlots=seLv>=5?4:seLv>=3?3:seLv>=2?2:seLv>=1?1:0;
+  const outpostGatherAmt=seLv>=4?4:seLv>=2?3:2;
+  const outpostSuppressAmt=seLv>=4?5:seLv>=2?4:3;
+
+  const buildOutpost=(regionId)=>{
+    const reg=REGIONS.find(r=>r.id===regionId);if(!reg)return;
+    if(outposts.length>=maxOutpostSlots){addLog('No outpost slots available ('+outposts.length+'/'+maxOutpostSlots+').','error');return;}
+    if(outposts.some(op=>op.regionId===regionId)){addLog('Already have an outpost at '+reg.name+'.','error');return;}
+    const cost=50+reg.diff*25;
+    if(gold<cost){addLog('Need '+fmtMoney(cost)+' to build outpost at '+reg.name+' (have '+fmtMoney(gold)+').','error');return;}
+    // Need 10 of any region ingredient
+    const regIngr=reg.ingr||[];const bestIngr=regIngr.find(id=>(inv[id]||0)>=10);
+    if(!bestIngr){addLog('Need 10 of any '+reg.name+' ingredient to build outpost.','error');return;}
+    snapshot();
+    setGold(g=>g-cost);modInv(bestIngr,-10);
+    const newOp={id:'op_'+Date.now(),regionId,built:false,daysLeft:reg.diff>=4?3:2,recipe:null,storedIngr:{},fortress:null};
+    setOutposts(p=>[...p,newOp]);
+    addLog('🏗️ Construction started: Outpost at '+reg.name+' ('+newOp.daysLeft+' days). Cost: '+fmtMoney(cost)+' + 10× '+(INGR[bestIngr]?.icon||'')+INGR[bestIngr]?.name+'.','quest');
+  };
+
+  const setOutpostRecipe=(opId,recipeId)=>{
+    if(seLv<3){addLog('Processing Station (Siege Engineer Lv3) required for auto-brewing.','error');return;}
+    setOutposts(p=>p.map(op=>op.id===opId?{...op,recipe:recipeId||null}:op));
+  };
+
+  const upgradeFortress=(opId,fortressType)=>{
+    if(seLv<5){addLog('Fortress Network (Siege Engineer Lv5) required.','error');return;}
+    const ft=FORTRESS_TYPES[fortressType];if(!ft)return;
+    if(outposts.some(op=>op.fortress)){addLog('Can only have one fortress. Existing fortress must be demolished first.','error');return;}
+    if(gold<ft.cost){addLog('Need '+fmtMoney(ft.cost)+' for '+ft.name+'.','error');return;}
+    snapshot();setGold(g=>g-ft.cost);
+    setOutposts(p=>p.map(op=>op.id===opId?{...op,fortress:fortressType}:op));
+    addLog('🏰 '+ft.name+' constructed! '+ft.desc,'quest');
+  };
+
+  // Ranger solo expedition: a companion forages a region alone (1/day, no energy). Haul scales with region difficulty, loyalty and level.
+  const sendSoloForage=(comp,loyalty,reg)=>{
+    snapshot();setDayFlags(f=>[...f,'solo_exp_used']);
+    const n=Math.max(4,Math.floor(reg.diff*2+loyalty*2+Math.floor(level/3)));
+    const items={};for(let i=0;i<n;i++){const id=reg.ingr[Math.floor(Math.random()*reg.ingr.length)];items[id]=(items[id]||0)+1;}
+    setInv(p=>{const nx={...p};Object.entries(items).forEach(([id,q])=>{nx[id]=(nx[id]||0)+q;});return nx;});
+    const soloXp=Math.floor(reg.diff*12);gainXP(soloXp);
+    const valStr=Object.entries(items).map(([id,q])=>(INGR[id]?.icon||'')+INGR[id]?.name+' ×'+q).join(', ');
+    addLog(`🐾 ${comp.icon} ${comp.name} forages ${reg.icon}${reg.name} alone! Brought back: ${valStr} (+${soloXp} XP)`,'craft');
+    showResult(`🐾 ${comp.icon} ${comp.name} — Solo Expedition!`,'craft',`${reg.icon} ${reg.name}\nHaul: ${valStr}\n+${soloXp} XP\nNo player energy spent!`);
+  };
+  // What a defense request needs and how much of it you hold (potions of any quality for 'deliver', raw stock otherwise)
+  const dqStatus=dq=>{const have=dq.type==='deliver'?countAllPots(dq.target):(inv[dq.target]||0);return {tf:THREAT_FACTIONS[dq.threatId],have,canFill:have>=dq.qty,target:dq.type==='deliver'?RECIPES.find(r=>r.id===dq.target):INGR[dq.target]};};
+  const completeDefenseQuest=(dqId)=>{
+    const dq=defenseQuests.find(q=>q.id===dqId);if(!dq)return;
+    // Check requirements
+    if(dq.type==='deliver'){
+      const allQ=countAllPots(dq.target);
+      if(allQ<dq.qty){addLog('Need '+dq.qty+'× '+RECIPES.find(r=>r.id===dq.target)?.name+' (have '+allQ+').','error');return;}
+    } else if(dq.type==='gather'){
+      if((inv[dq.target]||0)<dq.qty){addLog('Need '+dq.qty+'× '+(INGR[dq.target]?.name||dq.target)+' (have '+(inv[dq.target]||0)+').','error');return;}
+    }
+    snapshot();
+    // Consume and track quality
+    let dqConsumed={std:0,fine:0,mw:0,gm:0};
+    if(dq.type==='deliver'){const c=consumePots(dq.target,dq.qty);Object.keys(c).forEach(k=>{dqConsumed[k]+=c[k];});}
+    else if(dq.type==='gather')modInv(dq.target,-dq.qty);
+    const dqQB=qualityBonusMult(dqConsumed);
+    // Reduce threat (quality bonus increases reduction)
+    const threatReduc=Math.floor(dq.reward*dqQB.mult);
+    setThreats(p=>{const n={...p};n[dq.threatId]=Math.max(0,(n[dq.threatId]||0)-threatReduc);return n;});
+    setDefenseQuests(p=>p.filter(q=>q.id!==dqId));
+    const dqXp=Math.floor(dq.reward*3*dqQB.mult);
+    gainXP(dqXp);
+    const tf=THREAT_FACTIONS[dq.threatId];
+    addLog('🛡️ Defense quest complete! '+tf?.icon+' '+tf?.name+' threat reduced by '+threatReduc+(dqQB.mult>1?' (base '+dq.reward+')':'')+'. (+'+dqXp+' XP)'+(dqQB.label?dqQB.label:''),'quest');
+  };
+
+  // ═══ HOLLOW MARCH ACTIONS ═══
+  const fulfillMarchDemand=(crisisId,solutionId)=>{
+    const hm=hollowMarch;if(!hm?.active)return;
+    const crisis=hm.demands.find(d=>d.id===crisisId);if(!crisis||crisis.resolved)return;
+    const solution=crisis.solutions.find(s=>s.id===solutionId);if(!solution)return;
+    snapshot();
+    // Check and consume resources. Crisis Responder feat reduces item-based cost by `crisisCostReduction`
+    // (floor 1 — you can't pay zero items) and gold cost by `crisisGoldDiscount` percentage.
+    const cost=solution.cost;
+    const crisisItemReduc=getFeatureVal('crisisCostReduction');
+    const crisisGoldDisc=getFeatureVal('crisisGoldDiscount');
+    if(cost.type==='potion'){
+      const adjQty=Math.max(1,cost.qty-crisisItemReduc);
+      const have=countAllPots(cost.target);
+      if(have<adjQty){addLog('Need '+adjQty+'× '+(cost.targetName||cost.target)+' (have '+have+').','error');return;}
+      consumePots(cost.target,adjQty);
+      if(crisisItemReduc>0&&adjQty<cost.qty)addLog('🛡️ Crisis Responder: solution needed only '+adjQty+'× (saved '+(cost.qty-adjQty)+').','info');
+    } else if(cost.type==='ingredients'){
+      const adjQty=Math.max(1,cost.qty-crisisItemReduc);
+      if((inv[cost.target]||0)<adjQty){addLog('Need '+adjQty+'× '+(cost.targetName||cost.target)+' (have '+(inv[cost.target]||0)+').','error');return;}
+      modInv(cost.target,-adjQty);
+      if(crisisItemReduc>0&&adjQty<cost.qty)addLog('🛡️ Crisis Responder: solution needed only '+adjQty+'× (saved '+(cost.qty-adjQty)+').','info');
+    } else if(cost.type==='gold'){
+      const adjGold=Math.max(0,Math.floor(cost.qty*(1-crisisGoldDisc)));
+      if(gold<adjGold){addLog('Need '+fmtMoney(adjGold)+' (have '+fmtMoney(gold)+').','error');return;}
+      setGold(g=>g-adjGold);
+      if(crisisGoldDisc>0&&adjGold<cost.qty)addLog('🛡️ Crisis Responder: solution cost only '+fmtMoney(adjGold)+' (saved '+fmtMoney(cost.qty-adjGold)+').','info');
+    } else if(cost.type==='staff'){
+      const availStaff=hiredAppr.filter(ap=>!apprTasks[ap.id]||apprTasks[ap.id].type==='idle');
+      if(availStaff.length<cost.qty){addLog('Need '+cost.qty+' idle staff (have '+availStaff.length+'). Set staff to 💤 Idle first.','error');return;}
+      const worstThreat=locThreatIds.reduce((a,b)=>(threats[a]||0)>=(threats[b]||0)?a:b);
+      const toAssign=availStaff.slice(0,cost.qty);
+      const newTasks={...apprTasks};toAssign.forEach(ap=>{newTasks[ap.id]={type:'patrol',target:worstThreat};});setApprTasks(newTasks);
+    } else if(cost.type==='enchant'||cost.type==='combat'){
+      if(energy<cost.qty){addLog('Need '+cost.qty+' Energy (have '+energy+').','error');return;}
+      // route through spendEnergy so Early Riser / Endurance fire on the first crisis solution of the day.
+      spendEnergy(cost.qty);
+    }
+    // Skill check (if applicable — gold/staff are auto-success). Crisis Responder's `crisisCheckBonus` adds
+    // a flat bonus to the resolution roll alongside craftBonus and any upgrade craft-skill bonuses.
+    let success=true,mastery=false,rollResult=null;
+    if(solution.dc>0&&solution.skill){
+      const ch=pureCheck(solution.skill,solution.dc);
+      const craftB=getFeatureVal('craftBonus')+upEff('craftSkillBonus');
+      const crisisB=getFeatureVal('crisisCheckBonus');
+      ch.total+=craftB+crisisB;
+      success=ch.roll===1?false:ch.roll===20?true:ch.total>=solution.dc;
+      mastery=success&&(ch.total>=solution.dc+HOLLOW_MARCH.masteryThreshold);
+      rollResult={roll:ch.roll,total:ch.total,dc:solution.dc,skill:solution.skill};
+    }
+    // Apply result
+    const updDemands=hm.demands.map(d=>d.id===crisisId?{...d,resolved:true,chosenSolution:solutionId,result:{success,mastery,roll:rollResult}}:d);
+    const updMarch={...hm,demands:updDemands};
+    setHollowMarch(updMarch);
+    if(success){
+      const rwd=solution.reward||{};
+      if(rwd.xp)gainXP(rwd.xp);
+      if(rwd.gold)setGold(g=>g+rwd.gold);
+      if(mastery){
+        const mRwd=HOLLOW_MARCH.masteryReward(hm.wave);
+        if(mRwd.xp)gainXP(mRwd.xp);if(mRwd.gold)setGold(g=>g+mRwd.gold);
+        if(mRwd.threatReduc)locThreatIds.forEach(tid=>{setThreats(p=>({...p,[tid]:Math.max(0,(p[tid]||0)-Math.floor(mRwd.threatReduc/3))}));});
+      }
+      const rText=[rwd.xp?'+'+rwd.xp+' XP':'',rwd.gold?'+'+fmtMoney(rwd.gold):''].filter(Boolean).join(', ');
+      const mText=mastery?' ★ MASTERY! '+[HOLLOW_MARCH.masteryReward(hm.wave).xp?'+'+HOLLOW_MARCH.masteryReward(hm.wave).xp+' XP':'',HOLLOW_MARCH.masteryReward(hm.wave).gold?'+'+fmtMoney(HOLLOW_MARCH.masteryReward(hm.wave).gold):''].filter(Boolean).join(', '):'';
+      addLog(`💀✅ ${crisis.icon} ${crisis.name}: ${solution.icon} ${solution.label} succeeded!${rollResult?' ('+rollResult.total+' vs DC'+rollResult.dc+')':''} ${rText}${mText}`,'quest');
+    } else {
+      // Failed skill check — crisis counts as attempted but failed
+      addLog(`💀❌ ${crisis.icon} ${crisis.name}: ${solution.icon} ${solution.label} FAILED! (${rollResult?.total||0} vs DC${rollResult?.dc||0}) Resources consumed but crisis unresolved.`,'error');
+    }
+    // Check if all crises resolved successfully
+    const allResolved=updDemands.every(d=>d.resolved);
+    const allSuccess=updDemands.every(d=>d.resolved&&d.result?.success);
+    const succCount=updDemands.filter(d=>d.resolved&&d.result?.success).length;
+    // Final Stand completion check
+    if(allResolved&&hm.finalStandInProgress){
+      const needed=Math.ceil(updDemands.length*0.67);
+      if(succCount>=needed){
+        const fs=HOLLOW_MARCH.finalStandRewards;
+        gainXP(fs.xp);setGold(g=>g+fs.gold);
+        setThreats(p=>{const n={...p};locThreatIds.forEach(tid=>{n[tid]=Math.min(fs.threatCap,n[tid]||0);});return n;});
+        const updMarch2={...hm,demands:updDemands,finalStandComplete:true,finalStandInProgress:false};
+        setHollowMarch(updMarch2);
+        const masteryCount=updDemands.filter(d=>d.result?.mastery).length;
+        addLog(`👑 THE FINAL STAND IS WON! ${charName} has broken the Hollow March! +${fs.xp} XP, +${fmtMoney(fs.gold)}. Threats capped at ${fs.threatCap}.${masteryCount>0?' ★ '+masteryCount+' masterful victories!':''}`,'quest');
+        setEventPopup({events:[{
+          text:`👑 The Hollow March is Broken!\n\n${charName} stands atop the ward-stones as the last invaders dissolve into mist.\n\n${updDemands.map(d=>`${d.result?.success?'✅':'❌'} ${d.icon} ${d.name} — ${d.solutions.find(s=>s.id===d.chosenSolution)?.icon||''} ${d.solutions.find(s=>s.id===d.chosenSolution)?.label||''}\n   ${d.result?.roll?d.result.roll.skill+': '+d.result.roll.total+' vs DC'+d.result.roll.dc:'Auto-success'}${d.result?.mastery?' ★ MASTERY':''}`).join('\n')}\n\n${succCount}/${updDemands.length} crises overcome (needed ${needed}). Victory!\n\n+${fs.xp} XP, +${fmtMoney(fs.gold)}\nAll threats capped at ${fs.threatCap}\nTitle: "Defender of ${locName}"`,
+          vibe:'hollow_final',result:{msg:'The March is over. You may Pass the Torch when ready.'},flavor:null}],idx:0});
+        return;
+      } else {
+        const updMarch2={...hm,demands:[],finalStandAvailable:false,finalStandInProgress:false};
+        setHollowMarch(updMarch2);
+        addLog(`💀 The Final Stand FAILED (${succCount}/${updDemands.length}, needed ${needed}). Threats spiked. Try again after the next wave.`,'error');
+        setEventPopup({events:[{
+          text:`💀 The Final Stand Failed\n\nThe wards crack. You are forced to retreat.\n\n${updDemands.map(d=>`${d.result?.success?'✅':'❌'} ${d.icon} ${d.name} — ${d.solutions.find(s=>s.id===d.chosenSolution)?.icon||''} ${d.solutions.find(s=>s.id===d.chosenSolution)?.label||''}`).join('\n')}\n\n${succCount}/${updDemands.length} passed (needed ${needed}).\nThe Final Stand returns after the next wave.`,
+          vibe:'hollow_march',result:{msg:'Regroup. Build your skills. Try again.'},flavor:null}],idx:0});
+        return;
+      }
+    }
+    if(allResolved&&allSuccess)addLog('🏆 ALL Wave '+hm.wave+' crises resolved! The defenses hold!','quest');
+    else if(allResolved)addLog('⚠️ Wave '+hm.wave+' crises all attempted — '+succCount+'/'+updDemands.length+' succeeded.','quest');
+  };
+
+  const reinforceWards=()=>{
+    if(energy<50){addLog('Need 50 Energy to reinforce wards.','error');return;}
+    if(!hollowMarch?.active){addLog('No active March to defend against.','error');return;}
+    snapshot();
+    spendEnergy(50);
+    // Skill check with your best of Inscription, Precision or Endurance
+    const dc=10+Math.floor((hollowMarch.wave||1)*0.8);
+    const wardSk=['inscription','precision','endurance'].sort((a,b)=>getSkMod(b)-getSkMod(a))[0];
+    const ch=doCheck(wardSk,dc);const roll=ch.total;
+    if(ch.success){
+      const reduc=5+Math.floor(Math.random()*6); // 5-10 reduction
+      setThreats(p=>{const n={...p};locThreatIds.forEach(tid=>{n[tid]=Math.max(0,(n[tid]||0)-reduc);});return n;});
+      gainXP(25+hollowMarch.wave*5);
+      addLog(`🛡️ Wards reinforced! (Roll ${roll} vs DC ${dc}) All threats reduced by ${reduc}. (+${25+hollowMarch.wave*5} XP)`,'quest');
+    } else {
+      // Partial success — still some benefit
+      const reduc=2;
+      setThreats(p=>{const n={...p};locThreatIds.forEach(tid=>{n[tid]=Math.max(0,(n[tid]||0)-reduc);});return n;});
+      gainXP(10);
+      addLog(`🛡️ Ward reinforcement partially held. (Roll ${roll} vs DC ${dc}) All threats reduced by ${reduc}. (+10 XP)`,'info');
+    }
+  };
+
+  const startFinalStand=()=>{
+    if(!hollowMarch?.finalStandAvailable||hollowMarch?.finalStandComplete)return;
+    snapshot();
+    const wave=hollowMarch.wave;
+    const dc=HOLLOW_MARCH.baseDC(wave)+(HOLLOW_MARCH.finalStandDCBonus||4);
+    const templates=[...(typeof CRISIS_TEMPLATES!=='undefined'?CRISIS_TEMPLATES:[])];
+    const shuffled=templates.sort(()=>Math.random()-0.5).slice(0,HOLLOW_MARCH.finalStandCrises||6);
+    // Generate demands using exact same format as regular wave crises — reuses existing UI
+    const crises=shuffled.map((tmpl,i)=>{
+      const solutions=tmpl.solutions.map(sol=>{
+        const s={...sol,dc,reward:HOLLOW_MARCH.crisisReward(wave)};
+        if(sol.costType==='potion'){
+          const potRecipes=RECIPES.filter(r=>known.includes(r.id)&&!r.fieldOnly&&canCraftAtLocation(r.ingr)&&!(r.buff&&ELIXIR_BUFFS[r.buff]));
+          const sorted=[...potRecipes].sort((a,b)=>b.dc-a.dc);
+          const pickPool=sorted.slice(0,Math.max(3,Math.floor(sorted.length/3)));
+          const r=pickPool.length>0?pickPool[Math.floor(Math.random()*pickPool.length)]:potRecipes[0]||{id:'healing_salve',name:'Healing Salve',icon:'💚'};
+          s.cost={type:'potion',target:r.id,qty:HOLLOW_MARCH.potionQty(wave),targetName:r.name,targetIcon:r.icon};
+        } else if(sol.costType==='enchant'){s.cost={type:'enchant',qty:HOLLOW_MARCH.energyCost(wave)};
+        } else if(sol.costType==='combat'){s.cost={type:'combat',qty:HOLLOW_MARCH.energyCost(wave)};
+        } else if(sol.costType==='gold'){s.dc=0;s.cost={type:'gold',qty:HOLLOW_MARCH.goldCost(wave)};
+        } else if(sol.costType==='ingredients'){
+          const regIngr=[];locRegions.forEach(r=>r.ingr.forEach(id=>{if(INGR[id]&&INGR[id].val>=15)regIngr.push(id);}));
+          const pick=regIngr.length>0?regIngr[Math.floor(Math.random()*regIngr.length)]:'ashbloom';
+          s.cost={type:'ingredients',target:pick,qty:HOLLOW_MARCH.ingrQty(wave),targetName:INGR[pick]?.name||pick,targetIcon:INGR[pick]?.icon||'🌿'};
+        } else if(sol.costType==='staff'){s.dc=0;s.cost={type:'staff',qty:HOLLOW_MARCH.staffQty(wave)};}
+        return s;
+      });
+      return{id:'fs_'+day+'_'+i,templateId:tmpl.id,name:tmpl.name,icon:tmpl.icon,narrative:tmpl.narrative,solutions,resolved:false,chosenSolution:null,result:null};
+    });
+    // Place them as demands — reuses the existing wave crisis UI on the Threats tab
+    setHollowMarch(prev=>({...prev,demands:crises,finalStandInProgress:true}));
+    addLog('👑 THE FINAL STAND BEGINS! '+(HOLLOW_MARCH.finalStandCrises||6)+' crises demand your attention. Prepare and resolve them on the Threats tab.','quest');
+    setScreen('threats');
+  };
+  const marchWavesCleared=(hollowMarch?.history||[]).filter(h=>h.met===h.total).length+((hollowMarch?.demands||[]).every(d=>d.resolved&&d.result?.success)&&hollowMarch?.wave>0&&(hollowMarch?.demands||[]).length>0?1:0);
+  const canPassTorch=getLvl(xp)>=9&&(marchWavesCleared>=(typeof HOLLOW_MARCH!=='undefined'?HOLLOW_MARCH.wavesForTorch:5)||hollowMarch?.finalStandComplete);
+
+    // ═══ BRAND HELPERS (Brand Master) ═══
+  const getBrandForRecipe=(recipeId)=>brands.find(b=>b.recipes.includes(recipeId));
+  const getBrandSellMult=(recipeId)=>{
+    const brand=getBrandForRecipe(recipeId);if(!brand)return 1;
+    const bl=getBrandLevel(brand.sold);
+    const bmLv=prestigeLevels.brandmaster||0;
+    // Famous tier only available at Lv4+
+    const effectiveBl=bl>=3&&bmLv<4?2:bl;
+    // Legendary Brand (Lv5): +25% sell on any branded item
+    const lv5Bonus=bmLv>=5?0.25:0;
+    return 1+BRAND_LEVELS[effectiveBl].sellBonus+lv5Bonus;
+  };
+  const createBrand=(name,icon)=>{
+    const bmLv=prestigeLevels.brandmaster||0;
+    const maxSlots=bmLv>=5?3:bmLv>=3?2:1;
+    if(brands.length>=maxSlots){addLog('Maximum brand slots reached ('+maxSlots+').','error');return;}
+    const newBrand={id:'brand_'+Date.now(),name,icon:icon||'🏷️',recipes:[],sold:0};
+    setBrands(p=>[...p,newBrand]);
+    addLog('🏷️ Created brand: '+icon+' '+name+'!','craft');
+  };
+  const addRecipeToBrand=(brandId,recipeId)=>{
+    const bmLv=prestigeLevels.brandmaster||0;
+    const maxR=bmLv>=4?4:bmLv>=2?3:2;
+    setBrands(p=>p.map(b=>b.id===brandId?{...b,recipes:b.recipes.length<maxR&&!b.recipes.includes(recipeId)?[...b.recipes,recipeId]:b.recipes}:b));
+  };
+  const removeRecipeFromBrand=(brandId,recipeId)=>{
+    setBrands(p=>p.map(b=>b.id===brandId?{...b,recipes:b.recipes.filter(r=>r!==recipeId)}:b));
+  };
+  const recordBrandSale=(recipeId,qty)=>{
+    const brand=getBrandForRecipe(recipeId);if(!brand)return;
+    setBrands(p=>p.map(b=>b.id===brand.id?{...b,sold:b.sold+qty}:b));
+    // Faction rep from brand sales (Lv2+)
+    const bmLv=prestigeLevels.brandmaster||0;
+    if(bmLv>=2&&factionAlign){
+      const oldSold=brand.sold;const newSold=brand.sold+qty;
+      const repsEarned=Math.floor(newSold/10)-Math.floor(oldSold/10);
+      if(repsEarned>0)addRep(factionAlign,repsEarned*5);
+    }
+  };
+
+  // ─── SELL PRICES (shared by the Market and Workshop sell lists) ───
+  // Potions: base value × quality × infusion × freshness × brand, plus sell bonuses.
+  const getPotionSellPrice=(id)=>{
+    const r=RECIPES.find(x=>x.id===getBaseRecipeId(id));if(!r)return 0;
+    const pq=getPotQuality(id);const qT=QUALITY[pq]||QUALITY.std;
+    const baseSp=r.xp+getFeatureVal('potionSaleBonus')+Math.floor(upEff('sellBonus')*r.xp);
+    const inf=getInfusion(id);const sbLv=prestigeLevels.spellbrewer||0;
+    const baseInfMult=inf?(INFUSIONS[inf]?.sellMult||1):1;
+    const infMult=inf&&sbLv>=5?(baseInfMult-1)*1.5+1:baseInfMult; // Spellbrewer Lv5: infusions 50% more potent
+    const infusedBonus=inf&&sbLv>=5?0.30:0;                         // …and +30% on infused items
+    const brandMult=getBrandSellMult(r.id);
+    const brandMWExtra=((prestigeLevels.brandmaster||0)>=4&&getBrandForRecipe(r.id)&&(pq==='mw'||pq==='gm'))?0.25:0;
+    const freshMult=isFreshPot(id)?getFreshMult(prestigeLevels.wildcrafter||0):1;
+    return Math.floor(baseSp*(1+getFeatureVal('sellBonus')+brandMWExtra+infusedBonus)*qT.sellMult*infMult*freshMult*brandMult);
+  };
+  // Shelf potions are bought overnight by townsfolk, who pay customer rates (customer/potion-value bonuses
+  // and the economy multiplier) on top of the potion's own multipliers.
+  const getShelfSalePrice=(id)=>{
+    const r=RECIPES.find(x=>x.id===getBaseRecipeId(id));if(!r)return 0;
+    const pq=getPotQuality(id);const qMult=(QUALITY[pq]||QUALITY.std).sellMult;
+    const inf=getInfusion(id);const sbLv=prestigeLevels.spellbrewer||0;
+    const baseInfMult=inf?(INFUSIONS[inf]?.sellMult||1):1;
+    const infMult=inf&&sbLv>=5?(baseInfMult-1)*1.5+1:baseInfMult;
+    const infusedBonus=inf&&sbLv>=5?0.30:0;
+    const freshMult=isFreshPot(id)?getFreshMult(prestigeLevels.wildcrafter||0):1;
+    const basePrice=r.xp+getFeatureVal('potionSaleBonus')+Math.floor(upEff('sellBonus')*r.xp);
+    return Math.floor(basePrice*(1+getFeatureVal('sellBonus')+getFeatureVal('customerPayBonus')+getFeatureVal('potionValueBonus')+getCategoricalBonus('brew',r.cat,'potionValueBonus')+infusedBonus)*qMult*infMult*freshMult*getBrandSellMult(r.id)*GOLD_MULT);
+  };
+  // Ingredients sell for 40% of value (+ flat bonus), with sell bonuses and the economy multiplier.
+  const getIngrSellPrice=(id)=>{const ig=INGR[id];if(!ig)return 0;const base=Math.max(1,Math.floor((ig.val||5)*0.4)+getFeatureVal('ingrSellBonus'));return Math.max(1,Math.floor(base*(1+getFeatureVal('sellBonus'))*GOLD_MULT));};
+
+  // ═══ SELL POTION HELPER ═══
+  const sellPotion=(potId,qty,sp,r)=>{
+    modPot(potId,-qty);setGold(g=>g+sp*qty);recordBrandSale(getBaseRecipeId(potId),qty);
+    addLog(`Sold ${qty>1?qty+'× ':''}${r.icon}${r.name}. (+${fmtMoney(sp*qty)})`,'info');
+  };
+
+    // ═══ FIELD BREWING (Wildcrafter) ═══
+  const doFieldBrew=(recipeId,haulIngredients)=>{
+    if(!fieldBrewPhase||fieldBrewPhase.brewsLeft<=0)return;
+    const wcLv=prestigeLevels.wildcrafter||0;
+    const r=RECIPES.find(x=>x.id===recipeId);if(!r)return;
+    // Field brews are always Standard quality
+    // For field-only recipes, check haul has enough unique ingredients
+    if(r.fieldOnly){
+      const haulKeys=Object.keys(haulIngredients).filter(k=>haulIngredients[k]>0);
+      const needed=r.ingr.length; // number of unique ingredients needed
+      if(haulKeys.length<needed){addLog('🌿 Not enough different ingredients in haul (need '+needed+' unique, have '+haulKeys.length+').','error');return;}
+      // Consume from haul + inventory
+      const used=haulKeys.slice(0,needed);
+      used.forEach(id=>{modInv(id,-1);});
+      setFieldBrewPhase(prev=>({...prev,
+        haul:Object.fromEntries(Object.entries(prev.haul).map(([k,v])=>[k,used.includes(k)?v-1:v])),
+        brewsLeft:prev.brewsLeft-1}));
+    } else {
+      const cost={};r.ingr.forEach(id=>{const lid=li(id);cost[lid]=(cost[lid]||0)+1;});
+      if(!Object.entries(cost).every(([id,q])=>(haulIngredients[id]||0)>=q)){addLog('🌿 Not enough in your haul for '+r.icon+r.name+'.','error');return;}
+      // Consume from inventory
+      Object.entries(cost).forEach(([id,q])=>modInv(id,-q));
+      // Update haul
+      setFieldBrewPhase(prev=>{
+        const newHaul={...prev.haul};
+        Object.entries(cost).forEach(([id,q])=>{newHaul[id]=Math.max(0,(newHaul[id]||0)-q);});
+        return{...prev,haul:newHaul,brewsLeft:prev.brewsLeft-1};
+      });
+    }
+    // Craft check
+    const masteryDisc=getMasteryDiscount(brewCounts,r.id,getFeatureVal('masteryDiscountBonus'));
+    const adjDC=Math.max(5,r.dc-masteryDisc);
+    const sk=r.stat==='inu'?'attunement':r.stat==='tec'?'precision':r.stat==='acu'?'research':'improvisation';
+    const ch=doCheck(sk,adjDC);
+    const cfb=getFeatureVal('craftBonus');if(cfb){ch.total+=cfb;ch.extras.push({label:'Class',val:cfb});}
+    ch.success=ch.roll===1?false:ch.roll===20?true:ch.total>=adjDC;
+    if(!ch.success){
+      addLog('🌿 Field brew failed! '+r.icon+r.name+' — ingredients lost to the wilderness.','error');
+      showResult(r.icon+' '+r.name+' — Field Brew Failed!','error','The mixture refuses to bind in these conditions.',ch);
+      return;
+    }
+    // Success - create fresh potion
+    const freshMult=wcLv>=4?1.5:wcLv>=3?1.4:wcLv>=2?1.3:1.2;
+    const potId=r.id+'_fresh';
+    let qty=1;
+    if(wcLv>=4&&Math.random()<0.15)qty=2;
+    // Field-only immediate effects (not stored as potions — applied at brew time)
+    if(r.id==='vitality_draught'){
+      const injuredStaff=Object.entries(staffInjuries).filter(([,inj])=>inj.daysLeft>0);
+      if(injuredStaff.length>0){const [apId]=injuredStaff[0];setStaffInjuries(prev=>{const n={...prev};delete n[apId];return n;});addLog('🌿 '+r.icon+' Vitality Draught heals '+hiredAppr.find(a=>a.id===apId)?.name+'\'s injury!','craft');}
+      else addLog('🌿 '+r.icon+' Vitality Draught brewed — no injured staff to heal. Stored for later.','craft');
+      if(injuredStaff.length>0){setBrewCounts(p=>({...p,[r.id]:(p[r.id]||0)+1}));const xpE=Math.floor(r.xp*1.1);gainXP(xpE);
+        showResult('🌿 '+r.icon+' Vitality Draught — Staff Healed!','craft','The potion mends wounds instantly in the field air.\n+'+xpE+' XP',ch);return;}
+    }
+    if(r.id==='trailblazer_tonic'){
+      setDayFlags(f=>[...f,'trailblazer_tonic']);
+      setBrewCounts(p=>({...p,[r.id]:(p[r.id]||0)+1}));const xpE=Math.floor(r.xp*1.1);gainXP(xpE);
+      addLog('🌿 '+r.icon+' Trailblazer Tonic! Next expedition travel cost −25 Energy.','craft');
+      showResult('🌿 '+r.icon+' Trailblazer Tonic — Pathways Revealed!','craft','The tonic sharpens your sense of the trails. −25 Energy travel on next expedition.\n+'+xpE+' XP',ch);return;
+    }
+    modPot(potId,qty);
+    setBrewCounts(p=>({...p,[r.id]:(p[r.id]||0)+1}));
+    const xpE=Math.floor(r.xp*1.1);gainXP(xpE);
+    // Apply elixir buff if applicable
+    if(r.buff&&ELIXIR_BUFFS[r.buff]){
+      const dur=ELIXIR_BUFFS[r.buff].duration;
+      setActiveBuffs(prev=>({...prev,[r.buff]:{daysLeft:dur}}));
+      addLog('🌿 '+ELIXIR_BUFFS[r.buff].icon+' '+ELIXIR_BUFFS[r.buff].name+' active for '+dur+' days!','craft');
+    }
+    addLog('🌿 Field brewed '+r.icon+r.name+'! (Fresh '+freshMult+'× sell value)'+(qty>1?' ×'+qty+' batch!':''),'craft');
+    showResult('🌿 '+r.icon+r.name+' — Field Brewed!','craft','Fresh ingredients bind perfectly in the open air!\n+'+xpE+' XP'+(qty>1?'\nDouble batch!':''),ch);
+  };
+
+  // ═══ WILDCRAFTS (Wildcrafter Prestige) ═══
+  const getWildcraftSlots=()=>{const wcLv=prestigeLevels.wildcrafter||0;return wcLv>=5?3:wcLv>=4?2:wcLv>=3?2:wcLv>=2?1:0;};
+
+  const brewWildcraft=(craftId,opts)=>{
+    const wcLv=prestigeLevels.wildcrafter||0;
+    const wc=WILDCRAFTS[craftId];if(!wc||wcLv<wc.unlockLv)return;
+    const maxSlots=getWildcraftSlots();
+    if(wildcraftsUsedToday>=maxSlots){addLog('🌿 Daily wildcraft limit reached ('+maxSlots+'/day). Rest to reset.','error');return;}
+    // Check ingredient cost: need X unique ingredients with at least 1 each
+    const availIngr=Object.entries(inv).filter(([,q])=>q>0);
+    if(availIngr.length<wc.ingrCost){addLog('🌿 Need '+wc.ingrCost+' unique ingredients in inventory. Have '+availIngr.length+'.','error');return;}
+    // Validate the choice before spending anything
+    if(craftId==='seasonal_bypass'&&(!opts?.region||!opts?.season)){addLog('🌿 Select a region and season.','error');return;}
+    if(craftId==='wild_ally'&&!RANGER_COMPANIONS.find(c=>c.id===opts?.compId)){addLog('🌿 Select a creature.','error');return;}
+    snapshot();
+    // Consume cheapest unique ingredients
+    const sorted=availIngr.sort((a,b)=>(INGR[a[0]]?.val||0)-(INGR[b[0]]?.val||0));
+    const consumed=sorted.slice(0,wc.ingrCost);
+    consumed.forEach(([id])=>modInv(id,-1));
+    setWildcraftsUsedToday(n=>n+1);
+    const ingrNames=consumed.map(([id])=>(INGR[id]?.icon||'')+INGR[id]?.name).join(', ');
+
+    if(craftId==='seasonal_bypass'){
+      setSeasonalOverride({region:opts.region,season:opts.season});
+      const sName=SEASONS[gameLocation]?.find(s=>s.id===opts.season)?.name||opts.season;
+      addLog('🍃 Seasonal Bypass: '+sName+' conditions set for your next forage. (Used: '+ingrNames+')','craft');
+    } else if(craftId==='wild_ally'){
+      const comp=RANGER_COMPANIONS.find(c=>c.id===opts.compId);
+      const dur=WILDCRAFTS.wild_ally.duration(wcLv);
+      setWildAlly({compId:comp.id,daysLeft:dur,name:comp.name,icon:comp.icon,role:comp.role,primary:comp.primary,passive:comp.passive||{},secondary:null,img:comp.img||null});
+      addLog('🐾 Wild Ally: '+comp.icon+' '+comp.name+' joins you for '+dur+' day'+(dur>1?'s':'')+'! (Used: '+ingrNames+')','craft');
+    } else if(craftId==='threat_suppression'){
+      const tid=opts?.threatId||locThreatIds[0];
+      const tf=THREAT_FACTIONS[tid];
+      const reduction=WILDCRAFTS.threat_suppression.reduction(wcLv);
+      setThreats(prev=>{const n={...prev};n[tid]=Math.max(0,(n[tid]||0)-reduction);return n;});
+      addLog('🛡️ Threat Suppression: '+(tf?.icon||'')+' '+(tf?.name||tid)+' reduced by '+reduction+'. (Used: '+ingrNames+')','craft');
+    }
+  };
+
+    const doCraft=(r,quality='std')=>{
+    // firstBrewFree: first brew of each day costs no energy
+    const fbf=freeBrewsLeft()>0;
+    const brewCost=getActionEnergyCost('brew',25);
+    if(!fbf&&energy<brewCost){addLog('Not enough Energy to brew. Rest and try tomorrow.','error');return;}
+    // Cost, DC and XP follow the quality you chose; the potion produced can differ:
+    // masteryAutoMW (Magnum Opus) — a Standard brew of a top-3 recipe auto-succeeds and comes out Masterwork;
+    // Blight contamination — a Fine+ brew comes out Standard.
+    let productQuality=quality;let masteryAuto=false;let contaminated=false;
+    if(quality==='std'&&getFeatureVal('masteryAutoMW')){const topBrews=Object.entries(brewCounts).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([id])=>id);if(topBrews.includes(r.id)){productQuality='mw';masteryAuto=true;}}
+    if(quality!=='std'&&(threatContaminate||0)>0&&Math.random()<threatContaminate){productQuality='std';contaminated=true;}
+    const qT=QUALITY[quality]||QUALITY.std;
+    const cost={};r.ingr.forEach(id=>{const lid=li(id);cost[lid]=(cost[lid]||0)+1;});
+    // Quality tier extra ingredients
+    if(qT.extraIngr>=1){const firstIngr=li(r.ingr[0]);cost[firstIngr]=(cost[firstIngr]||0)+1;}
+    if(qT.extraIngr>=2&&r.ingr.length>1){const secondIngr=li(r.ingr[1]);cost[secondIngr]=(cost[secondIngr]||0)+1;}
+    if(qT.extraIngr>=3){const thirdIngr=li(r.ingr[Math.min(2,r.ingr.length-1)]);cost[thirdIngr]=(cost[thirdIngr]||0)+1;}
+    // Infusion catalyst cost
+    const sbLv=prestigeLevels.spellbrewer||0;
+    const selInf=brewInfSel[r.id]?INFUSIONS[brewInfSel[r.id]]:null;
+    const maxInfusions=sbLv>=5?6:sbLv>=4?5:sbLv>=3?4:sbLv>=2?3:sbLv>=1?2:0;
+    if(selInf&&sbLv<1){addLog('Spellbrewer prestige required for infusions.','error');return;}
+    if(selInf&&selInf.unlockLv>sbLv){addLog('Spellbrewer Lv'+selInf.unlockLv+' required for '+selInf.name+'.','error');return;}
+    if(selInf&&infusionsUsedToday>=maxInfusions){addLog('Daily infusion limit reached ('+maxInfusions+'/day). Rest to reset.','error');return;}
+    let catalystId=null;let catalystQty=1;
+    if(selInf){
+      // Find cheapest ingredient with 5+ stock (not already fully consumed by recipe)
+      const candidates=Object.entries(inv).filter(([id,qty])=>{
+        const usedByRecipe=cost[id]||0;
+        return qty-usedByRecipe>=1&&qty>=5;
+      }).sort((a,b)=>((INGR[a[0]]?.val||0)-(INGR[b[0]]?.val||0)));
+      if(candidates.length===0){addLog('No catalyst available. Need any ingredient with 5+ in stock.','error');return;}
+      catalystId=candidates[0][0];
+      cost[catalystId]=(cost[catalystId]||0)+catalystQty;
+    }
+    // freeCraft: one daily free craft (no ingredients consumed)
+    const fc=freeCraftsLeft()>0;
+    // zeroIngrMastery: if 20+ mastered recipes (brewed 25+ times), 1/day brew costs 0 ingredients
+    const ziMastery=(()=>{const thresh=getFeatureVal('zeroIngrMastery');if(!thresh)return false;const masteredCount=Object.values(brewCounts).filter(c=>c>=25).length;return masteredCount>=thresh&&!dayFlags.includes('zero_ingr_used');})();
+    if(!fc&&!ziMastery&&!Object.entries(cost).every(([id,q])=>(inv[id]||0)>=q)){addLog('Not enough materials for '+(qT.name!=='Standard'?qT.name+' ':'')+r.icon+r.name+'.','error');return;}
+    if(r.faction&&getRL(r.faction)<(r.fReq||0)){addLog('This recipe requires deeper trust with the '+(FACTIONS[r.faction]?.name||'faction')+'. Keep building your reputation.','error');return;}
+    snapshot();
+    if(fbf)setDayFlags(f=>[...f,'first_brew_used']);else spendEnergy(brewCost);
+    // Mastery discount
+    const masteryDisc=getMasteryDiscount(brewCounts,r.id,getFeatureVal('masteryDiscountBonus'));
+    // Quality DC modifier + cauldron bonuses
+    const qMod=qualDCMod(quality,'brew');
+    const infDCMod=selInf?(selInf.dcMod-(sbLv>=2?1:0)):0;
+    const adjDC=Math.max(5,r.dc+qMod+infDCMod-masteryDisc);
+    const sk=r.stat==='inu'?'attunement':r.stat==='tec'?'precision':r.stat==='acu'?'research':'improvisation';
+    // Analysis: auto-succeed chance
+    const analysisRank=skRanks['analysis']||0;const analysisChance=Math.min(0.25,analysisRank*0.05+getMod(eStat('acu'))*0.01);const autoSucc=analysisChance>0&&Math.random()<analysisChance;
+    const ch=masteryAuto?{roll:20,mod:0,rb:0,total:99,dc:adjDC,success:true,name:'Magnum Opus',icon:'🏆',statName:'',extras:[{label:'🏆 Magnum Opus',val:'Auto'}]}:autoSucc?{roll:20,mod:0,rb:0,total:99,dc:adjDC,success:true,name:'Analysis',icon:'🧮',statName:'',extras:[{label:'🧮 Analysis',val:'Auto'}]}:doCheck(sk,adjDC);
+    const csb=upEff('craftSkillBonus');if(csb){ch.total+=csb;ch.extras.push({label:'Upgrades',val:csb});}
+    const cfb=getFeatureVal('craftBonus');if(cfb){ch.total+=cfb;ch.extras.push({label:'Class Mastery',val:cfb});}
+    // Category-scoped craft bonus (e.g. Apothecary Healer's Touch on healing recipes)
+    const ccfb=getCategoricalBonus('brew',r.cat,'craftBonus');
+    if(ccfb){ch.total+=ccfb;ch.extras.push({label:(r.cat||'')+' specialty',val:ccfb});}
+    // Faction Harmony pair-specific recipe bonus (recipeBonus_<recipeId>, e.g. Forgeheart Tincture)
+    const hrb=getFeatureVal('recipeBonus_'+r.id);
+    if(hrb){ch.total+=hrb;ch.extras.push({label:'🤝 Harmony',val:hrb});}
+    if(masteryDisc>0)ch.extras.push({label:'📖 Mastery',val:'-'+masteryDisc+' DC'});
+    if(qMod!==qT.dcMod)ch.extras.push({label:'🫕 Cauldron',val:qMod-qT.dcMod+' DC'});
+    // craftFloor: minimum roll result (capped at 10)
+    const cFloor=Math.min(getFeatureVal('craftFloor'),10);
+    if(cFloor&&ch.roll>1&&ch.roll<cFloor&&!autoSucc){ch.extras.push({label:'⚗️ Craft Floor',val:ch.roll+'→'+cFloor});ch.total+=(cFloor-ch.roll);ch.roll=cFloor;}
+    // Adaptation: bonus for unfamiliar recipes
+    const adaptMod=getSkMod('adaptation');const bc=brewCounts[r.id]||0;
+    const adaptVal=adaptMod>0?(bc<5?adaptMod:bc<=15?Math.max(1,Math.floor(adaptMod/2)):1):0;
+    if(adaptVal>0){ch.total+=adaptVal;ch.extras.push({label:'🔄 Adaptation',val:adaptVal});}
+    // Fail streak: bonus after consecutive failures
+    const fsb=getFeatureVal('failStreakBonus');const fsc=getFeatureVal('failStreakCap');
+    const fsVal=fsb>0?Math.min(failStreakRef.current*fsb,fsc||99):0;
+    if(fsVal>0){ch.total+=fsVal;ch.extras.push({label:'🔥 Streak',val:fsVal});}
+    ch.success=ch.roll===1?false:(ch.roll===20?true:(ch.total>=adjDC||autoSucc));
+    // luckyBrewChance: random lucky success override
+    const luckyChance=getFeatureVal('luckyBrewChance');
+    if(!ch.success&&ch.roll!==1&&luckyChance>0&&Math.random()<luckyChance){ch.success=true;ch.extras.push({label:'🍀 Lucky!',val:'Auto'});}
+    if(!ch.success){
+      // craftReroll: once per day, reroll a failed craft (includes companion resurrect charges)
+      const rerollCharges=getFeatureVal('craftReroll')+dayFlags.filter(f=>f==='companion_reroll').length;
+      const rerollsUsed=dayFlags.filter(f=>f==='craft_rerolled').length;
+      if(rerollCharges>rerollsUsed){
+        const rr=doCheck(sk,adjDC);
+        const rrCsb=upEff('craftSkillBonus');const rrCfb=getFeatureVal('craftBonus');
+        rr.total+=rrCsb+rrCfb;if(adaptVal>0)rr.total+=adaptVal;
+        const rrFloor=Math.min(getFeatureVal('craftFloor'),10);if(rrFloor&&rr.roll>1&&rr.roll<rrFloor){rr.total+=(rrFloor-rr.roll);rr.roll=rrFloor;}
+        rr.success=rr.roll===1?false:rr.roll===20?true:rr.total>=adjDC;
+        rr.extras.push({label:'🔄 Reroll',val:'1/day'});
+        setDayFlags(f=>[...f,'craft_rerolled']);
+        if(rr.success){Object.assign(ch,rr);ch.success=true;}
+        else{addLog('🔄 Craft Reroll: Tried again, but still failed.','info');}
+      }
+    }
+    if(!ch.success){
+      const salvagePct=getFeatureVal('salvagePercent');
+      Object.entries(cost).forEach(([id,q])=>modInv(id,salvagePct>0?-Math.ceil(q*(1-salvagePct)):-q));
+      // Careful Hands (`failSalvage`): on a failed brew, % chance to refund one ingredient from the failed attempt.
+      // Random pick from the recipe's cost map.
+      const failSalvageChance=getFeatureVal('failSalvage');
+      if(failSalvageChance>0&&Math.random()<failSalvageChance){
+        const costKeys=Object.keys(cost).filter(id=>cost[id]>0);
+        if(costKeys.length>0){
+          const savedId=costKeys[Math.floor(Math.random()*costKeys.length)];
+          modInv(savedId,1);
+          addLog('🤲 Careful Hands: saved 1 '+(INGR[savedId]?.icon||'')+(INGR[savedId]?.name||savedId)+' from the failed brew.','info');
+        }
+      }
+      // Spellbrewer Lv3+: chance to save the catalyst on a failed infusion (Lv4 raises chance for MW+ attempts)
+      if(selInf&&catalystId){
+        const failSaveChance=sbLv>=4&&(quality==='mw'||quality==='gm')?0.40:(sbLv>=3?0.25:0);
+        if(failSaveChance>0&&Math.random()<failSaveChance){
+          modInv(catalystId,catalystQty);
+          addLog('✨ Catalyst preserved despite failure! '+(INGR[catalystId]?.icon||'')+(INGR[catalystId]?.name||catalystId)+' returned.','craft');
+        }
+      }
+      const lesserChance=getFeatureVal('lesserOnFail');
+      let lesserResult=null;
+      if(lesserChance>0&&Math.random()<lesserChance){
+        const lesser=RECIPES.filter(lr=>known.includes(lr.id)&&lr.dc<r.dc&&lr.id!==r.id);
+        if(lesser.length>0){lesserResult=lesser[Math.floor(Math.random()*lesser.length)];modPot(lesserResult.id,1);}
+      }
+      const fl=CRAFT_FAIL[Math.floor(Math.random()*CRAFT_FAIL.length)];
+      if(fsb>0)failStreakRef.current++;
+      showResult(r.icon+' '+(qT.name!=='Standard'?qT.icon+' ':'')+r.name+' — Brew Failed!','error',fl+'\nIngredients lost.'+(salvagePct>0?' Salvaged '+Math.round(salvagePct*100)+'%.':'')+(lesserResult?'\n🧪 But you salvaged a '+lesserResult.icon+lesserResult.name+'!':'')+(fsb>0?'\n🔥 Streak: +'+Math.min((failStreakRef.current)*fsb,fsc||99)+' next attempt':''),ch);return;}
+    if(fc){setDayFlags(f=>[...f,'free_craft_used']);addLog('✨ Free Craft: No ingredients consumed!','info');}
+    else if(ziMastery){setDayFlags(f=>[...f,'zero_ingr_used']);addLog('🧮 Mastery Recall: Brewed from memory — no ingredients consumed!','craft');}
+    else{
+      const ingEff=getFeatureVal('ingredientEfficiency');
+      Object.entries(cost).forEach(([id,q])=>{
+        const saved=ingEff>0&&Math.random()<ingEff;
+        if(!saved)modInv(id,-q);
+      });
+      // Efficient Brewing (`ingrSaveOnSuccess`): % chance per successful brew to refund one ingredient from
+      // those just consumed. Random pick from the cost map. Separate from ingredientEfficiency (which is
+      // a per-ingredient roll); this fires once total at the recipe level for a single bonus refund.
+      const ingSaveChance=getFeatureVal('ingrSaveOnSuccess');
+      if(ingSaveChance>0&&Math.random()<ingSaveChance){
+        const costKeys=Object.keys(cost).filter(id=>cost[id]>0);
+        if(costKeys.length>0){
+          const savedId=costKeys[Math.floor(Math.random()*costKeys.length)];
+          modInv(savedId,1);
+          addLog('♻️ Efficient Brewing: saved 1 '+(INGR[savedId]?.icon||'')+(INGR[savedId]?.name||savedId)+'.','info');
+        }
+      }
+    }
+    // Catalyst preservation (Spellbrewer Lv3+)
+    if(selInf&&catalystId){
+      const preserveChance=sbLv>=4&&(quality==='mw'||quality==='gm')?1.0:(sbLv>=3?0.25:0);
+      if(preserveChance>0&&Math.random()<preserveChance){
+        modInv(catalystId,catalystQty);
+        addLog('✨ Catalyst preserved! '+INGR[catalystId]?.icon+(INGR[catalystId]?.name||catalystId)+' returned.','craft');
+      }
+    }
+    const saveChance=upEff('saveIngredient')+getFeatureVal('saveIngredientChance');
+    if(saveChance>0&&Math.random()<saveChance)modInv(li(r.ingr[0]),1);
+    const dblChance=getFeatureVal('doubleBatchChance')+upEff('doubleBatch');
+    let qty2=1;if(dblChance>0&&Math.random()<dblChance)qty2=2;
+    const refRank=skRanks['refinement']||0;const refChance=Math.min(0.30,refRank*0.06+getMod(eStat('tec'))*0.01);const refBonus=refChance>0&&Math.random()<refChance;
+    if(refBonus){qty2++;addLog('💎 Refinement: Masterful technique yielded a bonus potion!','craft');}
+    let potId=qualPotId(r.id,productQuality);
+    if(masteryAuto)addLog('🏆 Magnum Opus: '+r.icon+r.name+' came out Masterwork!','craft');
+    if(contaminated)addLog('🦠 Blight contamination! Your '+QUALITY[quality].name+' brew was degraded to Standard quality.','error');
+    if(selInf){potId=potId+selInf.suffix;setInfusionsUsedToday(n=>n+1);}
+    modPot(potId,qty2);if(!known.includes(r.id))setKnown(p=>[...p,r.id]);
+    if(fsb>0)failStreakRef.current=0;
+    setBrewCounts(p=>({...p,[r.id]:(p[r.id]||0)+1}));
+    const bps=getFeatureVal('bonusPerSuccess');
+    if(bps>0)setGold(g=>g+bps);
+    const isCrit=ch.roll===20&&!autoSucc;
+    const mwGold=isCrit&&getFeatureVal('masterworkOnCrit')?(r.xp*2):0;
+    if(mwGold>0)setGold(g=>g+mwGold);
+    const xpEarned=Math.floor((r.xp+getFeatureVal('brewXPBonus'))*qT.xpMult);
+    gainXP(xpEarned);
+    const fl=CRAFT_SUCCESS[Math.floor(Math.random()*CRAFT_SUCCESS.length)];
+    const qualLabel=qT.name!=='Standard'?' ['+qT.icon+' '+qT.name+']':'';
+    const infLabel=selInf?' ['+selInf.icon+' '+selInf.name+']':'';
+    showResult(r.icon+' '+r.name+qualLabel+infLabel+' — Brewed!','craft',fl+(autoSucc?'\n🧮 Analysis: Perfect execution!':'')+(refBonus?'\n💎 Refinement: Bonus potion!':'')+(qty2>1&&!refBonus?'\nBonus double batch!':'')+(fbf?'\n⚡ First brew free!':'')+(fc?'\n✨ Free craft!':'')+(mwGold>0?'\n🏆 Masterwork! +'+fmtMoney(mwGold):'')+(masteryDisc>0?'\n📖 Mastery: -'+masteryDisc+' DC':'')+'\n+'+xpEarned+' XP'+(qT.xpMult>1?' ('+qT.name+' '+qT.xpMult+'×)':''),ch);
+    if(!hasMilestone('first_brew'))earnMilestone('first_brew');
+    if(r.id==='forge_catalyst'){earnMilestone('heartforge');addLog('⚡ The Forge Catalyst pulses with ancient heat. The ground trembles. Something deep beneath '+locName+' stirs to life... but this is not an ending. It is a beginning.','story');}
+    // March recipe special effects
+    if(r.marchEffect&&hollowMarch?.active&&!hollowMarch?.finalStandComplete){
+      const me=r.marchEffect;
+      if(typeof me.threatPos==='number'){const tid=locThreatIds[me.threatPos];setThreats(p=>({...p,[tid]:Math.max(0,(p[tid]||0)-(me.threatReduc||0))}));addLog(`💀 ${r.icon} March effect: ${THREAT_FACTIONS[tid]?.name||tid} threat reduced by ${me.threatReduc}!`,'quest');}
+      else if(me.threatReduc){setThreats(p=>{const n={...p};locThreatIds.forEach(tid=>{n[tid]=Math.max(0,(n[tid]||0)-me.threatReduc);});return n;});addLog(`💀 ${r.icon} March effect: All threats reduced by ${me.threatReduc}!`,'quest');}
+      if(me.bonusEnergy){setEnergy(h=>h+me.bonusEnergy);addLog(`⚡ ${r.icon} March effect: +${me.bonusEnergy} Energy!`,'quest');}
+      if(me.staffShield){setStaffInjuries({});addLog(`🛡️ ${r.icon} March effect: Staff protected from injury for ${me.staffShield} days!`,'quest');}
+    }
+  };
+
+    // ─── EXPERIMENT ───
+  const addToExp=(id)=>{if(expBench.length<4&&(inv[id]||0)>expBench.filter(x=>x===id).length)setExpBench(p=>[...p,id]);};
+  const rmFromExp=(idx)=>setExpBench(p=>p.filter((_,i)=>i!==idx));
+  const doExperiment=()=>{
+    if(energy<25){addLog('Not enough Energy to experiment. Rest and try tomorrow.','error');return;}
+    if(expBench.length<2){addLog('You need at least 2 ingredients on the bench to experiment.','error');return;}
+    // Check inventory has enough
+    const need={};expBench.forEach(id=>{need[id]=(need[id]||0)+1;});
+    if(!Object.entries(need).every(([id,q])=>(inv[id]||0)>=q)){addLog('You don\'t have enough ingredients for this combination.','error');return;}
+    snapshot();
+    spendEnergy(25);
+    // Sort bench to match recipes (recipes store ingredients as sorted arrays)
+    const sorted=[...expBench].sort();
+    // Search all recipes for a match
+    const match=RECIPES.find(r=>{
+      const rSorted=[...r.ingr].sort();
+      return rSorted.length===sorted.length&&rSorted.every((id,i)=>id===sorted[i]);
+    });
+    if(match){
+      // Found a recipe match
+      const fOk=!match.faction||getRL(match.faction)>=(match.fReq||0);
+      if(level<match.unlock){
+        addLog(`🔮 The ingredients react — you sense something powerful, but your skill isn't quite there yet. Keep practicing. (Need Lv${match.unlock})`,'info');
+        setExpBench([]);return; // Don't consume ingredients
+      }
+      if(!fOk){
+        addLog(`🔮 The mixture responds, but something is missing — perhaps deeper trust with the ${FACTIONS[match.faction]?.name||'faction'} would reveal the technique.`,'info');
+        setExpBench([]);return;
+      }
+      // Consume ingredients
+      Object.entries(need).forEach(([id,q])=>modInv(id,-q));
+      // Discover the recipe
+      const discovered=!known.includes(match.id);
+      if(discovered) setKnown(p=>[...p,match.id]);
+      // Attempt the craft with DC check
+      const adjDC=Math.max(5,match.dc);
+      const sk=match.stat==='inu'?'attunement':match.stat==='tec'?'precision':match.stat==='acu'?'research':'improvisation';
+      const ch=doCheck(sk,adjDC);const csb=upEff('craftSkillBonus');if(csb){ch.total+=csb;ch.extras.push({label:'Upgrades',val:csb});}
+      const cfb=getFeatureVal('craftBonus');if(cfb){ch.total+=cfb;ch.extras.push({label:'Class Mastery',val:cfb});}
+      // Category-scoped craft bonus (matches active recipe's cat — e.g. Apothecary on healing experiments)
+      const ccfb=getCategoricalBonus('brew',match.cat,'craftBonus');
+      if(ccfb){ch.total+=ccfb;ch.extras.push({label:(match.cat||'')+' specialty',val:ccfb});}
+      const adaptMod=getSkMod('adaptation');if(adaptMod>0){ch.total+=adaptMod;ch.extras.push({label:'🔄 Adaptation',val:adaptMod});}
+      ch.success=ch.roll===1?false:ch.roll===20?true:ch.total>=adjDC;
+      if(ch.success){
+        const dblChance=getFeatureVal('doubleBatchChance')+upEff('doubleBatch');
+        let qty=1;if(dblChance>0&&Math.random()<dblChance)qty=2;
+        modPot(match.id,qty);
+        gainXP(match.xp+getFeatureVal('brewXPBonus')+15);
+        showResult(match.icon+' '+match.name+' — Eureka!','craft',
+          (discovered?'New recipe discovered!\n':'')+(qty>1?'Bonus double batch!\n':'')+'+'+String(match.xp+15)+' XP',ch);
+        if(!hasMilestone('first_brew'))earnMilestone('first_brew');
+        if(match.id==='forge_catalyst'){earnMilestone('heartforge');addLog('⚡ The Forge Catalyst pulses with ancient heat...','story');}
+      } else {
+        const salvagePct=getFeatureVal('salvagePercent');
+        if(salvagePct>0){Object.entries(need).forEach(([id,q])=>modInv(id,Math.ceil(q*salvagePct)));}
+        gainXP(15);
+        showResult(match.icon+' '+match.name+' — Brew Failed!','error',
+          (discovered?'Recipe discovered and saved!\n':'')+'Ingredients lost.'+(salvagePct>0?` Salvaged ${Math.round(salvagePct*100)}%.`:'')+'\n+15 XP',ch);
+      }
+    } else {
+      // Near-miss: experimentBonus gives chance to discover a recipe sharing most ingredients
+      const expB=getFeatureVal('experimentBonus');
+      if(expB>0&&Math.random()<expB){
+        const nearMatch=RECIPES.filter(r=>{
+          if(known.includes(r.id))return false;
+          const rS=[...r.ingr].sort();const overlap=sorted.filter(id=>rS.includes(id)).length;
+          return overlap>=Math.max(2,rS.length-1)&&level>=r.unlock;
+        });
+        if(nearMatch.length>0){
+          const disc=nearMatch[Math.floor(Math.random()*nearMatch.length)];
+          setKnown(p=>[...p,disc.id]);
+          Object.entries(need).forEach(([id,q])=>modInv(id,-q));
+          gainXP(25);
+          showResult('💡 Near Miss Discovery!','craft',
+            `The combination didn't work as-is, but your Scholar training spotted a pattern!\nDiscovered: ${disc.icon}${disc.name}\n+25 XP`);
+          setExpBench([]);return;
+        }
+      }
+      // No match — waste ingredients, consolation XP (unless Scholar freeFailExperiment)
+      const freeExp=getFeatureVal('freeFailExperiment');
+      if(!freeExp)Object.entries(need).forEach(([id,q])=>modInv(id,-q));
+      const salvagePct=getFeatureVal('salvagePercent');
+      if(!freeExp&&salvagePct>0){Object.entries(need).forEach(([id,q])=>modInv(id,Math.ceil(q*salvagePct)));}
+      const researchBonus=getSkMod('research')>=2;const bxp=researchBonus?20:10;
+      gainXP(bxp);
+      const FAIL_FLAVOR=['The mixture bubbles promisingly, then collapses into useless sludge.','An acrid smell fills the workshop. Not the result you hoped for.','The ingredients refuse to bind — this combination leads nowhere.','A brief flash of color, then nothing. Back to the drawing board.'];
+      showResult('🧪 Experiment Failed','error',
+        `${FAIL_FLAVOR[Math.floor(Math.random()*FAIL_FLAVOR.length)]}\nNo recipe matches this combination.\n+${bxp} XP for the attempt${freeExp?'\n📚 Scholar training: ingredients preserved!':salvagePct>0?`\nSalvaged ${Math.round(salvagePct*100)}%.`:''}`);
+    }
+    setExpBench([]);
+  };
+
+  // ─── RESEARCH (spend energy to discover recipes/enchantments) ───
+  const doResearch=(type)=>{
+    // research cost is purely percentage-driven via getActionEnergyCost('research', 50). The legacy
+    // researchTimeReduction "Lore >=4 → costs 25" branch is gone (Quick Study now uses energyCostMultiplier),
+    // and researchCostReduction's flat -25 subtraction is gone (all sources converted to percentage). The
+    // 25-energy game-design floor remains so a successful study still feels meaningful.
+    const resCost=Math.max(25,getActionEnergyCost('research',50));
+    const freeResPerDay=getFeatureVal('freeResearchPerDay')+upEff('freeResearchPerDay')+getFeatureVal('researchSlotBonus');
+    const freeUsed=dayFlags.filter(f=>f==='free_research_used').length;
+    const isFree=freeResPerDay>freeUsed;
+    if(!isFree&&energy<resCost){addLog(`Research takes ⚡${resCost} Energy.${freeResPerDay>0?' (free attempts used today)':''}`,'error');return;}
+    // Nothing left to discover? Say so before spending anything.
+    const undiscovered=type==='potion'
+      ?RECIPES.filter(r=>!known.includes(r.id)&&level>=r.unlock&&(!r.faction||getRL(r.faction)>=(r.fReq||0))&&canCraftAtLocation(r.ingr)&&!r.fieldOnly)
+      :ENCHANTMENTS.filter(e=>!knownEnch.includes(e.id)&&(!e.faction||getRL(e.faction)>=(e.fReq||0))&&canCraftAtLocation(e.ingr));
+    if(undiscovered.length===0){addLog(type==='potion'?'📚 You already know every recipe available to you here.':'📚 You\'ve mastered every enchantment available to you here.','info');return;}
+    snapshot();
+    if(isFree){setDayFlags(f=>[...f,'free_research_used']);}else{spendEnergy(resCost);}
+    const discBonus=getFeatureVal('discoveryChanceBonus');
+    const resXpMult=1+getFeatureVal('researchXPMulti');
+    const baseResXp=15+level*2;
+    // Visible d20 skill check — Research vs DC
+    const baseDC=14-Math.floor(discBonus*10)+Math.round((1-(threatDiscoveryMult||1))*12); // Higher discovery bonus = lower DC; magic-threat penalty raises it
+    const dc=Math.max(8,Math.min(18,baseDC));
+    const ch=doCheck('research',dc);
+    const innovB=getSkMod('innovation');if(innovB>0){ch.total+=innovB;ch.extras.push({label:'Innovation',val:innovB});}
+    const cfb=getFeatureVal('craftBonus');if(cfb){ch.total+=cfb;ch.extras.push({label:'Class Mastery',val:cfb});}
+    const rsb=getFeatureVal('researchBonus');if(rsb){ch.total+=rsb;ch.extras.push({label:'Research bonus',val:rsb});}
+    ch.success=ch.roll===1?false:ch.roll===20?true:ch.total>=dc;
+    if(type==='potion'){
+      if(ch.success){
+        const successXp=Math.floor(baseResXp*2*resXpMult);gainXP(successXp);
+        const found=weightedDiscPick(undiscovered);
+        setKnown(p=>[...p,found.id]);
+        let extraDisc='';
+        if(getFeatureVal('doubleDiscovery')){const und2=undiscovered.filter(r=>r.id!==found.id);if(und2.length>0){const found2=weightedDiscPick(und2);setKnown(p=>[...p,found2.id]);extraDisc=`\nDouble Discovery: Also learned ${found2.icon} ${found2.name}!`;addLog(`📚 Double Discovery: ${found2.icon}${found2.name}!`,'quest');}}
+        showResult('📚 Research Breakthrough!','craft',`You discovered ${found.icon} ${found.name}!\n"${found.desc}"\n+${successXp} XP`+extraDisc,ch);
+        addLog(`📚 After long study, you discover the formula for ${found.icon}${found.name}!`,'quest');
+      } else {
+        const failXp=Math.floor(baseResXp*0.5*resXpMult);gainXP(failXp);
+        const RESEARCH_FAIL=['Your notes blur together. No breakthrough today, but the work isn\'t wasted.','You follow a promising lead but it dead-ends. The knowledge will come.','Hours of careful study yield incremental understanding, not revelation.'];
+        showResult('📚 Study Session','info',RESEARCH_FAIL[Math.floor(Math.random()*RESEARCH_FAIL.length)]+'\n+'+failXp+' XP',ch);
+      }
+    } else {
+      if(ch.success){
+        const successXp=Math.floor(baseResXp*2*resXpMult);gainXP(successXp);
+        const found=weightedDiscPick(undiscovered);
+        setKnownEnch(p=>[...p,found.id]);
+        const catName=ENCH_CATS[found.cat]?.name||'';
+        let extraDisc='';
+        if(getFeatureVal('doubleDiscovery')){const und2=undiscovered.filter(e=>e.id!==found.id);if(und2.length>0){const found2=weightedDiscPick(und2);setKnownEnch(p=>[...p,found2.id]);extraDisc=`\nDouble Discovery: Also learned ${found2.icon} ${found2.name}!`;addLog(`📚 Double Discovery: ${found2.icon}${found2.name}!`,'quest');}}
+        showResult('📚 Inscription Discovered!','craft',`You learned ${found.icon} ${found.name} (${catName})!\n"${found.desc}"\n+${successXp} XP`+extraDisc,ch);
+        addLog(`📚 A flash of insight — you unlock the secret of ${found.icon}${found.name} inscription!`,'quest');
+      } else {
+        const failXp=Math.floor(baseResXp*0.5*resXpMult);gainXP(failXp);
+        showResult('📚 Study Session','info','The arcane symbols resist interpretation. Keep studying.\n+'+failXp+' XP',ch);
+      }
+    }
+  };
+
+  // ─── PUBLISH PAPERS (Scholar) ───
+  const doPublishPaper=(id,type)=>{
+    // Publishing: free (spec feature)
+    if(pubPapers.find(p=>p.id===id&&p.type===type)){addLog('You\'ve already published a paper on this topic.','info');return;}
+    snapshot();
+    setPubPapers(p=>[...p,{id,type,day}]);
+    const baseXp=type==='recipe'?25:35;
+    gainXP(baseXp);
+    const item=type==='recipe'?RECIPES.find(r=>r.id===id):ENCHANTMENTS.find(e=>e.id===id);
+    const FLAVOR=['Your careful notes form a compelling paper. The academic community will take notice.','The quill flies across parchment as you document your findings with scholarly precision.','You seal the manuscript with wax. Another contribution to '+locName+'\'s growing body of knowledge.'];
+    showResult('📝 Paper Published!','craft',`${FLAVOR[Math.floor(Math.random()*FLAVOR.length)]}\n"On the Properties of ${item?.icon||''}${item?.name||id}"\n+${baseXp} XP · Earns passive coin daily`);
+    addLog(`📝 Published research paper: "${item?.icon||''}${item?.name||id}". It will earn coin each morning.`,'quest');
+  };
+
+  // ─── UPKEEP CALCULATOR ───
+  const calcPayroll=()=>hiredAppr.reduce((s,ap)=>s+(ap.salary||5),0);
+  const calcUpkeep=()=>{
+    let total=5; // Base workshop upkeep (5s)
+    // Upgrade maintenance: 1s per upgrade tier (tier 1 = 1s … tier 3 = 3s) per active upgrade
+    upgrades.filter(uid=>!disabledUpgrades.includes(uid)).forEach(uid=>{
+      const up=UPGRADES[uid];if(up)total+=up.tier||1;
+    });
+    // Staff wages
+    total+=calcPayroll();
+    return total;
+  };
+
+  // Daily free actions are counts (features, upgrades and gadgets can grant more than one)
+  const freeBrewsLeft=()=>Math.max(0,getFeatureVal('firstBrewFree')+upEff('firstBrewFree')-dayFlags.filter(f=>f==='first_brew_used').length);
+  const freeCraftsLeft=()=>Math.max(0,getFeatureVal('freeCraft')+upEff('freeCraft')-dayFlags.filter(f=>f==='free_craft_used').length);
+
+  // ─── ENERGY COST HELPER ───
+  const spendEnergy=(cost=1)=>{
+    const earlyR=getFeatureVal('firstActionFree')&&!dayFlags.includes('first_action_used');
+    const endRank=skRanks['endurance']||0;const endChance=Math.min(0.40,endRank*0.10+getMod(eStat('dis'))*0.02);
+    const endSave=endChance>0&&Math.random()<endChance;
+    if(earlyR){setDayFlags(f=>[...f,'first_action_used']);addLog('🌅 Early Riser: First action free!','info');return true;}
+    if(endSave){addLog('💪 Endurance: Energy preserved!','info');return true;}
+    setEnergy(h=>h-cost);return false;
+  };
+
+  const consumeElixir=(potionId)=>{
+    const buff=ELIXIR_BUFFS[potionId];if(!buff)return;
+    // Find any quality/fresh version of this potion
+    const availPot=[potionId,potionId+'_fresh',potionId+'_F',potionId+'_M',potionId+'_G',potionId+'_fresh_F',potionId+'_fresh_M',potionId+'_fresh_G'].find(pid=>(pots[pid]||0)>=1);
+    if(!availPot){addLog('You don\'t have any '+buff.name+' to drink.','error');return;}
+    if(activeBuffs[potionId]&&activeBuffs[potionId].daysLeft>0){addLog(buff.name+' is already active ('+activeBuffs[potionId].daysLeft+' days remaining).','error');return;}
+    snapshot();
+    const potQual=getPotQuality(availPot);
+    const bonusDays=potQual==='gm'?2:potQual==='mw'?1:0;
+    const totalDuration=buff.duration+bonusDays;
+    modPot(availPot,-1);
+    setActiveBuffs(prev=>({...prev,[potionId]:{daysLeft:totalDuration}}));
+    const FLAVOR=['The liquid shimmers as it goes down. You feel power coursing through your veins.',
+      'A warm glow spreads from your core outward. The elixir takes hold.',
+      'Your senses sharpen. Colors brighten. The world feels more... possible.',
+      'Ancient energy suffuses your body. You feel ready for anything.'];
+    showResult(buff.icon+' '+buff.name+(potQual!=='std'?' ('+QUALITY[potQual].icon+' '+QUALITY[potQual].name+')':'')+' — Consumed!','craft',
+      FLAVOR[Math.floor(Math.random()*FLAVOR.length)]+
+      '\n\n'+buff.buffDesc+(bonusDays>0?'\n★★ Masterwork quality: +'+bonusDays+' bonus day!':'')+'\n\nActive for '+totalDuration+' days.');
+    addLog(buff.icon+' Consumed '+buff.name+(bonusDays>0?' (quality bonus: +'+bonusDays+' day'+(bonusDays>1?'s':'')+')':'')+': '+buff.buffDesc,'quest');
+  };
+
+  const doTransmute=(srcId,tgtId,qty)=>{
+    // Transmutation is intended-free (no spendEnergy by design — see Transmuter design lock §1a).
+    // Gated solely on source stock. The old `freeTransmute` Lv10 flag was vacated; do not re-add an energy cost.
+    const ratio=getFeatureVal('transmuteRatio')||2;
+    const srcNeed=ratio*qty;
+    if((inv[srcId]||0)<srcNeed){addLog(`Need ${srcNeed}× ${INGR[srcId]?.icon||''}${INGR[srcId]?.name||srcId} to transmute ${qty}× ${INGR[tgtId]?.icon||''}${INGR[tgtId]?.name||tgtId}.`,'error');return;}
+    snapshot();
+    modInv(srcId,-srcNeed);modInv(tgtId,qty);
+    gainXP(10*qty);
+    const FLAVOR=['The ingredients shimmer and reform into something new.','Alchemical bonds dissolve and reconstitute — transmutation complete.','The essence shifts, matter transforms, and new reagents emerge.'];
+    showResult('🔄 Transmutation!','craft',`${FLAVOR[Math.floor(Math.random()*FLAVOR.length)]}\n${srcNeed}× ${INGR[srcId]?.icon||''}${INGR[srcId]?.name||srcId} → ${qty}× ${INGR[tgtId]?.icon||''}${INGR[tgtId]?.name||tgtId}\n+${10*qty} XP`);
+  };
+
+  // ─── POTION TRANSMUTATION (Transmuter Lv10 capstone, gated by canPotionTransmute) ───
+  // Consume `POT_TX_RATIO * qty` of srcPotId (full encoded source potion, suffixes irrelevant to consumption),
+  // produce `qty` of the target recipe at PLAIN STANDARD quality with no _fresh, no infusion suffix.
+  // Preservation policy is locked to P1+F1+I1 (design lock §3b): output never inherits the source's quality,
+  // freshness, or infusion. This closes the masterwork→masterwork sell-arbitrage leak and the cross-spec
+  // mint of _fresh / infusions. Free action, mirroring ingredient transmute.
+  const POT_TX_RATIO=2; // 2 source potions → 1 target. Tunable here only.
+  const doPotionTransmute=(srcPotId,tgtRecipeId,qty)=>{
+    if(!getFeatureVal('canPotionTransmute')){addLog('Potion transmutation requires Transmuter Lv10.','error');return;}
+    const srcNeed=POT_TX_RATIO*qty;
+    if((pots[srcPotId]||0)<srcNeed){addLog(`Need ${srcNeed}× ${potDisplayName(srcPotId)} to transmute ${qty}× potion.`,'error');return;}
+    const tgtRecipe=RECIPES.find(r=>r.id===tgtRecipeId);
+    if(!tgtRecipe){addLog('Unknown target potion.','error');return;}
+    // Output = base recipe at standard quality, no _fresh, no infusion suffix.
+    // qualPotId(recipeId, 'std') returns the recipe ID unchanged (no _F/_M/_G appended), giving the plain base.
+    const outputId=qualPotId(tgtRecipeId,'std');
+    snapshot();
+    modPot(srcPotId,-srcNeed);
+    modPot(outputId,qty);
+    gainXP(10*qty);
+    const FLAVOR=['The potion\'s essence dissolves and reforms into a different draught.','Alchemical bonds restructure — what was one potion becomes another, plain and pure.','The vial\'s contents shimmer, shift, and settle as something new.'];
+    showResult('🔄 Potion Transmutation!','craft',`${FLAVOR[Math.floor(Math.random()*FLAVOR.length)]}\n${srcNeed}× ${potDisplayName(srcPotId)} → ${qty}× ${tgtRecipe.icon} ${tgtRecipe.name}\n+${10*qty} XP\n(Output dropped to standard quality, no infusion, no freshness — design.)`);
+  };
+
+  // ─── ENCHANT CUSTOMER ITEMS ───
+  const doEnchant=(eId,cust,quality='std')=>{
+    const dualInsc=getFeatureVal('dualInscription');
+    if(energy<25){addLog('Not enough Energy to enchant. Rest and try tomorrow.','error');return;}
+    let ench=ENCHANTMENTS.find(e=>e.id===eId);
+    let isCustomEnch=false;let customSellMult=1;
+    if(!ench&&eId.startsWith('custom_')){
+      const cp=customPatterns.find(p=>'custom_'+p.id===eId);
+      if(cp){ench={id:eId,name:cp.name,icon:'\u2728',cat:cp.cat,ingr:[],xp:cp.xp,dc:cp.dc,desc:cp.effectDescs};isCustomEnch=true;customSellMult=cp.sellMult||1;}
+    }
+    if(!ench)return;
+    const eqT=QUALITY[quality]||QUALITY.std;
+    const cost={};ench.ingr.forEach(id=>{const lid=li(id);cost[lid]=(cost[lid]||0)+1;});
+    // Quality tier extra inscription materials
+    if(eqT.extraIngr>=1&&ench.ingr.length>0){const lid0=li(ench.ingr[0]);cost[lid0]=(cost[lid0]||0)+1;}
+    if(eqT.extraIngr>=2&&ench.ingr.length>1){const lid1=li(ench.ingr[1]);cost[lid1]=(cost[lid1]||0)+1;}
+    if(eqT.extraIngr>=3&&ench.ingr.length>0){const lid2=li(ench.ingr[Math.min(2,ench.ingr.length-1)]);cost[lid2]=(cost[lid2]||0)+1;}
+    const matDisc=getFeatureVal('enchantMatDiscount');
+    const discounted=matDisc>0&&Object.keys(cost).length>0&&Math.random()<matDisc;
+    const effCost={};Object.entries(cost).forEach(([id,q])=>{effCost[id]=discounted?Math.max(1,Math.ceil(q/2)):q;});
+    if(Object.keys(effCost).length>0&&!Object.entries(effCost).every(([id,q])=>(inv[id]||0)>=q)){addLog('Not enough materials for '+ench.icon+ench.name+'.','error');return;}
+    snapshot();spendEnergy(25);
+    const matSaveChance=getFeatureVal('enchantMatSave');
+    const matSaved=matSaveChance>0&&Math.random()<matSaveChance;
+    if(!matSaved&&Object.keys(effCost).length>0)Object.entries(effCost).forEach(([id,q])=>modInv(id,-q));
+    else if(matSaved)addLog('\u2728 Inscription mastery: materials preserved!','info');
+    if(discounted&&!matSaved)addLog('🏷\ufe0f Enchant discount: reduced material cost!','info');
+    const enchQualDCMod=qualDCMod(quality,'ench');
+    // Arcanist Lv4 Pattern Library: 15% inscription DC reduction on custom patterns
+    const _arcLv=prestigeLevels?.arcanist||0;
+    const _customLibDCReduc=(isCustomEnch&&_arcLv>=4)?Math.floor(ench.dc*0.15):0;
+    // Spellweaver Planar Attunement (designlock §B; combo replaces plane via getPlanarEffects).
+    const _planEfx=getPlanarEffects();
+    const _planarDCDelta=(-(_planEfx.dcReduction||0))+(ench.cat==='weapon'?(_planEfx.offensiveDCPenalty||0):0);
+    const adjDC=Math.max(5,ench.dc+enchQualDCMod-_customLibDCReduc+_planarDCDelta+(threatEnchDC||0));
+    const ch=doCheck('inscription',adjDC);
+    const arcB=getSkMod('arcane_sense');const focB=getSkMod('focus');const csb=upEff('craftSkillBonus');
+    const efb=getFeatureVal('enchantBonus');const esf=Math.min(getFeatureVal('enchantSuccessFlat'),20);
+    // Category-scoped inscription bonus (e.g. Runesmith Battle Runes on weapon enchants, Wardkeeper Wards on armor enchants)
+    const cefb=getCategoricalBonus('enchant',ench.cat,'enchantBonus');
+    const cesf=Math.min(getCategoricalBonus('enchant',ench.cat,'enchantSuccessFlat'),10);
+    if(arcB)ch.extras.push({label:'Arcane Sense',val:arcB});if(focB)ch.extras.push({label:'Focus',val:focB});if(csb)ch.extras.push({label:'Upgrades',val:csb});if(efb)ch.extras.push({label:'Inscription Mastery',val:efb});if(esf)ch.extras.push({label:'Enchant Mastery',val:esf});
+    if(cefb)ch.extras.push({label:(ench.cat||'')+' specialty',val:cefb});
+    if(cesf)ch.extras.push({label:(ench.cat||'')+' mastery',val:cesf});
+    const planarBonus=(ench.cat==='armor'?(_planEfx.defensiveBonus||0):0)+(_planEfx.inscriptionBonus||0);
+    if(planarBonus)ch.extras.push({label:'🌀 Planar',val:planarBonus});
+    const _planarAutoDC=_planEfx.autoSuccessDC||0;
+    const autoEnchDC=getFeatureVal('autoEnchantDC');
+    const critRange=20-getFeatureVal('enchantCritRange');
+    const isCrit=ch.roll>=critRange;
+    const focusRank=skRanks['focus']||0;const focusChance=Math.min(0.25,focusRank*0.05+getMod(eStat('dis'))*0.01);
+    const focusMW=!isCrit&&focusChance>0&&Math.random()<focusChance;
+    const isMW=isCrit||focusMW;
+    const arcPatternB=isCustomEnch?getPatternInscBonus():0;
+    if(arcPatternB)ch.extras.push({label:'\u2728 Arcanist',val:arcPatternB}); // added once, in `adj` below
+    const adj=ch.total+arcB+focB+csb+efb+esf+arcPatternB+cefb+cesf+planarBonus;ch.total=adj;ch.success=ch.roll===1?false:(ch.roll===20?true:(adj>=adjDC||(autoEnchDC>0&&adjDC<=autoEnchDC)||(_planarAutoDC>0&&adjDC<=_planarAutoDC)||isCrit));
+    if(!ch.success){
+      const crCharges=getFeatureVal('checkReroll')+dayFlags.filter(f=>f==='companion_reroll').length;
+      const crUsed=dayFlags.filter(f=>f==='check_rerolled').length;
+      if(crCharges>crUsed){
+        const rr=doCheck('inscription',adjDC);
+        const rrAdj=rr.total+arcB+focB+csb+efb+esf+arcPatternB+cefb+cesf+planarBonus;rr.total=rrAdj;rr.success=rr.roll===1?false:(rr.roll===20?true:(rrAdj>=adjDC||(autoEnchDC>0&&adjDC<=autoEnchDC)||(_planarAutoDC>0&&adjDC<=_planarAutoDC)));
+        rr.extras.push({label:'🔄 Reroll',val:'1/day'});
+        setDayFlags(f=>[...f,'check_rerolled']);
+        if(rr.success){Object.assign(ch,rr);ch.success=true;}
+      }
+    }
+    if(ch.success){const baseGR=20+ench.dc*3+cust.tier*12+getFeatureVal('enchantGoldFlat')+getFeatureVal('potionSaleBonus');
+      const critGold=isMW?Math.floor(baseGR*0.5):0;
+      const enchGoldB=getFeatureVal('enchantGoldBonus')+getCategoricalBonus('enchant',ench.cat,'enchantGoldBonus');const custPayB=getFeatureVal('customerPayBonus');
+      const debtPenalty=debt>50?-0.20:0;
+      // Planar gold-mult composition (designlock §B): one of all/utility/defensive mults applies,
+      // gated by ench.cat where appropriate, then goldPenalty applies multiplicatively.
+      let _planarMult=1;
+      if(_planEfx.allGoldMult)_planarMult*=_planEfx.allGoldMult;
+      else if(_planEfx.utilityGoldMult&&ench.cat==='other')_planarMult*=_planEfx.utilityGoldMult;
+      else if(_planEfx.defensiveGoldMult&&ench.cat==='armor')_planarMult*=_planEfx.defensiveGoldMult;
+      if(_planEfx.goldPenalty)_planarMult*=(1-_planEfx.goldPenalty);
+      const gR=Math.floor((baseGR+critGold)*(1+enchGoldB+custPayB+debtPenalty)*customSellMult*eqT.sellMult*GOLD_MULT*_planarMult*threatEnchPayMult);const enchXpEarned=Math.floor(ench.xp*eqT.xpMult);gainXP(enchXpEarned);setGold(g=>g+gR);
+      showResult(ench.icon+' '+(quality!=='std'?QUALITY[quality].icon+' ':'')+ench.name+' \u2014 Enchanted!','craft',cust.customer+"'s "+cust.icon+cust.name+'\\n+'+enchXpEarned+' XP  +'+fmtMoney(gR)+(isCustomEnch&&customSellMult>1?'\\n\u2728 Custom pattern: '+customSellMult+'\u00d7 premium!':'')+(matSaved?'\\n\u2728 Materials preserved!':'')+(isCrit?'\\n🎯 Critical inscription!':'')+(focusMW?'\\n🧘 Focus: Masterwork quality!':'')+(discounted?'\\n🏷\ufe0f Discount materials!':'')+(debtPenalty<0?'\\n\u26a0\ufe0f Debt penalty: -20% pay':''),ch);
+      if(dualInsc>0&&!dayFlags.includes('dual_inscribed')){setDayFlags(f=>[...f,'dual_inscribed']);setEnergy(e=>e+25);addLog('\u2728 Dual Inscription: bonus enchant this hour!','info');}
+      const ebsChance=getFeatureVal('enchantBonusScroll');if(ebsChance>0&&Math.random()<ebsChance){const scrollGold=Math.floor(ench.dc*5);setGold(g=>g+scrollGold);addLog(`📜 Arcane Recycler: Residual energy formed a bonus scroll! +${fmtMoney(scrollGold)}`,'craft');}
+      // Planar Attunement reinterpreted effects (designlock §B): dualChanceBonus / bonusEnchantChance
+      // pay out as +50% bonus gold + +50% bonus XP (not a literal second enchant).
+      const _dualChance=(_planEfx.dualChanceBonus||0)+(_planEfx.bonusEnchantChance||0);
+      if(_dualChance>0&&Math.random()<_dualChance){
+        const bonusGold=Math.floor(gR*0.5);const bonusXp=Math.floor(enchXpEarned*0.5);
+        setGold(g=>g+bonusGold);gainXP(bonusXp);
+        addLog(`🌀 Planar surge: +${fmtMoney(bonusGold)}, +${bonusXp} XP from residual energy.`,'craft');
+      }
+      // fadeChance reinterpreted (designlock §B): dissatisfied-customer roll, not overnight rollback.
+      if((_planEfx.fadeChance||0)>0&&Math.random()<_planEfx.fadeChance){
+        setGold(g=>g-10);
+        if(factionAlign)addRep(factionAlign,-1);
+        addLog('🌀 Feywild instability: '+cust.customer+' returns dissatisfied — refunded '+fmtMoney(10)+(factionAlign?' (−1 '+(FACTIONS[factionAlign]?.name||factionAlign)+' rep).':'.'),'error');
+      }
+    }
+    else{
+      let fer=getFeatureVal('failEnchantReturn');
+      // Planar Attunement (designlock \u00a7B): Elemental Chaos failDestroyMats overrides material recovery;
+      // Void Storm critFailDestroy is reinterpreted as nat-1 \u2192 \u221225g compensation + zero recovery.
+      const _planarDestroysMats=(_planEfx.failDestroyMats===true)||(_planEfx.critFailDestroy===true&&ch.roll===1);
+      if(_planarDestroysMats)fer=0;
+      if(fer>0&&!matSaved&&Object.keys(cost).length>0){Object.entries(cost).forEach(([id,q])=>modInv(id,Math.ceil(q*fer)));
+        addLog('\u2728 Enchanter training: recovered '+Math.round(fer*100)+'% of materials.','info');}
+      if(_planEfx.critFailDestroy===true&&ch.roll===1){
+        setGold(g=>g-25);
+        addLog('\ud83c\udf00 Void Storm crit-fail: paid '+fmtMoney(25)+' compensation, materials destroyed.','error');
+      }
+      else if(_planEfx.failDestroyMats===true&&!matSaved&&Object.keys(cost).length>0){
+        addLog('\ud83c\udf00 Elemental Chaos: failed inscription consumed all materials.','error');
+      }
+      showResult(ench.icon+' '+ench.name+' \u2014 Failed!','error',"The inscription flickers and fades on "+cust.customer+"'s "+cust.name+'.'+(fer>0?'\\nRecovered some materials.':'')+(_planarDestroysMats&&!matSaved?'\\n\ud83c\udf00 Planar dissipation: materials lost.':''),ch);}
+    setEnchQ(p=>p.filter(c=>c!==cust));
+  };
+
+  // ─── BATCH BREW ───
+  const doBatchCraft=(r,qty,quality='std')=>{
+    const qT=QUALITY[quality]||QUALITY.std;
+    const sbLv=prestigeLevels.spellbrewer||0;
+    // Batches are never infused (infusions need a catalyst and count against the daily limit per brew)
+    const selInf=null;
+    const cost={};r.ingr.forEach(id=>{const lid=li(id);cost[lid]=(cost[lid]||0)+qty;});
+    if(qT.extraIngr>=1){const firstIngr=li(r.ingr[0]);cost[firstIngr]=(cost[firstIngr]||0)+qty;}
+    if(qT.extraIngr>=2&&r.ingr.length>1){const secondIngr=li(r.ingr[1]);cost[secondIngr]=(cost[secondIngr]||0)+qty;}
+    if(qT.extraIngr>=3){const thirdIngr=li(r.ingr[Math.min(2,r.ingr.length-1)]);cost[thirdIngr]=(cost[thirdIngr]||0)+qty;}
+    const batchEnergyCost=getActionEnergyCost('brew',25)*Math.ceil(qty/2); // same formula the brew buttons show
+    if(energy<batchEnergyCost){addLog('Need ⚡'+batchEnergyCost+' Energy to batch brew '+qty+'×'+r.icon+r.name+'. You have ⚡'+energy+' Energy.','error');return;}
+    if(!Object.entries(cost).every(([id,q])=>(inv[id]||0)>=q)){addLog('Not enough ingredients for '+qty+'× '+(qT.name!=='Standard'?qT.name+' ':'')+r.icon+r.name+'.','error');return;}
+    if(r.faction&&getRL(r.faction)<(r.fReq||0)){addLog('Not enough faction reputation for this recipe.','error');return;}
+    snapshot();
+    spendEnergy(batchEnergyCost);
+    Object.entries(cost).forEach(([id,q])=>modInv(id,-q));
+    const masteryDisc=getMasteryDiscount(brewCounts,r.id,getFeatureVal('masteryDiscountBonus'));
+    const qMod=qualDCMod(quality,'brew');
+    const infDCMod=selInf?(selInf.dcMod-(sbLv>=2?1:0)):0;
+    const adjDC=Math.max(5,r.dc+qMod+infDCMod-masteryDisc);
+    const sk=r.stat==='inu'?'attunement':r.stat==='tec'?'precision':r.stat==='acu'?'research':'improvisation';
+    const batchBonus=getFeatureVal('batchSuccessBonus');
+    let successes=0;const rolls=[];
+    for(let i=0;i<qty;i++){
+      const ch=doCheck(sk,adjDC);
+      const csb=upEff('craftSkillBonus');const cfb=getFeatureVal('craftBonus');
+      ch.total+=csb+cfb;if(batchBonus>0&&i>0)ch.total+=Math.floor(batchBonus*(i)*10);
+      ch.success=ch.roll===1?false:ch.roll===20?true:ch.total>=adjDC;
+      if(ch.success)successes++;
+      rolls.push(ch);
+    }
+    let potId=qualPotId(r.id,quality);
+    if(selInf){potId=potId+selInf.suffix;setInfusionsUsedToday(n=>n+1);}
+    if(successes>0)modPot(potId,successes);
+    setBrewCounts(p=>({...p,[r.id]:(p[r.id]||0)+successes}));
+    const xpPer=Math.floor((r.xp+getFeatureVal('brewXPBonus'))*qT.xpMult);
+    gainXP(xpPer*successes);
+    const qualLabel=qT.name!=='Standard'?' ['+qT.icon+' '+qT.name+']':'';
+    showResult(r.icon+' Batch Brew'+qualLabel+': '+successes+'/'+qty+' succeeded!','craft',
+      rolls.map((ch,i)=>'#'+(i+1)+': '+(ch.success?'✅':'❌')+' Roll '+ch.roll+'+'+Math.floor(ch.total-ch.roll)+'='+ch.total+' vs DC'+adjDC).join('\n')+
+      '\n\n+'+(xpPer*successes)+' XP'+(qT.xpMult>1?' ('+qT.name+' '+qT.xpMult+'×)':'')+(masteryDisc>0?'\n📖 Mastery: -'+masteryDisc+' DC':''));
+  };
+
+    // ─── POTION ORDERS ───
+  const doFillOrder=(cust)=>{
+    const have=countAllPots(getBaseRecipeId(cust.potionId));if(have<cust.qty){addLog('Not enough '+cust.potionIcon+cust.potionName+' to fill this order.','error');return;}
+    snapshot();
+    const custConsumed=consumePots(getBaseRecipeId(cust.potionId),cust.qty);
+    const custQB=qualityBonusMult(custConsumed);
+    const totalPay=Math.floor(cust.payPer*cust.qty*custQB.mult);const totalXp=Math.floor(cust.xpPer*cust.qty*custQB.mult);
+    setGold(g=>g+totalPay);gainXP(totalXp);
+    setPotCustQ(p=>p.filter(c=>c!==cust));
+    showResult('🧪 Order Filled!','craft',cust.customer+' buys '+cust.qty+'× '+cust.potionIcon+cust.potionName+'\n+'+fmtMoney(totalPay)+'  +'+totalXp+' XP'+(custQB.label?'\n'+custQB.label:''));
+  };
+  const dismissPotCust=(cust)=>setPotCustQ(p=>p.filter(c=>c!==cust));
+
+  // ═══ APOTHECARY CLINIC ═══
+  const examinePatient=(patientId)=>{
+    const patient=clinicPatients.find(p=>p.id===patientId);
+    if(!patient||patient.examined)return;
+    const ailment=CLINIC_AILMENTS.find(a=>a.id===patient.ailmentId);if(!ailment)return;
+    // Attunement check — DC scales with ailment tier
+    const dc=8+ailment.tier*3;
+    const ch=doCheck('attunement',dc);
+    // Determine diagnosis level: 0=fail, 1=partial (beat DC), 2=full (beat DC by 5+)
+    let diagLevel=0;
+    if(ch.success)diagLevel=ch.total>=dc+5?2:1;
+    // Apothecary level bonus — higher levels diagnose better
+    const apothLv=eCL('alchemist');
+    if(diagLevel<2&&apothLv>=6&&ch.total>=dc-2)diagLevel=Math.max(diagLevel,1);
+    if(diagLevel<2&&apothLv>=10)diagLevel=2; // Lv10 always gets full diagnosis
+    setClinicPatients(prev=>prev.map(p=>p.id===patientId?{...p,examined:true,diagLevel}:p));
+    const diagText=diagLevel===2?ailment.hints.full:diagLevel===1?ailment.hints.partial:ailment.hints.fail;
+    showResult('🩺 Examination — '+patient.patientName,diagLevel>=1?'craft':'info',
+      ailment.icon+' '+ailment.name+'\n'+diagText,ch);
+  };
+
+  const prescribePotion=(patientId,potionId)=>{
+    const patient=clinicPatients.find(p=>p.id===patientId);
+    if(!patient||patient.prescribed)return;
+    if((pots[potionId]||0)<1){addLog('You don\'t have any of that potion in stock.','error');return;}
+    const baseRecipeId=getBaseRecipeId(potionId);
+    const isMWPotion=potionId.endsWith('_M');
+    const ailment=CLINIC_AILMENTS.find(a=>a.id===patient.ailmentId);if(!ailment)return;
+    const recipe=RECIPES.find(r=>r.id===baseRecipeId);if(!recipe)return;
+    snapshot();
+    // Determine match quality — check against base recipe ID
+    let matchQuality='none';let matchMult=0;
+    if(ailment.great.includes(baseRecipeId)){matchQuality='great';matchMult=1.0;}
+    else if(ailment.good.includes(baseRecipeId)){matchQuality='good';matchMult=0.6;}
+    else if(getFeatureVal('miracleCure')){matchQuality='great';matchMult=1.0;} // miracleCure: any potion works
+    else{matchQuality='wrong';matchMult=0;}
+    // Consume the potion
+    setPots(p=>({...p,[potionId]:Math.max(0,(p[potionId]||0)-1)}));
+    // Calculate rewards — healingBonusMW: MW potions give bonus clinic reward
+    const mwBonus=isMWPotion?getFeatureVal('healingBonusMW'):0;
+    const baseGold=15+ailment.tier*12;const baseXp=20+ailment.tier*15;
+    const clinicMult=Math.max(1,getFeatureVal('clinicPayMult')||1);
+    const goldReward=Math.floor(baseGold*matchMult*(1+getFeatureVal('sellBonus'))*clinicMult*(1+mwBonus));
+    const xpReward=Math.floor(baseXp*matchMult);
+    const locFacs=byZone({tidecrest:['tidekeepers','harbormasters','pearl_divers'],ashfall:['flamekeepers','sand_merchants','dustwalkers'],base:['hearthkeepers','cinderfolk','ashwardens']},f=>locFaction(f,gameLocation));
+    const repFaction=ailment.tier>=3?locFacs[0]:locFacs[Math.floor(Math.random()*locFacs.length)];
+    const repReward=matchQuality==='great'?10+ailment.tier*5:matchQuality==='good'?5:0;
+    if(goldReward>0)setGold(g=>g+goldReward);
+    if(xpReward>0)gainXP(xpReward);
+    if(repReward>0)addRep(repFaction,repReward);
+    // Mark patient as treated
+    setClinicPatients(prev=>prev.map(p=>p.id===patientId?{...p,prescribed:true,matchQuality}:p));
+    // Feedback
+    const GREAT_LINES=['"I feel better already! Bless you, alchemist."','"That\'s exactly what I needed. The pain is fading!"','"*sighs with relief* You really know your craft."'];
+    const GOOD_LINES=['"Hmm... it\'s helping, I think. Not quite right but better than nothing."','"The symptoms are easing. Slowly, but they are."'];
+    const WRONG_LINES=['"I... don\'t think that did anything."','"*grimaces* That\'s not quite hitting the mark, is it?"','"Well, at least it didn\'t make it worse."'];
+    const lines=matchQuality==='great'?GREAT_LINES:matchQuality==='good'?GOOD_LINES:WRONG_LINES;
+    const patientLine=lines[Math.floor(Math.random()*lines.length)];
+    const rewardText=(goldReward>0?'\n+'+fmtMoney(goldReward):'')+(xpReward>0?' +'+xpReward+' XP':'')+(repReward>0?' +'+repReward+' '+FACTIONS[repFaction]?.name+' rep':'');
+    showResult('🏥 '+patient.patientName+' — '+(matchQuality==='great'?'Perfect Cure!':matchQuality==='good'?'Partial Relief':'Wrong Remedy'),
+      matchQuality==='great'?'craft':matchQuality==='good'?'info':'error',
+      'Prescribed: '+recipe.icon+' '+recipe.name+'\n'+patientLine+(rewardText?'\n'+rewardText:''));
+  };
+
+  // ═══ VENOMIST CONTRACTS ═══
+  const fulfillContract=(vcId,potencyId)=>{
+    const vc=venomContracts.find(v=>v.id===vcId);if(!vc||vc.fulfilled)return;
+    const contract=VENOM_CONTRACTS.find(c=>c.id===vc.contractId);if(!contract)return;
+    const potency=POTENCY_LEVELS.find(p=>p.id===potencyId);if(!potency)return;
+    // Check ingredients
+    const hasIngr=lia(contract.ingredients).every((id,i)=>(inv[id]||0)>=(contract.ingredientQty[i]||0));
+    if(!hasIngr){addLog('Not enough ingredients to brew this poison.','error');return;}
+    // Venom contract: free (spec feature)
+    snapshot();
+    // Consume ingredients
+    setInv(p=>{const n={...p};lia(contract.ingredients).forEach((id,i)=>{n[id]=Math.max(0,(n[id]||0)-(contract.ingredientQty[i]||0));});return n;});
+    // Craft check using improvisation
+    const dc=potency.dc;
+    const ch=doCheck('improvisation',dc);
+    const cfb=getFeatureVal('craftBonus');if(cfb){ch.total+=cfb;ch.extras.push({label:'Venomist',val:cfb});}
+    const csb=upEff('craftSkillBonus');if(csb){ch.total+=csb;ch.extras.push({label:'Upgrades',val:csb});}
+    ch.success=ch.roll===1?false:ch.roll===20?true:ch.total>=dc;
+    if(ch.success){
+      const venomMult=Math.max(1,getFeatureVal('venomContractMult')||1);
+      const goldReward=Math.floor(contract.basePay*potency.payMult*(1+getFeatureVal('sellBonus'))*GOLD_MULT*venomMult);
+      const xpReward=Math.floor(contract.baseXp*potency.payMult*0.8);
+      const repReward=Math.floor((8+contract.tier*4)*potency.payMult*0.5);
+      setGold(g=>g+goldReward);gainXP(xpReward);addRep(lf(contract.faction),repReward);
+      // threatPoisons: poisons sold to guard factions reduce corresponding threat
+      if(getFeatureVal('threatPoisons')&&contract.faction){const tid=lt(contract.faction);if(tid){const tReduc=Math.floor(3+contract.tier*2);setThreats(prev=>{const n={...prev};n[tid]=Math.max(0,(n[tid]||0)-tReduc);return n;});addLog(`☠️ Poison deployed: ${THREAT_FACTIONS[tid]?.name||tid} threat -${tReduc}!`,'quest');}}
+      setVenomContracts(prev=>prev.map(v=>v.id===vcId?{...v,fulfilled:true,chosenPotency:potencyId,success:true}:v));
+      const SUCC_LINES=['"Deadly work, alchemist. The Wardens are in your debt."','"This will do the job. Payment as agreed."','"*inspects the vial* Potent. Very potent. Well done."'];
+      showResult('☠️ Contract Fulfilled! — '+potency.name+' Potency',
+        'craft',contract.icon+' '+contract.name+'\n'+SUCC_LINES[Math.floor(Math.random()*SUCC_LINES.length)]+
+        '\n+'+fmtMoney(goldReward)+' +'+xpReward+' XP +'+repReward+' '+(FACTIONS[lf(contract.faction)]?.name||'')+' rep',ch);
+    } else {
+      // Failure — ingredients consumed, no reward
+      setVenomContracts(prev=>prev.map(v=>v.id===vcId?{...v,fulfilled:true,chosenPotency:potencyId,success:false}:v));
+      const FAIL_LINES=['"The mixture is unstable. This won\'t do."','"I can smell it — something\'s off. Too weak."','"*dumps the vial* Back to the drawing board, alchemist."'];
+      showResult('☠️ Contract Failed — '+potency.name+' Potency',
+        'error',contract.icon+' '+contract.name+'\n'+FAIL_LINES[Math.floor(Math.random()*FAIL_LINES.length)]+'\nIngredients consumed. No payment.',ch);
+    }
+  };
+
+  // ═══ RUNESMITH WEAPON FORGING ═══
+  const forgeWeapon=(weaponId,enchantId)=>{
+    const weapon=FORGE_WEAPONS.find(w=>w.id===weaponId);if(!weapon)return;
+    const enchant=ENCHANTMENTS.find(e=>e.id===enchantId);if(!enchant)return;
+    const rsLv=eCL('enchanter');
+    // Check daily forge limit
+    const forgesToday=dayFlags.filter(f=>f==='forge_used').length;
+    const maxForges=rsLv>=10?3:rsLv>=6?2:1;
+    if(forgesToday>=maxForges){addLog(`You can only forge ${maxForges} weapon${maxForges>1?'s':''} per day.`,'error');return;}
+    // Check ingredients
+    const hasMats=Object.entries(lmc(weapon.matCost)).every(([id,q])=>(inv[id]||0)>=q);
+    if(!hasMats){addLog('Not enough materials to forge this weapon.','error');return;}
+    // Forge weapon: free (spec feature)
+    snapshot();
+    setDayFlags(f=>[...f,'forge_used']);
+    // Consume materials
+    setInv(p=>{const n={...p};Object.entries(lmc(weapon.matCost)).forEach(([id,q])=>{n[id]=Math.max(0,(n[id]||0)-q);});return n;});
+    // Step 1: Forging check (Precision)
+    const forgeDC=weapon.forgeDC;
+    const forgeCh=doCheck('precision',forgeDC);
+    const cfb=getFeatureVal('craftBonus');if(cfb){forgeCh.total+=cfb;forgeCh.extras.push({label:'Craft',val:cfb});}
+    forgeCh.success=forgeCh.roll===1?false:forgeCh.roll===20?true:forgeCh.total>=forgeDC;
+    if(!forgeCh.success){
+      // Forge failure — materials lost
+      const FAIL=['The metal warps under the hammer. The blank is ruined.','A crack splits the blade during tempering. Back to raw ore.','The alloy refuses to hold shape. Your materials are spent.'];
+      showResult('🔨 Forging Failed — '+weapon.name,'error',weapon.icon+' '+weapon.name+'\n'+FAIL[Math.floor(Math.random()*FAIL.length)]+'\nMaterials consumed.',forgeCh);
+      return;
+    }
+    // Step 2: Inscription check (Inscription)
+    const enchDC=(enchant.dc||12)+(threatEnchDC||0);
+    const inscCh=doCheck('inscription',enchDC);
+    const eb=getFeatureVal('enchantBonus');if(eb){inscCh.total+=eb;inscCh.extras.push({label:'Runesmith',val:eb});}
+    inscCh.success=inscCh.roll===1?false:inscCh.roll===20?true:inscCh.total>=enchDC;
+    if(!inscCh.success){
+      // Inscription failed — plain weapon, sellable but not special
+      const plainGold=Math.floor(weapon.tier*8+5);
+      setGold(g=>g+plainGold);
+      gainXP(Math.floor(weapon.tier*10));
+      const PARTIAL=['The runes flicker and fade. A solid weapon, but uninscribed.','Your inscription crumbles. The blank is good steel, at least.'];
+      showResult('🔨 Inscription Failed — Plain '+weapon.name,'info',weapon.icon+' '+weapon.name+'\n'+PARTIAL[Math.floor(Math.random()*PARTIAL.length)]+'\nSold as plain weapon: +'+fmtMoney(plainGold),inscCh);
+      return;
+    }
+    // Both succeeded! Create a Named Weapon
+    const wName=genWeaponName();
+    const goldValue=Math.floor((weapon.tier*20+enchant.tier*15)*(1+getFeatureVal('sellBonus')+getFeatureVal('enchantGoldBonus')+getCategoricalBonus('enchant',enchant.cat,'enchantGoldBonus'))*GOLD_MULT);
+    const xpReward=Math.floor(weapon.tier*15+enchant.tier*12);
+    gainXP(xpReward);
+    const newWeapon={id:'fw_'+Math.random().toString(36).slice(2),name:wName,weaponType:weapon.name,weaponIcon:weapon.icon,
+      enchantId,enchantName:enchant.name,enchantIcon:enchant.icon,tier:Math.max(weapon.tier,enchant.tier||1),
+      goldValue,forgedDay:day,displayed:true};
+    setForgedWeapons(prev=>[...prev,newWeapon]);
+    const SUCC=[`The runes ignite with inner fire. You've created something remarkable.`,`The inscription blazes to life — a weapon worthy of legend.`,`Hammer and rune unite. ${wName} is born.`];
+    showResult('⚔️ Weapon Forged! — '+wName,'craft',
+      weapon.icon+' '+weapon.name+' + '+enchant.icon+' '+enchant.name+'\n'+SUCC[Math.floor(Math.random()*SUCC.length)]+
+      '\nDisplayed in shop window — attracts premium customers. Sell it from the Forge display case any time.\n+'+xpReward+' XP',forgeCh);
+    addLog(`⚔️ Forged ${weapon.icon}${wName} (${weapon.name} + ${enchant.name}). Displayed in shop.`,'quest');
+  };
+  const sellForgedWeapon=(weaponId)=>{
+    const w=forgedWeapons.find(x=>x.id===weaponId);if(!w)return;
+    snapshot();
+    setForgedWeapons(prev=>prev.filter(x=>x.id!==weaponId));
+    setGold(g=>g+(w.goldValue||0));
+    addLog(`💰 Sold ${w.weaponIcon}${w.name} to a collector for ${fmtMoney(w.goldValue||0)}. An empty stand remains in the display case.`,'info');
+  };
+
+  // ═══ WARDKEEPER SHIELD COMMISSIONS ═══
+  const inscribeCommissionLayer=(scId)=>{
+    const sc=shieldCommissions.find(s=>s.id===scId);if(!sc||sc.done)return;
+    const comm=SHIELD_COMMISSIONS.find(c=>c.id===sc.commissionId);if(!comm)return;
+    const layerIdx=sc.layersCompleted+sc.layersFailed;
+    if(layerIdx>=comm.layers.length){return;}
+    const enchId=comm.layers[layerIdx];
+    const enchant=ENCHANTMENTS.find(e=>e.id===enchId);if(!enchant)return;
+    // Shield commission layer: free (spec feature)
+    snapshot();
+    // Inscription check
+    const dc=(enchant.dc||12)+(threatEnchDC||0); // magic-threat penalty applies to all inscription
+    const ch=doCheck('inscription',dc);
+    const eb=getFeatureVal('enchantBonus');if(eb){ch.total+=eb;ch.extras.push({label:'Wardkeeper',val:eb});}
+    ch.success=ch.roll===1?false:ch.roll===20?true:ch.total>=dc;
+    if(ch.success){
+      const newCompleted=sc.layersCompleted+1;
+      const totalLayers=comm.layers.length;
+      const allDone=newCompleted+sc.layersFailed>=totalLayers;
+      setShieldCommissions(prev=>prev.map(s=>s.id===scId?{...s,layersCompleted:newCompleted,done:allDone}:s));
+      if(allDone){
+        // Calculate rewards based on completion ratio
+        const ratio=newCompleted/totalLayers;
+        const payMult=ratio>=1?1.0:ratio>=0.66?0.75:0.4;
+        const shieldMult=Math.max(1,getFeatureVal('shieldPayMult')||1);
+        const goldReward=Math.floor(comm.baseGold*payMult*(1+getFeatureVal('sellBonus')+getFeatureVal('enchantGoldBonus')+getCategoricalBonus('enchant','armor','enchantGoldBonus'))*GOLD_MULT*shieldMult);
+        const xpReward=Math.floor(comm.baseXp*payMult);
+        const repReward=ratio>=1?12+comm.tier*5:ratio>=0.66?6:0;
+        // Bonus referral for perfect completion
+        const referral=ratio>=1;
+        if(referral)setDayFlags(f=>[...f,'shield_referral']); // read by tomorrow's commission board
+        setGold(g=>g+goldReward);gainXP(xpReward);if(repReward>0)addRep(lf(comm.faction),repReward);
+        // ── Wardkeeper threat reduction ──
+        if(comm.wardTarget&&ratio>=0.66){
+          const localThreat=lt(comm.wardTarget);
+          const enchLv=eCL('enchanter');
+          const baseReduc=comm.threatReduction||(enchLv>=8?5:enchLv>=5?4:3);
+          const finalReduc=ratio>=1?baseReduc:Math.floor(baseReduc*0.6);
+          setThreats(prev=>{const n={...prev};n[localThreat]=Math.max(0,(n[localThreat]||0)-finalReduc);return n;});
+          const threatName=THREAT_FACTIONS[localThreat]?.name||localThreat;
+          addLog(`🛡️ ${threatName} threat reduced by ${finalReduc}! Your wards protect the settlement.`,'quest');
+        }
+        const PERFECT=['"Every layer holds. This is masterwork — I\'ll send my whole squad to you."','"*tests the wards* Flawless. The Wardens will hear of this."'];
+        const GOOD=['"Most of the wards took. It\'ll do for now. Fair payment."','"Not perfect, but solid enough for the field."'];
+        const PARTIAL=['"*frowns* Only partial protection. I\'ll pay, but not full price."'];
+        const lines=ratio>=1?PERFECT:ratio>=0.66?GOOD:PARTIAL;
+        showResult('🛡️ Commission '+(ratio>=1?'Perfect!':ratio>=0.66?'Good':'Partial')+' — '+sc.clientName,
+          ratio>=1?'craft':'info',
+          comm.icon+' '+comm.name+' · '+newCompleted+'/'+totalLayers+' layers\n'+
+          lines[Math.floor(Math.random()*lines.length)]+
+          '\n+'+fmtMoney(goldReward)+' +'+xpReward+' XP'+(repReward>0?' +'+repReward+' '+(FACTIONS[lf(comm.faction)]?.name||'')+' rep':'')+
+          (referral?'\n⭐ Referral: +1 commission tomorrow!':''),ch);
+        addLog(`🛡️ Completed ${comm.icon}${comm.name} for ${sc.clientName} — ${newCompleted}/${totalLayers} layers.`,'quest');
+      } else {
+        showResult('🛡️ Layer '+newCompleted+'/'+totalLayers+' — '+enchant.icon+' '+enchant.name,'craft',
+          'Inscription holds! '+(totalLayers-layerIdx-1)+' layer'+(totalLayers-layerIdx-1!==1?'s':'')+' remaining.',ch);
+      }
+    } else {
+      // Layer failed
+      const wkLv=eCL('enchanter');
+      const canRetry=wkLv>=6&&!sc.retryUsed;
+      const newFailed=sc.layersFailed+1;
+      const totalLayers=comm.layers.length;
+      const allDone=sc.layersCompleted+newFailed>=totalLayers;
+      if(canRetry){
+        // Don't count the failure yet — mark retry used, let them try again
+        setShieldCommissions(prev=>prev.map(s=>s.id===scId?{...s,retryUsed:true}:s));
+        showResult('🛡️ Layer Failed — Retry Available!','info',
+          enchant.icon+' '+enchant.name+' — the rune flickered and faded.\nYour expertise allows one retry per commission.',ch);
+      } else {
+        setShieldCommissions(prev=>prev.map(s=>s.id===scId?{...s,layersFailed:newFailed,done:allDone}:s));
+        if(allDone){
+          const ratio=sc.layersCompleted/totalLayers;
+          const payMult=ratio>=0.66?0.75:ratio>0?0.4:0;
+          const goldReward=Math.floor(comm.baseGold*payMult*(1+getFeatureVal('sellBonus')+getFeatureVal('enchantGoldBonus')+getCategoricalBonus('enchant','armor','enchantGoldBonus'))*GOLD_MULT*Math.max(1,getFeatureVal('shieldPayMult')||1));
+          const xpReward=Math.floor(comm.baseXp*0.3);
+          if(goldReward>0)setGold(g=>g+goldReward);gainXP(xpReward);
+          showResult('🛡️ Commission Complete — '+sc.clientName,'info',
+            comm.icon+' '+comm.name+' · '+sc.layersCompleted+'/'+totalLayers+' layers\n'+
+            (sc.layersCompleted>0?'"It\'s not what I hoped, but it\'ll have to do."':'"*shakes head* I can\'t use this. Partial payment for your time."')+
+            (goldReward>0?'\n+'+fmtMoney(goldReward):'')+(xpReward>0?' +'+xpReward+' XP':''),ch);
+        } else {
+          showResult('🛡️ Layer Failed — '+enchant.icon+' '+enchant.name,'error',
+            'The inscription crumbles. Moving to next layer.\n'+(totalLayers-sc.layersCompleted-newFailed)+' layer'+(totalLayers-sc.layersCompleted-newFailed!==1?'s':'')+' remaining.',ch);
+        }
+      }
+    }
+  };
+
+  // ═══ SPELLWEAVER PLANAR ATTUNEMENT ═══
+  const attunePlane=(planeId)=>{
+    const swLv=eCL('enchanter');
+    const canDual=swLv>=10;
+    const duration=swLv>=6?2:1;
+    // Check if already attuned to this plane
+    if(planarFocus&&planarFocus.planeIds.includes(planeId)){addLog('Already attuned to this plane.','info');return;}
+    // If dual attunement (Lv10), add to existing
+    if(canDual&&planarFocus&&planarFocus.planeIds.length===1&&planarFocus.expiresDay>day){
+      const newIds=[...planarFocus.planeIds,planeId].sort();
+      setPlanarFocus({planeIds:newIds,expiresDay:day+duration});
+      // PLANAR_COMBOS keys aren't alphabetical; try both orderings (same fix as getPlanarCombo).
+      const combo=PLANAR_COMBOS[newIds.join('+')]||PLANAR_COMBOS[newIds.slice().reverse().join('+')];
+      const p=PLANAR_FOCUSES.find(f=>f.id===planeId);
+      // Render mechanical effects from locked semantics, NOT combo.desc (which carries literal-interpretation
+      // wording for reinterpreted effects — designlock §B).
+      const comboLines=combo?formatPlanarEffects(combo.effects).map(l=>(l.good?'✓ ':'⚠ ')+l.txt).join('\n'):'';
+      showResult('🌀 Planar Convergence!','craft',
+        (combo?combo.icon+' '+combo.name+(comboLines?'\n'+comboLines:'')+'\n(Combo replaces both planes\' individual effects.)':p.icon+' '+p.name+' added')+
+        '\nAttunement lasts '+duration+' day'+(duration>1?'s':'')+'.','');
+      addLog(`🌀 Convergence: ${combo?combo.icon+combo.name:p.name}. Active for ${duration} day${duration>1?'s':''}.`,'quest');
+      return;
+    }
+    // New attunement
+    const plane=PLANAR_FOCUSES.find(f=>f.id===planeId);if(!plane)return;
+    setPlanarFocus({planeIds:[planeId],expiresDay:day+duration});
+    // Render mechanical effects from locked semantics, NOT plane.desc.
+    const planeLines=formatPlanarEffects(plane.effects).map(l=>(l.good?'✓ ':'⚠ ')+l.txt).join('\n');
+    showResult('🌀 Planar Attunement — '+plane.icon+' '+plane.name,'craft',
+      plane.flavor+(planeLines?'\n\n'+planeLines:'')+'\nActive for '+duration+' day'+(duration>1?'s':'')+'.','');
+    addLog(`🌀 Attuned to ${plane.icon}${plane.name}. Active for ${duration} day${duration>1?'s':''}.`,'info');
+  };
+  const getActivePlanes=()=>{
+    if(!planarFocus||planarFocus.expiresDay<=day)return[];
+    return planarFocus.planeIds;
+  };
+  const getPlanarCombo=()=>{
+    const ids=getActivePlanes();
+    if(ids.length<2)return null;
+    // PLANAR_COMBOS keys are not alphabetically sorted (they follow PLANAR_FOCUSES order,
+    // lower-index plane first), so try both orderings rather than assuming alphabetical.
+    const a=ids.slice().sort();
+    return PLANAR_COMBOS[a.join('+')]||PLANAR_COMBOS[a.slice().reverse().join('+')]||null;
+  };
+  // Single source of truth for the convergence rule (designlock §B):
+  // when 2 planes are attuned, the combo's effects REPLACE the individual planes' effects.
+  // Consumers read from here so the rule lives in one place.
+  const getPlanarEffects=()=>{
+    const ids=getActivePlanes();
+    if(ids.length===0)return{};
+    const combo=getPlanarCombo();
+    if(combo)return{...(combo.effects||{})};
+    const plane=PLANAR_FOCUSES.find(p=>p.id===ids[0]);
+    return plane?{...(plane.effects||{})}:{};
+  };
+  // Render an effect map as user-facing lines using LOCKED semantics
+  // (designlock §B; 4 keys are reinterpreted from their literal declared meaning).
+  const formatPlanarEffects=(efx)=>{
+    if(!efx)return[];
+    const out=[];
+    if(efx.utilityGoldMult)out.push({txt:'+'+Math.round((efx.utilityGoldMult-1)*100)+'% coin on accessory/utility ("other") enchants',good:true});
+    if(efx.allGoldMult)out.push({txt:'+'+Math.round((efx.allGoldMult-1)*100)+'% coin on all enchants',good:true});
+    if(efx.defensiveGoldMult)out.push({txt:'+'+Math.round((efx.defensiveGoldMult-1)*100)+'% coin on armor enchants',good:true});
+    if(efx.goldPenalty)out.push({txt:'−'+Math.round(efx.goldPenalty*100)+'% coin on all enchants',good:false});
+    if(efx.defensiveBonus)out.push({txt:'+'+efx.defensiveBonus+' inscription on armor enchants',good:true});
+    if(efx.inscriptionBonus)out.push({txt:'+'+efx.inscriptionBonus+' inscription on all enchants',good:true});
+    if(efx.offensiveDCPenalty)out.push({txt:'+'+efx.offensiveDCPenalty+' DC on weapon enchants',good:false});
+    if(efx.dcReduction)out.push({txt:'−'+efx.dcReduction+' DC on all enchants',good:true});
+    if(efx.autoSuccessDC)out.push({txt:'Auto-succeed inscriptions at DC '+efx.autoSuccessDC+' or below',good:true});
+    if(efx.fadeChance)out.push({txt:Math.round(efx.fadeChance*100)+'% chance on success: dissatisfied customer (−'+fmtMoney(10)+', −1 aligned-faction rep)',good:false});
+    if(efx.dualChanceBonus)out.push({txt:Math.round(efx.dualChanceBonus*100)+'% chance on success: planar surge (+50% gold, +50% XP)',good:true});
+    if(efx.bonusEnchantChance)out.push({txt:Math.round(efx.bonusEnchantChance*100)+'% chance on success: planar surge (+50% gold, +50% XP)',good:true});
+    if(efx.failDestroyMats)out.push({txt:'Failed inscriptions destroy materials (no recovery)',good:false});
+    if(efx.critFailDestroy)out.push({txt:'On nat-1: −'+fmtMoney(25)+' compensation, materials destroyed',good:false});
+    return out;
+  };
+
+  // ═══ ARCANIST — CUSTOM ENCHANTMENT PATTERNS ═══
+  const getPatternSlots=()=>{const aLv=prestigeLevels.arcanist||0;return aLv>=4?10:aLv>=1?5:0;};
+  const getMaxEffects=()=>{const aLv=prestigeLevels.arcanist||0;return aLv>=5?3:aLv>=3?2:1;};
+  const getPatternInscBonus=()=>(prestigeLevels.arcanist||0)>=2?2:0;
+  const canNamePatterns=()=>(prestigeLevels.arcanist||0)>=2;
+  const getPatternSellMult=()=>(prestigeLevels.arcanist||0)>=3?2:1;
+
+  const researchPattern=(effectIds,powerLevel,cat,customName)=>{
+    const aLv=prestigeLevels.arcanist||0;
+    if(aLv<1){addLog('Requires Arcanist prestige class.','error');return;}
+    if(customPatterns.length>=getPatternSlots()){addLog(`Pattern library full (${getPatternSlots()} max).`,'error');return;}
+    if(effectIds.length>getMaxEffects()){addLog(`Can only combine ${getMaxEffects()} effects at your level.`,'error');return;}
+    if(effectIds.length<1){addLog('Select at least one effect.','error');return;}
+    // Pattern research: free (prestige feature)
+    snapshot();
+    // DC scales with power level and number of effects
+    const baseDC=10+powerLevel*3+effectIds.length*2;
+    const ch=doCheck('research',baseDC);
+    const arcB=getPatternInscBonus();if(arcB){ch.total+=arcB;ch.extras.push({label:'Arcanist',val:arcB});}
+    const cfb=getFeatureVal('craftBonus');if(cfb){ch.total+=cfb;ch.extras.push({label:'Mastery',val:cfb});}
+    ch.success=ch.roll===1?false:ch.roll===20?true:ch.total>=baseDC;
+    if(ch.success){
+      const effects=effectIds.map(eid=>PATTERN_EFFECTS.find(e=>e.id===eid)).filter(Boolean);
+      const totalXp=effects.reduce((s,e)=>s+e.power[powerLevel],0);
+      const dc=baseDC;
+      const prefix=PATTERN_PREFIXES[Math.floor(Math.random()*PATTERN_PREFIXES.length)];
+      const suffix=PATTERN_SUFFIXES[Math.floor(Math.random()*PATTERN_SUFFIXES.length)];
+      const autoName=prefix+' '+suffix;
+      const name=(customName&&canNamePatterns())?customName:autoName;
+      const newPattern={
+        id:'cp_'+Date.now(),name,effects:effectIds,power:powerLevel,cat,
+        xp:totalXp,dc,sellMult:getPatternSellMult(),
+        effectDescs:effects.map(e=>e.icon+' '+e.name+' ('+PATTERN_POWER_NAMES[powerLevel]+')').join(' + '),
+      };
+      setCustomPatterns(prev=>[...prev,newPattern]);
+      gainXP(totalXp);
+      const FLAVOR=['The runes align in a configuration never before recorded. You have created something entirely new.',
+        'Arcane energy flows through the pattern like water finding its channel. It works!',
+        'Your theoretical framework proves correct — the pattern crystallizes into a stable enchantment formula.',
+        'The symbols on the page begin to glow faintly. This is no mere recipe — it is a theorem made real.'];
+      showResult('✨ Pattern Discovered! — '+name,'craft',
+        FLAVOR[Math.floor(Math.random()*FLAVOR.length)]+
+        '\n\nCategory: '+ENCH_CATS[cat]?.icon+' '+ENCH_CATS[cat]?.name+
+        '\nEffects: '+effects.map(e=>e.icon+' '+e.name+' — '+e.desc).join(', ')+
+        '\nPower: '+PATTERN_POWER_NAMES[powerLevel]+' · DC '+dc+
+        '\n+'+totalXp+' XP',ch);
+      addLog('✨ Arcanist: Designed new pattern — '+name+' ('+effects.map(e=>e.icon).join('')+')','quest');
+    } else {
+      gainXP(10);
+      const FAIL=['The runes destabilize and scatter. Your theory needs refinement.',
+        'The pattern almost holds... then collapses. You learned something from the failure.',
+        'Arcane feedback singes your notes. Back to the drawing board.'];
+      showResult('✨ Research Failed','info',
+        FAIL[Math.floor(Math.random()*FAIL.length)]+'\n+10 XP',ch);
+    }
+  };
+
+  const deletePattern=(patternId)=>{
+    setCustomPatterns(prev=>prev.filter(p=>p.id!==patternId));
+    addLog('Removed pattern from library.','info');
+  };
+
+  // ═══ MAGITECH ENGINEER — AUTOMATA ═══
+  const AUTOMATON_NAMES=['Alpha','Beta','Gamma','Delta','Epsilon','Zeta'];
+  const AUTOMATON_PORTRAITS={0:'auto_alpha.png',1:'auto_beta.png',2:'auto_gamma.png'};
+  const getAutoSlots=()=>{const mLv=prestigeLevels.magitech||0;return mLv>=5?3:mLv>=3?2:mLv>=1?1:0;};
+  const getAutoEfficiency=()=>{const mLv=prestigeLevels.magitech||0;return mLv>=4?1.0:mLv>=2?0.8:0.6;};
+  const getAutoLvl=(autoId)=>Math.min(5,Math.floor((automata.find(a=>a.id===autoId)?.xp||0)/80));
+  const canAutoEnchant=()=>(prestigeLevels.magitech||0)>=4;
+  const buildAutomaton=()=>{
+    if(automata.length>=getAutoSlots()){showResult('🤖 No Slots','error','Maximum automaton slots reached. Upgrade Magitech to unlock more.');return;}
+    if(energy<50){showResult('🤖 No Energy','error','Need 50 Energy to build an automaton.');return;}
+    const matCost=lmc({ironroot_bark:3,hearthstone:2});
+    if(!Object.entries(matCost).every(([id,q])=>(inv[id]||0)>=q)){showResult('🤖 Missing Materials','error','Need '+Object.entries(matCost).map(([id,q])=>q+'× '+(INGR[id]?.icon||'')+INGR[id]?.name+' (have '+(inv[id]||0)+')').join(' + '));return;}
+    snapshot();
+    // route through spendEnergy so Early Riser / Endurance fire correctly on the first action of the day.
+    spendEnergy(50);
+    Object.entries(matCost).forEach(([id,q])=>modInv(id,-q));
+    const ch=doCheck('precision',12);
+    const cfb=getFeatureVal('craftBonus');if(cfb){ch.total+=cfb;ch.extras.push({label:'Craft',val:cfb});}
+    ch.success=ch.roll===1?false:ch.roll===20?true:ch.total>=12;
+    if(ch.success){
+      const name='Unit '+AUTOMATON_NAMES[automata.length]||('Auto-'+(automata.length+1));
+      const newAuto={id:'auto_'+Date.now(),name,task:null,xp:0};
+      setAutomata(prev=>[...prev,newAuto]);
+      gainXP(40);
+      showResult('🔧 Automaton Built!','craft','🤖 '+name+' is ready for duty.\nAssign a task to begin autonomous operations.\n+40 XP',ch);
+      addLog('🤖 Built automaton: '+name,'quest');
+    } else {
+      // Partial refund
+      modInv(li('ironroot_bark'),1);modInv(li('hearthstone'),1);
+      showResult('🔧 Construction Failed','error','The frame didn\'t hold together. Some materials salvaged.\n+1 '+(INGR[li('ironroot_bark')]?.name||'material')+', +1 '+(INGR[li('hearthstone')]?.name||'material')+' returned.',ch);
+    }
+  };
+  const assignAutoTask=(autoId,type,target)=>{
+    setAutomata(prev=>prev.map(a=>a.id===autoId?{...a,task:type?{type,target}:null}:a));
+    const auto=automata.find(a=>a.id===autoId);
+    if(type)addLog('🤖 '+auto?.name+' assigned to '+(type==='brew'?'brewing':type==='forage'?'foraging':type==='shopkeep'?'shopkeeping':type==='enchant'?'enchanting':'idle'),'info');
+  };
+
+  // ═══ DIPLOMAT EMBASSY ═══
+  const getMaxEnvoys=()=>{const dLv=prestigeLevels?.diplomat||0;return dLv>=5?3:dLv>=3?2:dLv>=1?1:0;};
+  const getHarmonyCap=()=>{const dLv=prestigeLevels?.diplomat||0;return dLv>=5?3:dLv>=3?2:dLv>=1?1:0;};
+  const dispatchEnvoy=(pairId)=>{
+    const pair=FACTION_PAIRS.find(p=>p.id===pairId);if(!pair)return;
+    // Envoys are local-only: harmony pairs belong to their own zone's diplomacy.
+    if(pair.loc&&pair.loc!==gameLocation){addLog(`${pair.name} is a ${pair.loc} matter — travel there to send an envoy.`,'error');return;}
+    const currentHarmony=factionHarmony[pairId]||0;
+    if(currentHarmony>=getHarmonyCap()){addLog(`${pair.name} is already at max Harmony for your level.`,'error');return;}
+    const envoysToday=dayFlags.filter(f=>f==='envoy_sent').length;
+    if(envoysToday>=getMaxEnvoys()){addLog(`Maximum ${getMaxEnvoys()} envoys per day.`,'error');return;}
+    snapshot();
+    setDayFlags(f=>[...f,'envoy_sent']);
+    const ch=doCheck('persuasion',pair.dc+currentHarmony*2);
+    const netMod=getSkMod('networking');if(netMod>0){ch.total+=netMod;ch.extras.push({label:'Networking',val:netMod});}
+    ch.success=ch.roll===1?false:ch.roll===20?true:ch.total>=(pair.dc+currentHarmony*2);
+    if(ch.success){
+      const newHarmony=currentHarmony+1;
+      setFactionHarmony(prev=>({...prev,[pairId]:newHarmony}));
+      // Lv3+: envoys also grant personal rep
+      const dLv=prestigeLevels?.diplomat||0;
+      if(dLv>=3){pair.factions.forEach(fid=>addRep(fid,5));}
+      gainXP(20+newHarmony*10);
+      const SUCC=['The factions find common ground. A small step toward unity.','Your words bridge old grudges. Both sides leave with new respect.','"Perhaps we have more in common than we thought," they agree.'];
+      showResult('🤝 Envoy Successful! — Harmony '+newHarmony,'craft',
+        pair.icon+' '+pair.name+'\n'+SUCC[Math.floor(Math.random()*SUCC.length)]+
+        '\n\n'+pair.rewards[newHarmony-1]+
+        (dLv>=3?'\n+5 rep with both factions':''),ch);
+      addLog(`🤝 ${pair.name} Harmony → ${newHarmony}. ${pair.rewards[newHarmony-1]}`,'quest');
+      // Check for Grand Alliance (Diplomat Lv4)
+      if(dLv>=4){
+        const allMax=isGrandAlliance({...factionHarmony,[pairId]:newHarmony});
+        if(allMax){
+          showResult('🏛️ Grand Alliance Achieved!','craft',
+            '✨ All factions united under your diplomacy!\n+50% all reputation gains\n+25% sell prices\nA legendary ingredient joins your shop stock daily\n'+locName+' has never been stronger.');
+          addLog('🏛️ GRAND ALLIANCE! All faction pairs at Harmony 3. '+locName+' is united!','level');
+        }
+      }
+    } else {
+      gainXP(5);
+      const FAIL=['Old grudges run deep. The envoy returns without progress.','Both sides dig in. Diplomacy takes patience.','"Not today, alchemist. Some wounds need more time."'];
+      showResult('🤝 Envoy — No Progress','info',
+        pair.icon+' '+pair.name+'\n'+FAIL[Math.floor(Math.random()*FAIL.length)]+'\n+5 XP (for the effort)',ch);
+    }
+  };
+  // (getHarmonyBonus is defined next to getFeatureVal, which calls it.)
+
+  // ═══ STAFF ACADEMY (Master Trainer feat) ═══
+  // Training is a free action; it still snapshots for undo since it mutates staff state.
+  const trainApprentice=(apprId,statId)=>{
+    const ap=hiredAppr.find(a=>a.id===apprId);if(!ap)return;
+    snapshot();
+    // Persuasion check, with Networking added as a teaching bonus
+    const dc=10+Math.floor((ap.baseStat[statId]||10)/3);
+    const ch=doCheck('persuasion',dc);
+    const netMod=getSkMod('networking');if(netMod>0){ch.total+=netMod;ch.extras.push({label:'Networking',val:netMod});}
+    ch.success=ch.roll===1?false:ch.roll===20?true:ch.total>=dc;
+    const statName=STATS[statId]?.name||statId;
+    if(ch.success){
+      const gain=ch.total>=dc+5?2:1;
+      setHiredAppr(prev=>prev.map(a=>a.id!==apprId?a:{...a,baseStat:{...a.baseStat,[statId]:(a.baseStat[statId]||10)+gain}}));
+      gainXP(15+gain*5);
+      const SUCC=['Your instruction clicks — you can see the understanding dawn in their eyes.','A breakthrough session. The apprentice is visibly more capable.','"I think I get it now!" they exclaim, practicing the technique.'];
+      showResult('🎓 Training — '+ap.name,'craft',
+        statName+' +'+(gain>1?gain+'! (Excellent instruction)':gain)+
+        '\n'+SUCC[Math.floor(Math.random()*SUCC.length)],ch);
+      addLog(`🎓 Trained ${ap.name}: ${statName} +${gain}${gain>1?' (great success!)':''}`,'quest');
+    } else {
+      showResult('🎓 Training — '+ap.name,'info',
+        statName+' — the lesson didn\'t quite land today. Try again tomorrow.',ch);
+    }
+  };
+  const teachTrait=(apprId,traitId)=>{
+    const ap=hiredAppr.find(a=>a.id===apprId);if(!ap)return;
+    if(!playerFeats.includes('master_trainer')){addLog('Teaching traits requires Master Trainer feat.','error');return;}
+    if((ap.traits||[]).includes(traitId)){addLog(ap.name+' already has this trait.','error');return;}
+    if((ap.traits||[]).length>=4){addLog(ap.name+' has too many traits (max 4).','error');return;}
+    // Teach trait: free (spec feature)
+    snapshot();
+    const dc=15;
+    const ch=doCheck('persuasion',dc);ch.success=ch.roll===1?false:ch.roll===20?true:ch.total>=dc;
+    if(ch.success){
+      setHiredAppr(prev=>prev.map(a=>a.id===apprId?{...a,traits:[...(a.traits||[]),traitId]}:a));
+      gainXP(50);
+      showResult('🎓 Trait Taught! — '+ap.name,'craft',
+        '✨ Learned: '+traitId+'\n"'+ap.name+' has developed a new aptitude under your guidance."',ch);
+      addLog(`🎓 ${ap.name} learned trait: ${traitId}!`,'quest');
+    } else {
+      showResult('🎓 Trait Training Failed — '+ap.name,'info',
+        traitId+' — the concept is too advanced for now. Try again later.',ch);
+    }
+  };
+  // Process curriculum (auto-training over multiple days)
+  const processCurriculum=()=>{
+    if(!playerFeats.includes('master_trainer'))return[];
+    const results=[];
+    Object.entries(trainingSessions).forEach(([apId,session])=>{
+      if(!session||session.daysLeft<=0)return;
+      const ap=hiredAppr.find(a=>a.id===apId);if(!ap)return;
+      const gain=1;
+      setHiredAppr(prev=>prev.map(a=>{
+        if(a.id!==apId)return a;
+        return{...a,baseStat:{...a.baseStat,[session.stat]:(a.baseStat[session.stat]||10)+gain}};
+      }));
+      const newDays=session.daysLeft-1;
+      if(newDays<=0){
+        setTrainingSessions(prev=>{const n={...prev};delete n[apId];return n;});
+        results.push({icon:'🎓',label:ap.name+' curriculum complete',val:STATS[session.stat]?.name+' +3 total',color:TH.green});
+      } else {
+        setTrainingSessions(prev=>({...prev,[apId]:{...session,daysLeft:newDays}}));
+        results.push({icon:'🎓',label:ap.name+' training',val:STATS[session.stat]?.name+' +1 ('+newDays+' days left)',color:TH.gold});
+      }
+    });
+    return results;
+  };
+  const startCurriculum=(apprId,statId)=>{
+    if(!playerFeats.includes('master_trainer')){addLog('Curricula require Master Trainer feat.','error');return;}
+    if(trainingSessions[apprId]){addLog('This apprentice is already in a curriculum.','error');return;}
+    setTrainingSessions(prev=>({...prev,[apprId]:{stat:statId,daysLeft:3}}));
+    const ap=hiredAppr.find(a=>a.id===apprId);
+    addLog(`🎓 Started 3-day ${STATS[statId]?.name} curriculum for ${ap?.name||'apprentice'}.`,'info');
+    showResult('🎓 Curriculum Started','craft',
+      (ap?.name||'Apprentice')+' begins intensive '+STATS[statId]?.name+' training.\n+1 per day for 3 days (auto-applied each morning).');
+  };
+
+  // ═══ QUARTERMASTER SUPPLY NETWORK ═══
+  const getMaxCaravans=()=>{const qLv=eCL('warden');return qLv>=10?3:qLv>=6?2:1;};
+  const getMaxChains=()=>{const qLv=eCL('warden');return qLv>=10?6:qLv>=6?4:2;};
+  const getMaxChainTier=()=>{const qLv=eCL('warden');return qLv>=10?3:qLv>=6?2:1;};
+  const dispatchCaravan=(routeId,cargo)=>{
+    const route=CARAVAN_ROUTES.find(r=>r.id===routeId);if(!route)return;
+    const activeCaravans=caravans.filter(c=>c.returnDay>day);
+    if(activeCaravans.length>=getMaxCaravans()){addLog(`Maximum ${getMaxCaravans()} active caravans.`,'error');return;}
+    // Cargo: player loads potions or ingredients
+    const totalCargo=Object.values(cargo).reduce((s,v)=>s+v,0);
+    if(totalCargo<1){addLog('Load at least 1 item as cargo.','error');return;}
+    // Caravan dispatch: free (spec feature)
+    // Verify cargo exists in inventory
+    const isPotion=Object.keys(cargo).some(id=>RECIPES.find(r=>r.id===id));
+    const hasAll=Object.entries(cargo).every(([id,q])=>isPotion?(pots[id]||0)>=q:(inv[id]||0)>=q);
+    if(!hasAll){addLog('Not enough items to load.','error');return;}
+    snapshot();
+    // Consume cargo
+    if(isPotion)setPots(p=>{const n={...p};Object.entries(cargo).forEach(([id,q])=>{n[id]=Math.max(0,(n[id]||0)-q);});return n;});
+    else setInv(p=>{const n={...p};Object.entries(cargo).forEach(([id,q])=>{n[id]=Math.max(0,(n[id]||0)-q);});return n;});
+    const qLv=eCL('warden');
+    const tripDays=Math.max(1,route.roundTrip-(qLv>=6?1:0)-getFeatureVal('caravanSpeedBonus'));
+    setCaravans(prev=>[...prev,{id:'cv_'+Math.random().toString(36).slice(2),routeId,sentDay:day,returnDay:day+tripDays,cargo:{...cargo},resolved:false}]);
+    setCaravanRuns(prev=>({...prev,[routeId]:(prev[routeId]||0)+1}));
+    const cargoStr=Object.entries(cargo).map(([id,q])=>(INGR[id]?.icon||RECIPES.find(r=>r.id===id)?.icon||'')+(INGR[id]?.name||RECIPES.find(r=>r.id===id)?.name||id)+'×'+q).join(', ');
+    showResult('🚚 Caravan Dispatched!','craft',route.icon+' '+route.name+'\nCargo: '+cargoStr+'\nReturns in '+tripDays+' day'+(tripDays>1?'s':''));
+    addLog(`🚚 Caravan sent on ${route.icon}${route.name}. Returns day ${day+tripDays}.`,'quest');
+  };
+  const establishChain=(partnerId)=>{
+    const partner=SUPPLY_PARTNERS.find(p=>p.id===partnerId);if(!partner)return;
+    if(supplyChains.find(sc=>sc.partnerId===partnerId)){addLog('Already established this supply chain.','error');return;}
+    if(supplyChains.length>=getMaxChains()){addLog(`Maximum ${getMaxChains()} supply chains.`,'error');return;}
+    if(partner.legendary&&eCL('warden')<10){addLog('Legendary partners require Warden Lv10.','error');return;}
+    const runs=caravanRuns[partner.route]||0;
+    if(runs<partner.runsNeeded){addLog(`Need ${partner.runsNeeded} caravan runs on ${CARAVAN_ROUTES.find(r=>r.id===partner.route)?.name||'this route'} (${runs}/${partner.runsNeeded}).`,'error');return;}
+    if(gold<partner.setupCost){addLog(`Need ${fmtMoney(partner.setupCost)} to establish this supply chain.`,'error');return;}
+    snapshot();
+    setGold(g=>g-partner.setupCost);
+    setSupplyChains(prev=>[...prev,{partnerId,tier:1}]);
+    gainXP(partner.setupCost);
+    showResult('🤝 Supply Chain Established!','craft',partner.icon+' '+partner.name+'\n'+partner.desc+'\nTier 1 — delivers daily for '+fmtMoney(partner.maint)+'/day maintenance.');
+    addLog(`🤝 Established supply chain with ${partner.icon}${partner.name}!`,'quest');
+  };
+  const upgradeChain=(partnerId)=>{
+    const sc=supplyChains.find(s=>s.partnerId===partnerId);if(!sc)return;
+    const partner=SUPPLY_PARTNERS.find(p=>p.id===partnerId);if(!partner)return;
+    const maxTier=getMaxChainTier();
+    if(sc.tier>=maxTier){addLog('Max tier for current Warden level.','error');return;}
+    const upgCost=partner.setupCost*sc.tier;
+    if(gold<upgCost){addLog(`Upgrade costs ${fmtMoney(upgCost)}.`,'error');return;}
+    snapshot();setGold(g=>g-upgCost);
+    setSupplyChains(prev=>prev.map(s=>s.partnerId===partnerId?{...s,tier:s.tier+1}:s));
+    gainXP(upgCost);
+    showResult('📈 Supply Chain Upgraded!','craft',partner.icon+' '+partner.name+' → Tier '+(sc.tier+1)+'\nIncreased output and '+(['','','rare ingredients','rare ingredients + passive gold'][sc.tier+1]||'bonuses'));
+  };
+
+  // ═══ CONSTRUCTOR BLUEPRINTS ═══
+  const getBPSlots=()=>{const cLv=eCL('artificer');return cLv>=10?6:cLv>=6?4:2;};
+  const hasSanctum=()=>blueprints.some(b=>b.bpId==='bp_sanctum'&&b.complete);
+  const draftBlueprint=(bpId)=>{
+    const bp=CONSTRUCTOR_BPS.find(b=>b.id===bpId);if(!bp)return;
+    if(blueprints.find(b=>b.bpId===bpId)){addLog('You already have this blueprint.','error');return;}
+    const activeCount=blueprints.length;
+    if(activeCount>=getBPSlots()){addLog(`You can only have ${getBPSlots()} active blueprints.`,'error');return;}
+    if(bp.legendary&&eCL('artificer')<10){addLog('Legendary blueprints require Artificer Lv10.','error');return;}
+    // Blueprint draft: free (spec feature)
+    snapshot();
+    const ch=doCheck('research',bp.draftDC);
+    const cfb=getFeatureVal('craftBonus');if(cfb){ch.total+=cfb;ch.extras.push({label:'Craft',val:cfb});}
+    ch.success=ch.roll===1?false:ch.roll===20?true:ch.total>=bp.draftDC;
+    if(!ch.success){
+      showResult('🏗️ Draft Failed — '+bp.name,'error',bp.icon+' '+bp.desc+'\nThe calculations don\'t add up. Try again tomorrow.',ch);return;
+    }
+    setBlueprints(prev=>[...prev,{id:'bp_'+Math.random().toString(36).slice(2),bpId,drafted:true,buildProgress:0,complete:false}]);
+    gainXP(bp.draftDC*3);
+    showResult('🏗️ Blueprint Drafted! — '+bp.icon+' '+bp.name,'craft',
+      bp.desc+'\nReady to build — '+bp.buildSessions+' build sessions required.\nEffect: '+bp.effectDesc,ch);
+    addLog(`🏗️ Drafted blueprint for ${bp.icon}${bp.name}. ${bp.buildSessions} sessions to build.`,'quest');
+  };
+  const buildBlueprint=(blueprintId)=>{
+    const entry=blueprints.find(b=>b.id===blueprintId);if(!entry||entry.complete)return;
+    const bp=CONSTRUCTOR_BPS.find(b=>b.id===entry.bpId);if(!bp)return;
+    const cLv=eCL('artificer');
+    const energyCost=cLv>=6?13:25;const sanctumBonus=hasSanctum()&&entry.bpId!=='bp_sanctum';
+    const sessionsNeeded=sanctumBonus?Math.ceil(bp.buildSessions/2):bp.buildSessions;
+    if(energy<energyCost){addLog(`Building takes ${energyCost} Energy.`,'error');return;}
+    // Check materials (cost spread across sessions)
+    const sessionFrac=1/sessionsNeeded;
+    const matCheck={};Object.entries(lmc(bp.matCost)).forEach(([id,q])=>{matCheck[id]=Math.max(1,Math.ceil(q*sessionFrac));});
+    const hasMats=Object.entries(matCheck).every(([id,q])=>(inv[id]||0)>=q);
+    if(!hasMats){addLog('Not enough materials for this build session.','error');return;}
+    snapshot();
+    spendEnergy(energyCost); // the button and the Lv6 discount both advertise this cost
+    setInv(p=>{const n={...p};Object.entries(matCheck).forEach(([id,q])=>{n[id]=Math.max(0,(n[id]||0)-q);});return n;});
+    const ch=doCheck('precision',bp.draftDC-2);
+    const cfb=getFeatureVal('craftBonus');if(cfb){ch.total+=cfb;ch.extras.push({label:'Craft',val:cfb});}
+    ch.success=ch.roll===1?false:ch.roll===20?true:ch.total>=(bp.draftDC-2);
+    if(!ch.success){
+      showResult('🏗️ Build Session — '+bp.name,'info',bp.icon+' The work is slow today. No progress, but no damage either.\nProgress: '+entry.buildProgress+'/'+sessionsNeeded,ch);return;
+    }
+    const newProg=entry.buildProgress+1;
+    const done=newProg>=sessionsNeeded;
+    setBlueprints(prev=>prev.map(b=>b.id===blueprintId?{...b,buildProgress:newProg,complete:done}:b));
+    gainXP(Math.floor(bp.draftDC*2));
+    if(done){
+      showResult('🏗️ Construction Complete! — '+bp.icon+' '+bp.name,'craft',
+        '🎉 '+bp.desc+'\n\nEffect now active: '+bp.effectDesc,ch);
+      addLog(`🏗️ Completed ${bp.icon}${bp.name}! ${bp.effectDesc}`,'quest');
+    } else {
+      const PROG=['Walls going up. Good progress.','Foundation is solid. Moving to the frame.','The structure takes shape.','Another day of honest work.'];
+      showResult('🏗️ Build Session — '+bp.icon+' '+bp.name,'craft',
+        PROG[Math.floor(Math.random()*PROG.length)]+'\nProgress: '+newProg+'/'+sessionsNeeded,ch);
+    }
+  };
+
+  // ═══ RECLAIMER DECONSTRUCTION LAB ═══
+  const breakdownPotion=(potionId)=>{
+    if((pots[potionId]||0)<1){addLog('No potions of that type in stock.','error');return;}
+    const recipe=RECIPES.find(r=>r.id===potionId);if(!recipe)return;
+    if(energy<25){addLog('Breaking down a potion takes 25 Energy.','error');return;}
+    snapshot();spendEnergy(25);
+    setPots(p=>({...p,[potionId]:Math.max(0,(p[potionId]||0)-1)}));
+    const rcLv=eCL('artificer');
+    // Lv6+ = 100% recovery, else precision check determines yield
+    let recoveryPct=1.0;
+    if(rcLv<6){
+      const ch=doCheck('precision',10);
+      const cfb=getFeatureVal('craftBonus');if(cfb){ch.total+=cfb;}
+      recoveryPct=ch.success?(ch.total>=15?0.75:0.50):0.25;
+    }
+    // Lv10 = 150% yield
+    if(rcLv>=10)recoveryPct=1.5;
+    const recovered={};
+    recipe.ingr.forEach(id=>{const lid=li(id);if(Math.random()<recoveryPct){recovered[lid]=(recovered[lid]||0)+1;}});
+    // Guarantee at least 1 ingredient
+    if(Object.keys(recovered).length===0){const lid=li(recipe.ingr[0]);recovered[lid]=1;}
+    setInv(p=>{const n={...p};Object.entries(recovered).forEach(([id,q])=>{n[id]=(n[id]||0)+q;});return n;});
+    gainXP(Math.floor(recipe.xp*0.3));
+    const recStr=Object.entries(recovered).map(([id,q])=>(INGR[id]?.icon||id)+'×'+q).join(' ');
+    showResult('♻️ Potion Breakdown — '+recipe.icon+' '+recipe.name,'craft',
+      'Recovered: '+recStr+'\n+'+Math.floor(recipe.xp*0.3)+' XP');
+  };
+  const reclaimerTransmute=(srcId,tgtId)=>{
+    const rcLv=eCL('artificer');
+    const ratio=rcLv>=6?2:3;
+    if((inv[srcId]||0)<ratio){addLog(`Need ${ratio} of that ingredient to transmute.`,'error');return;}
+    // Transmutation is free (spec feature)
+    snapshot();
+    setInv(p=>({...p,[srcId]:Math.max(0,(p[srcId]||0)-ratio),[tgtId]:(p[tgtId]||0)+1}));
+    gainXP(8);
+    showResult('♻️ Transmuted!','craft',(INGR[srcId]?.icon||srcId)+'×'+ratio+' → '+(INGR[tgtId]?.icon||tgtId)+'×1\n+8 XP');
+  };
+  const doSalvageAuction=(items)=>{
+    // items = {ingredientId: qty, ...}
+    const totalItems=Object.values(items).reduce((s,v)=>s+v,0);
+    if(totalItems<1)return;
+    if(dayFlags.includes('salvage_auction_used')){addLog('Salvage auction already used today.','error');return;}
+    snapshot();
+    setDayFlags(f=>[...f,'salvage_auction_used']);
+    setInv(p=>{const n={...p};Object.entries(items).forEach(([id,q])=>{n[id]=Math.max(0,(n[id]||0)-q);});return n;});
+    const rcLv=eCL('artificer');
+    // Gold based on ingredient rarity
+    let goldTotal=0;let xpTotal=0;
+    Object.entries(items).forEach(([id,q])=>{
+      const v=INGR[id]?.val||5;const rarity=v<10?1:v<20?2:v<30?3:4; // rarity tier from ingredient value
+      goldTotal+=q*(2+rarity*3);xpTotal+=q*(1+rarity*2);
+    });
+    setGold(g=>g+goldTotal);gainXP(xpTotal);
+    // Lv10: chance of rare ingredient trade
+    let tradeResult='';
+    if(rcLv>=10&&Math.random()<0.35){
+      const rareIngr=byZone({tidecrest:['deep_coral','abyssal_pearl','reef_crystal','living_coral','giant_clam_pearl','nautilus_shell'],ashfall:['moonpetal','volcanic_essence','embervein','starwort','heatstone','ashite'],base:['moonpetal','volcanic_essence','embervein','starwort','deep_crystal','ashite']});
+      const tradeId=rareIngr[Math.floor(Math.random()*rareIngr.length)];
+      setInv(p=>({...p,[tradeId]:(p[tradeId]||0)+1}));
+      tradeResult='\n⭐ The buyer offers a trade: '+(INGR[tradeId]?.icon||tradeId)+' '+(INGR[tradeId]?.name||tradeId)+'!';
+    }
+    showResult('♻️ Salvage Auction','craft',
+      'Sold '+totalItems+' ingredients in bulk.\n+'+fmtMoney(goldTotal)+' +'+xpTotal+' XP'+tradeResult);
+  };
+
+  // ═══ TINKERER GADGETS ═══
+  const getGadgetSlots=()=>{const tkLv=eCL('artificer');const base=tkLv>=10?6:tkLv>=6?4:2;return base+(getFeatureVal('dualGadgets')?2:0);};
+  const getMaxMk=()=>{const tkLv=eCL('artificer');return tkLv>=10?3:tkLv>=6?2:1;};
+  const craftGadget=(bpId)=>{
+    const bp=GADGET_BLUEPRINTS.find(b=>b.id===bpId);if(!bp)return;
+    // Check if already own this gadget
+    const existing=gadgets.find(g=>g.blueprintId===bpId);
+    if(existing){addLog('You already own a '+bp.name+'. Try upgrading it instead.','error');return;}
+    if(bp.legendary&&getMaxMk()<3){addLog('Legendary gadgets require Tinkerer Lv10.','error');return;}
+    const hasMats=Object.entries(lmc(bp.matCost)).every(([id,q])=>(inv[id]||0)>=q);
+    if(!hasMats){addLog('Not enough materials to craft '+bp.name+'.','error');return;}
+    // Gadget craft: free (spec feature)
+    snapshot();
+    setInv(p=>{const n={...p};Object.entries(lmc(bp.matCost)).forEach(([id,q])=>{n[id]=Math.max(0,(n[id]||0)-q);});return n;});
+    const ch=doCheck('precision',bp.dc);
+    const cfb=getFeatureVal('craftBonus');if(cfb){ch.total+=cfb;ch.extras.push({label:'Craft',val:cfb});}
+    ch.success=ch.roll===1?false:ch.roll===20?true:ch.total>=bp.dc;
+    if(!ch.success){
+      showResult('⚙️ Gadget Failed — '+bp.name,'error',bp.icon+' '+bp.desc+'\nThe mechanism jams. Materials consumed.',ch);return;
+    }
+    const equipped=gadgets.filter(g=>g.equipped).length<getGadgetSlots();
+    setGadgets(prev=>[...prev,{id:'gd_'+Math.random().toString(36).slice(2),blueprintId:bpId,mk:1,equipped}]);
+    gainXP(bp.dc*5);
+    showResult('⚙️ Gadget Crafted! — '+bp.icon+' '+bp.name+' Mk I','craft',
+      bp.desc+'\nEffect: '+bp.effectDesc[0]+(equipped?'\nAuto-equipped!':'\nSlots full — equip from gadget bench.'),ch);
+    addLog(`⚙️ Built ${bp.icon}${bp.name} Mk I. ${bp.effectDesc[0]}`,'quest');
+  };
+  const upgradeGadget=(gadgetId)=>{
+    const g=gadgets.find(x=>x.id===gadgetId);if(!g)return;
+    const bp=GADGET_BLUEPRINTS.find(b=>b.id===g.blueprintId);if(!bp)return;
+    const maxMk=getMaxMk();
+    if(g.mk>=maxMk){addLog('Max upgrade level reached for current Tinkerer level.','error');return;}
+    // Upgrade costs scaled materials
+    const costMult=g.mk+1;
+    const hasMats=Object.entries(lmc(bp.matCost)).every(([id,q])=>(inv[id]||0)>=q*costMult);
+    if(!hasMats){addLog(`Upgrading to Mk ${g.mk+1} requires ${costMult}× base materials.`,'error');return;}
+    // Gadget upgrade: free (spec feature)
+    snapshot();
+    setInv(p=>{const n={...p};Object.entries(lmc(bp.matCost)).forEach(([id,q])=>{n[id]=Math.max(0,(n[id]||0)-q*costMult);});return n;});
+    const newMk=g.mk+1;
+    setGadgets(prev=>prev.map(x=>x.id===gadgetId?{...x,mk:newMk}:x));
+    gainXP(bp.dc*3*newMk);
+    showResult('⚙️ Upgraded! — '+bp.icon+' '+bp.name+' Mk '+['I','II','III'][newMk-1],'craft',
+      'Effect: '+bp.effectDesc[newMk-1],'');
+    addLog(`⚙️ Upgraded ${bp.icon}${bp.name} to Mk ${['I','II','III'][newMk-1]}. ${bp.effectDesc[newMk-1]}`,'quest');
+  };
+  const toggleGadget=(gadgetId)=>{
+    const g=gadgets.find(x=>x.id===gadgetId);if(!g)return;
+    if(g.equipped){setGadgets(prev=>prev.map(x=>x.id===gadgetId?{...x,equipped:false}:x));return;}
+    const equipped=gadgets.filter(x=>x.equipped).length;
+    if(equipped>=getGadgetSlots()){addLog('All gadget slots are full. Unequip one first.','error');return;}
+    setGadgets(prev=>prev.map(x=>x.id===gadgetId?{...x,equipped:true}:x));
+  };
+
+  // ─── SHOP SHELVES ───
+  const compShelfBonus=(()=>{let b=0;companions.filter(c=>c.active).forEach(c=>{const comp=RANGER_COMPANIONS.find(r=>r.id===c.compId);if(comp?.secondary?.type==='organize'&&c.loyalty>=(comp.secondary.unlockLv||3))b+=c.loyalty;});return b;})();
+  // Phase-4 follow-up fix: previously `getFeatureVal('shelfCapBonus')` was applied twice via an additional
+  // `+ Math.floor(getFeatureVal('shelfCapBonus'))` term, silently doubling Organized Shelves (+4 → +8) and
+  // Supply Lines (+2 → +4). Single-apply restores the intended balance.
+  const baseShelf=(upActive('display')?12:upActive('shopfront')?8:4)+upEff('displaySlots')+getFeatureVal('shelfCapBonus')+compShelfBonus;
+  const SHELF_MAX=Math.floor(baseShelf*((getFeatureVal('doubleStorage')||upActive('vault'))?2:1));
+  const shelfTotal=Object.values(shelves).reduce((s,v)=>s+v,0);
+  const stockShelf=(potId,qty)=>{
+    if((pots[potId]||0)<qty||shelfTotal+qty>SHELF_MAX)return;
+    modPot(potId,-qty);setShelves(p=>({...p,[potId]:(p[potId]||0)+qty}));
+  };
+  const unstockShelf=(potId,qty)=>{
+    const onShelf=shelves[potId]||0;if(onShelf<qty)return;
+    modPot(potId,qty);setShelves(p=>{const n={...p};n[potId]=(n[potId]||0)-qty;if(n[potId]<=0)delete n[potId];return n;});
+  };
+
+  // ─── QUESTS ───
+  const acceptQ=q=>{if(!aQ.find(a=>a.id===q.id)){setAQ(p=>[...p,q]);addLog(`📜 ${q.giver} entrusts you with "${q.name}." ${q.hint||''}`,'quest');
+    // Auto-learn recipes required by quest
+    if(q.type==='deliver'){const r=RECIPES.find(r=>r.id===q.target);if(r&&!known.includes(r.id)){setKnown(p=>[...p,r.id]);addLog('📖 '+q.giver+' shares the recipe for '+r.icon+r.name+'!','quest');}}
+    if(q.type==='multi'){q.targets.forEach(t=>{const r=RECIPES.find(r=>r.id===t);if(r&&!known.includes(r.id)){setKnown(p=>[...p,r.id]);addLog('📖 '+q.giver+' shares the recipe for '+r.icon+r.name+'!','quest');}});}
+    const obj=qObj(q);const navTo=q.type==='gather'?'worldmap':'workshop';const navLabel=q.type==='gather'?'🗺️ Go Forage':'⚗️ Go to Workshop';
+    setNews(p=>[...p,{icon:'📜',text:`New quest: ${obj}`,to:navTo,label:navLabel,color:TH.cyan}]);
+  }};
+  const qP=q=>{if(q.type==='deliver'){return{c:countAllPots(q.target),n:q.count};}if(q.type==='gather')return{c:inv[q.target]||0,n:q.count};if(q.type==='multi')return{c:q.targets.every(t=>countAllPots(t)>=1)?1:0,n:1};return{c:0,n:1};};
+  // Quest objective description
+  const qObj=q=>{
+    if(q.type==='deliver'){const r=RECIPES.find(r=>r.id===q.target);return r?`Craft and deliver ${q.count}× ${r.icon}${r.name} to ${q.giver}`:`Deliver ${q.count}× ${q.target}`;}
+    if(q.type==='gather'){const ing=INGR[q.target];return ing?`Gather ${q.count}× ${ing.icon}${ing.name} for ${q.giver}`:`Gather ${q.count}× ${q.target}`;}
+    if(q.type==='multi'){return `Deliver ${q.targets.map(t=>{const r=RECIPES.find(r=>r.id===t);return r?`1× ${r.icon}${r.name}`:`1× ${t}`;}).join(' + ')} to ${q.giver}`;}
+    return 'Complete the objective.';
+  };
+  // Quest step-by-step guidance with navigation targets
+  const qSteps=q=>{
+    const steps=[];
+    const turnInScreen=q.loc==='market'?'market':'tavern';
+    const turnInLabel=q.loc==='market'?`🛒 Go to ${zui.market} (${q.giver})`:q.loc==='chapel'?`${zui.chapelTurnIn} (${q.giver})`:`🍺 Go to ${zui.tavernShort} (${q.giver})`;
+    if(q.type==='deliver'){
+      const r=RECIPES.find(r=>r.id===q.target);
+      if(r){
+        const have=countAllPots(q.target);
+        if(have<q.count){
+          const need=q.count-have;
+          steps.push({done:false,text:`Brew ${need} more ${r.icon}${r.name}`,nav:{to:'workshop',label:'⚗️ Go to Workshop'}});
+          const canBrew=r.ingr.every(id=>(inv[li(id)]||0)>=1);
+          if(!canBrew){
+            steps.push({done:false,text:`Need: ${r.ingr.map(id=>{const lid=li(id);return `${INGR[lid]?.icon||''}${INGR[lid]?.name||lid} (have ${inv[lid]||0})`;}).join(', ')}`});
+            const regions=locRegions.filter(reg=>reg.ingr.some(i=>r.ingr.map(x=>li(x)).includes(i)&&(inv[i]||0)<1));
+            if(regions.length>0)steps.push({done:false,text:`Forage at ${regions.slice(0,2).map(rr=>`${rr.icon}${rr.name}`).join(' or ')}`,nav:{to:'worldmap',label:'🗺️ Go to Wilds'}});
+            steps.push({done:false,text:'Or buy ingredients',nav:{to:'market',label:'🛒 Go to Market'}});
+          } else {
+            steps.push({done:true,text:'Have ingredients — ready to brew!',nav:{to:'workshop',label:'⚗️ Brew Now'}});
+          }
+        } else {
+          steps.push({done:true,text:`${r.icon}${r.name} ×${have} ready`});
+          steps.push({done:false,text:`Turn in to ${q.giver}`,nav:{to:turnInScreen,label:turnInLabel,npc:q.giver.toLowerCase().replace(/ /g,'_')}});
+        }
+      }
+    } else if(q.type==='gather'){
+      const ing=INGR[q.target];const have=inv[q.target]||0;
+      if(have<q.count){
+        steps.push({done:false,text:`Gather ${q.count-have} more ${ing?.icon||''}${ing?.name||q.target} (${have}/${q.count})`});
+        const regions=locRegions.filter(reg=>reg.ingr.includes(q.target));
+        if(regions.length>0)steps.push({done:false,text:`Found at ${regions.map(r=>`${r.icon}${r.name}`).join(', ')}`,nav:{to:'worldmap',label:'🗺️ Go to Wilds'}});
+        steps.push({done:false,text:'Or buy from shop',nav:{to:'market',label:'🛒 Go to Market'}});
+      } else {
+        steps.push({done:true,text:`${ing?.icon||''}${ing?.name||q.target} ×${have} collected`});
+        steps.push({done:false,text:`Turn in to ${q.giver}`,nav:{to:turnInScreen,label:turnInLabel,npc:q.giver.toLowerCase().replace(/ /g,'_')}});
+      }
+    } else if(q.type==='multi'){
+      const allDone=q.targets.every(t=>countAllPots(t)>=1);
+      q.targets.forEach(t=>{
+        const r=RECIPES.find(r=>r.id===t);const have=countAllPots(t)>=1;
+        if(have)steps.push({done:true,text:`${r?`${r.icon}${r.name}`:t} ready`});
+        else steps.push({done:false,text:`Brew ${r?`${r.icon}${r.name}`:t}`,nav:{to:'workshop',label:'⚗️ Go to Workshop'}});
+      });
+      if(allDone)steps.push({done:false,text:`Turn in to ${q.giver}`,nav:{to:turnInScreen,label:turnInLabel,npc:q.giver.toLowerCase().replace(/ /g,'_')}});
+    }
+    return steps;
+  };
+  // Archivist: award one random undiscovered lore fragment from `pool`, announcing a completed chain if it finishes one
+  const grantLoreFragment=(pool,arcLv)=>{
+    if(!pool.length)return;
+    const frag=pool[Math.floor(Math.random()*pool.length)];
+    setLoreFragments(prev=>[...prev,frag.id]);
+    const chain=LORE_CHAINS[frag.chainId];
+    const nowComplete=chain.fragments.every(f=>f.id===frag.id||loreFragments.includes(f.id));
+    const fragXp=arcLv>=6?40:20;
+    gainXP(fragXp);
+    addLog(`📜 Lore Fragment: "${frag.name}" — ${frag.desc} (+${fragXp}XP)`,'quest');
+    if(nowComplete){
+      addLog(`📜 LORE CHAIN COMPLETE: ${chain.icon} ${chain.name}! ${chain.rewardDesc}`,'level');
+      showResult('📜 Lore Chain Complete!','craft',chain.icon+' '+chain.name+'\n\n'+chain.desc+'\n\nReward: '+chain.rewardDesc);
+    } else {
+      showResult('📜 Lore Fragment Discovered','info',chain.icon+' '+chain.name+'\n"'+frag.name+'"\n\n'+frag.desc+'\n+'+fragXp+' XP');
+    }
+  };
+  const compQ=q=>{
+    snapshot();
+    let qConsumed={std:0,fine:0,mw:0,gm:0};
+    if(q.type==='deliver'){const c=consumePots(q.target,q.count);Object.keys(c).forEach(k=>{qConsumed[k]+=c[k];});}
+    else if(q.type==='gather')modInv(q.target,-q.count);
+    else if(q.type==='multi')q.targets.forEach(t=>{const c=consumePots(t,1);Object.keys(c).forEach(k=>{qConsumed[k]+=c[k];});});
+    const qQB=qualityBonusMult(qConsumed);
+    setAQ(p=>p.filter(a=>a.id!==q.id));setDoneQ(p=>[...p,q.id]);const loreXp=getFeatureVal('questXPFlat');
+    const _dipLvQ=prestigeLevels?.diplomat||0;const qGoldB=1+getFeatureVal('questGoldBonus')+(_dipLvQ>=2?0.30:0)+(getSeason(day,gameLocation).questGoldMod||0);const qRepFlat=getFeatureVal('questRepBonus')+(_dipLvQ>=1?10:0);/* flat bonus rep */const qXpB=1+getFeatureVal('questXPBonus');
+    const qGold=Math.floor(q.gold*qGoldB*qQB.mult*GOLD_MULT);
+    gainXP(Math.floor((q.xp+loreXp)*qXpB*qQB.mult));setGold(g=>g+qGold);
+    if(q.items?.length)q.items.forEach(id=>modInv(id,1));if(q.faction&&q.fRep)addRep(q.faction,q.fRep+qRepFlat);
+    // Temple Healing: restore 1 energy on quest completion
+    const questER=getFeatureVal('questEnergyRestore');if(questER>0){setEnergy(h=>h+questER);addLog('\u26a1 Temple Healing: +'+questER+' Energy restored!','info');}
+    // Faction tier 3 bonus: chance for bonus faction resource on quest complete
+    if(q.faction){const fRes=FACTIONS[q.faction]?.res;if(fRes){const dropChance=getFeatureVal('factionBonusDrop_'+fRes);if(dropChance>0&&Math.random()<dropChance){modInv(fRes,1);addLog(`✨ Faction bonus: +1 ${INGR[fRes]?.icon||''} ${INGR[fRes]?.name||fRes} from ${FACTIONS[q.faction].name} reputation!`,'info');}}}
+    addLog(`✅ "${q.name}" complete! ${q.giver} rewards you with ${fmtMoney(qGold)} and grateful thanks. (+${Math.floor((q.xp+loreXp)*qXpB*qQB.mult)}XP${loreXp>0?' incl. 📖Lore +'+loreXp:''}${qGoldB>1?' incl. quest coin bonus':''}${qQB.label}${q.faction?' | '+FACTIONS[q.faction]?.icon+'+'+(q.fRep+qRepFlat)+' rep':''})`,'quest');
+    {const doneNow=[...doneQ,q.id];
+    if(locQuests.every(x=>doneNow.includes(x.id)))earnMilestone('all_quests'); // every quest in this town
+    // Faction chain completion milestones (Cindervale chains keep their original milestone ids)
+    if(q.chain&&QUESTS.filter(x=>x.chain===q.chain).every(x=>doneNow.includes(x.id)))earnMilestone(({ashwardens:'ash_chain',hearthkeepers:'hk_chain',veilwalkers:'vw_chain',cinderfolk:'cf_chain'})[q.chain]||q.chain+'_chain');}
+    // ═══ ARCHIVIST LORE FRAGMENT DISCOVERY ═══
+    if(eSpec('scholar')==='archivist'){
+      const arcLv=eCL('scholar');
+      const fragChance=(arcLv>=10?0.50:arcLv>=6?0.40:0.30)+getFeatureVal('loreDropChance');
+      if(Math.random()<fragChance){
+        const qFaction=q.faction?[q.faction]:[locFaction('hearthkeepers',gameLocation)];
+        const undiscovered=ALL_LORE_FRAGMENTS.filter(f=>!loreFragments.includes(f.id)&&f.factions.some(ff=>qFaction.includes(ff)));
+        grantLoreFragment(undiscovered,arcLv);
+      }
+    }
+  };
+  const availQ=locQuests.filter(q=>!doneQ.includes(q.id)&&!aQ.find(a=>a.id===q.id)&&level>=q.unlock&&(!q.fReq||getRL(q.faction)>=q.fReq)&&(!q.reqQuest||doneQ.includes(q.reqQuest)));
+
+  // ─── BOARD QUESTS (repeatable) ───
+  const acceptBQ=(bq)=>{
+    if(activeBQ.length>=3)return; // max 3 active board quests
+    setBoardQ(p=>p.filter(q=>q.id!==bq.id));
+    setActiveBQ(p=>[...p,bq]);
+    addLog(`📌 Accepted board request: ${bq.name}`,'quest');
+  };
+  const bqProgress=(bq)=>{
+    if(bq.type==='deliver'){return{c:countAllPots(bq.target),n:bq.count};}
+    if(bq.type==='gather')return{c:inv[bq.target]||0,n:bq.count};
+    return{c:0,n:bq.count};
+  };
+  const completeBQ=(bq)=>{
+    snapshot();
+    let bqConsumed={std:0,fine:0,mw:0,gm:0};
+    if(bq.type==='deliver'){const c=consumePots(bq.target,bq.count);Object.keys(c).forEach(k=>{bqConsumed[k]+=c[k];});}
+    else if(bq.type==='gather')modInv(bq.target,-bq.count);
+    const bqQB=qualityBonusMult(bqConsumed);
+    setActiveBQ(p=>p.filter(q=>q.id!==bq.id));
+    setDoneBQCount(c=>c+1);
+    const bqLoreXp=getFeatureVal('questXPFlat');
+    const _dipLvBQ=prestigeLevels?.diplomat||0;const bqGoldB=1+getFeatureVal('questGoldBonus')+(_dipLvBQ>=2?0.30:0);const bqRepFlat=getFeatureVal('questRepBonus')+(_dipLvBQ>=1?10:0);/* flat bonus rep */const bqXpB=1+getFeatureVal('questXPBonus');
+    const bqGold=Math.floor(bq.gold*bqGoldB*bqQB.mult*GOLD_MULT);
+    gainXP(Math.floor((bq.xp+bqLoreXp)*bqXpB*bqQB.mult));setGold(g=>g+bqGold);
+    if(bq.faction&&bq.fRep)addRep(bq.faction,bq.fRep+bqRepFlat);
+    const bqER=getFeatureVal('questEnergyRestore');if(bqER>0){setEnergy(h=>h+bqER);addLog('\u26a1 Temple Healing: +'+bqER+' Energy restored!','info');}
+    if(bq.faction){const fRes=FACTIONS[bq.faction]?.res;if(fRes){const dropChance=getFeatureVal('factionBonusDrop_'+fRes);if(dropChance>0&&Math.random()<dropChance){modInv(fRes,1);addLog(`✨ Faction bonus: +1 ${INGR[fRes]?.icon||''} ${INGR[fRes]?.name||fRes} from ${FACTIONS[bq.faction].name} reputation!`,'info');}}}
+    addLog(`✅ Board request complete: ${bq.name} — +${fmtMoney(bqGold)}, +${Math.floor((bq.xp+bqLoreXp)*bqXpB*bqQB.mult)}XP${bqQB.label}${bq.faction?' | '+FACTIONS[bq.faction]?.icon+'+'+(bq.fRep+bqRepFlat)+' rep':''}`,'quest');
+    if(doneBQCount+1>=20)earnMilestone('board_veteran');
+    // Archivist lore fragment from board quests
+    if(eSpec('scholar')==='archivist'){
+      const arcLv=eCL('scholar');const fragChance=(arcLv>=10?0.50:arcLv>=6?0.40:0.30)+getFeatureVal('loreDropChance');
+      if(Math.random()<fragChance){
+        const bqFaction=bq.faction?[bq.faction]:[locFaction('hearthkeepers',gameLocation)];
+        const undiscovered=ALL_LORE_FRAGMENTS.filter(f=>!loreFragments.includes(f.id)&&f.factions.some(ff=>bqFaction.includes(ff)));
+        grantLoreFragment(undiscovered,arcLv);
+      }
+    }
+    showResult('📌 Request Fulfilled!','quest',`${bq.giver}: "${bq.itemIcon}${bq.itemName} received. Much appreciated!"\n+${fmtMoney(bqGold)}  +${Math.floor((bq.xp+bqLoreXp)*bqXpB*bqQB.mult)}XP`+(bq.faction?'\n+'+(bq.fRep+bqRepFlat)+' '+FACTIONS[bq.faction]?.name+' rep':''));
+  };
+  const abandonBQ=(bq)=>{setActiveBQ(p=>p.filter(q=>q.id!==bq.id));addLog(`📌 Abandoned: ${bq.name}`,'info');};
+  // Open NPC with auto-quest detection
+  const openNpc=(npcId)=>{
+    let npc=NPCS[npcId];
+    // If not found by ID, try matching by lowercase name (for giver name → NPC ID resolution)
+    if(!npc){const match=Object.entries(NPCS).find(([,n])=>n.name&&n.name.toLowerCase().replace(/\s+/g,'_')===npcId);if(match){npcId=match[0];npc=match[1];}}
+    if(!npc)return;
+    setDlgNpc(npcId);setDlgLine(0);setShowShop(false);
+    // Check for ready turn-ins first
+    const turnIn=aQ.find(q=>q.giver===npc.name&&(q.loc===npc.loc||(npc.loc==='chapel'&&q.loc==='chapel'))&&(()=>{const p=qP(q);return p.c>=p.n;})());
+    if(turnIn){setQuestDlg({qId:turnIn.id,mode:'turnIn',lineIdx:0});return;}
+    // Check for available quests
+    const offer=availQ.find(q=>q.giver===npc.name&&(q.loc===npc.loc||(npc.loc==='chapel'&&q.loc==='chapel')));
+    if(offer){setQuestDlg({qId:offer.id,mode:'offer',lineIdx:0});return;}
+    // No quest — idle chat
+    setQuestDlg(null);
+  };
+
+  // ─── NIGHT EXPEDITION (Warden) ───
+  const doNightExpedition=(regId,siteId)=>{
+    const reg=locRegions.find(r=>r.id===regId);if(!reg)return;
+    setNightExpPending(false);
+    let foundRelic=null;
+    const nightSite=siteId?reg.sites?.find(s=>s.id===siteId):null;
+    // Night expedition cycle count: convert energy-scaled nightBonusHours back to cycles (25 energy = 1 cycle).
+    const {rounds:nightHours,dcPen:nightDCPenalty,dangerRed:nightDR}=getNightInfo();
+    const nightDC=reg.dc+nightDCPenalty; // +4 DC at night (capstone reduces to +3)
+    const yieldMult=1+Math.min(getFeatureVal('yieldMultiplier'),2);
+    const extB=getFeatureVal('extractionBonus');
+    const cumG={};let cumXp=0;const queue=[];
+    const fl=`🌙 You venture into ${reg.icon}${reg.name}${nightSite?' — '+nightSite.name:''} under cover of darkness...`;
+    addLog(fl,'story');
+    let cyclesLeft=nightHours;let h=0;
+    while(h<cyclesLeft){
+      h++;
+      const ext=pureCheck('extraction',nightDC);
+      if(extB){ext.total+=extB;ext.success=ext.roll===1?false:ext.roll===20?true:ext.total>=ext.dc;ext.extras.push({label:'🌿 Extraction',val:extB});}
+      const isCrit=ext.roll===20;
+      const hourG={};
+      const pickN=reg.pick||reg.ingr.length;
+      const picked=nightSite?weightedPick(nightSite.weights,pickN):[...reg.ingr].sort(()=>Math.random()-0.5).slice(0,Math.min(pickN,reg.ingr.length));
+      const critMult=isCrit?(1+getFeatureVal('critExtractionMulti')):1;
+      if(ext.success){
+        const baseTotal=isCrit?(10+Math.floor(Math.random()*4)):(4+Math.floor(Math.random()*6));
+        const total=Math.floor(baseTotal*yieldMult*critMult)+Math.floor(getFeatureVal('forageYieldBonus'));
+        const minDistinct=Math.min(3,picked.length);
+        for(let d=0;d<minDistinct;d++){hourG[picked[d]]=(hourG[picked[d]]||0)+1;}
+        for(let t=0;t<total-minDistinct;t++){const id=picked[Math.floor(Math.random()*picked.length)];hourG[id]=(hourG[id]||0)+1;}
+      } else {
+        if(Math.random()<0.25){const id=picked[Math.floor(Math.random()*picked.length)];hourG[id]=1;}
+      }
+      const hxp=Math.floor((ext.success?(reg.diff*18+level*2):Math.floor(reg.diff*5))*(1+getFeatureVal('forageXPBonus')));
+      // Night danger events (higher chance unless reduced)
+      let event=null;
+      const dangerProb=nightDR?0.08:0.18;
+      if(Math.random()<dangerProb){
+        const lostKeys=Object.keys(hourG).filter(id=>hourG[id]>0);
+        if(lostKeys.length>0){
+          const lid=lostKeys[Math.floor(Math.random()*lostKeys.length)];const lost=Math.min(hourG[lid],2);hourG[lid]-=lost;
+          event={text:`⚠️ Night danger: lost ${lost}× ${INGR[lid]?.icon||''}${INGR[lid]?.name||lid}`,good:false,dangerSensed:false,effectItems:{[lid]:-lost},effectDetail:'Lost items to night danger',effectXp:0,effectRep:null,check:null,resultText:null,effect:'lose_some'};
+        }
+      }
+      // Divination bonus
+      const divRank2=skRanks['divination']||0;const divChance2=Math.min(0.40,divRank2*0.10+getMod(eStat('inu'))*0.02);let divBonus=null;
+      if(ext.success&&divChance2>0&&Math.random()<divChance2){
+        const divId=reg.ingr[Math.floor(Math.random()*reg.ingr.length)];
+        hourG[divId]=(hourG[divId]||0)+1;divBonus={id:divId,icon:INGR[divId]?.icon||'',name:INGR[divId]?.name||divId};
+      }
+      // Lucky find
+      const luckyFind=getFeatureVal('luckyFindChance');let luckyBonus=null;
+      if(luckyFind>0&&Math.random()<luckyFind){
+        const luckyId=reg.ingr[Math.floor(Math.random()*reg.ingr.length)];
+        hourG[luckyId]=(hourG[luckyId]||0)+1;luckyBonus={id:luckyId,icon:INGR[luckyId]?.icon||'',name:INGR[luckyId]?.name||luckyId};
+      }
+      Object.entries(hourG).forEach(([id,q])=>{cumG[id]=(cumG[id]||0)+q;});
+      cumXp+=hxp+(event?.effectXp||0);
+      queue.push({
+        hourNum:h,totalHours:cyclesLeft,regId:reg.id,regName:'🌙 '+reg.name+' (Night)',regIcon:reg.icon,travelTime:0,
+        ext,gathered:{...hourG},xp:hxp+(event?.effectXp||0),event,
+        cumGathered:{...cumG},cumXp,isFinal:false,diff:reg.diff||1,foundRelic,divBonus,luckyBonus,attuneBonus:null,
+      });
+    }
+    if(queue.length>0){
+      // guaranteedRare
+      if(getFeatureVal('guaranteedRare')>0&&reg.diff>=2){
+        const rareIds=reg.ingr.filter(id=>(INGR[id]?.val||0)>=8);
+        if(rareIds.length>0){
+          const hasRare=Object.keys(cumG).some(id=>rareIds.includes(id)&&cumG[id]>0);
+          if(!hasRare){
+            const rId=rareIds[Math.floor(Math.random()*rareIds.length)];
+            const last=queue[queue.length-1];
+            last.gathered[rId]=(last.gathered[rId]||0)+1;
+            cumG[rId]=(cumG[rId]||0)+1;last.cumGathered={...cumG};
+          }
+        }
+      }
+      queue.forEach(q=>{q.totalHours=queue.length;});
+      queue[queue.length-1].isFinal=true;
+    }
+    setExpQ(queue);
+  };
+
+  // ─── UPGRADES ───
+  const buyUpgrade=uid=>{
+    const u=UPGRADES[uid];if(!u||hasUp(uid))return;
+    if(u.req&&!hasUp(u.req)){addLog(`You study the plans for ${u.icon}${u.name}, but realize you need to build ${UPGRADES[u.req]?.icon}${UPGRADES[u.req]?.name} first.`,'error');return;}
+    const prepped=(constructProgress[uid]||0)>=100;
+    const upgDisc=getFeatureVal('upgradeCostReduction')+(prepped?0.40:0);
+    const gc=Math.max(1,Math.floor((u.cost.gold||0)*(1-Math.min(upgDisc,0.9))));
+    if(gold<gc){addLog(`The materials for ${u.icon}${u.name} would cost ${fmtMoney(gc)} — more than you can afford right now.`,'error');return;}
+    // Build adjusted material cost — substitute ingredients for location, then if prepped waive cheapest
+    const matEntries=Object.entries(u.cost).filter(([id])=>id!=='gold').map(([id,q])=>[li(id),q]);
+    let waivedMat=null;
+    if(prepped&&matEntries.length>0){const sorted=[...matEntries].sort((a,b)=>(INGR[a[0]]?.val||0)-(INGR[b[0]]?.val||0));waivedMat=sorted[0][0];}
+    const adjMats=matEntries.filter(([id])=>id!==waivedMat);
+    for(const[id,q]of adjMats){if((inv[id]||0)<q){addLog(`You need ${q}× ${INGR[id]?.icon||''}${INGR[id]?.name||id} to build ${u.icon}${u.name}. Time to forage or shop.`,'error');return;}}
+    snapshot();
+    setGold(g=>g-gc);adjMats.forEach(([id,q])=>modInv(id,-q));
+    setUpgrades(p=>[...p,uid]);
+    if(prepped)setConstructProgress(p=>{const n={...p};delete n[uid];return n;});
+    const prepStr=prepped?` (Prepped: -40% gold${waivedMat?`, ${INGR[waivedMat]?.icon||''}${INGR[waivedMat]?.name||waivedMat} waived`:''})`:'';
+    gainXP(30+u.tier*20);
+    showResult(`${u.icon} ${u.name} — Built!`,'craft',`${u.desc}\n-${fmtMoney(gc)}${prepStr}\n+${30+u.tier*20} XP`);
+  };
+
+  // ─── APPRENTICES ───
+  const hireAppr=ap=>{
+    if(hiredAppr.find(h=>h.id===ap.id)||hiredAppr.length>=maxAppr)return;
+    if(gold<ap.salary*5){addLog(`${ap.icon}${ap.name} asks for ${fmtMoney(ap.salary*5)} as a signing fee. You can't afford it yet.`,'error');return;}
+    snapshot();
+    setGold(g=>g-ap.salary*5);setHiredAppr(p=>[...p,{...ap,morale:80}]);setApprXP(p=>({...p,[ap.id]:0}));
+    addLog(`👋 ${ap.icon}${ap.name} shakes your hand firmly. "${ap.personality}" They get to work.`,'event');
+  };
+  const fireAppr=apId=>{
+    const ap=hiredAppr.find(a=>a.id===apId);
+    setHiredAppr(p=>p.filter(a=>a.id!==apId));setApprTasks(p=>{const n={...p};delete n[apId];return n;});
+    if(ap)addLog(`${ap.icon}${ap.name} packs their things and leaves the workshop with a quiet nod.`,'event');
+  };
+  const assignTask=(apId,type,target)=>setApprTasks(p=>({...p,[apId]:{type,target}}));
+  const getApprLvl=apId=>Math.min(5,Math.floor((apprXP[apId]||0)/100));
+
+  // ─── NEW DAY ───
+  const newDay=()=>{
+    setUndoStack([]); // resting is final: no undoing back into yesterday
+    const injPen=injuryPenalty||0;
+    if(injPen>0)setInjuryPenalty(0);setInfusionsUsedToday(0);setWildcraftsUsedToday(0); // Clear after applying
+    const conduitE=blueprints.some(b=>b.bpId==='bp_conduit'&&b.complete)?50:0;
+    const baseE=Math.max(75,100+upEff('bonusEnergy')+getFeatureVal('bonusEnergyPerDay')+getFeatureVal('bonusEnergy')+conduitE+(getFeatureVal('freeAction')?25:0)-injPen);
+    setDay(d=>d+1);setEnergy(baseE);setMaxEnergy(baseE);setLastCheck(null);setWsOpen({});const report=[];
+    // ── Season check ──
+    const curDay=day+1;
+    // Working copy of the inventory for this morning's automatic brewers (staff, overnight craft, clockwork,
+    // blueprints, automata) so two of them can never spend the same ingredients.
+    const dayInv={...inv};
+    const recipeCost=r=>{const c={};r.ingr.forEach(id=>{const lid=li(id);c[lid]=(c[lid]||0)+1;});return c;};
+    const dayHas=cost=>Object.entries(cost).every(([id,q])=>(dayInv[id]||0)>=q);
+    const daySpend=cost=>{Object.entries(cost).forEach(([id,q])=>{dayInv[id]=(dayInv[id]||0)-q;modInv(id,-q);});};
+    // Coin ledger: every overnight coin change is booked here as it happens, so the morning report's
+    // Earnings section (and its net) lists exactly what was paid and charged.
+    const ledger=[];const book=(icon,label,amt)=>{if(amt)ledger.push({icon,label,amt});};
+    const curSeason=getSeason(curDay,gameLocation);
+    const prevSeason=getSeason(day,gameLocation);
+    if(curSeason.id!==prevSeason.id){
+      addLog(`${curSeason.icon} ${curSeason.name} has arrived! ${curSeason.desc}`,'story');
+      report.push({icon:curSeason.icon,label:'Season Change',val:curSeason.name,color:curSeason.color});
+    }
+    const staffEffBonus=getFeatureVal('staffEfficiencyBonus');
+    const sfBonus=1+getFeatureVal('staffForageBonus')+getFeatureVal('staffForageYield')+((prestigeLevels?.cartographer||0)>=4?0.25:0);
+    const sxpMult=1+getFeatureVal('staffXPBonus');
+    const _xpAdded={}; // Track XP gains for level-up detection
+    const dualTask=getFeatureVal('dualStaffTasks');
+    // Process staff tasks synchronously (report entries must exist before morning report)
+    const staffDiscR=[];const staffDiscE=[]; // track discoveries within this loop to prevent duplicates
+    const patrolReduc=Object.fromEntries(locThreatIds.map(t=>[t,0])); // accumulate patrol threat reductions
+    const updatedAppr=hiredAppr.map(ap=>{
+      const task=apprTasks[ap.id];
+      // Skip injured staff
+      if(staffInjuries[ap.id]&&staffInjuries[ap.id].daysLeft>0){report.push({n:ap.name,i:ap.icon,r:'🩹 Injured ('+staffInjuries[ap.id].daysLeft+'d recovery)',t:'fail'});return{...ap};}
+      if(!task){report.push({n:ap.name,i:ap.icon,r:'Idle',t:'idle'});return{...ap,morale:Math.max(40,ap.morale-5)};}
+      const aLvl=getApprLvl(ap.id);
+      // Base efficiency from stat + level + upgrades + class bonuses
+      let eff=Math.max(0.3,0.5+getMod(ap.baseStat[TASK_TYPES[task.type]?.stat]||10)*0.05+aLvl*0.1+upEff('apprenticeEff')+staffEffBonus);
+      // Morale modifier: <30% = ×0.6, <50% = ×0.8, >80% = ×1.1
+      const mor=ap.morale||50;eff*=mor<30?0.6:mor<50?0.8:mor>80?1.1:1.0;
+      // Specialty match: +15% when doing their preferred task
+      if(ap.specialty&&SPEC_MATCH[task.type]===ap.specialty)eff*=1.15;
+      // Trait effects
+      (ap.traits||[]).forEach(t=>{const fx=TRAIT_FX[t];if(!fx)return;
+        if(fx.effMult)eff*=(1+fx.effMult);
+        if(task.type==='forage'&&fx.forageEff)eff*=(1+fx.forageEff);
+        if(task.type==='brew'&&fx.brewEff)eff*=(1+fx.brewEff);
+        if(task.type==='shopkeep'&&fx.shopEff)eff*=(1+fx.shopEff);
+        if((task.type==='research_task')&&fx.researchEff)eff*=(1+fx.researchEff);
+        if(task.type==='construct'&&fx.enchantEff)eff*=(1+fx.enchantEff);
+        if(task.type==='patrol'&&fx.patrolEff)eff*=(1+fx.patrolEff);
+      });
+      eff=Math.max(0.2,Math.min(eff,3.0));
+      // staffMastery: max-level staff gain mastery trait (+30% efficiency)
+      if(aLvl>=5&&getFeatureVal('staffMastery'))eff*=1.30;
+      const traitXpMult=(ap.traits||[]).reduce((m,t)=>m*(1+(TRAIT_FX[t]?.xpMult||0)),1);
+      const trainingRoomMult=blueprints.some(b=>b.bpId==='bp_training'&&b.complete)?(blueprints.some(b=>b.bpId==='bp_sanctum'&&b.complete)?3:2):1;
+      const axp=sxpMult*traitXpMult*trainingRoomMult;
+      if(task.type==='forage'&&task.target){
+        const reg=locRegions.find(r=>r.id===task.target);
+        if(reg&&level>=regUnlock(reg)){
+          const empGatherH=staffForageRounds(reg)*(dualTask?2:1);
+          const pickN=reg.pick||reg.ingr.length;
+          const g={};
+          for(let h=0;h<empGatherH;h++){
+            const shuffled=[...reg.ingr].sort(()=>Math.random()-0.5);
+            const picked=shuffled.slice(0,pickN);
+            const total=Math.max(1,Math.floor((2+Math.random()*3)*eff*sfBonus*threatStaffYieldMult));
+            for(let t=0;t<total;t++){const id=picked[Math.floor(Math.random()*picked.length)];g[id]=(g[id]||0)+1;}
+          }
+          Object.entries(g).forEach(([id,q])=>modInv(id,q));
+          const yieldStr=Object.entries(g).map(([id,q])=>`${INGR[id]?.icon||''}${INGR[id]?.name||id} ×${q}`).join(', ');
+          report.push({n:ap.name,i:ap.icon,r:`Foraged ${empGatherH}h at ${reg.icon}${reg.name}: ${yieldStr}`,t:'ok'});
+          // Staff injury chance in dangerous regions
+          if(reg.diff>=3&&Math.random()<0.08*reg.diff){
+            const injDays=reg.diff>=4?2:1;
+            setStaffInjuries(prev=>({...prev,[ap.id]:{daysLeft:injDays}}));
+            report.push({n:ap.name,i:ap.icon,r:`🩹 Injured foraging in ${reg.name}! (${injDays}d recovery)`,t:'fail'});
+          }
+          {const _xpGain=Math.floor(15*axp);_xpAdded[ap.id]=(_xpAdded[ap.id]||0)+_xpGain;setApprXP(p=>({...p,[ap.id]:(p[ap.id]||0)+_xpGain}));};}
+      } else if(task.type==='brew'&&task.target){
+        const recipe=RECIPES.find(r=>r.id===task.target);if(recipe){
+          const cost=recipeCost(recipe);
+          if(dayHas(cost)){
+            const brewOdds=0.5+eff*0.3;const firstTry=Math.random()<brewOdds;
+            if(firstTry){daySpend(cost);modPot(recipe.id,1);
+              report.push({n:ap.name,i:ap.icon,r:`Brewed ${recipe.icon}${recipe.name}`,t:'ok'});gainXP(Math.floor(recipe.xp*.3));
+            } else if(dualTask&&Math.random()<brewOdds){ // Dual Task: a second attempt
+              daySpend(cost);modPot(recipe.id,1);
+              report.push({n:ap.name,i:ap.icon,r:`Brewed ${recipe.icon}${recipe.name} (2nd try)`,t:'ok'});gainXP(Math.floor(recipe.xp*.3));
+            } else{if(Math.random()<.5)daySpend(cost);report.push({n:ap.name,i:ap.icon,r:`Failed ${recipe.name}`,t:'fail'});}
+            {const _xpGain=Math.floor(10*axp);_xpAdded[ap.id]=(_xpAdded[ap.id]||0)+_xpGain;setApprXP(p=>({...p,[ap.id]:(p[ap.id]||0)+_xpGain}));};
+          } else report.push({n:ap.name,i:ap.icon,r:`No mats for ${recipe.name}`,t:'fail'});}
+      } else if(task.type==='shopkeep'){
+        const g=Math.floor((5+level*2+aLvl*3)*eff*(1+upEff('sellBonus')+getFeatureVal('sellBonus')));setGold(gg=>gg+g);book('🏪',ap.name+' (shop)',g);
+        report.push({n:ap.name,i:ap.icon,r:`Shop: +${fmtMoney(g)}`,gold:g,t:'ok'});{const _xpGain=Math.floor(12*axp);_xpAdded[ap.id]=(_xpAdded[ap.id]||0)+_xpGain;setApprXP(p=>({...p,[ap.id]:(p[ap.id]||0)+_xpGain}));};
+      } else if(task.type==='research_task'){
+        const undP=RECIPES.filter(r=>!known.includes(r.id)&&!staffDiscR.includes(r.id)&&level>=r.unlock&&(!r.faction||getRL(r.faction)>=(r.fReq||0))&&canCraftAtLocation(r.ingr)&&!r.fieldOnly);
+        const undE=ENCHANTMENTS.filter(e=>!knownEnch.includes(e.id)&&!staffDiscE.includes(e.id)&&(!e.faction||getRL(e.faction)>=(e.fReq||0))&&canCraftAtLocation(e.ingr));
+        const playerDiscBonus=getFeatureVal('discoveryChanceBonus');
+        const discoveryChance=Math.min(0.85,0.20+eff*0.25+playerDiscBonus*0.5)*getThreatPenalty(locThreatIds[2],'discoveryMult');
+        if(Math.random()<discoveryChance){
+          // Weight toward whichever pool is larger
+          const totalPool=undP.length+undE.length;
+          const pickRecipe=totalPool>0?Math.random()<(undP.length/totalPool):true;
+          if((pickRecipe&&undP.length>0)||undE.length===0){
+            if(undP.length>0){const d=weightedDiscPick(undP);staffDiscR.push(d.id);setKnown(p=>[...p,d.id]);
+              report.push({n:ap.name,i:ap.icon,r:`Discovered ${d.icon}${d.name}!`,t:'ok'});}
+            else report.push({n:ap.name,i:ap.icon,r:'Studied. No breakthrough.',t:'idle'});
+          } else if(undE.length>0){
+            const d=weightedDiscPick(undE);staffDiscE.push(d.id);setKnownEnch(p=>[...p,d.id]);
+            report.push({n:ap.name,i:ap.icon,r:`Inscription: ${d.icon}${d.name}!`,t:'ok'});
+          }
+        } else report.push({n:ap.name,i:ap.icon,r:'Studied. No breakthrough.',t:'idle'});
+        {const _xpGain=Math.floor(10*axp);_xpAdded[ap.id]=(_xpAdded[ap.id]||0)+_xpGain;setApprXP(p=>({...p,[ap.id]:(p[ap.id]||0)+_xpGain}));};
+      } else if(task.type==='construct'&&task.target){
+        const u=UPGRADES[task.target];
+        if(u&&!hasUp(task.target)){
+          const rawProgress=Math.floor(20+eff*30);const progress=getFeatureVal('halfConstructTime')?rawProgress*2:rawProgress;
+          setConstructProgress(p=>{const cur=(p[task.target]||0);const next=Math.min(100,cur+progress);return{...p,[task.target]:next};});
+          const cur=constructProgress[task.target]||0;const next=Math.min(100,cur+progress);
+          if(next>=100)report.push({n:ap.name,i:ap.icon,r:`🔨 ${u.icon}${u.name} prep complete! Gold -40%, 1 mat waived.`,t:'ok'});
+          else report.push({n:ap.name,i:ap.icon,r:`🔨 ${u.icon}${u.name}: ${Math.min(100,next)}% (+${progress}%)`,t:'ok'});
+          {const _xpGain=Math.floor(8*axp);_xpAdded[ap.id]=(_xpAdded[ap.id]||0)+_xpGain;setApprXP(p=>({...p,[ap.id]:(p[ap.id]||0)+_xpGain}));};
+        } else report.push({n:ap.name,i:ap.icon,r:`${u?'Already built':'Unknown upgrade'}`,t:'idle'});
+      } else if(task.type==='patrol'&&task.target){
+        const tf=THREAT_FACTIONS[task.target];
+        if(tf){
+          const curThreat=(threats[task.target]||0);
+          if(curThreat>0||patrolReduc[task.target]<curThreat){
+            const reduction=Math.floor(3+eff*4);
+            patrolReduc[task.target]=(patrolReduc[task.target]||0)+reduction;
+            report.push({n:ap.name,i:ap.icon,r:`🛡️ Patrol: ${tf.icon}${tf.name} -${reduction}`,t:'ok'});
+            // Small chance to find intel (bonus threat reduction)
+            if(Math.random()<0.15*eff){
+              const bonus=Math.floor(2+eff*2);
+              patrolReduc[task.target]=(patrolReduc[task.target]||0)+bonus;
+              report.push({n:ap.name,i:ap.icon,r:`🔍 Intel found! Extra -${bonus} ${tf.icon}${tf.name}`,t:'ok'});
+            }
+          } else {
+            report.push({n:ap.name,i:ap.icon,r:`🛡️ ${tf.icon}${tf.name}: All clear, no threat.`,t:'idle'});
+          }
+          {const _xpGain=Math.floor(10*axp);_xpAdded[ap.id]=(_xpAdded[ap.id]||0)+_xpGain;setApprXP(p=>({...p,[ap.id]:(p[ap.id]||0)+_xpGain}));}
+        } else report.push({n:ap.name,i:ap.icon,r:'Unknown threat target.',t:'fail'});
+      }
+      const traitMorale=(ap.traits||[]).reduce((s,t)=>s+(TRAIT_FX[t]?.moraleDelta||0),0);
+      return{...ap,morale:Math.min(100,Math.max(20,ap.morale+(upEff('morale')||0)+2+getFeatureVal('healMorale')+traitMorale+(curSeason.moraleMod||0)))};
+    });
+    setHiredAppr(updatedAppr);
+    // ═══ DAILY UPKEEP & DEBT PROCESSING ═══
+    const dailyUpkeep=calcUpkeep();
+    let newGold=gold-dailyUpkeep;
+    let newDebt=debt;
+    // Process debt
+    if(newGold<0){
+      newDebt+=Math.abs(newGold);
+      newGold=0;
+    } else if(newDebt>0){
+      // Pay down debt with surplus gold
+      const payoff=Math.min(newGold,newDebt);
+      newGold-=payoff;
+      newDebt-=payoff;
+    }
+    setGold(g=>g+(newGold-gold));setDebt(newDebt);
+    {const pay=calcPayroll();book('🏠','Base Upkeep',-5);book('🔧','Upgrade Maintenance',-(dailyUpkeep-5-pay));book('💰','Payroll ('+hiredAppr.length+' staff)',-pay);
+    if(newDebt>debt)book('⚠️','Unpaid — added to debt',newDebt-debt);else if(newDebt<debt)book('⚠️','Debt repaid',-(debt-newDebt));}
+    // Bring upgrades back: timed damage expires; debt repossessions return once debt is cleared
+    {const back=disabledUpgrades.filter(uid=>disabledUntil[uid]!=null?disabledUntil[uid]<=curDay:newDebt===0);
+    if(back.length>0){setDisabledUpgrades(p=>p.filter(u=>!back.includes(u)));setDisabledUntil(p=>{const n={...p};back.forEach(u=>delete n[u]);return n;});
+      addLog('🔧 Back in working order: '+back.map(u=>(UPGRADES[u]?.icon||'')+(UPGRADES[u]?.name||u)).join(', '),'info');}}
+    // Debt consequences
+    if(newDebt>50){
+      // Morale hit
+      setHiredAppr(prev=>prev.map(ap=>({...ap,morale:Math.max(0,(ap.morale||80)-5)})));
+    }
+    if(newDebt>100&&disabledUpgrades.length<upgrades.length){
+      // Repossess a random active upgrade
+      const active=upgrades.filter(uid=>!disabledUpgrades.includes(uid));
+      if(active.length>0){
+        const victim=active[Math.floor(Math.random()*active.length)];
+        setDisabledUpgrades(prev=>[...prev,victim]);
+        addLog('⚠️ DEBT: The town council has repossessed your '+UPGRADES[victim]?.name+'! Pay off debt to restore it.','error');
+      }
+    }
+    if(newDebt>200&&!shopLocked){
+      setShopLocked(true);
+      addLog('🛑 DEBT CRISIS: Your shop has been padlocked! You cannot sell from shelves or serve customers until debt is reduced below '+fmtMoney(200)+'.','error');
+    }
+    if(newDebt<=200&&shopLocked){
+      setShopLocked(false);
+      addLog('✅ Shop reopened! Debt reduced below critical threshold.','info');
+    }
+    // Report line
+    report.push({n:'Daily Costs',i:'💰',r:fmtMoney(-dailyUpkeep)+' (base '+fmtMoney(5)+' + '+fmtMoney(Math.max(0,dailyUpkeep-5))+' maintenance/wages)'+(newDebt>0?' | DEBT: '+fmtMoney(newDebt):''),t:newDebt>0?'fail':'idle'});
+    if(upEff('passiveIncome')>0){const piMult=Math.max(1,getFeatureVal('passiveIncomeMulti'));const p=Math.max(1,Math.floor(upEff('passiveIncome')*piMult*GOLD_MULT));setGold(g=>g+p);book('🪟','Shop Front'+(piMult>1?' (×'+piMult+')':''),p);report.push({n:'Shop Front',i:'🪟',r:`+${fmtMoney(p)}${piMult>1?' (×'+piMult+')':''}`,t:'ok'});}
+    // ═══ LEGACY WORKSHOP INCOME ═══
+    if(lineage?.generations?.length>0){
+      let legacyGold=0;
+      lineage.generations.forEach(gen=>{
+        const genIncome=Math.min(10,Math.floor((gen.potionsBrewed||0)/50)+(gen.level||1));
+        legacyGold+=genIncome;
+      });
+      if(legacyGold>0){
+        legacyGold=Math.max(1,Math.floor(legacyGold*GOLD_MULT));
+        setGold(g=>g+legacyGold);book('🏠','Family Business ('+lineage.generations.length+' gen)',legacyGold);
+        report.push({n:'Family Business Network ('+lineage.generations.length+' gen'+(lineage.generations.length>1?'s':'')+')',i:'🏠',r:'+'+fmtMoney(legacyGold),t:'ok'});
+      }
+    }
+    // ═══ SEASONAL FAMILY CARAVAN ═══
+    if(lineage?.generations?.length>0&&curDay>1&&(curDay-1)%SEASON_LENGTH===0){
+      // Arrives on first day of each new season
+      const prevGens=lineage.generations.filter(g=>g.location&&g.location!==gameLocation);
+      if(prevGens.length>0){
+        const lastGen=prevGens[prevGens.length-1];
+        const srcLoc=lastGen.location;
+        const srcRegions=REGIONS.filter(r=>r.loc===srcLoc);
+        if(srcRegions.length>0){
+          const allSrcIngr=[...new Set(srcRegions.flatMap(r=>r.ingr))];
+          const caravanSize=Math.min(5,2+prevGens.length); // 3-5 items scaling with generations
+          const delivered={};
+          for(let i=0;i<caravanSize;i++){
+            const rawId=allSrcIngr[Math.floor(Math.random()*allSrcIngr.length)];
+            // Convert to local equivalent — a Cindervale ashbloom becomes a Tidecrest kelp_frond
+            const localId=li(rawId);
+            delivered[localId]=(delivered[localId]||0)+1;
+          }
+          Object.entries(delivered).forEach(([id,q])=>modInv(id,q));
+          const itemStr=Object.entries(delivered).map(([id,q])=>(INGR[id]?.icon||'')+INGR[id]?.name+'×'+q).join(', ');
+          addLog(`📦 A family caravan arrives from ${LOCATIONS[srcLoc]?.name||srcLoc}! ${lastGen.name} sends supplies: ${itemStr}`,'quest');
+          report.push({n:'Family Caravan from '+( LOCATIONS[srcLoc]?.name||srcLoc),i:'📦',r:itemStr,t:'ok'});
+        }
+      }
+    }
+    // Research Papers: passive income from published papers
+    if(pubPapers.length>0){
+      const scaling=getFeatureVal('paperScaling');const grand=getFeatureVal('grandPapers');
+      let paperGold=0;
+      pubPapers.forEach(p=>{
+        const age=Math.max(1,day-p.day);
+        const base=grand?8:3;
+        paperGold+=scaling?Math.floor(base*(1+Math.min(age/30,2))):base;
+      });
+      if(paperGold>0){setGold(g=>g+paperGold);book('📝','Research Papers ('+pubPapers.length+')',paperGold);report.push({n:'Research Papers',i:'📝',r:`+${fmtMoney(paperGold)} (${pubPapers.length} paper${pubPapers.length>1?'s':''})`,t:'ok'});}
+    }
+    if(upEff('dailyRep')>0)Object.keys(fRep).forEach(f=>addRep(f,upEff('dailyRep')));
+    if(upActive('garden')){const pool=byZone({tidecrest:['kelp_frond','tide_moss'],ashfall:['sunpetal','scorchroot'],base:['ashbloom','ironroot_bark']});const h=pool[Math.floor(Math.random()*pool.length)];const q=1+Math.floor(Math.random()*2);modInv(h,q);report.push({n:'Garden',i:'🌱',r:`${INGR[h]?.icon||''}×${q}`,t:'ok'});}
+    if(upActive('garden_2')){const pool=byZone({tidecrest:['coral_shard','pearl_dust'],ashfall:['dewdrop_lily','crystal_salt'],base:['moonpetal','starwort']});const h=pool[Math.floor(Math.random()*pool.length)];modInv(h,1);report.push({n:'Greenhouse',i:'🌿',r:`${INGR[h]?.icon||''}`,t:'ok'});}
+    if(upActive('leyline')){const item=li('veil_shard');modInv(item,1);report.push({n:'Ley Line',i:'⚡',r:(INGR[item]?.name||item)+'!',t:'ok'});}
+    // forageOnRest: passive overnight foraging
+    if(getFeatureVal('forageOnRest')){
+      const restRegions=locRegions.filter(r=>level>=regUnlock(r)&&(!r.faction||getRL(r.faction)>=(r.fReq||0)));
+      if(restRegions.length>0){
+        const reg=restRegions[Math.floor(Math.random()*restRegions.length)];
+        const pick=reg.ingr[Math.floor(Math.random()*reg.ingr.length)];
+        const q=1+Math.floor(Math.random()*3);modInv(pick,q);
+        report.push({n:'Night Forage',i:'🌙',r:`${INGR[pick]?.icon||''}${INGR[pick]?.name||pick} ×${q}`,t:'ok'});
+      }
+    }
+    // freeHealBrew: one free healing salve per day
+    if(getFeatureVal('freeHealBrew')){modPot('healing_salve',1);report.push({n:'Daily Brew',i:'💊',r:'+1 Healing Salve',t:'ok'});}
+    Object.entries(fRep).forEach(([fid,rep])=>{if(locFactions[fid]&&getRepLvl(rep)>=3&&Math.random()<.3)modInv(FACTIONS[fid].res,1);});
+    // Shelf sales — townsfolk buy stocked potions overnight
+    let shelfGold=0;const shelfSold={};
+    let postSaleShelves={...shelves}; // shelf stock after overnight sales (brand customers buy from this)
+    const shelfSaleB=getFeatureVal('shelfSaleBonus');
+    // Computed from the start-of-day `shelves` (not inside a setState updater) so the totals are known
+    // synchronously for payout, theft and the morning report. A padlocked shop sells nothing.
+    if(!shopLocked){
+      const next={...shelves};
+      Object.entries(next).forEach(([potId,qty])=>{
+        if(qty<=0)return;
+        const r=RECIPES.find(x=>x.id===getBaseRecipeId(potId));if(!r)return;
+        const infId=getInfusion(potId);const sbLv=prestigeLevels.spellbrewer||0;
+        const brandShelfBonus=getBrandForRecipe(r.id)&&(prestigeLevels.brandmaster||0)>=3?0.10:0;
+        const infCustBonus=infId&&sbLv>=5?0.15:0; // infused potions attract extra customers (Spellbrewer Lv5)
+        // Each stocked potion has a 30-60% chance to sell overnight + class/feat bonuses
+        let sold=0;
+        for(let i=0;i<qty;i++){if(Math.random()<0.3+level*0.02+shelfSaleB+infCustBonus+brandShelfBonus)sold++;}
+        if(sold>0){
+          shelfGold+=getShelfSalePrice(potId)*sold;shelfSold[potId]=(shelfSold[potId]||0)+sold;
+          next[potId]=qty-sold;if(next[potId]<=0)delete next[potId];
+        }
+      });
+      if(Object.keys(shelfSold).length>0){setShelves(next);postSaleShelves=next;}
+    }
+    // Museum income (Antiquarian Lv5)
+    const aqLv4=prestigeLevels.antiquarian||0;
+    const allSetsComplete=aqLv4>=5&&Object.keys(RELIC_SETS).every(sid=>(museum[sid]||0)>=RELIC_SETS[sid].needed);
+    if(allSetsComplete){
+      const museumGold=10;setGold(g=>g+museumGold);book('🏛️','Museum Visitors',museumGold);
+      report.push({n:'Museum Visitors',i:'🏛️',r:'+'+fmtMoney(museumGold)+' (Grand Collection)',t:'ok'});
+    }
+    // ═══ EXTERNAL THREATS PROCESSING ═══
+    const newThreats={...(threats||Object.fromEntries(locThreatIds.map(t=>[t,0])))};
+    const tgrReduc=getFeatureVal('threatGainReduction');
+    const settThreatCap=getFeatureVal('threatCap')||100;
+    const tGrow=(tid,amount)=>{const reduced=tgrReduc>0?Math.max(1,Math.floor(amount*(1-tgrReduc))):amount;newThreats[tid]=Math.min(settThreatCap,(newThreats[tid]||0)+reduced);};
+    // Threat growth — position-based: [0]=bandit, [1]=corruption, [2]=magic
+    if(curDay>3)tGrow(locThreatIds[0],3+(gold>200?1:0));
+    if(curDay>5)tGrow(locThreatIds[1],2);
+    if(curDay>10)tGrow(locThreatIds[2],3);
+    // Seasonal threat modifier
+    if(curSeason.threatMod){Object.entries(curSeason.threatMod).forEach(([tid,mod])=>{newThreats[tid]=Math.min(100,Math.max(0,(newThreats[tid]||0)+mod));});}
+    // Corruption grows from expedition activity (tracked via dayFlags)
+    const expDiff=dayFlags.filter(f=>f.startsWith('exp_diff_')).map(f=>+f.split('_')[2]);
+    expDiff.forEach(d=>{if(d>=3)tGrow(locThreatIds[1],d>=5?3:2);});
+    // Natural decay (only kicks in above 10 — threats build up before they erode)
+    locThreatIds.forEach(tid=>{if((newThreats[tid]||0)>10)newThreats[tid]=Math.max(0,newThreats[tid]-1);});
+    // passiveThreatDecay: Sentinel Lv10 — all threats decay extra per day
+    const ptDecay=getFeatureVal('passiveThreatDecay');if(ptDecay>0)locThreatIds.forEach(tid=>{newThreats[tid]=Math.max(0,(newThreats[tid]||0)-ptDecay);});
+    // Faction rep decay: -1 per threat if Trusted (Lv3+) with relevant mitigating faction
+    locThreatIds.forEach(tid=>{if((THREAT_FACTIONS[tid]?.mitigatedBy||[]).some(f=>getRepLvl(fRep[f]||0)>=3))newThreats[tid]=Math.max(0,(newThreats[tid]||0)-1);});
+    // Warden class decay (-1)
+    if(eCL('warden')>=4)newThreats[locThreatIds[1]]=Math.max(0,(newThreats[locThreatIds[1]]||0)-1);
+    // Brand Master: famous brands reduce magic threat
+    (brands||[]).forEach(b=>{if(b.sold>=80)newThreats[locThreatIds[2]]=Math.max(0,(newThreats[locThreatIds[2]]||0)-5);});
+    // Staff patrol reductions (accumulated during staff loop)
+    locThreatIds.forEach(tid=>{if(patrolReduc[tid]>0)newThreats[tid]=Math.max(0,(newThreats[tid]||0)-patrolReduc[tid]);});
+    // Antiquarian Arsenal completion reduces bandit threat
+    if((museum.weapons||0)>=(RELIC_SETS.weapons?.needed||4))newThreats[locThreatIds[0]]=Math.max(0,(newThreats[locThreatIds[0]]||0)-10);
+
+    // ═══ OUTPOST PROCESSING ═══
+    const seLv2=prestigeLevels.siegeengineer||0;
+    const opGatherAmt=seLv2>=4?4:seLv2>=2?3:2;
+    const opSuppressAmt=outpostSuppressAmt;
+    const updatedOutposts=(outposts||[]).map(op=>{
+      if(!op.built){
+        // Construction countdown
+        const remaining=op.daysLeft-1;
+        if(remaining<=0){
+          report.push({n:'Outpost Complete',i:'🏗️',r:(REGIONS.find(r=>r.id===op.regionId)?.name||op.regionId)+' outpost is ready!',t:'ok'});
+          return{...op,built:true,daysLeft:0};
+        }
+        report.push({n:'Construction',i:'🏗️',r:(REGIONS.find(r=>r.id===op.regionId)?.name||op.regionId)+' outpost: '+remaining+' day'+(remaining>1?'s':'')+' left.',t:'info'});
+        return{...op,daysLeft:remaining};
+      }
+      // Gathering
+      const reg=REGIONS.find(r=>r.id===op.regionId);if(!reg)return op;
+      const newStored={...(op.storedIngr||{})};
+      const gathered=[];
+      for(let i=0;i<opGatherAmt;i++){
+        const pool=reg.ingr||[];if(pool.length===0)break;
+        const pick=pool[Math.floor(Math.random()*pool.length)];
+        newStored[pick]=(newStored[pick]||0)+1;gathered.push(pick);
+        modInv(pick,1);
+      }
+      if(gathered.length>0){
+        const summary=Object.entries(gathered.reduce((a,id)=>{a[id]=(a[id]||0)+1;return a;},{})).map(([id,q])=>(INGR[id]?.icon||'')+INGR[id]?.name+' ×'+q).join(', ');
+        report.push({n:reg.name+' Outpost',i:'📦',r:'Gathered: '+summary,t:'ok'});
+      }
+      // Threat suppression — position-based: diff<3 suppresses bandits, diff 3-4 suppresses corruption, diff 5+ suppresses all
+      if(reg.diff>=5){locThreatIds.forEach(tid=>{newThreats[tid]=Math.max(0,(newThreats[tid]||0)-Math.floor(opSuppressAmt*0.4));});}
+      else if(reg.diff>=3)newThreats[locThreatIds[1]]=Math.max(0,(newThreats[locThreatIds[1]]||0)-opSuppressAmt);
+      else newThreats[locThreatIds[0]]=Math.max(0,(newThreats[locThreatIds[0]]||0)-opSuppressAmt);
+      // Auto-brew (Lv3+)
+      if(seLv2>=3&&op.recipe){
+        const recipe=RECIPES.find(r=>r.id===op.recipe);
+        if(recipe){
+          const cost={};recipe.ingr.forEach(id=>{const lid=li(id);cost[lid]=(cost[lid]||0)+1;});
+          const canBrew=Object.entries(cost).every(([id,q])=>(newStored[id]||0)>=q);
+          if(canBrew){
+            Object.entries(cost).forEach(([id,q])=>{newStored[id]=(newStored[id]||0)-q;});
+            if(seLv2>=4){
+              // Auto-stock to shelves
+              const shelfKey=op.recipe;
+              setShelves(prev=>{const n={...prev};n[shelfKey]=(n[shelfKey]||0)+1;return n;});
+              report.push({n:'Auto-Brew',i:'⚗️',r:reg.name+': '+recipe.icon+recipe.name+' → shelf',t:'ok'});
+            } else {
+              modPot(op.recipe,1);
+              report.push({n:'Auto-Brew',i:'⚗️',r:reg.name+': '+recipe.icon+recipe.name+' brewed',t:'ok'});
+            }
+          }
+        }
+      }
+      return{...op,storedIngr:newStored};
+    });
+    // Fortress caps
+    updatedOutposts.forEach(op=>{
+      if(op.fortress){const ft=FORTRESS_TYPES[op.fortress];if(ft)newThreats[ft.threat]=Math.min(ft.cap,newThreats[ft.threat]||0);}
+    });
+    setOutposts(updatedOutposts);
+
+    // Bandit shelf theft (position 0 threat)
+    const banditTF=THREAT_FACTIONS[locThreatIds[0]];
+    const fortWard=getFeatureVal('fortressWard');
+    // Companion guard: block negative gold/ingredient events
+    const hasCompGuard=companions.some(cc=>cc.active&&(()=>{const comp=RANGER_COMPANIONS.find(r=>r.id===cc.compId);return comp?.secondary?.type==='guard'&&cc.loyalty>=(comp.secondary.unlockLv||3);})());
+    const theftChance=(fortWard&&(newThreats[locThreatIds[0]]||0)<75)?0:hasCompGuard?0:getThreatPenalty(locThreatIds[0],'shelfTheftChance',newThreats);
+    let stolenGold=0;
+    if(theftChance>0&&shelfGold>0&&Math.random()<theftChance){
+      stolenGold=Math.floor(shelfGold*0.5); // a raid takes half the night's shelf takings
+      report.push({n:banditTF?.icon+' '+banditTF?.name+' Raid',i:banditTF?.icon||'🏴',r:'Bandits stole '+fmtMoney(stolenGold)+' from overnight shelf sales!',t:'bad'});
+    }
+
+    // Corruption ingredient loss (position 1 threat, Critical only)
+    const corruptTF=THREAT_FACTIONS[locThreatIds[1]];
+    if(!hasCompGuard&&!(fortWard&&(newThreats[locThreatIds[1]]||0)<75)&&Math.random()<getThreatPenalty(locThreatIds[1],'ingrLossChance',newThreats)){
+      const ingrKeys=Object.entries(inv).filter(([,q])=>q>0).map(([id])=>id);
+      if(ingrKeys.length>0){
+        const lostId=ingrKeys[Math.floor(Math.random()*ingrKeys.length)];
+        const lostQty=Math.min(inv[lostId]||0,Math.floor(Math.random()*2)+1);
+        if(lostQty>0){modInv(lostId,-lostQty);report.push({n:corruptTF?.icon+' '+corruptTF?.name+' Decay',i:corruptTF?.icon||'🦠',r:lostQty+'× '+(INGR[lostId]?.icon||'')+INGR[lostId]?.name+' corrupted.',t:'bad'});}
+      }
+    }
+
+    // Apply stolen gold
+    if(stolenGold>0){setGold(g=>g-stolenGold);book(banditTF?.icon||'🏴',(banditTF?.name||'Bandit')+' raid',-stolenGold);}
+
+    // Generate defense quests (1-2 per morning if any threat is Rising+)
+    const newDefQ=[];
+    locThreatIds.forEach(tid=>{
+      if(newThreats[tid]>=25&&Math.random()<0.5){
+        const tf=THREAT_FACTIONS[tid];
+        const potRecipes=RECIPES.filter(r=>known.includes(r.id)&&!r.fieldOnly&&!r.buff&&canCraftAtLocation(r.ingr));
+        const ingrPool=Object.entries(inv).filter(([,q])=>q>0).map(([id])=>id).filter(id=>INGR[id]);
+        const isDeliver=potRecipes.length>0&&Math.random()<0.6;
+        if(isDeliver){
+          const r=potRecipes[Math.floor(Math.random()*potRecipes.length)];
+          const qty=Math.ceil(newThreats[tid]/30)+1;
+          const reward=Math.floor(qty*3+newThreats[tid]/10);
+          newDefQ.push({id:'dq_'+Date.now()+'_'+tid,threatId:tid,type:'deliver',target:r.id,qty,reward,
+            desc:tf.icon+' Supply '+qty+'× '+r.icon+r.name+' to defend against '+tf.name});
+        } else if(ingrPool.length>0){
+          const ingId=ingrPool[Math.floor(Math.random()*ingrPool.length)];
+          const qty=Math.ceil(newThreats[tid]/20)+3;
+          const reward=Math.floor(qty*1.5+newThreats[tid]/10);
+          newDefQ.push({id:'dq_'+Date.now()+'_'+tid,threatId:tid,type:'gather',target:ingId,qty,reward,
+            desc:tf.icon+' Donate '+qty+'× '+(INGR[ingId]?.icon||'')+INGR[ingId]?.name+' to combat '+tf.name});
+        }
+      }
+    });
+    setDefenseQuests(prev=>[...prev.slice(-4),...newDefQ]); // keep max ~6
+
+    // ═══ HOLLOW MARCH PROCESSING ═══
+    const marchAlerts=[];
+    const curLevel=getLvl(xp);
+    let updMarch={...(hollowMarch||DEF?.hollowMarch||{active:false,wave:0,nextWaveDay:0,demands:[],history:[],finalStandAvailable:false,finalStandComplete:false,marchRecipesUnlocked:[]})};
+    // Activation check: level 10+ (displayLevel 11+) and not yet active
+    if(!updMarch.active&&curLevel>=HOLLOW_MARCH.triggerLevel){
+      updMarch.active=true;
+      updMarch.nextWaveDay=curDay+3; // First wave in 3 days — give player time to prepare
+      marchAlerts.push({text:'💀 The Hollow March Begins\n\nScouts report a vast, unnatural force gathering beyond the Veil. Unlike the scattered threats you\'ve faced before, this is organized. Coordinated. Relentless.\n\nPrepare your workshop, stockpile supplies, and rally your allies. The first wave arrives in 3 days.',
+        vibe:'hollow_march',result:{msg:'The Hollow March is an endgame invasion. Waves of demands will arrive every 5-7 days. Meet them or suffer severe consequences. Clear 5 waves to unlock Pass the Torch.'},flavor:null});
+      addLog('💀 THE HOLLOW MARCH HAS BEGUN. First wave arrives Day '+(curDay+3)+'.','error');
+      report.push({n:'💀 Hollow March',i:'💀',r:'The invasion begins! First wave in 3 days. Prepare!',t:'bad'});
+    }
+    // Wave arrival
+    if(updMarch.active&&curDay>=updMarch.nextWaveDay&&!updMarch.finalStandComplete&&!updMarch.finalStandInProgress){
+      // First: resolve any unresolved crises from previous wave (failures)
+      const prevDemands=updMarch.demands||[];
+      const failedCrises=prevDemands.filter(d=>!d.resolved||!d.result?.success);
+      if(failedCrises.length>0&&updMarch.wave>0){
+        const fp=HOLLOW_MARCH.failurePenalty(updMarch.wave);
+        failedCrises.forEach(d=>{
+          locThreatIds.forEach(tid=>{newThreats[tid]=Math.min(100,(newThreats[tid]||0)+fp.threatSpike);});
+          addLog(`💀 CRISIS FAILED: ${d.icon} ${d.name} — all threats +${fp.threatSpike}!`,'error');
+          // Guaranteed staff injury per failed crisis
+          if(fp.staffInjury&&hiredAppr.length>0){
+            const uninjured=hiredAppr.filter(ap=>!(staffInjuries||{})[ap.id]);
+            const victim=uninjured.length>0?uninjured[Math.floor(Math.random()*uninjured.length)]:hiredAppr[Math.floor(Math.random()*hiredAppr.length)];
+            if(victim){setStaffInjuries(prev=>({...prev,[victim.id]:{daysLeft:3}}));addLog(`🤕 ${victim.icon} ${victim.name} was injured! (3 days)`,'error');}
+          }
+          // Lose rare ingredients (weighted toward valuable ones)
+          const ingrSorted=Object.entries(inv).filter(([,q])=>q>0).sort((a,b)=>(INGR[b[0]]?.val||5)-(INGR[a[0]]?.val||5));
+          for(let k=0;k<fp.ingrLossCount&&ingrSorted.length>0;k++){
+            const [pick]=ingrSorted[Math.min(k,ingrSorted.length-1)];
+            const lostQty=Math.min(inv[pick]||0,2+Math.floor(Math.random()*3));
+            if(lostQty>0){modInv(pick,-lostQty);addLog(`💀 Lost ${lostQty}× ${INGR[pick]?.icon||''}${INGR[pick]?.name||pick}!`,'error');}
+          }
+          // Gold penalty
+          if(fp.goldLoss>0&&gold>0){const loss=Math.min(gold,fp.goldLoss);setGold(g=>Math.max(0,g-loss));book('💀','March looters',-loss);addLog(`💀 Looters took ${fmtMoney(loss)} during the chaos!`,'error');}
+          // Upgrade disable at high waves
+          if(fp.upgradeDisableDays>0&&upgrades.length>0&&!getFeatureVal('upgradeProtection')){
+            const activeUps=upgrades.filter(u=>!disabledUpgrades.includes(u));
+            if(activeUps.length>0){const pick=activeUps[Math.floor(Math.random()*activeUps.length)];setDisabledUpgrades(p=>[...p,pick]);setDisabledUntil(p=>({...p,[pick]:curDay+fp.upgradeDisableDays}));addLog(`💀 ${UPGRADES[pick]?.icon||''} ${UPGRADES[pick]?.name||pick} damaged! Disabled for ${fp.upgradeDisableDays} days.`,'error');}
+          }
+        });
+        report.push({n:'💀 March Failure',i:'💀',r:failedCrises.length+' crisis'+(failedCrises.length>1?'es':'')+' failed! Severe losses sustained.',t:'bad'});
+      }
+      // Record resolved crises in history
+      const metCount=prevDemands.filter(d=>d.resolved&&d.result?.success).length;
+      if(updMarch.wave>0&&prevDemands.length>0){
+        updMarch.history.push({wave:updMarch.wave,met:metCount,total:prevDemands.length,day:curDay});
+      }
+      // Advance wave
+      updMarch.wave+=1;
+      const wave=updMarch.wave;
+      // Check for Final Stand
+      if(wave>HOLLOW_MARCH.finalStandWave&&!updMarch.finalStandAvailable){
+        updMarch.finalStandAvailable=true;
+        marchAlerts.push({text:'👑 The Final Stand is Available\n\nYou have weathered '+HOLLOW_MARCH.finalStandWave+' waves of the Hollow March. The source of the invasion pulses beyond the Veil.\n\nYou may attempt the Final Stand — a climactic battle that will end the March forever. Or continue fighting wave by wave.\n\nThe choice is yours.',
+          vibe:'hollow_final',result:{msg:'Visit the Threats tab to attempt the Final Stand. This is optional — you can continue clearing waves or Pass the Torch.'},flavor:null});
+        addLog('👑 THE FINAL STAND IS NOW AVAILABLE. Visit Threats tab to attempt it.','quest');
+      }
+      // Generate crises from templates (multiple solution paths per crisis)
+      const crisisCount=HOLLOW_MARCH.crisisCount(wave);
+      const templates=[...(typeof CRISIS_TEMPLATES!=='undefined'?CRISIS_TEMPLATES:[])];
+      const newDemands=[];
+      const usedTemplates=new Set();
+      for(let i=0;i<crisisCount&&templates.length>0;i++){
+        let tIdx;
+        do{tIdx=Math.floor(Math.random()*templates.length);}while(usedTemplates.has(templates[tIdx].id)&&usedTemplates.size<templates.length);
+        const tmpl=templates[tIdx];usedTemplates.add(tmpl.id);
+        const dc=HOLLOW_MARCH.baseDC(wave);
+        const reward=HOLLOW_MARCH.crisisReward(wave);
+        // Build solutions with concrete costs
+        const solutions=tmpl.solutions.map(sol=>{
+          const s={...sol,dc,reward:{...reward}};
+          if(sol.costType==='potion'){
+            const potRecipes=RECIPES.filter(r=>known.includes(r.id)&&!r.fieldOnly&&canCraftAtLocation(r.ingr)&&!(r.buff&&ELIXIR_BUFFS[r.buff]));
+            // Prefer harder recipes at higher waves
+            const sorted=[...potRecipes].sort((a,b)=>b.dc-a.dc);
+            const pickPool=wave>=6?sorted.slice(0,Math.max(3,Math.floor(sorted.length/3))):sorted.slice(0,Math.max(5,Math.floor(sorted.length/2)));
+            const r=pickPool.length>0?pickPool[Math.floor(Math.random()*pickPool.length)]:potRecipes[0]||{id:'healing_salve',name:'Healing Salve',icon:'💚'};
+            s.cost={type:'potion',target:r.id,qty:HOLLOW_MARCH.potionQty(wave),targetName:r.name,targetIcon:r.icon};
+          } else if(sol.costType==='enchant'){
+            s.cost={type:'enchant',qty:HOLLOW_MARCH.energyCost(wave)};
+          } else if(sol.costType==='combat'){
+            s.cost={type:'combat',qty:HOLLOW_MARCH.energyCost(wave)};
+          } else if(sol.costType==='gold'){
+            s.dc=0; // auto-success
+            s.cost={type:'gold',qty:HOLLOW_MARCH.goldCost(wave)};
+          } else if(sol.costType==='ingredients'){
+            // Pick rare ingredients from local regions (prefer faction resources, hidden)
+            const regIngr=[];locRegions.forEach(r=>r.ingr.forEach(id=>{if(INGR[id]&&INGR[id].val>=15)regIngr.push(id);}));
+            const pick=regIngr.length>0?regIngr[Math.floor(Math.random()*regIngr.length)]:'ashbloom';
+            s.cost={type:'ingredients',target:pick,qty:HOLLOW_MARCH.ingrQty(wave),targetName:INGR[pick]?.name||pick,targetIcon:INGR[pick]?.icon||'🌿'};
+          } else if(sol.costType==='staff'){
+            s.dc=0; // auto-success
+            s.cost={type:'staff',qty:HOLLOW_MARCH.staffQty(wave)};
+          }
+          return s;
+        });
+        newDemands.push({id:'hm_'+curDay+'_'+i,templateId:tmpl.id,name:tmpl.name,icon:tmpl.icon,narrative:tmpl.narrative,solutions,resolved:false,chosenSolution:null,result:null});
+      }
+      updMarch.demands=newDemands;
+      const wInt=HOLLOW_MARCH.waveInterval(wave);
+      updMarch.nextWaveDay=curDay+wInt.min+Math.floor(Math.random()*(wInt.max-wInt.min+1));
+      // Wave reward for clearing previous wave (count resolved crises)
+      const resolvedCount=prevDemands.filter(d=>d.resolved&&d.result?.success).length;
+      if(updMarch.wave>1&&resolvedCount===prevDemands.length&&prevDemands.length>0){
+        const wr=HOLLOW_MARCH.waveRewards(wave-1);
+        setXp(x=>x+wr.xp);setGold(g=>g+wr.gold);book('🛡️','March wave reward',wr.gold);
+        locThreatIds.forEach(tid=>{newThreats[tid]=Math.max(0,(newThreats[tid]||0)-wr.threatReduc);});
+        if(wr.recipeUnlock){
+          const nextRecipe=MARCH_RECIPES.find(r=>!updMarch.marchRecipesUnlocked.includes(r.id));
+          if(nextRecipe){
+            updMarch.marchRecipesUnlocked.push(nextRecipe.id);
+            setKnown(prev=>[...prev,nextRecipe.id]);
+            addLog(`📜 MARCH RECIPE UNLOCKED: ${nextRecipe.icon} ${nextRecipe.name}!`,'quest');
+            report.push({n:'Recipe Unlocked',i:nextRecipe.icon,r:nextRecipe.name+' — '+nextRecipe.desc,t:'ok'});
+          }
+        }
+        marchAlerts.push({text:`🏆 Wave ${wave-1} Victory!\n\nAll crises resolved. The defenses hold!\n\n+${wr.xp} XP, +${fmtMoney(wr.gold)}, -${wr.threatReduc} all threats${wr.recipeUnlock?' + NEW RECIPE':''}`,
+          vibe:'hollow_victory',result:{msg:'Wave '+(wave)+' arrives on Day '+updMarch.nextWaveDay+'. Prepare!'},flavor:null});
+        addLog(`🏆 Wave ${wave-1} CLEARED! +${wr.xp} XP, +${fmtMoney(wr.gold)}`,'quest');
+      } else if(updMarch.wave>1&&prevDemands.length>0){
+        const failCount=prevDemands.filter(d=>!d.resolved||!d.result?.success).length;
+        marchAlerts.push({text:`💀 Wave ${wave-1} — ${failCount} Crisis Failure${failCount>1?'s':''}\n\n${resolvedCount}/${prevDemands.length} crises resolved. The March punishes weakness.`,
+          vibe:'hollow_march',result:{msg:'Each failed crisis causes severe damage. Wave '+(wave)+' arrives Day '+updMarch.nextWaveDay+'.'},flavor:null});
+      }
+      // Wave announcement
+      const flavorIdx=Math.min(wave-1,HOLLOW_MARCH.waveFlavor.length-1);
+      marchAlerts.push({text:`💀 Wave ${wave} of the Hollow March\n\n${HOLLOW_MARCH.waveFlavor[flavorIdx]}\n\n${newDemands.length} crises demand your attention before Day ${updMarch.nextWaveDay}. Choose your approach wisely.`,
+        vibe:'hollow_march',result:{msg:'Visit the Threats tab to view crises and choose solutions.'},flavor:null});
+      addLog(`💀 HOLLOW MARCH Wave ${wave}: ${newDemands.length} crises. Deadline: Day ${updMarch.nextWaveDay}.`,'error');
+      report.push({n:'💀 Wave '+wave,i:'💀',r:newDemands.length+' crises due by Day '+updMarch.nextWaveDay,t:'bad'});
+    }
+    // Active march: show countdown in report
+    if(updMarch.active&&!updMarch.finalStandComplete&&updMarch.demands.length>0){
+      const daysLeft=updMarch.nextWaveDay-curDay;
+      const resolvedOK=updMarch.demands.filter(d=>d.resolved&&d.result?.success).length;
+      if(daysLeft>0){
+        report.push({n:'💀 March Status',i:'💀',r:`Wave ${updMarch.wave}: ${resolvedOK}/${updMarch.demands.length} crises resolved. ${daysLeft} day${daysLeft>1?'s':''} remaining.`,t:resolvedOK>=updMarch.demands.length?'ok':'warn'});
+      }
+    }
+    setHollowMarch(updMarch);
+
+    // Threat report in morning report
+    const threatReport=locThreatIds.filter(tid=>newThreats[tid]>=25).map(tid=>{
+      const tf=THREAT_FACTIONS[tid];
+      return tf.icon+' '+tf.name+': '+getThreatLabel(newThreats[tid])+' ('+newThreats[tid]+'/100)';
+    });
+    if(threatReport.length>0)report.push({n:'⚔️ Threats',i:'⚔️',r:threatReport.join(' | '),t:locThreatIds.some(tid=>newThreats[tid]>=50)?'bad':'warn'});
+    // threatWarning: warn player when threats approach 75
+    if(getFeatureVal('threatWarning')){locThreatIds.forEach(tid=>{const tv=newThreats[tid]||0;if(tv>=65&&tv<75){const tf=THREAT_FACTIONS[tid];report.push({n:'⚠️ Threat Warning',i:'⚠️',r:tf.icon+' '+tf.name+' approaching critical! ('+tv+'/100) — prepare defenses!',t:'bad'});addLog(`⚠️ THREAT WARNING: ${tf.icon} ${tf.name} at ${tv}/100 — crisis imminent!`,'error');}});}
+    // ── Detect threat tier changes for dramatic popups ──
+    const TIER_ORDER=['calm','rising','dangerous','critical'];
+    // Threat caps apply last, so nothing earlier this morning (crisis spikes, seasons) can push past them
+    {const finalCap=hollowMarch?.finalStandComplete?(HOLLOW_MARCH.finalStandRewards?.threatCap??100):100;
+    locThreatIds.forEach(tid=>{newThreats[tid]=Math.max(0,Math.min(settThreatCap,finalCap,newThreats[tid]||0));});
+    updatedOutposts.forEach(op=>{if(op.fortress){const ft=FORTRESS_TYPES[op.fortress];if(ft)newThreats[ft.threat]=Math.min(ft.cap,newThreats[ft.threat]||0);}});}
+    const threatAlerts=[];
+    locThreatIds.forEach(tid=>{
+      const oldTier=getThreatTier(threats[tid]||0);
+      const newTier=getThreatTier(newThreats[tid]);
+      if(oldTier===newTier)return;
+      const tf=THREAT_FACTIONS[tid];
+      const oldIdx=TIER_ORDER.indexOf(oldTier);const newIdx=TIER_ORDER.indexOf(newTier);
+      if(newIdx>oldIdx){
+        // Threat escalated
+        const vibe=newTier==='critical'?'threat_critical':newTier==='dangerous'?'threat_danger':'threat_rise';
+        const descriptions={
+          rising:{reavers:`${tf.icon} Scouts report ${tf.name} raiding parties forming on the horizon. Caravans are being rerouted.`,
+            blight:`${tf.icon} Strange mold has appeared on wild herbs near the village. The ${tf.name} is spreading.`,
+            veilbreakers:`${tf.icon} The Veil shimmers oddly at dawn. ${tf.name} activity has been detected.`},
+          dangerous:{reavers:`${tf.icon} ${tf.name} have been spotted near the town walls! Travelers warn of ambushes on every road.`,
+            blight:`${tf.icon} The ${tf.name} is rotting entire groves. Your ingredients may be at risk — check your stores.`,
+            veilbreakers:`${tf.icon} Reality fractures have appeared near the market. The ${tf.name} grow bolder.`},
+          critical:{reavers:`${tf.icon} ${tf.name} are at your gates! Gold stores and supply lines are under direct threat.`,
+            blight:`${tf.icon} The ${tf.name} has reached catastrophic levels. Ingredient corruption is inevitable without intervention.`,
+            veilbreakers:`${tf.icon} The Veil is tearing open. ${tf.name} are pouring through — this cannot hold.`}
+        };
+        const text=descriptions[newTier]?.[tid]||`${tf.icon} ${tf.name} threat has escalated to ${getThreatLabel(newThreats[tid])}!`;
+        const tips={rising:'Consider assigning staff to patrol or building outposts to slow the threat.',
+          dangerous:'Fulfill defense quests and bolster faction reputation to push back. Time is running short.',
+          critical:'URGENT: Fulfill defense requests immediately or suffer severe penalties each morning.'};
+        threatAlerts.push({text,vibe,result:{msg:tips[newTier]||''},flavor:null});
+        addLog(`⚔️ ${tf.icon} ${tf.name}: escalated to ${getThreatLabel(newThreats[tid])}!`,'error');
+      } else if(newIdx<oldIdx){
+        // Threat decreased
+        const text=`${tf.icon} ${tf.name} threat has receded to ${getThreatLabel(newThreats[tid])}. Your defenses held.`;
+        threatAlerts.push({text,vibe:'threat_decrease',result:{msg:'Keep up the pressure — threats can always return.'},flavor:null});
+        addLog(`🛡️ ${tf.icon} ${tf.name}: reduced to ${getThreatLabel(newThreats[tid])}.`,'info');
+      }
+    });
+    setThreats(newThreats);
+
+    // Brand repeat customers (Brand Master)
+    const bmLv3=prestigeLevels.brandmaster||0;
+    if(bmLv3>=1&&!shopLocked){
+      let brandGold=0;const brandSales={};
+      brands.forEach(brand=>{
+        const bl=getBrandLevel(brand.sold);
+        const effectiveBl=bl>=3&&bmLv3<4?2:bl;
+        const repeatCust=BRAND_LEVELS[effectiveBl].repeatCust;
+        if(repeatCust>0&&brand.recipes.length>0){
+          for(let c=0;c<repeatCust;c++){
+            // Each repeat customer buys 1 random branded potion from shelves
+            const shelfBranded=brand.recipes.filter(rid=>{
+              return Object.entries(postSaleShelves).some(([pid,q])=>q>0&&getBaseRecipeId(pid)===rid);
+            });
+            if(shelfBranded.length>0){
+              const rid=shelfBranded[Math.floor(Math.random()*shelfBranded.length)];
+              const shelfKey=Object.keys(postSaleShelves).find(pid=>postSaleShelves[pid]>0&&getBaseRecipeId(pid)===rid);
+              if(shelfKey){
+                const r=RECIPES.find(x=>x.id===rid);if(r){
+                  const bPrice=Math.floor((r.xp+10)*getBrandSellMult(rid)*1.2);
+                  brandGold+=bPrice;brandSales[rid]=(brandSales[rid]||0)+1;
+                  postSaleShelves={...postSaleShelves,[shelfKey]:postSaleShelves[shelfKey]-1};
+                  setShelves(prev=>{const n={...prev};n[shelfKey]=Math.max(0,(n[shelfKey]||0)-1);if(n[shelfKey]<=0)delete n[shelfKey];return n;});
+                  recordBrandSale(rid,1);
+                }
+              }
+            }
+          }
+        }
+      });
+      if(brandGold>0){
+        setGold(g=>g+brandGold);book('🏷️','Brand Customers',brandGold);
+        const brandItems=Object.entries(brandSales).map(([rid,q])=>{const r=RECIPES.find(x=>x.id===rid);return(r?.icon||'')+r?.name+' ×'+q;}).join(', ');
+        report.push({n:'Brand Customers',i:'🏷️',r:'+'+fmtMoney(brandGold)+' ('+brandItems+')',t:'ok'});
+      }
+    }
+    // Brand orders (Lv3+)
+    if(bmLv3>=3&&brands.some(b=>getBrandLevel(b.sold)>=2)){
+      // Small chance to generate a brand order each morning
+      if(Math.random()<0.3&&brandOrders.length<3){
+        const eligibleBrands=brands.filter(b=>getBrandLevel(b.sold)>=2&&b.recipes.length>0);
+        if(eligibleBrands.length>0){
+          const brand=eligibleBrands[Math.floor(Math.random()*eligibleBrands.length)];
+          const rid=brand.recipes[Math.floor(Math.random()*brand.recipes.length)];
+          const r=RECIPES.find(x=>x.id===rid);
+          if(r){
+            const qty=1+Math.floor(Math.random()*2);
+            const price=Math.floor((r.xp+15)*getBrandSellMult(rid)*2*qty);
+            const order={brandId:brand.id,recipeId:rid,qty,price,expires:day+3};
+            setBrandOrders(prev=>[...prev,order]);
+            report.push({n:'Brand Order',i:'📦',r:brand.icon+' '+brand.name+': '+qty+'× '+r.icon+r.name+' for '+fmtMoney(price),t:'info'});
+          }
+        }
+      }
+      // Expire old orders
+      setBrandOrders(prev=>prev.filter(o=>o.expires>curDay));
+    }
+        if(shelfGold>0&&!shopLocked){setGold(g=>g+shelfGold);book('🏪','Shelf Sales',shelfGold);const items=Object.entries(shelfSold).map(([id,q])=>{const r=RECIPES.find(x=>x.id===getBaseRecipeId(id));const _inf=getInfusion(id);const _fr=isFreshPot(id);return(r?.icon||'')+(_inf?INFUSIONS[_inf]?.icon:'')+(_fr?'🌿':'')+r?.name+(getPotQuality(id)!=='std'?' '+QUALITY[getPotQuality(id)].icon:'')+(_inf?' ['+INFUSIONS[_inf]?.name+']':'')+(_fr?' [Fresh]':'')+' ×'+q;}).join(', ');
+      report.push({n:'Shelf Sales',i:'🏪',r:'+'+fmtMoney(shelfGold)+' ('+items+')',t:'ok'});
+      Object.entries(shelfSold).forEach(([pid,q])=>{recordBrandSale(getBaseRecipeId(pid),q);});}
+    // Overnight Craft: auto-brew 1 potion while sleeping
+    if(getFeatureVal('overnightCraft')){
+      const brewable=RECIPES.filter(r=>known.includes(r.id)&&dayHas(recipeCost(r))).sort((a,b)=>b.xp-a.xp); // pick highest-value brewable
+      if(brewable.length>0){
+        const r=brewable[0];const cost=recipeCost(r);
+        if(Math.random()<0.65){daySpend(cost);modPot(r.id,1);
+          report.push({n:'Overnight Brew',i:'🌙',r:`Auto-brewed ${r.icon}${r.name}`,t:'ok'});
+        } else report.push({n:'Overnight Brew',i:'🌙',r:`Attempted ${r.icon}${r.name} — failed`,t:'fail'});
+      }
+    }
+    // Shop restock bonus: rare/mid-tier ingredients appear in the shop
+    const procList=[];
+    const restockB=getFeatureVal('shopRestockBonus');
+    const rareIngr=new Set();locRegions.filter(r=>r.diff>=2&&level>=regUnlock(r)).forEach(r=>r.ingr.forEach(id=>rareIngr.add(id)));
+    const alreadyInShop=new Set(SHOP_I.filter(s=>!s.loc||s.loc===gameLocation).map(s=>s.id));
+    const rarePool=[...rareIngr].filter(id=>!alreadyInShop.has(id));
+    if(restockB>0){
+      rarePool.forEach(id=>{
+        if(Math.random()<restockB*0.1){const ig=INGR[id];if(ig)procList.push({id,price:Math.ceil((ig.val||10)*1.5),name:ig.name,icon:ig.icon});}
+      });
+      // Guaranteed restock slots
+      if(restockB>0&&procList.length<restockB){
+        const remaining=rarePool.filter(id=>!procList.find(p=>p.id===id));
+        for(let i=0;i<restockB-procList.length&&remaining.length>0;i++){
+          const id=remaining.splice(Math.floor(Math.random()*remaining.length),1)[0];
+          const ig=INGR[id];if(ig)procList.push({id,price:Math.ceil((ig.val||10)*1.5),name:ig.name,icon:ig.icon});
+        }
+      }
+    }
+    // Diplomat L2 Trade Agreements — one item from a friendly faction's specialty pool (the `res` ingredient)
+    // appears in today's shop on top of the standard restock. Rotates randomly among friendly+ factions.
+    if((prestigeLevels?.diplomat||0)>=2&&typeof FACTIONS!=='undefined'){
+      const friendlyFacs=Object.entries(fRep||{}).filter(([fid,r])=>FACTIONS[fid]&&FACTIONS[fid].res&&r>=150&&!alreadyInShop.has(FACTIONS[fid].res)&&!procList.find(p=>p.id===FACTIONS[fid].res));
+      if(friendlyFacs.length>0){
+        const [pickFid]=friendlyFacs[Math.floor(Math.random()*friendlyFacs.length)];
+        const resId=FACTIONS[pickFid].res;const ig=INGR[resId];
+        if(ig){procList.push({id:resId,price:Math.ceil((ig.val||10)*1.5),name:ig.name,icon:ig.icon});}
+      }
+    }
+    // Diplomat L4 Grand Alliance — when ALL harmony pairs for the current location are at max state (3),
+    // a legendary-tier item (val >= 25) appears in the daily shop restock. The length guard matters:
+    // Pricing is 2× base val per spec.
+    if((prestigeLevels?.diplomat||0)>=4&&typeof FACTION_PAIRS!=='undefined'){
+      const allHarmoniesMaxed=isGrandAlliance();
+      if(allHarmoniesMaxed){
+        const legendaryPool=Object.entries(INGR).filter(([id,ig])=>(ig.val||0)>=25&&!alreadyInShop.has(id)&&!procList.find(p=>p.id===id));
+        if(legendaryPool.length>0){
+          const [legId,legIg]=legendaryPool[Math.floor(Math.random()*legendaryPool.length)];
+          procList.push({id:legId,price:Math.ceil((legIg.val||10)*2.0),name:legIg.name,icon:legIg.icon});
+        }
+      }
+    }
+    setProcureItems(procList);
+    setDailyReport(report);const custResult=genCust();
+    const DAY_FLAVOR=zui.morning.slice(0,5);
+    addLog('🌅 '+DAY_FLAVOR[Math.floor(Math.random()*DAY_FLAVOR.length)]+' Day '+(day+1)+'. ⚡'+baseE+' Energy ahead.'+(hiredAppr.length>0?' '+hiredAppr.length+' staff report for duty.':''),'story');
+    // Generate news toasts
+    const nw=[];
+    const staffNames=hiredAppr.map(a=>a.name);const staffReport=report.filter(r=>staffNames.includes(r.n));
+    if(staffReport.length>0)nw.push({icon:'📋',text:staffReport.filter(r=>r.t==='ok').length+' of '+staffReport.length+' staff tasks succeeded overnight.',to:'staff',label:'👥 See Staff',color:TH.orange});
+    const totalCust=(custResult.ench||0)+(custResult.pot||0);
+    if(totalCust>0){const parts=[];if(custResult.ench>0)parts.push(custResult.ench+' enchant');if(custResult.pot>0)parts.push(custResult.pot+' potion');
+      nw.push({icon:'🛒',text:parts.join(' & ')+' customer'+(totalCust>1?'s':'')+' waiting!',to:'enchant',label:'🛒 Customers',color:TH.purple});}
+    if(shelfGold>0)nw.push({icon:'🏪',text:'Overnight shelf sales: +'+fmtMoney(shelfGold)+'!',to:'workshop',label:'⚗️ Workshop',color:TH.gold});
+    if(procList.length>0)nw.push({icon:'📦',text:`Rare stock: ${procList.length} rare ingredient${procList.length>1?'s':''} in the shop today!`,to:'market',label:'🛒 Shop',color:TH.purple});
+    const newAvailQ=locQuests.filter(q=>!doneQ.includes(q.id)&&!aQ.find(a=>a.id===q.id)&&getLvl(xp)>=q.unlock);
+    if(newAvailQ.length>0)nw.push({icon:'📜',text:`${newAvailQ.length} quest${newAvailQ.length>1?'s':''} on the board.`,to:'quests',label:'📜 Quest Board',color:TH.cyan});
+    const discoveries=report.filter(r=>r.r?.includes('Discovered'));
+    if(discoveries.length>0)nw.push({icon:'📚',text:`Research breakthrough: ${discoveries.map(d=>d.r).join(', ')}`,to:'research',label:'📚 Research',color:TH.green});
+    // ── Town Events ──
+    const curLv=getLvl(xp);const evtState={gold,level:curLv,inv,pots,upgrades};
+    const firedEvents=[];const newFlags=[];
+    const negEvtReduc=getFeatureVal('negativeEventReduction');
+    const shuffledEvts=[...TOWN_EVENTS].sort(()=>Math.random()-0.5);
+    for(const evt of shuffledEvts){
+      if(evt.loc&&evt.loc!==gameLocation)continue;
+      if(curLv<evt.minLv||Math.random()>=evt.prob)continue;
+      // Fortified Walls: chance to block negative events
+      if(evt.negative&&negEvtReduc>0&&Math.random()<negEvtReduc){
+        addLog(`🏰 The settlement walls deterred trouble! (${evt.text.split('.')[0]})`,'info');
+        continue;
+      }
+      const flavor=evt.flavor?evt.flavor[Math.floor(Math.random()*evt.flavor.length)]:'';
+      const result=evt.effect(evtState);
+      firedEvents.push({...evt,result,flavor});
+      if(result.flag)newFlags.push(result.flag);
+      // Apply effects
+      if(result.gold){setGold(g=>Math.max(0,g+result.gold));book('🏘️',evt.text||'Town event',result.gold);}
+      if(result.xp)gainXP(result.xp);
+      if(result.items)Object.entries(result.items).forEach(([id,q])=>modInv(id,q));
+      if(result.pots)Object.entries(result.pots).forEach(([id,q])=>modPot(id,q));
+      if(result.rep)Object.entries(result.rep).forEach(([f,a])=>addRep(f,a));
+      if(result.rep_all)Object.keys(fRep).forEach(f=>addRep(f,result.rep_all));
+      // Log it
+      const logText=flavor?`🏘️ ${evt.text} ${flavor}`:(`🏘️ ${evt.text}`+(result.msg&&result.msg!==''?' — '+result.msg:''));
+      addLog(logText,'event');
+      if(firedEvents.length>=2)break; // max 2 events per day
+    }
+    setDayFlags(newFlags);
+    // Combine threat alerts + march alerts + town events into one popup queue (march first, then threats, then events)
+    const allPopupEvents=[
+      ...marchAlerts.map(e=>({text:e.text,vibe:e.vibe,result:e.result,flavor:e.flavor})),
+      ...threatAlerts.map(e=>({text:e.text,vibe:e.vibe,result:e.result,flavor:e.flavor})),
+      ...firedEvents.map(e=>({text:e.text,vibe:e.vibe||'social',result:e.result,flavor:e.flavor}))
+    ];
+    if(firedEvents.length>0){
+      const evtSummary=firedEvents.map(e=>e.text).join(' · ');
+      nw.push({icon:'🏘️',text:'Town: '+evtSummary,to:'map',label:'📜 Journal',color:TH.orange});
+    }
+    if(threatAlerts.length>0){
+      nw.push({icon:'⚔️',text:threatAlerts.length+' threat'+( threatAlerts.length>1?'s':'')+' changed status!',to:'map',label:'⚔️ Threats',color:'#c03030'});
+    }
+    if(marchAlerts.length>0){
+      nw.push({icon:'💀',text:'The Hollow March demands your attention!',to:'threats',label:'💀 March',color:'#a040c0'});
+    }
+    if(allPopupEvents.length>0){
+      setEventPopup({events:allPopupEvents,idx:0});
+    }
+    // ── Board Quests ──
+    const newBQ=genBoardQuests(curLv,day+1,(getFeatureVal('doubleQuestRefresh')?2:0)+(getFeatureVal('tripleBoardRefresh')?4:0),gameLocation,known);
+    setBoardQ(newBQ);
+    // Expire un-accepted board quests from yesterday (already replaced)
+    if(newBQ.length>0)nw.push({icon:'📌',text:`${newBQ.length} new request${newBQ.length>1?'s':''} on the notice board.`,to:'quests',label:'📜 Quests',color:TH.cyan});
+    // Milestone checks
+    if(gold>=500)earnMilestone('wealthy');
+    if(Object.keys(locFactions).every(fid=>getRepLvl(fRep[fid]||0)>=3))earnMilestone('all_factions');
+    if(RECIPES.filter(r=>!r.fieldOnly&&canCraftAtLocation(r.ingr)).every(r=>known.includes(r.id)))earnMilestone('all_recipes'); // every recipe brewable in this town
+    if(Object.keys(UPGRADES).every(uid=>upgrades.includes(uid)))earnMilestone('full_workshop');
+    if(hiredAppr.length>=4)earnMilestone('mentor');
+    if(doneBQCount>=20)earnMilestone('board_veteran');
+    // ── Build Morning Report Popup ──
+    const mrSections=[];
+    // Earnings: filled in from the coin ledger once every overnight source has been booked (end of newDay)
+    const earnSection={title:'💰 Earnings',net:0,lines:[]};
+    // Injury report
+    if(injPen>0){mrSections.push({title:'🩹 Injuries',lines:[
+      {icon:'🩹',label:'You are injured from yesterday\'s expedition',val:'-'+injPen+' Energy today',color:'#c06040'},
+      {icon:'⚡',label:'Available Energy',val:baseE+' (normally '+(baseE+injPen)+')',color:TH.textDim}
+    ]});}
+    mrSections.push(earnSection);
+    // Shelf Sales detail
+    if(Object.keys(shelfSold).length>0){
+      const sLines=Object.entries(shelfSold).map(([id,q])=>{const r=RECIPES.find(x=>x.id===getBaseRecipeId(id));const _fr=isFreshPot(id);
+        const price=getShelfSalePrice(id);const _frM=_fr?getFreshMult(prestigeLevels.wildcrafter||0):1;
+        return{icon:(r?.icon||'🧪')+(_fr?'🌿':''),label:(r?.name||id)+(_fr?' (Fresh '+_frM+'×)':'')+' ×'+q,val:'+'+fmtMoney(price*q),color:_fr?'#60a040':TH.gold};});
+      mrSections.push({title:'🏪 Shelf Sales',lines:sLines});}
+    // Staff injury recovery
+    // Recovery applies to injuries that existed at the start of the day; injuries queued earlier this
+    // morning (staff forage, crises) are merged in untouched via the functional updater.
+    const injuryLines=[];
+    const updatedInjuries={};
+    const injHealBonus=getFeatureVal('staffInjuryReduction');
+    Object.entries(staffInjuries).forEach(([apId,inj])=>{
+      const effectiveDays=(inj?.daysLeft||0)-(injHealBonus||0);
+      if(effectiveDays>1){updatedInjuries[apId]={...inj,daysLeft:effectiveDays-1};}
+      else{injuryLines.push({icon:'🩹',label:(AP_POOL.find(a=>a.id===apId)?.name||apId)+' recovered from injury!',val:'Ready to work',color:TH.green});}
+    });
+    setStaffInjuries(prev=>{
+      const next={};
+      Object.entries(prev).forEach(([apId,inj])=>{
+        if(apId in staffInjuries&&prev[apId]===staffInjuries[apId]){if(apId in updatedInjuries)next[apId]=updatedInjuries[apId];}
+        else if(inj&&inj.daysLeft>0)next[apId]=inj; // new or re-injured this morning
+      });
+      return next;
+    });
+    Object.entries(updatedInjuries).forEach(([apId,inj])=>{
+      injuryLines.push({icon:'🩹',label:(AP_POOL.find(a=>a.id===apId)?.name||apId)+' injured',val:inj.daysLeft+'d recovery',color:'#c06040'});
+    });
+    // Staff results
+    const staffEntries=report.filter(r=>{const names=hiredAppr.map(a=>a.name);return names.includes(r.n);});
+    if(hiredAppr.length>0){
+      const staffLines=staffEntries.length>0?staffEntries.map(r=>({icon:r.i,label:r.n,val:r.r,color:r.t==='ok'?TH.green:r.t==='fail'?TH.red:TH.textDim})):
+        hiredAppr.map(a=>({icon:a.icon,label:a.name,val:'Idle',color:TH.textDim}));
+      staffLines.push(...injuryLines);
+      // Detect level-ups from XP gained this morning
+      hiredAppr.forEach(ap=>{
+        const added=_xpAdded[ap.id]||0;if(added<=0)return;
+        const oldXp=(apprXP[ap.id]||0);const newXp=oldXp+added;
+        const oldLv=Math.min(5,Math.floor(oldXp/100));const newLv=Math.min(5,Math.floor(newXp/100));
+        if(newLv>oldLv){
+          staffLines.push({icon:'⭐',label:ap.name+' LEVELED UP!',val:'★'.repeat(newLv)+' Lv'+newLv+' (+10% efficiency)',color:TH.gold});
+          addLog('⭐ '+ap.name+' reached Level '+newLv+'! Efficiency improved.','quest');
+        }
+      });
+      mrSections.push({title:'👥 Staff',lines:staffLines});
+    }
+    // Diplomat L1 Embassy: +1 daily rep per faction at Friendly+ (rep >= 150). Passive diplomatic infrastructure —
+    // the embassy keeps relationships warm even when you're not actively questing. Stacks with doubleRep on action gains.
+    if((prestigeLevels?.diplomat||0)>=1){
+      const friendlyFacs=Object.entries(fRep||{}).filter(([fid,r])=>FACTIONS[fid]&&r>=150);
+      if(friendlyFacs.length>0){
+        const diploLines=friendlyFacs.map(([fid])=>({icon:FACTIONS[fid].icon,label:FACTIONS[fid].name,val:'+1 rep',color:TH.green}));
+        setFRep(prev=>{const n={...prev};friendlyFacs.forEach(([fid])=>{n[fid]=(n[fid]||0)+1;});return n;});
+        mrSections.push({title:'🤝 Embassy Network',lines:diploLines});
+      }
+    }
+    // Resources gained (garden, greenhouse, ley line, faction gifts)
+    const resEntries=report.filter(r=>['Garden','Greenhouse','Ley Line'].includes(r.n));
+    if(resEntries.length>0)mrSections.push({title:'🌱 Workshop',lines:resEntries.map(r=>({icon:r.i,label:r.n,val:r.r,color:TH.green}))});
+    // Town events
+    if(firedEvents.length>0)mrSections.push({title:'🏘️ Town Events',lines:firedEvents.map(e=>{
+      const parts=[];if(e.result?.gold)parts.push((e.result.gold>0?'+':'')+fmtMoney(e.result.gold));
+      if(e.result?.xp)parts.push('+'+e.result.xp+' XP');
+      if(e.result?.items)Object.entries(e.result.items).forEach(([id,q])=>parts.push((INGR[id]?.icon||'')+' ×'+q));
+      return{icon:'🏘️',label:e.flavor||e.text,val:parts.join(', ')||'',color:e.result?.gold<0?TH.red:TH.gold};})});
+    // Discoveries
+    const discEntries=report.filter(r=>r.r?.includes('Discovered')||r.r?.includes('Inscription'));
+    if(discEntries.length>0)mrSections.push({title:'📚 Discoveries',lines:discEntries.map(r=>({icon:'✨',label:r.n,val:r.r,color:TH.cyan}))});
+    // Customers waiting
+    const custLines=[];
+    if(custResult.ench>0)custLines.push({icon:'✍️',label:'Enchanting customers',val:'×'+custResult.ench,color:TH.purple});
+    if(custResult.pot>0)custLines.push({icon:'🧪',label:'Potion customers',val:'×'+custResult.pot,color:TH.purple});
+    if(custLines.length>0)mrSections.push({title:'🛒 Customers',lines:custLines});
+    else mrSections.push({title:'🛒 Customers',lines:[{icon:'😴',label:'No customers today',val:'',color:TH.textDim}]});
+    // Shelf inventory (after overnight + brand sales)
+    const shelfEntries=Object.entries(postSaleShelves).filter(([,q])=>q>0);
+    const shelfCap=SHELF_MAX;
+    const shelfTotal=shelfEntries.reduce((s,[,q])=>s+q,0);
+    if(shelfEntries.length>0){
+      const sLines=shelfEntries.map(([id,q])=>{const baseId=getBaseRecipeId(id);const r=RECIPES.find(x=>x.id===baseId);const sq=QUALITY[getPotQuality(id)]||QUALITY.std;const _sinf=getInfusion(id);return{icon:r?.icon||'🧪',label:(r?.name||id)+(sq.icon?' '+sq.icon:'')+(_sinf?' '+INFUSIONS[_sinf]?.icon:''),val:'×'+q,color:TH.gold};});
+      sLines.push({icon:'📊',label:'Shelf capacity',val:shelfTotal+'/'+shelfCap,color:shelfTotal>=shelfCap?TH.red:TH.textDim});
+      mrSections.push({title:'🏪 Shelf Stock',lines:sLines});
+    } else {mrSections.push({title:'🏪 Shelf Stock',lines:[{icon:'📊',label:'Shelves empty',val:'0/'+shelfCap,color:TH.textDim}]});}
+    // Rare stock in the shop today
+    if(procList.length>0)mrSections.push({title:'📦 Rare Stock',lines:procList.map(p=>({icon:p.icon,label:p.name,val:fmtMoney(p.price),color:TH.purple}))});
+    // Quests available
+    const availQ=locQuests.filter(q=>!doneQ.includes(q.id)&&!aQ.find(a=>a.id===q.id)&&getLvl(xp)>=q.unlock&&(!q.fReq||getRL(q.faction)>=q.fReq)&&(!q.reqQuest||doneQ.includes(q.reqQuest)));
+    const activeQ=aQ.length;
+    const questLines=[];
+    if(activeQ>0)questLines.push({icon:'📌',label:'Active quests',val:'×'+activeQ,color:TH.cyan});
+    if(availQ.length>0)questLines.push({icon:'📜',label:'Available on board',val:'×'+availQ.length,color:TH.gold});
+    if(boardQ.length>0)questLines.push({icon:'📋',label:'Board requests',val:'×'+boardQ.length,color:TH.teal});
+    if(questLines.length>0)mrSections.push({title:'📜 Quests',lines:questLines});
+    // Faction standing
+    const facLines=Object.entries(locFactions).map(([fid,f])=>{const rep=fRep[fid]||0;const rl=getRepLvl(rep);const nxt=rl<REP_TH.length-1?REP_TH[rl+1]:null;return{icon:f.icon,label:f.name+' — '+REP_LVS[rl],val:nxt?rep+'/'+nxt:'MAX',color:factionAlign===fid?f.color:TH.textDim};});
+    mrSections.push({title:'🏛️ Faction Standing',lines:facLines});
+    // ═══ CLOCKWORK ASSISTANT (Tinkerer gadget) ═══
+    const clockworkGadget=gadgets.find(g=>g.blueprintId==='gd_assistant'&&g.equipped);
+    if(clockworkGadget){
+      const mk=clockworkGadget.mk;const starRating=mk>=3?2:mk>=2?1:0;
+      const eff=0.5+starRating*0.2;const clockLines=[];
+      // Pick a random task
+      const tasks=['brew','forage','shopkeep'];const task=tasks[Math.floor(Math.random()*tasks.length)];
+      if(task==='brew'&&Object.keys(pots).length>0){
+        // Brew a random known potion
+        const brewable=RECIPES.filter(r=>known.includes(r.id)&&dayHas(recipeCost(r)));
+        if(brewable.length>0){const r=brewable[Math.floor(Math.random()*brewable.length)];
+          if(Math.random()<eff){
+            daySpend(recipeCost(r));
+            setPots(p=>({...p,[r.id]:(p[r.id]||0)+1}));
+            clockLines.push({icon:'🤖',label:'Brewed '+r.icon+r.name,val:'×1',color:TH.green});
+          } else {clockLines.push({icon:'🤖',label:'Attempted '+r.icon+r.name+' — failed',val:'',color:TH.red});}
+        } else {clockLines.push({icon:'🤖',label:'No brewable recipes available',val:'idle',color:TH.textDim});}
+      } else if(task==='forage'){
+        const common=byZone({tidecrest:['kelp_frond','sea_salt','barnacle','tide_moss','sand_dollar'],ashfall:['sunpetal','dustite','scorchroot','ash_salt','dried_cactus'],base:['ashbloom','embercap','ironroot_bark','char_root','bark_resin']});
+        const found=Math.max(1,Math.floor(eff*2));
+        const items={};for(let i=0;i<found;i++){const id=common[Math.floor(Math.random()*common.length)];items[id]=(items[id]||0)+1;}
+        setInv(p=>{const n={...p};Object.entries(items).forEach(([id,q])=>{n[id]=(n[id]||0)+q;});return n;});
+        clockLines.push({icon:'🤖',label:'Gathered ingredients',val:Object.entries(items).map(([id,q])=>(INGR[id]?.icon||id)+'×'+q).join(' '),color:TH.green});
+      } else {
+        const shopGold=Math.floor(5+starRating*5+Math.random()*10);
+        setGold(g=>g+shopGold);book('🤖','Clockwork Assistant (shop)',shopGold);
+        clockLines.push({icon:'🤖',label:'Tended shop',val:'+'+fmtMoney(shopGold),color:TH.gold});
+      }
+      if(clockLines.length>0)mrSections.push({title:'🤖 Clockwork Assistant'+(starRating>0?' '+'★'.repeat(starRating):''),lines:clockLines});
+    }
+    // ═══ CONSTRUCTOR BLUEPRINT MORNING EFFECTS ═══
+    const completedBPs=blueprints.filter(b=>b.complete);
+    if(completedBPs.length>0){
+      const bpLines=[];const sanctum=completedBPs.find(b=>b.bpId==='bp_sanctum');const mult=sanctum?1.5:1;
+      // Rain Collector
+      const rain=completedBPs.find(b=>b.bpId==='bp_rain');
+      if(rain){const n=Math.floor(2*mult);const common=byZone({tidecrest:['kelp_frond','sea_salt','barnacle','tide_moss','sand_dollar','crab_shell','sea_glass','foam_bloom'],ashfall:['sunpetal','dustite','scorchroot','ash_salt','crystal_salt','dried_cactus','sand_glass','salt_flake'],base:['ashbloom','embercap','ironroot_bark','char_root','bark_resin','ash_salt','cinder_moss','ember_petal']});
+        const items={};for(let i=0;i<n;i++){const id=common[Math.floor(Math.random()*common.length)];items[id]=(items[id]||0)+1;}
+        setInv(p=>{const nn={...p};Object.entries(items).forEach(([id,q])=>{nn[id]=(nn[id]||0)+q;});return nn;});
+        bpLines.push({icon:'💧',label:'Rain Collector',val:Object.entries(items).map(([id,q])=>(INGR[id]?.icon||id)+'×'+q).join(' '),color:TH.green});}
+      // Supply Tunnel
+      const tunnel=completedBPs.find(b=>b.bpId==='bp_tunnel');
+      if(tunnel){const n=Math.floor(3*mult);const mid=byZone({tidecrest:['coral_shard','pearl_dust','nautilus_shell','sponge_extract','salt_crystal','phosphor_moss','brine_crystal'],ashfall:['crystal_salt','obsidian_shard','ashite','brine_moss','heatstone','desert_iron','scorchroot'],base:['moonpetal','gloomcap','ashite','volcanic_essence','ironroot_bark','hearthstone','embercap']});
+        const items={};for(let i=0;i<n;i++){const id=mid[Math.floor(Math.random()*mid.length)];items[id]=(items[id]||0)+1;}
+        setInv(p=>{const nn={...p};Object.entries(items).forEach(([id,q])=>{nn[id]=(nn[id]||0)+q;});return nn;});
+        bpLines.push({icon:'🚇',label:'Supply Tunnel',val:Object.entries(items).map(([id,q])=>(INGR[id]?.icon||id)+'×'+q).join(' '),color:TH.green});}
+      // Automaton Forge
+      const auto=completedBPs.find(b=>b.bpId==='bp_automaton');
+      if(auto){const brewable=RECIPES.filter(r=>known.includes(r.id)&&dayHas(recipeCost(r)));
+        if(brewable.length>0){const r=brewable[Math.floor(Math.random()*brewable.length)];
+          daySpend(recipeCost(r));
+          setPots(p=>({...p,[r.id]:(p[r.id]||0)+1}));
+          bpLines.push({icon:'🤖',label:'Automaton Forge',val:'Brewed '+r.icon+r.name,color:TH.green});
+        } else {bpLines.push({icon:'🤖',label:'Automaton Forge',val:'No ingredients available',color:TH.textDim});}}
+      // Training Room (effect applied in staff processing)
+      const train=completedBPs.find(b=>b.bpId==='bp_training');
+      if(train)bpLines.push({icon:'🎓',label:'Training Room',val:'Staff XP ×'+Math.floor(2*mult),color:TH.gold});
+      // Alchemical Forge — auto-brews most profitable recipe each morning
+      const alchForge=completedBPs.find(b=>b.bpId==='bp_alch_forge');
+      if(alchForge){const profitable=RECIPES.filter(r=>known.includes(r.id)&&dayHas(recipeCost(r))).sort((a,b)=>b.xp-a.xp);
+        if(profitable.length>0){const r=profitable[0];daySpend(recipeCost(r));
+          const potId=qualPotId(r.id,'mw');setPots(p=>({...p,[potId]:(p[potId]||0)+1}));setBrewCounts(p=>({...p,[r.id]:(p[r.id]||0)+1}));
+          bpLines.push({icon:'🔥',label:'Alchemical Forge',val:'Auto-brewed '+r.icon+r.name+' (MW)',color:TH.gold});
+        } else {bpLines.push({icon:'🔥',label:'Alchemical Forge',val:'No ingredients available',color:TH.textDim});}}
+      // Crystal Greenhouse — produces 1 random rare ingredient daily
+      const greenhouse=completedBPs.find(b=>b.bpId==='bp_greenhouse');
+      if(greenhouse){const rare=byZone({tidecrest:['storm_glass_tc','deep_brine','deep_coral','moonfish_scale','abyssal_diamond'],ashfall:['volcanic_essence','obsidian_shard','heatstone','desert_rose','temple_gold'],base:['deep_crystal','volcanic_essence','starwort','moonpetal','veil_shard']});
+        const id=rare[Math.floor(Math.random()*rare.length)];modInv(id,1);
+        bpLines.push({icon:'🌿',label:'Crystal Greenhouse',val:(INGR[id]?.icon||'')+INGR[id]?.name,color:TH.green});}
+      // Arcane Conduit — +50 Energy per day (added to baseE as conduitE; reported here)
+      const conduit=completedBPs.find(b=>b.bpId==='bp_conduit');
+      if(conduit)bpLines.push({icon:'⚡',label:'Arcane Conduit',val:'+50 Energy (in daily total)',color:TH.gold});
+      if(bpLines.length>0)mrSections.push({title:'🏗️ Constructor Projects',lines:bpLines});
+    }
+    // ═══ INGREDIENT SPOILAGE ═══
+    const spoilLines=[];
+    let totalResidueGained=0;
+    const spoilSalvage=getFeatureVal('spoilSalvage');
+    // Build spoilage plan from current inv snapshot (for report), then apply via functional updater
+    const spoilPlan={};
+    Object.entries(dayInv).forEach(([id,qty])=>{
+      if(qty<=0)return;
+      const threshold=getSpoilThreshold(id);
+      if(qty<=threshold)return;
+      const excess=qty-threshold;
+      let spoiled=0;
+      for(let i=0;i<excess;i++){if(Math.random()<0.10)spoiled++;}
+      if(spoiled>0){
+        spoilPlan[id]=spoiled;
+        const salvaged=spoilSalvage>0?Math.floor(spoiled*spoilSalvage):0;
+        if(salvaged>0)totalResidueGained+=salvaged;
+        spoilLines.push({icon:'🗑️',label:(INGR[id]?.icon||'')+' '+(INGR[id]?.name||id),val:'-'+spoiled+(salvaged>0?' (♻'+salvaged+' residue)':''),color:'#c06040'});
+      }
+    });
+    if(spoilLines.length>0){
+      setInv(p=>{const n={...p};Object.entries(spoilPlan).forEach(([id,spoiled])=>{n[id]=Math.max(0,(n[id]||0)-spoiled);if(n[id]<=0)delete n[id];});if(totalResidueGained>0)n.alchemical_residue=(n.alchemical_residue||0)+totalResidueGained;return n;});
+      mrSections.push({title:'🗑️ Spoilage (safe storage: '+getSpoilThreshold('')+')',lines:spoilLines});
+    }
+
+    // ═══ ELIXIR BUFFS — Decrement and report ═══
+    const buffLines=[];
+    const updatedBuffs={...activeBuffs};
+    Object.entries(updatedBuffs).forEach(([buffId,buff])=>{
+      if(buff.daysLeft<=0)return;
+      const eb=ELIXIR_BUFFS[buffId];if(!eb)return;
+      const newDays=buff.daysLeft-1;
+      updatedBuffs[buffId]={...buff,daysLeft:newDays};
+      if(newDays>0){
+        buffLines.push({icon:eb.icon,label:eb.name,val:newDays+' day'+(newDays>1?'s':'')+' remaining',color:'#50c070'});
+      } else {
+        buffLines.push({icon:eb.icon,label:eb.name+' expired',val:'Effect ended',color:TH.textDim});
+        delete updatedBuffs[buffId];
+      }
+    });
+    setActiveBuffs(updatedBuffs);
+    if(buffLines.length>0)mrSections.push({title:'🧪 Active Elixirs',lines:buffLines});
+
+    // ═══ MAGITECH AUTOMATA MORNING ═══
+    if(automata.length>0&&(prestigeLevels.magitech||0)>=1){
+      const autoLines=[];
+      const autoEff=getAutoEfficiency();
+      const mLv=prestigeLevels.magitech||0;
+      automata.filter(a=>a.task).forEach(auto=>{
+        const task=auto.task;const aLvl=getAutoLvl(auto.id);
+        const effBonus=aLvl*0.05; // +5% per automaton level
+        const totalEff=Math.min(1.2,autoEff+effBonus);
+        const autoXpGain=10;
+        if(task.type==='brew'&&task.target){
+          const recipe=RECIPES.find(r=>r.id===task.target);
+          if(recipe){
+            const cost=recipeCost(recipe);
+            const hasMats=dayHas(cost);
+            if(hasMats&&Math.random()<totalEff){
+              daySpend(cost);modPot(recipe.id,1);
+              autoLines.push({icon:'🤖',label:auto.name+' brewed '+recipe.icon+recipe.name,val:'✓',color:TH.green});
+            } else if(!hasMats){
+              autoLines.push({icon:'🤖',label:auto.name,val:'No materials for '+recipe.name,color:TH.red});
+            } else {
+              autoLines.push({icon:'🤖',label:auto.name+' failed '+recipe.name,val:'Efficiency: '+Math.round(totalEff*100)+'%',color:TH.orange});
+            }
+          }
+        } else if(task.type==='forage'&&task.target){
+          const reg=locRegions.find(r=>r.id===task.target);
+          if(reg&&Math.random()<totalEff){
+            const items={};const n=2+aLvl;
+            for(let i=0;i<n;i++){const id=reg.ingr[Math.floor(Math.random()*reg.ingr.length)];items[id]=(items[id]||0)+1;}
+            setInv(p=>{const nn={...p};Object.entries(items).forEach(([id,q])=>{nn[id]=(nn[id]||0)+q;});return nn;});
+            autoLines.push({icon:'🤖',label:auto.name+' foraged '+reg.icon+reg.name,val:Object.entries(items).map(([id,q])=>(INGR[id]?.icon||'')+'×'+q).join(' '),color:TH.green});
+          } else {
+            autoLines.push({icon:'🤖',label:auto.name+' foraged (failed)',val:reg?.name||'?',color:TH.orange});
+          }
+        } else if(task.type==='shopkeep'){
+          if(Math.random()<totalEff){
+            const g=5+aLvl*3+Math.floor(Math.random()*8);setGold(gg=>gg+g);book('🤖',auto.name+' (shop)',g);
+            autoLines.push({icon:'🤖',label:auto.name+' tended shop',val:'+'+fmtMoney(g),color:TH.gold});
+          } else {
+            autoLines.push({icon:'🤖',label:auto.name+' shop (slow day)',val:'+0s',color:TH.textDim});
+          }
+        } else if(task.type==='enchant'&&canAutoEnchant()){
+          if(Math.random()<totalEff){
+            const g=8+aLvl*4+Math.floor(Math.random()*12);setGold(gg=>gg+g);book('🤖',auto.name+' (enchanting)',g);
+            autoLines.push({icon:'🤖',label:auto.name+' inscribed enchantments',val:'+'+fmtMoney(g),color:TH.purple});
+          } else {
+            autoLines.push({icon:'🤖',label:auto.name+' enchanting (failed)',val:'Misaligned runes',color:TH.orange});
+          }
+        }
+        // XP gain for automata (Lv3+)
+        if(mLv>=3){setAutomata(prev=>prev.map(a=>a.id===auto.id?{...a,xp:(a.xp||0)+autoXpGain}:a));
+          const oldLv=getAutoLvl(auto.id);const newLv=Math.min(5,Math.floor(((auto.xp||0)+autoXpGain)/80));
+          if(newLv>oldLv)autoLines.push({icon:'⭐',label:auto.name+' LEVELED UP!',val:'★'.repeat(newLv)+' Lv'+newLv,color:TH.gold});
+        }
+      });
+      // Self-repairing at Lv5: automata that failed still produce something small
+      if(mLv>=5){
+        automata.filter(a=>a.task&&!autoLines.some(l=>l.label.includes(a.name)&&[TH.green,TH.gold,TH.purple].includes(l.color))).forEach(auto=>{ // only automata that produced nothing
+          autoLines.push({icon:'🔧',label:auto.name+' self-repair',val:'Minor output recovered',color:TH.textDim});
+          setGold(g=>g+2);book('🔧',auto.name+' (self-repair)',2);
+        });
+      }
+      // Store last report on each automaton for UI display
+      if(autoLines.length>0){
+        setAutomata(prev=>prev.map(a=>{
+          const myLine=autoLines.find(l=>l.label&&l.label.includes(a.name));
+          return myLine?{...a,lastReport:{text:myLine.label.replace(a.name+' ',''),val:myLine.val,color:myLine.color,day:day+1}}:a;
+        }));
+        mrSections.push({title:'🤖 Automata',lines:autoLines});
+      }
+    }
+    // ═══ STAFF ACADEMY MORNING (curricula) ═══
+    if(playerFeats.includes('master_trainer')){
+      const currResults=processCurriculum();
+      if(currResults.length>0)mrSections.push({title:'🎓 Academy',lines:currResults});
+    }
+    // ═══ QUARTERMASTER SUPPLY NETWORK MORNING ═══
+    if(eSpec('warden')==='quartermaster'){
+      const qmLines=[];
+      // Resolve returning caravans
+      caravans.filter(c=>!c.resolved&&c.returnDay<=day+1).forEach(c=>{
+        const route=CARAVAN_ROUTES.find(r=>r.id===c.routeId);if(!route)return;
+        const ch=pureCheck('endurance',route.dc);
+        const cargoValue=Object.values(c.cargo).reduce((s,v)=>s+v,0);
+        if(ch.total>=route.dc){
+          // Success — trade goods returned
+          const tradeItems={};const n=1+Math.floor(cargoValue/2);
+          for(let i=0;i<n;i++){const id=route.tradeIngr[Math.floor(Math.random()*route.tradeIngr.length)];tradeItems[id]=(tradeItems[id]||0)+1;}
+          setInv(p=>{const nn={...p};Object.entries(tradeItems).forEach(([id,q])=>{nn[id]=(nn[id]||0)+q;});return nn;});
+          const tradeGold=Math.floor(route.tradeGold*(1+cargoValue*0.2)*GOLD_MULT);setGold(g=>g+tradeGold);book('🚚',route.name,tradeGold);
+          qmLines.push({icon:'🚚',label:route.name+' returned!',val:Object.entries(tradeItems).map(([id,q])=>(INGR[id]?.icon||id)+'×'+q).join(' ')+' +'+fmtMoney(tradeGold),color:TH.green});
+        } else {
+          // Partial loss
+          const partialGold=Math.floor(route.tradeGold*0.4*GOLD_MULT);setGold(g=>g+partialGold);book('🚚',route.name+' (rough trip)',partialGold);
+          qmLines.push({icon:'🚚',label:route.name+' — rough trip',val:'Partial cargo lost. +'+fmtMoney(partialGold),color:TH.orange});
+        }
+      });
+      setCaravans(prev=>prev.map(c=>c.returnDay<=day+1?{...c,resolved:true}:c));
+      // Supply chain deliveries
+      let totalMaint=0;
+      supplyChains.forEach(sc=>{
+        const partner=SUPPLY_PARTNERS.find(p=>p.id===sc.partnerId);if(!partner)return;
+        totalMaint+=partner.maint;
+        const tierKey='t'+sc.tier;
+        const outIngr=partner.output[tierKey]||[];
+        const outQty=partner.outputQty[tierKey]||[];
+        const items={};outIngr.forEach((id,i)=>{const q=outQty[i]||1;items[id]=(items[id]||0)+q;});
+        setInv(p=>{const nn={...p};Object.entries(items).forEach(([id,q])=>{nn[id]=(nn[id]||0)+q;});return nn;});
+        const gOut=partner.goldOutput[tierKey]||0;if(gOut>0){setGold(g=>g+gOut);book(partner.icon,partner.name,gOut);}
+        qmLines.push({icon:partner.icon,label:partner.name+' (T'+sc.tier+')',val:Object.entries(items).map(([id,q])=>(INGR[id]?.icon||id)+'×'+q).join(' ')+(gOut>0?' +'+fmtMoney(gOut):''),color:partner.color});
+      });
+      if(totalMaint>0){setGold(g=>g-totalMaint);book('🚚','Supply network maintenance',-totalMaint);qmLines.push({icon:'💰',label:'Maintenance',val:fmtMoney(-totalMaint),color:TH.red});}
+      // Show active caravans
+      caravans.filter(c=>!c.resolved&&c.returnDay>day+1).forEach(c=>{
+        const route=CARAVAN_ROUTES.find(r=>r.id===c.routeId);
+        qmLines.push({icon:'🚚',label:route?.name||'Caravan',val:'Returns day '+c.returnDay,color:TH.textDim});
+      });
+      if(qmLines.length>0)mrSections.push({title:'🚚 Supply Network',lines:qmLines});
+    }
+    // ═══ INGREDIENT CONTRACT DELIVERIES ═══
+    if(ingredientContracts.length>0){
+      const contractLines=[];
+      let totalContractCost=0;
+      const costReduction=getFeatureVal('contractCostReduction');
+      ingredientContracts.forEach(c=>{
+        const ig=INGR[c.ingrId];if(!ig)return;
+        setInv(p=>({...p,[c.ingrId]:(p[c.ingrId]||0)+c.qty}));
+        const adjCost=Math.max(1,Math.floor(c.dailyCost*(1-costReduction)));
+        totalContractCost+=adjCost;
+        contractLines.push({icon:ig.icon,label:ig.name+' ×'+c.qty,val:fmtMoney(-adjCost)+'/day'+(costReduction>0?' ('+Math.round(costReduction*100)+'% off)':''),color:TH.green});
+      });
+      if(totalContractCost>0){
+        setGold(g=>g-totalContractCost);book('📦','Ingredient contracts',-totalContractCost);
+        contractLines.push({icon:'💰',label:'Contract costs',val:fmtMoney(-totalContractCost)+' total',color:TH.red});
+      }
+      if(contractLines.length>0)mrSections.push({title:'📦 Ingredient Contracts',lines:contractLines});
+    }
+    // ═══ SETTLEMENT INVESTMENT MORNING ═══
+    {
+      const settLines=[];
+      // Construction progress
+      if(settlementConstruction){
+        const proj=SETTLEMENT_PROJECTS.find(p=>p.id===settlementConstruction.projectId);
+        const staffBoost=Math.min(settlementConstruction.staffAssigned||0,hiredAppr.filter(a=>!apprTasks[a.id]).length); // only idle staff can help build
+        const progressPerDay=1+staffBoost;
+        const newDaysLeft=Math.max(0,settlementConstruction.daysLeft-progressPerDay);
+        if(newDaysLeft<=0){
+          // Project completed!
+          setSettlementProjects(prev=>[...prev,settlementConstruction.projectId]);
+          setSettlementConstruction(null);
+          settLines.push({icon:proj?.icon||'🏗️',label:proj?.name+' COMPLETED!',val:proj?.effectDesc||'',color:TH.gold});
+          addLog(`🏗️ ${proj?.icon} ${proj?.name} is complete! ${proj?.effectDesc}`,'quest');
+        } else {
+          setSettlementConstruction(prev=>prev?{...prev,daysLeft:newDaysLeft}:null);
+          settLines.push({icon:'🏗️',label:proj?.name+' under construction',val:newDaysLeft+' days remaining',color:TH.textDim});
+        }
+      }
+      // Herbalist Garden: produce random ingredients
+      if(settlementProjects.includes('sp_garden')){
+        const gardenN=2;const gardenItems={};
+        const commonIngr=locRegions.filter(r=>r.diff<=2).flatMap(r=>r.ingr);
+        for(let i=0;i<gardenN;i++){const id=commonIngr[Math.floor(Math.random()*commonIngr.length)];if(id)gardenItems[id]=(gardenItems[id]||0)+1;}
+        setInv(p=>{const n={...p};Object.entries(gardenItems).forEach(([id,q])=>{n[id]=(n[id]||0)+q;});return n;});
+        const gStr=Object.entries(gardenItems).map(([id,q])=>(INGR[id]?.icon||id)+'×'+q).join(' ');
+        settLines.push({icon:'🌿',label:'Garden harvest',val:gStr,color:TH.green});
+      }
+      // Fortified Walls: trade confidence gold
+      if(settlementProjects.includes('sp_walls')){
+        const wallGold=50;setGold(g=>g+wallGold);book('🏰','Fortified Walls (trade)',wallGold);
+        settLines.push({icon:'🏰',label:'Trade confidence',val:'+'+fmtMoney(wallGold),color:TH.gold});
+      }
+      // Monument: daily faction rep
+      if(settlementProjects.includes('sp_monument')){
+        const repPerFaction=5;
+        Object.keys(fRep).forEach(fid=>{if(FACTIONS[fid])addRep(fid,repPerFaction);});
+        settLines.push({icon:'🏆',label:'Monument renown',val:'+'+repPerFaction+' rep all factions',color:TH.gold});
+      }
+      // Market Square: weekly traveling merchant
+      if(settlementProjects.includes('sp_market')&&day%7===0){
+        settLines.push({icon:'🏪',label:'Traveling Merchant arrived!',val:'Check the shop for rare stock',color:TH.gold});
+        // Add 3 random rare items to procure list
+        const rarePool2=locRegions.filter(r=>r.diff>=3).flatMap(r=>r.ingr);
+        const merchItems=[];for(let i=0;i<3&&rarePool2.length>0;i++){
+          const idx=Math.floor(Math.random()*rarePool2.length);const id=rarePool2.splice(idx,1)[0];
+          const ig=INGR[id];if(ig)merchItems.push({id,price:Math.ceil((ig.val||10)*2),name:ig.name,icon:ig.icon});
+        }
+        if(merchItems.length>0)setProcureItems(prev=>[...prev,...merchItems]);
+      }
+      if(settLines.length>0)mrSections.push({title:'🏘️ Settlement',lines:settLines});
+    }
+    // ═══ RANGER COMPANION MORNING EFFECTS ═══
+    if(companions.length>0){
+      const compLines=[];
+      const compReportEntries=[];
+      companions.filter(c=>c.active).forEach(c=>{
+        const comp=RANGER_COMPANIONS.find(r=>r.id===c.compId);if(!comp)return;
+        const loy=c.loyalty;
+        const compEffB=1+getFeatureVal('companionEffBonus');
+        const entry={id:comp.id,icon:comp.icon,img:comp.img,name:comp.name,loyalty:loy,actions:[]};
+        // Primary abilities
+        const lvBonus=Math.floor(level/3); // +1 yield/gold per 3 player levels
+        if(comp.primary.type==='gather'){
+          const yield_=Math.floor((comp.primary.baseYield[Math.min(loy-1,4)]+lvBonus)*compEffB);
+          const items={};for(let i=0;i<yield_;i++){const id=comp.primary.ingr[Math.floor(Math.random()*comp.primary.ingr.length)];items[id]=(items[id]||0)+1;}
+          setInv(p=>{const n={...p};Object.entries(items).forEach(([id,q])=>{n[id]=(n[id]||0)+q;});return n;});
+          const valStr=Object.entries(items).map(([id,q])=>(INGR[id]?.icon||id)+'×'+q).join(' ');
+          const gatherXp=Math.floor(yield_*2);gainXP(gatherXp);
+          compLines.push({icon:comp.icon,label:comp.name+' gathered',val:valStr+' (+'+gatherXp+' XP)',color:TH.green});
+          entry.actions.push({type:'gather',text:comp.name+' brought back ingredients',val:valStr,color:TH.green});
+        } else if(comp.primary.type==='shop'){
+          const g=Math.floor((comp.primary.baseGold[Math.min(loy-1,4)]+lvBonus*3)*compEffB);setGold(gg=>gg+g);book(comp.icon,comp.name+' (shop)',g);
+          compLines.push({icon:comp.icon,label:comp.name+' tended shop',val:'+'+fmtMoney(g),color:TH.gold});
+          entry.actions.push({type:'shop',text:comp.name+' helped at the shop',val:'+'+fmtMoney(g),color:TH.gold});
+        } else if(comp.primary.type==='staff_morale'){
+          const morBoost=comp.primary.values[Math.min(loy-1,4)];
+          setHiredAppr(prev=>prev.map(a=>({...a,morale:Math.min(100,(a.morale||50)+morBoost)})));
+          compLines.push({icon:comp.icon,label:comp.name+' boosted morale',val:'+'+morBoost+'% all staff',color:TH.green});
+          entry.actions.push({type:'morale',text:comp.name+' lifted everyone\'s spirits',val:'+'+morBoost+'% staff morale',color:TH.green});
+        } else if(comp.primary.type==='customers'){
+          const extra=comp.primary.values[Math.min(loy-1,4)];
+          if(extra>0){compLines.push({icon:comp.icon,label:comp.name+' attracted customers',val:'+'+extra+' today',color:TH.gold});
+          entry.actions.push({type:'customers',text:comp.name+' drew in visitors',val:'+'+extra+' extra customers',color:TH.gold});}
+        } else if(comp.primary.type==='research'){
+          const bonus=comp.primary.values[Math.min(loy-1,4)];
+          compLines.push({icon:comp.icon,label:comp.name+' sharpened focus',val:'+'+(bonus*100).toFixed(0)+'% discovery',color:'#9080c0'});
+          entry.actions.push({type:'research',text:comp.name+' enhanced your concentration',val:'+'+(bonus*100).toFixed(0)+'% discovery chance',color:'#9080c0'});
+        } else if(comp.primary.type==='danger_reduce'||comp.primary.type==='danger'){
+          const pct=comp.primary.values[Math.min(loy-1,4)];
+          compLines.push({icon:comp.icon,label:comp.name+' scouting',val:'-'+(pct*100).toFixed(0)+'% danger',color:'#6090c0'});
+          entry.actions.push({type:'scout',text:comp.name+' scouted the area',val:'-'+(pct*100).toFixed(0)+'% expedition danger',color:'#6090c0'});
+        }
+        // companionDualAction: companions perform primary action a second time (all types)
+        if(getFeatureVal('companionDualAction')){
+          if(comp.primary.type==='gather'){
+            const yield2=Math.floor((comp.primary.baseYield[Math.min(loy-1,4)]+lvBonus)*compEffB);
+            const items2={};for(let i=0;i<yield2;i++){const id=comp.primary.ingr[Math.floor(Math.random()*comp.primary.ingr.length)];items2[id]=(items2[id]||0)+1;}
+            setInv(p=>{const n={...p};Object.entries(items2).forEach(([id,q])=>{n[id]=(n[id]||0)+q;});return n;});
+            const valStr2=Object.entries(items2).map(([id,q])=>(INGR[id]?.icon||id)+'×'+q).join(' ');
+            compLines.push({icon:comp.icon,label:comp.name+' gathered (2nd)',val:valStr2,color:TH.green});
+            entry.actions.push({type:'gather',text:comp.name+' went out again',val:valStr2,color:TH.green});
+          } else if(comp.primary.type==='shop'){
+            const g2=Math.floor((comp.primary.baseGold[Math.min(loy-1,4)]+lvBonus*3)*compEffB);setGold(gg=>gg+g2);book(comp.icon,comp.name+' (shop)',g2);
+            compLines.push({icon:comp.icon,label:comp.name+' tended shop (2nd)',val:'+'+fmtMoney(g2),color:TH.gold});
+            entry.actions.push({type:'shop',text:comp.name+' helped at the shop again',val:'+'+fmtMoney(g2),color:TH.gold});
+          } else if(comp.primary.type==='customers'){
+            const custB=comp.primary.values[Math.min(loy-1,4)]||1;
+            compLines.push({icon:comp.icon,label:comp.name+' greeted (2nd)',val:'+'+custB+' more customers',color:TH.gold});
+            entry.actions.push({type:'customers',text:comp.name+' attracted another round',val:'+'+custB+' customers',color:TH.gold});
+          } else if(comp.primary.type==='staff_morale'){
+            const morB2=comp.primary.values[Math.min(loy-1,4)]||5;
+            setHiredAppr(prev=>prev.map(a=>({...a,morale:Math.min(100,(a.morale||50)+morB2)})));
+            compLines.push({icon:comp.icon,label:comp.name+' rallied staff (2nd)',val:'+'+morB2+'% morale',color:TH.green});
+            entry.actions.push({type:'morale',text:comp.name+' boosted morale again',val:'+'+morB2+'% staff morale',color:TH.green});
+          } else if(comp.primary.type==='research'){
+            const discB2=comp.primary.values[Math.min(loy-1,4)]||0.05;
+            compLines.push({icon:comp.icon,label:comp.name+' inspired (2nd)',val:'+'+(discB2*100).toFixed(0)+'% discovery',color:'#9080c0'});
+            entry.actions.push({type:'research',text:comp.name+' found another clue',val:'+'+(discB2*100).toFixed(0)+'% discovery',color:'#9080c0'});
+          } else if(comp.primary.type==='danger_reduce'||comp.primary.type==='danger'){
+            const danB2=comp.primary.values[Math.min(loy-1,4)]||0.10;
+            compLines.push({icon:comp.icon,label:comp.name+' scouted (2nd)',val:'-'+(danB2*100).toFixed(0)+'% danger',color:'#6090c0'});
+            entry.actions.push({type:'scout',text:comp.name+' scouted the area again',val:'-'+(danB2*100).toFixed(0)+'% danger',color:'#6090c0'});
+          }
+        }
+        // Secondary abilities (loyalty 3+ unless unlockLv is 2)
+        const secUnlock=comp.secondary?.unlockLv||3;
+        if(loy>=secUnlock&&comp.secondary){
+          const sec=comp.secondary;
+          if(sec.type==='organize'){
+            compLines.push({icon:'📦',label:'Organized shelves',val:'+'+loy+' capacity',color:TH.textDim});
+            entry.actions.push({type:'secondary',text:'Organized the shop shelves',val:'+'+loy+' shelf capacity',color:TH.textDim});
+          } else if(sec.type==='xp_aura'||sec.type==='xp_boost'){
+            const xpPct=sec.bonusPerLoyalty?Math.floor(sec.bonusPerLoyalty*loy*100):5;
+            compLines.push({icon:'✨',label:comp.name+' inspiration',val:'+'+xpPct+'% XP',color:'#9080c0'});
+            entry.actions.push({type:'secondary',text:comp.name+' sharpened your mind',val:'+'+xpPct+'% XP today',color:'#9080c0'});
+          } else if(sec.type==='morale_aura'){
+            const morB=5+Math.floor(loy*1.5);
+            setHiredAppr(prev=>prev.map(a=>({...a,morale:Math.min(100,(a.morale||50)+morB)})));
+            compLines.push({icon:'❤️',label:comp.name+' cheered staff',val:'+'+morB+'% morale',color:TH.green});
+            entry.actions.push({type:'secondary',text:'Cheered up the workshop crew',val:'+'+morB+'% staff morale',color:TH.green});
+          } else if(sec.type==='yield'){
+            const yieldPct=Math.floor((sec.bonusPerLoyalty||0.10)*loy*100);
+            compLines.push({icon:'🌿',label:comp.name+' yield bonus',val:'+'+yieldPct+'% forage yield',color:TH.green});
+            entry.actions.push({type:'secondary',text:comp.name+' guides your foraging',val:'+'+yieldPct+'% yield today',color:TH.green});
+          } else if(sec.type==='craft'){
+            const craftB=Math.floor((sec.bonusPerLoyalty||1)*Math.min(loy,3));
+            compLines.push({icon:'⚗️',label:comp.name+' craft focus',val:'+'+craftB+' craft bonus',color:TH.gold});
+            entry.actions.push({type:'secondary',text:comp.name+' assists your crafting',val:'+'+craftB+' craft bonus',color:TH.gold});
+          } else if(sec.type==='discovery'){
+            const discPct=Math.floor((sec.bonusPerLoyalty||0.05)*loy*100);
+            compLines.push({icon:'🔬',label:comp.name+' research aid',val:'+'+discPct+'% discovery',color:'#9080c0'});
+            entry.actions.push({type:'secondary',text:comp.name+' found a research clue',val:'+'+discPct+'% discovery chance',color:'#9080c0'});
+          } else if(sec.type==='guard'){
+            const banditTier=getThreatTier(newThreats[locThreatIds[0]]||0);const guardBlocked=banditTier==='dangerous'||banditTier==='critical'||getThreatTier(newThreats[locThreatIds[1]]||0)==='critical';
+            compLines.push({icon:'🛡️',label:comp.name+' on guard',val:guardBlocked?'Blocked threat event!':'Watching for danger',color:guardBlocked?TH.green:'#6090c0'});
+            entry.actions.push({type:'secondary',text:comp.name+' guarded the workshop',val:guardBlocked?'Threat event blocked!':'No threats today',color:guardBlocked?TH.green:'#6090c0'});
+          } else if(sec.type==='travel_reduce'){
+            compLines.push({icon:'🗺️',label:comp.name+' scouting ahead',val:'−25⚡ travel',color:'#6090c0'});
+            entry.actions.push({type:'secondary',text:comp.name+' scouted the route',val:'−25⚡ travel cost',color:'#6090c0'});
+          } else if(sec.type==='scout_gather'){
+            // Gather 2-3 bonus items from a random unlocked region
+            const bonusRegs=locRegions.filter(r=>level>=regUnlock(r)&&r.id!==comp.region);
+            if(bonusRegs.length>0){
+              const bReg=bonusRegs[Math.floor(Math.random()*bonusRegs.length)];
+              const bItems={};const bN=2+Math.floor(loy/2);
+              for(let i=0;i<bN;i++){const id=bReg.ingr[Math.floor(Math.random()*bReg.ingr.length)];bItems[id]=(bItems[id]||0)+1;}
+              setInv(p=>{const n={...p};Object.entries(bItems).forEach(([id,q])=>{n[id]=(n[id]||0)+q;});return n;});
+              const bStr=Object.entries(bItems).map(([id,q])=>(INGR[id]?.icon||id)+'×'+q).join(' ');
+              compLines.push({icon:'🌍',label:comp.name+' scouted '+bReg.icon+bReg.name,val:bStr,color:TH.green});
+              entry.actions.push({type:'secondary',text:comp.name+' found extras at '+bReg.name,val:bStr,color:TH.green});
+            }
+          } else if(sec.type==='resurrect'){
+            setDayFlags(f=>[...f,'companion_reroll']);
+            compLines.push({icon:'🔄',label:comp.name+' standing by',val:'Free craft reroll today',color:TH.gold});
+            entry.actions.push({type:'secondary',text:comp.name+' will help retry a failure',val:'1 free craft reroll',color:TH.gold});
+          }
+        }
+        // legendaryCompanion: highest-loyalty companion gains a type-specific legendary ability
+        if(getFeatureVal('legendaryCompanion')&&loy>=5){
+          const isHighest=companions.filter(cc=>cc.active).every(cc=>cc.loyalty<=loy);
+          if(isHighest){
+            const pt=comp.primary.type;
+            if(pt==='gather'){
+              // Legendary Forager: 1 guaranteed rare ingredient from a high-diff region
+              const rareRegs=locRegions.filter(r=>r.diff>=3);
+              if(rareRegs.length>0){
+                const rReg=rareRegs[Math.floor(Math.random()*rareRegs.length)];
+                const rId=rReg.ingr[Math.floor(Math.random()*rReg.ingr.length)];
+                modInv(rId,1);
+                compLines.push({icon:'👑',label:comp.name+' — Legendary Forager',val:'+1 '+(INGR[rId]?.icon||'')+INGR[rId]?.name+' (rare)',color:'#e0a030'});
+                entry.actions.push({type:'legendary',text:comp.name+' found a rare ingredient',val:'+1 '+(INGR[rId]?.icon||'')+INGR[rId]?.name,color:'#e0a030'});
+              }
+            } else if(pt==='shop'){
+              // Legendary Merchant: premium customer at 3× price
+              const legGold=Math.floor(20+level*3);setGold(gg=>gg+legGold);book('👑',comp.name+' (legendary)',legGold);
+              compLines.push({icon:'👑',label:comp.name+' — Legendary Merchant',val:'+'+fmtMoney(legGold)+' (VIP customer)',color:'#e0a030'});
+              entry.actions.push({type:'legendary',text:comp.name+' attracted a VIP collector',val:'+'+fmtMoney(legGold)+' premium sale',color:'#e0a030'});
+            } else if(pt==='customers'){
+              // Legendary Greeter: direct gold bonus (companion runs after customer gen)
+              const legGold=Math.floor(15+level*2.5);setGold(gg=>gg+legGold);book('👑',comp.name+' (legendary)',legGold);
+              compLines.push({icon:'👑',label:comp.name+' — Legendary Greeter',val:'+'+fmtMoney(legGold)+' (VIP referrals)',color:'#e0a030'});
+              entry.actions.push({type:'legendary',text:comp.name+'\'s legendary charm draws wealthy visitors',val:'+'+fmtMoney(legGold)+' from VIP referrals',color:'#e0a030'});
+            } else if(pt==='staff_morale'){
+              // Legendary Guardian: heal all staff injuries, +1 Energy hour-equivalent (+25 energy)
+              setStaffInjuries({});
+              setEnergy(e=>e+25);
+              compLines.push({icon:'👑',label:comp.name+' — Legendary Guardian',val:'All injuries healed, +25⚡',color:'#e0a030'});
+              entry.actions.push({type:'legendary',text:comp.name+'\'s protective aura heals the crew',val:'Staff injuries healed, +25 Energy',color:'#e0a030'});
+            } else if(pt==='research'){
+              // Legendary Muse: +1 Energy hour-equivalent (+25 energy) for a free research session
+              setEnergy(e=>e+25);
+              compLines.push({icon:'👑',label:comp.name+' — Legendary Muse',val:'+25⚡ (inspired insight)',color:'#e0a030'});
+              entry.actions.push({type:'legendary',text:comp.name+'\'s insight sparks a breakthrough',val:'+25 Energy for research',color:'#e0a030'});
+            } else if(pt==='danger_reduce'||pt==='danger'){
+              // Legendary Scout: auto-avoid all danger events today (via dayFlag)
+              setDayFlags(f=>[...f,'legendary_scout']);
+              compLines.push({icon:'👑',label:comp.name+' — Legendary Scout',val:'All danger auto-avoided today',color:'#e0a030'});
+              entry.actions.push({type:'legendary',text:comp.name+' mapped every threat in the area',val:'All expedition dangers negated today',color:'#e0a030'});
+            }
+          }
+        }
+        if(entry.actions.length>0)compReportEntries.push(entry);
+      });
+      // Loyalty increases — +1 per day for active companions (every 3 days)
+      const loyMult=Math.max(1,getFeatureVal('companionLoyaltyMult')||1);
+      const loyaltyFor=c=>Math.min(5,1+Math.floor((((day+1)-c.tamedDay)*loyMult)/3));
+      companions.forEach(c=>{
+        if(!c.active||c.loyalty>=5)return;
+        const newLoy=loyaltyFor(c);
+        if(newLoy>c.loyalty)compLines.push({icon:'❤️',label:RANGER_COMPANIONS.find(r=>r.id===c.compId)?.name||'Companion',val:'Loyalty → '+newLoy+' '+'★'.repeat(newLoy),color:TH.gold});
+      });
+      setCompanions(prev=>prev.map(c=>(!c.active||c.loyalty>=5)?c:{...c,loyalty:Math.max(c.loyalty,loyaltyFor(c))}));
+      if(compLines.length>0)mrSections.push({title:'🦊 Companions',lines:compLines});
+      if(compReportEntries.length>0)setCompanionReport({dayNum:day+1,companions:compReportEntries});
+      else setCompanionReport(null);
+    } else { setCompanionReport(null); }
+    // ─── WILD ALLY (Wildcrafter) morning phase ───
+    if(wildAlly){
+      const wa=wildAlly;
+      const comp=RANGER_COMPANIONS.find(c=>c.id===wa.compId);
+      if(wa.daysLeft<=1){
+        // Wild Ally departs
+        setWildAlly(null);
+        addLog('🐾 '+wa.icon+' '+wa.name+' (Wild Ally) departs into the wilderness. Farewell!','story');
+        report.push({n:'Wild Ally',i:'🐾',r:wa.name+' departed',t:'dim'});
+      } else {
+        // Wild Ally daily action
+        setWildAlly(prev=>prev?{...prev,daysLeft:prev.daysLeft-1}:null);
+        const waLines=[];
+        if(comp?.primary?.type==='gather'&&comp.primary.ingr){
+          const yld=Math.min(3,comp.primary.baseYield?comp.primary.baseYield[0]:3);
+          for(let i=0;i<yld;i++){const iid=comp.primary.ingr[Math.floor(Math.random()*comp.primary.ingr.length)];modInv(iid,1);}
+          waLines.push({icon:wa.icon,label:wa.name+' gathered '+yld+' ingredients',val:'',color:'#60a040'});
+        } else if(comp?.primary?.type==='shop'&&comp.primary.baseGold){
+          const g=comp.primary.baseGold[0]||5;setGold(gg=>gg+g);book(wa.icon,wa.name+' (Wild Ally)',g);
+          waLines.push({icon:wa.icon,label:wa.name+' earned '+fmtMoney(g),val:'+'+fmtMoney(g),color:TH.gold});
+        } else if(comp?.primary?.type==='staff_morale'){
+          setHiredAppr(prev=>prev.map(a=>({...a,morale:Math.min(100,(a.morale||50)+5)})));
+          waLines.push({icon:wa.icon,label:wa.name+' boosted morale',val:'+5 staff morale',color:'#60a040'});
+        }
+        if(waLines.length>0)mrSections.push({title:'🐾 Wild Ally ('+wa.daysLeft+'d left)',lines:waLines});
+        report.push({n:'Wild Ally',i:'🐾',r:wa.name+' — '+wa.daysLeft+' day'+(wa.daysLeft>1?'s':'')+' left',t:'ok'});
+      }
+    }
+    // Always show morning report
+    const MR_FLAVOR=zui.morning;
+    const seasonFlavor=curSeason.flavor?curSeason.flavor[Math.floor(Math.random()*curSeason.flavor.length)]:null;
+    // ═══ GAME OVER CHECK ═══
+    if(newDebt>=300){
+      setMorningReport({dayNum:day+1,sections:[{title:'🛑 WORKSHOP SEIZED',lines:[
+        {icon:'⚠️',label:'The '+locName+' Town Council has seized your workshop.',val:'',color:'#c04040'},
+        {icon:'💰',label:'Outstanding debt: '+fmtMoney(newDebt),val:'',color:'#c04040'},
+        {icon:'🏠',label:'Your dream of '+locName+' is over... for now.',val:'',color:TH.textDim},
+      ]}],baseE:0,flavor:'The workshop doors are locked. The dream is over.',isGameOver:true});
+      return;
+    }
+    // Fill the Earnings section from the ledger (income first, then costs)
+    earnSection.lines=[...ledger.filter(e=>e.amt>0),...ledger.filter(e=>e.amt<0)].map(e=>({icon:e.icon,label:e.label,val:(e.amt>0?'+':'')+fmtMoney(e.amt),color:e.amt>0?TH.green:TH.red}));
+    earnSection.net=ledger.reduce((s,e)=>s+e.amt,0);
+    if(newDebt>0)earnSection.lines.push({icon:'⚠️',label:'OUTSTANDING DEBT',val:fmtMoney(newDebt),color:'#c04040'});
+    if(earnSection.lines.length===0)mrSections.splice(mrSections.indexOf(earnSection),1);
+    setMorningReport({dayNum:day+1,sections:mrSections,baseE,flavor:seasonFlavor||MR_FLAVOR[Math.floor(Math.random()*MR_FLAVOR.length)],season:curSeason});
+    setNews(nw);
+  };
+
+  // ─── INGREDIENT TOOLTIP HELPER ───
+
+  // ─── STYLES ───
+  const S={
+    app:{minHeight:'100vh',background:TH.bg,color:TH.text,fontFamily:"'Almendra','Palatino',serif",display:'flex',flexDirection:'column',alignItems:'center',overflowAnchor:'none'},
+    card:{background:TH.panel,border:`1px solid ${TH.border}`,borderRadius:6,padding:'12px 14px',marginBottom:8},
+    cT:{fontSize:19,color:TH.gold,marginBottom:8,paddingBottom:5,borderBottom:`1px solid ${TH.border}22`},
+    btn:(v='def')=>({padding:'6px 12px',borderRadius:4,border:'none',cursor:'pointer',fontFamily:"'Almendra',serif",fontSize:16,
+      ...(v==='gold'?{background:TH.gold,color:TH.bg}:v==='dim'?{background:TH.border,color:TH.textDim}:v==='green'?{background:TH.greenDim,color:TH.text}:v==='red'?{background:TH.redDim,color:TH.text}:{background:TH.borderLight,color:TH.text})}),
+    tag:{display:'inline-flex',alignItems:'center',gap:3,padding:'2px 7px',background:TH.panelLight,borderRadius:3,fontSize:15,margin:2,border:`1px solid ${TH.border}`,color:TH.textBright},
+    row:{display:'flex',gap:8,flexWrap:'wrap',alignItems:'center'},
+    logBox:{background:TH.bg,border:`1px solid ${TH.border}`,borderRadius:4,padding:8,maxHeight:120,overflowY:'auto',fontSize:15,lineHeight:1.6},
+    sidebar:{width:250,minWidth:250,maxHeight:'calc(100vh - 90px)',overflowY:'auto',padding:'8px 12px',fontSize:14,position:'sticky',top:90,alignSelf:'flex-start'},
+    sideHd:{fontSize:15,color:TH.gold,fontWeight:'bold',marginBottom:6,paddingBottom:4,borderBottom:`1px solid ${TH.border}22`},
+    sideSec:{marginBottom:10,padding:'6px 8px',background:TH.panel,borderRadius:5,border:`1px solid ${TH.border}`},
+  };
+  const LC={story:TH.gold,harvest:TH.green,craft:TH.purple,quest:TH.cyan,error:TH.red,info:TH.textDim,event:TH.orange,level:TH.goldBright};
+  const fmtD=d=>{try{if(!d)return'';const dt=d&&typeof d.toDate==='function'?d.toDate():typeof d==='number'?new Date(d):new Date(d);if(isNaN(dt.getTime()))return'';return dt.toLocaleDateString('en-US',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});}catch(e){return'';}};
+
+  // ─── NAV HELPER ───
+  const GoBtn=({to,label,variant,npc:npcName})=><button style={{...S.btn(variant||'gold'),fontSize:14,padding:'3px 10px'}} onClick={()=>{
+    setScreen(to);
+    if(npcName){openNpc(npcName);}
+    else if(to==='market'){setShowShop(true);setDlgNpc(null);setQuestDlg(null);}
+  }}>{label||to}</button>;
+
+  // ─── CONTEXTUAL ALERTS ───
+  const alerts=[];
+  if(skPts>0)alerts.push({text:`You have ${skPts} unspent skill points — your experience is ready to be honed.`,to:'character',label:'📊 Spend Points'});
+  if(pendingLevelUp)alerts.push({text:`Level ${(pendingLevelUp.newCharLevel||0)+1}! Complete your advancement.`,color:TH.goldBright});
+  const readyQ=aQ.filter(q=>{const p=qP(q);return p.c>=p.n;});
+  if(readyQ.length>0)readyQ.forEach(q=>alerts.push({text:`"${q.name}" is complete! ${q.giver} awaits your return.`,to:q.loc==='market'?'market':'tavern',label:q.loc==='market'?`🛒 ${q.giver}`:`🍺 ${q.giver}`,npc:q.giver.toLowerCase().replace(/ /g,'_')}));
+  if(enchQ.length>0)alerts.push({text:enchQ.length+' enchant customer'+(enchQ.length>1?'s':'')+' waiting.',to:'enchant',label:'✨ Enchant'});
+  if(potCustQ.length>0)alerts.push({text:potCustQ.length+' potion order'+(potCustQ.length>1?'s':'')+' waiting.',to:'enchant',label:'🧪 Orders'});
+  const clinicWaiting=clinicPatients.filter(p=>!p.prescribed).length;
+  if(clinicWaiting>0)alerts.push({text:clinicWaiting+' clinic patient'+(clinicWaiting!==1?'s':'')+' waiting.',to:'workshop',label:'🏥 Clinic'});
+  const contractsActive=venomContracts.filter(v=>!v.fulfilled).length;
+  if(contractsActive>0)alerts.push({text:contractsActive+' venom contract'+(contractsActive!==1?'s':'')+' available.',to:'workshop',label:'☠️ Contracts'});
+  const commissionsWaiting=shieldCommissions.filter(c=>!c.done).length;
+  if(commissionsWaiting>0)alerts.push({text:commissionsWaiting+' shield commission'+(commissionsWaiting!==1?'s':'')+' waiting.',to:'workshop',label:'🛡️ Commissions'});
+  if(day===1&&aQ.length===0&&screen!=='quests')alerts.push({text:zui.starter.alert,to:'market',label:'🛒 Visit '+zui.starter.name,npc:zui.starter.npc});
+  if(energy<=0&&screen!=='map')alerts.push({text:'The day\'s energy is spent. Time to rest and let tomorrow bring new work.',to:'map',label:'🏘️ '+locName});
+  const readyBQ=activeBQ.filter(bq=>{const p=bqProgress(bq);return p.c>=p.n;});
+  if(readyBQ.length>0)alerts.push({text:readyBQ.length+' board request'+(readyBQ.length>1?'s':'')+' ready to turn in!',to:'quests',label:'📌 Notice Board'});
+  if(dayFlags.includes('bargain_day'))alerts.push({text:`🏷️ ${zui.saleNpc}'s running a sale — shop prices halved today!`,to:'market',label:'🛒 Market'});
+  if(dayFlags.includes('clear_sky'))alerts.push({text:'☀️ Clear skies — extraction DCs reduced by 2 in the wilds.',to:'worldmap',label:'🗺️ Wilds'});
+  if(dayFlags.includes('ash_storm'))alerts.push({text:'⚠️ Ash storm — expedition travel +25 Energy today.',to:'worldmap',label:'🗺️ Wilds'});
+
+  // ═══════════════════════════════════════
+  //  RENDERING (all hooks above this line)
+  // ═══════════════════════════════════════
+
+  // ═══ TITLE SCREEN ═══
+  if(!gameStarted){
+    return(
+      <div style={S.app}><link href="https://fonts.googleapis.com/css2?family=Almendra:wght@400;700&display=swap" rel="stylesheet"/>
+        {saveMsg&&<div style={{position:'fixed',top:8,left:'50%',transform:'translateX(-50%)',background:TH.greenDim,color:TH.green,padding:'6px 16px',borderRadius:6,fontSize:15,zIndex:1000,border:`1px solid ${TH.green}44`,maxWidth:'90%',textAlign:'center'}}>{saveMsg}</div>}
+        {lineageMsg&&<div style={{position:'fixed',top:saveMsg?44:8,left:'50%',transform:'translateX(-50%)',background:'#c050e020',color:'#c050e0',padding:'6px 16px',borderRadius:6,fontSize:15,zIndex:1000,border:'1px solid #c050e044',maxWidth:'90%',textAlign:'center'}}>{lineageMsg}</div>}
+        <div style={{maxWidth:500,padding:'60px 20px',width:'100%',textAlign:'center'}}>
+          <div style={{fontSize:32,color:TH.gold,letterSpacing:4,marginBottom:4,textShadow:`0 0 20px ${TH.goldDim}`}}>⚗️</div>
+          <div style={{fontSize:32,color:TH.gold,letterSpacing:3,marginBottom:2}}>Cindervale Alchemist</div>
+          <div style={{fontSize:14,color:'#d4a420',marginTop:4}}>Build {BUILD_VERSION}</div>
+          <div style={{color:TH.textDim,fontSize:16,marginBottom:16}}>Crafting · Enchanting · Community</div>
+          <a href="cindervale_handbook.html" target="_blank" rel="noopener noreferrer" style={{display:'inline-block',padding:'6px 16px',background:TH.panel,color:TH.gold,border:'1px solid '+TH.borderGold,borderRadius:6,fontSize:14,textDecoration:'none',marginBottom:12,cursor:'pointer'}}>📖 Player's Handbook</a>
+          {/* Firebase Sign-In */}
+          <div style={{marginBottom:16,textAlign:'center'}}>
+            {fbUser?<div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:8,padding:'6px 12px',background:'#1a2a1a',borderRadius:8,border:'1px solid #2a4a2a'}}>
+              {fbUser.photoURL&&<img src={fbUser.photoURL} alt="" style={{width:24,height:24,borderRadius:'50%'}} referrerPolicy="no-referrer"/>}
+              <span style={{fontSize:14,color:TH.green}}>☁️ {fbUser.displayName||fbUser.email}</span>
+              {fbSyncing&&<span style={{fontSize:12,color:TH.textDim}}>syncing...</span>}
+              <button style={{fontSize:12,color:TH.textDim,background:'none',border:'1px solid '+TH.border,borderRadius:4,padding:'2px 8px',cursor:'pointer',fontFamily:'inherit'}} onClick={fbSignOut}>Sign Out</button>
+            </div>
+            :<button style={{padding:'8px 20px',background:'#1a1a2e',color:TH.text,border:'1px solid '+TH.border,borderRadius:8,fontSize:15,cursor:'pointer',fontFamily:'inherit',display:'inline-flex',alignItems:'center',gap:8}} onClick={fbSignIn}>
+              <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#34A853" d="M10.53 28.59A14.5 14.5 0 019.5 24c0-1.59.28-3.14.76-4.59l-7.98-6.19A23.99 23.99 0 000 24c0 3.77.9 7.34 2.44 10.5l8.09-5.91z"/><path fill="#FBBC05" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+              Sign in with Google
+            </button>}
+          </div>
+          {loadingSlots?<div style={{color:TH.textDim}}>Loading...</div>:<>
+          {autoSaveData&&<div style={{...S.card,borderColor:TH.green,textAlign:'left',cursor:'pointer'}} onClick={()=>loadSave(autoSaveData)}>
+            <div style={{fontSize:18,color:TH.green}}>▶ Continue — {autoSaveData.charName||'?'} {fbUser&&<span style={{fontSize:13}}>☁️</span>}</div>
+            <div style={{fontSize:15,color:TH.textDim}}>{autoSaveData.classLevels?Object.entries(autoSaveData.classLevels).map(([cid,lv])=>`${CLASSES[cid]?.icon||''}${CLASSES[cid]?.name||cid} ${lv}`).join(' / '):'?'} · Lv{getLvl(autoSaveData.xp||0)+1} · Day {autoSaveData.day} · {fmtMoney(autoSaveData.gold)}</div>
+            <div style={{fontSize:14,color:TH.textDim}}>{fmtD(autoSaveData._at)}</div>
+          </div>}
+          <div style={{...S.card,textAlign:'left'}}><div style={S.cT}>💾 Save Slots {fbUser&&<span style={{fontSize:13,color:TH.green,fontWeight:'normal'}}>☁️ Cloud</span>}</div>
+            {[1,2].map(i=>{const data=saveSlots[i-1];return(
+              <div key={i} style={{padding:'8px 10px',background:TH.panelLight,borderRadius:4,marginBottom:6,border:`1px solid ${data?TH.borderGold:TH.border}`}}>
+                {data?(<div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                  <div><div style={{fontSize:17,color:TH.textBright}}>Slot {i}: {data.charName}</div>
+                    <div style={{fontSize:14,color:TH.textDim}}>{data.classLevels?Object.entries(data.classLevels).map(([cid,lv])=>`${CLASSES[cid]?.icon||''}${lv}`).join(' '):'?'} Lv{getLvl(data.xp||0)+1} · Day {data.day} · {fmtD(data._at)}</div></div>
+                  <div style={S.row}>
+                    <button style={S.btn('gold')} onClick={()=>loadSave(data)}>Load</button>
+                    {confirmDelete===i?<><button style={S.btn('red')} onClick={()=>deleteSave(i)}>Yes</button><button style={S.btn('dim')} onClick={()=>setConfirmDelete(null)}>No</button></>
+                    :<button style={S.btn('dim')} onClick={()=>setConfirmDelete(i)}>🗑️</button>}
+                  </div></div>
+                ):(<div style={{color:TH.textDim,fontSize:16}}>Slot {i}: Empty</div>)}
+              </div>);})}
+          </div>
+          <button style={{...S.btn('gold'),fontSize:20,padding:'10px 30px',marginTop:8}} onClick={()=>setShowLocationSelect(true)}>✨ New Game</button>
+
+          {/* Lineage Viewer */}
+          {lineage&&lineage.generations.length>0&&<div style={{...S.card,marginTop:8,textAlign:'left',borderColor:'#c050e044'}}>
+            <div style={{...S.cT,color:'#c050e0'}}>🏰 {lineage.name} · Generation {lineage.totalGenerations}</div>
+            {lineage.generations.map((gen,i)=><div key={i} style={{padding:'4px 8px',fontSize:14,color:TH.textDim,borderBottom:'1px solid '+TH.border+'33'}}>
+              <span style={{color:TH.textBright}}>{gen.name}</span> — {CLASSES[gen.class]?.icon||''}{CLASSES[gen.class]?.name||gen.class} Lv{gen.level} at {LOCATIONS[gen.location]?.name||gen.location} ({gen.daysPlayed} days)
+              <span style={{fontSize:12,marginLeft:4,color:'#c050e0'}}>{MENTOR_TYPES[gen.mentorClass||gen.class]?.icon} {MENTOR_TYPES[gen.mentorClass||gen.class]?.desc}</span>
+            </div>)}
+            <div style={{fontSize:13,color:'#c050e0',marginTop:4}}>Active bonuses: {Object.entries(getMentorBonuses()).map(([k,v])=>k+' +'+v).join(', ')||'None'}</div>
+            {legacyFeature&&<div style={{marginTop:6,padding:'6px 10px',background:'#c050e010',borderRadius:6,border:'1px solid #c050e033'}}>
+              <div style={{fontSize:14,color:'#c050e0',fontWeight:'bold'}}>{legacyFeature.icon} Mentor's Legacy: {legacyFeature.name}</div>
+              <div style={{fontSize:12,color:TH.textDim}}>{legacyFeature.source} — {legacyFeature.desc}</div>
+              <div style={{display:'flex',gap:3,flexWrap:'wrap',marginTop:4}}>
+                {Object.entries(legacyFeature.effects||{}).map(([k,v])=>{
+                  const label=typeof v==='boolean'?k.replace(/([A-Z])/g,' $1').toLowerCase():(typeof v==='number'&&v<1&&v>0?'+'+Math.round(v*100)+'%':'+'+v)+' '+k.replace(/([A-Z])/g,' $1').toLowerCase();
+                  return <span key={k} style={{fontSize:11,padding:'1px 5px',background:'#c050e015',border:'1px solid #c050e033',borderRadius:3,color:'#c050e0'}}>{label}</span>;
+                })}
+              </div>
+            </div>}
+            <div style={{display:'flex',gap:6,marginTop:8}}>
+              <button style={{...S.btn('def'),fontSize:13,flex:1}} onClick={exportLineage}>📤 Export Lineage</button>
+              <button style={{...S.btn('red'),fontSize:13}} onClick={deleteLineage}>🗑️ Delete</button>
+            </div>
+          </div>}
+
+          {/* Lineage Transfer (import when no lineage, or always accessible) */}
+          <div style={{...S.card,marginTop:8,textAlign:'left',borderColor:'#c050e033'}}>
+            <div style={{...S.cT,cursor:'pointer',display:'flex',justifyContent:'space-between',alignItems:'center',color:'#c050e0'}} onClick={()=>setShowLineageTransfer(p=>!p)}>
+              <span>🏰 Lineage Transfer</span><span style={{fontSize:13,color:TH.textDim}}>{showLineageTransfer?'▲':'▼'}</span>
+            </div>
+            {showLineageTransfer&&<>
+              <div style={{fontSize:13,color:TH.textDim,marginBottom:8}}>
+                {lineage?'Export your lineage to another device, or import a different one.':'Import a lineage from another device to continue your dynasty here.'}
+              </div>
+              {lineage&&<button style={{...S.btn('def'),fontSize:14,width:'100%',marginBottom:8}} onClick={exportLineage}>📤 Export Lineage ({lineage.totalGenerations} gen{lineage.totalGenerations!==1?'s':''})</button>}
+              {lineageImportInput&&<div style={{marginBottom:8}}>
+                <textarea style={{width:'100%',height:60,fontSize:12,background:TH.panel,color:TH.text,border:'1px solid '+TH.border,borderRadius:4,padding:6,fontFamily:'monospace',resize:'vertical'}} value={lineageImportInput} readOnly onClick={e=>e.target.select()}/>
+              </div>}
+              <div style={{display:'flex',gap:4,marginBottom:4}}>
+                <input style={{flex:1,padding:'6px 8px',fontSize:13,background:TH.panel,color:TH.text,border:'1px solid '+TH.border,borderRadius:4,fontFamily:'monospace'}}
+                  placeholder="Paste lineage code here..." value={lineageImportInput} onChange={e=>setLineageImportInput(e.target.value)}/>
+                <button style={{...S.btn('gold'),fontSize:14}} onClick={()=>importLineage(lineageImportInput)}>📥 Import</button>
+              </div>
+              {lineageMsg&&<div style={{fontSize:13,color:'#c050e0',marginTop:4,textAlign:'center'}}>{lineageMsg}</div>}
+            </>}
+          </div>
+
+          {/* Location Selection Modal (new game only, not torch) */}
+          {showLocationSelect&&(()=>{
+            const lastGen=lineage?.generations?.[lineage.generations.length-1];
+            // Legacy options from the last generation's saved build (same builder Pass the Torch uses)
+            const legacyOptions=lastGen?getLegacyOptions({classLevels:lastGen.classLevels||{},specs:lastGen.allSpecs||(lastGen.spec?{[lastGen.class]:lastGen.spec}:{}),prestigeLevels:lastGen.prestigeLevels||{},legacyFeature:lastGen.legacyFeature||null}):[];
+            const fmtEffect=(k,v)=>{
+              if(typeof v==='boolean')return k.replace(/([A-Z])/g,' $1').toLowerCase();
+              if(typeof v==='number'&&v<1&&v>0)return '+'+Math.round(v*100)+'% '+k.replace(/([A-Z])/g,' $1').toLowerCase();
+              return '+'+v+' '+k.replace(/([A-Z])/g,' $1').toLowerCase();
+            };
+            return <div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'#000000dd',display:'flex',alignItems:'center',justifyContent:'center',zIndex:9999,padding:16}}
+            onClick={()=>{setShowLocationSelect(false);setNewGameLegacy(null);setNewGameHeirloom(null);setNewGameStep(0);}}>
+            <div style={{background:TH.bg,border:'2px solid '+(lineage?'#c050e0':TH.gold),borderRadius:12,padding:20,maxWidth:580,width:'100%',maxHeight:'90vh',overflowY:'auto'}} onClick={e=>e.stopPropagation()}>
+
+              {/* Step 0: Legacy Feature selection (only if lineage with options) */}
+              {lineage&&legacyOptions.length>0&&newGameStep===0&&<>
+                <div style={{fontSize:20,color:'#c050e0',textAlign:'center',marginBottom:4}}>🏰 {lineage.name} · Generation {lineage.totalGenerations+1}</div>
+                <div style={{fontSize:13,color:TH.textDim,textAlign:'center',marginBottom:4}}>
+                  Choose a legacy feature from {lastGen?.name||'your mentor'}'s mastered techniques.
+                </div>
+                <div style={{padding:'6px 10px',background:TH.panel,borderRadius:6,marginBottom:10,border:'1px solid #c050e033'}}>
+                  <div style={{fontSize:12,color:TH.textDim}}>Mentor bonuses (cumulative): {Object.entries(getMentorBonuses()).map(([k,v])=>k+' +'+v).join(', ')||'None yet'}</div>
+                </div>
+                <div style={{display:'flex',flexDirection:'column',gap:6,marginBottom:12}}>
+                  {legacyOptions.map((opt,i)=>{const sel=newGameLegacy===opt;return(
+                    <div key={i} style={{padding:'10px 12px',background:sel?(opt.color||'#c050e0')+'15':TH.panel,borderRadius:8,border:'2px solid '+(sel?(opt.color||'#c050e0'):TH.border),cursor:'pointer',transition:'all .15s'}}
+                      onClick={()=>setNewGameLegacy(sel?null:opt)}>
+                      <div style={{display:'flex',alignItems:'center',gap:6,marginBottom:3}}>
+                        <span style={{fontSize:22}}>{opt.icon}</span>
+                        <div style={{flex:1}}>
+                          <div style={{fontSize:15,color:sel?(opt.color||'#c050e0'):TH.textBright,fontWeight:'bold'}}>{opt.name}{sel&&<span style={{fontSize:12,marginLeft:6}}>✓</span>}</div>
+                          <div style={{fontSize:12,color:TH.textDim}}>{opt.source}</div>
+                        </div>
+                        <div style={{fontSize:11,color:opt.type==='prestige'?'#c050e0':(opt.color||TH.textDim),background:(opt.type==='prestige'?'#c050e0':(opt.color||TH.border))+'15',padding:'2px 6px',borderRadius:4}}>{opt.type==='prestige'?'★ Prestige':'Specialization'}</div>
+                      </div>
+                      {opt.featureChain&&<div style={{fontSize:11,color:TH.textDim,paddingLeft:28}}>Includes: {opt.featureChain.map(f=>'Lv'+f.lv+' '+f.name).join(' → ')}</div>}
+                      <div style={{display:'flex',flexWrap:'wrap',gap:3,paddingLeft:28,marginTop:3}}>
+                        {Object.entries(opt.effects||{}).map(([k,v])=>
+                          <span key={k} style={{fontSize:11,padding:'1px 5px',background:(opt.color||'#c050e0')+'15',border:'1px solid '+(opt.color||'#c050e0')+'33',borderRadius:3,color:opt.color||'#c050e0'}}>{fmtEffect(k,v)}</span>
+                        )}
+                      </div>
+                    </div>);})}
+                </div>
+                <div style={{display:'flex',gap:8}}>
+                  <button style={{...S.btn('gold'),flex:1,fontSize:15,padding:'8px 0'}} onClick={()=>setNewGameStep(1)}>
+                    {newGameLegacy?'Next: Choose Heirloom →':'Skip Legacy → Choose Heirloom'}
+                  </button>
+                  <button style={{...S.btn('dim'),padding:'8px 16px'}} onClick={()=>{setShowLocationSelect(false);setNewGameLegacy(null);setNewGameHeirloom(null);setNewGameStep(0);}}>Cancel</button>
+                </div>
+              </>}
+
+              {/* Step 1: Heirloom selection */}
+              {lineage&&newGameStep===1&&<>
+                <div style={{fontSize:20,color:TH.gold,textAlign:'center',marginBottom:4}}>Choose an Heirloom Upgrade</div>
+                <div style={{fontSize:13,color:TH.textDim,textAlign:'center',marginBottom:10}}>Your dynasty's resources grant one free workshop upgrade from Day 1.</div>
+                <div style={{display:'flex',flexDirection:'column',gap:5,marginBottom:12,maxHeight:400,overflowY:'auto'}}>
+                  {Object.entries(UPGRADES).filter(([,u])=>(u.tier||1)<=2).map(([uid,u])=>{const sel=newGameHeirloom===uid;return(
+                    <div key={uid} style={{padding:'8px 12px',background:sel?TH.gold+'15':TH.panel,borderRadius:6,border:'2px solid '+(sel?TH.gold:TH.border),cursor:'pointer',transition:'all .15s'}}
+                      onClick={()=>setNewGameHeirloom(sel?null:uid)}>
+                      <div style={{display:'flex',alignItems:'center',gap:6}}>
+                        <span style={{fontSize:20}}>{u.icon}</span>
+                        <div style={{flex:1}}>
+                          <div style={{fontSize:14,color:sel?TH.gold:TH.textBright,fontWeight:sel?'bold':'normal'}}>{u.name}{sel&&<span style={{fontSize:12,marginLeft:6}}>✓</span>}</div>
+                          <div style={{fontSize:11,color:TH.textDim}}>{u.desc}</div>
+                        </div>
+                      </div>
+                    </div>);})}
+                </div>
+                <div style={{display:'flex',gap:8}}>
+                  <button style={{...S.btn('dim'),padding:'8px 16px'}} onClick={()=>setNewGameStep(0)}>← Back</button>
+                  <button style={{...S.btn('gold'),flex:1,fontSize:15,padding:'8px 0'}} onClick={()=>setNewGameStep(2)}>
+                    {newGameHeirloom?'Next: Choose Location →':'Skip Heirloom → Choose Location'}
+                  </button>
+                </div>
+                <div style={{fontSize:12,color:TH.textDim,textAlign:'center',marginTop:4}}>{newGameHeirloom?UPGRADES[newGameHeirloom]?.icon+' '+UPGRADES[newGameHeirloom]?.name+' selected':'No heirloom selected (that\'s ok)'}</div>
+              </>}
+
+              {/* Step 1 (or only step if no lineage): Location selection */}
+              {(!lineage||legacyOptions.length===0||newGameStep===2)&&<>
+                <div style={{fontSize:22,color:TH.gold,textAlign:'center',marginBottom:8}}>
+                  {lineage?'Choose Starting Location':'Choose Your Location'}
+                </div>
+                {lineage&&<>
+                  <div style={{fontSize:13,color:'#c050e0',textAlign:'center',marginBottom:4}}>🏰 {lineage.name} · Generation {lineage.totalGenerations+1}</div>
+                  {newGameLegacy&&<div style={{padding:'6px 10px',background:TH.panel,borderRadius:6,marginBottom:4,border:'1px solid #c050e033'}}>
+                    <div style={{fontSize:12,color:'#c050e0'}}>{newGameLegacy.icon} Legacy: {newGameLegacy.name} — {Object.entries(newGameLegacy.effects||{}).map(([k,v])=>fmtEffect(k,v)).join(', ')}</div>
+                  </div>}
+                  {newGameHeirloom&&<div style={{padding:'6px 10px',background:TH.panel,borderRadius:6,marginBottom:4,border:'1px solid '+TH.gold+'33'}}>
+                    <div style={{fontSize:12,color:TH.gold}}>{UPGRADES[newGameHeirloom]?.icon} Heirloom: {UPGRADES[newGameHeirloom]?.name}</div>
+                  </div>}
+                  <div style={{fontSize:12,color:TH.textDim,textAlign:'center',marginBottom:8}}>
+                    <button style={{fontSize:12,color:'#c050e0',background:'none',border:'none',cursor:'pointer',textDecoration:'underline',fontFamily:'inherit'}} onClick={()=>{if(confirm('Start completely fresh with no legacy bonuses? This cannot be undone.')){setLineage(null);setNewGameLegacy(null);setNewGameHeirloom(null);setNewGameStep(0);}}}>Start Fresh Instead (erase lineage)</button>
+                  </div>
+                </>}
+                {Object.values(LOCATIONS).map(loc=><div key={loc.id} style={{padding:'12px 14px',background:TH.panel,borderRadius:8,marginBottom:8,border:'2px solid '+TH.border,cursor:'pointer'}}
+                  onClick={()=>{setShowLocationSelect(false);
+                    const inheritLegacy=newGameLegacy||null;
+                    const inheritHeirloom=newGameHeirloom||null;
+                    setNewGameLegacy(null);setNewGameHeirloom(null);setNewGameStep(0);
+                    if(lineage){newGame(loc.id,{legacyFeature:inheritLegacy,heirloom:inheritHeirloom});}
+                    else{newGame(loc.id);}
+                  }}>
+                  <div style={{fontSize:18,color:TH.gold,fontWeight:'bold'}}>{loc.icon} {loc.name}</div>
+                  <div style={{fontSize:14,color:TH.textDim,marginTop:3,lineHeight:1.4}}>{loc.desc}</div>
+                </div>)}
+                <div style={{display:'flex',gap:8,marginTop:4}}>
+                  {lineage&&<button style={{...S.btn('dim'),flex:1}} onClick={()=>setNewGameStep(1)}>← Back to Heirloom</button>}
+                  <button style={{...S.btn('dim'),flex:1}} onClick={()=>{setShowLocationSelect(false);setNewGameLegacy(null);setNewGameHeirloom(null);setNewGameStep(0);}}>Cancel</button>
+                </div>
+              </>}
+            </div>
+          </div>;
+          })()}
+
+          {/* Cross-device save transfer */}
+          <div style={{...S.card,marginTop:12,textAlign:'left'}}>
+            <div style={{...S.cT,cursor:'pointer',display:'flex',justifyContent:'space-between',alignItems:'center'}} onClick={()=>setShowImport(p=>!p)}>
+              <span>📲 Cross-Device Transfer</span><span style={{fontSize:13,color:TH.textDim}}>{showImport?'▲':'▼'}</span>
+            </div>
+            {showImport&&<>
+              <div style={{fontSize:14,color:TH.textDim,marginBottom:8}}>Export your save as a code, then paste it on another device to continue playing.</div>
+              <div style={{...S.row,marginBottom:8}}>
+                <button style={{...S.btn(autoSaveData?'gold':'dim'),fontSize:15}} onClick={()=>exportSave(autoSaveData||saveSlots.find(s=>s))} disabled={!autoSaveData&&!saveSlots.find(s=>s)}>📤 Export Save</button>
+              </div>
+              {importText&&<div style={{marginBottom:8}}>
+                <div style={{fontSize:13,color:TH.textDim,marginBottom:3}}>Your save code (tap to select all):</div>
+                <textarea readOnly value={importText} onClick={e=>e.target.select()} style={{width:'100%',height:60,background:TH.bg,color:TH.text,border:'1px solid '+TH.border,borderRadius:4,padding:6,fontSize:12,fontFamily:'monospace',resize:'none'}}/>
+              </div>}
+              <div style={{fontSize:14,color:TH.textDim,marginBottom:4}}>Paste a save code to import:</div>
+              <div style={{display:'flex',gap:6}}>
+                <textarea placeholder="Paste save code here…" value={importInput} onChange={e=>setImportInput(e.target.value)} style={{flex:1,height:50,background:TH.bg,color:TH.text,border:'1px solid '+TH.border,borderRadius:4,padding:6,fontSize:12,fontFamily:'monospace',resize:'none'}}/>
+                <button style={{...S.btn('gold'),fontSize:14,alignSelf:'flex-end'}} onClick={()=>importSave(importInput)}>📥 Import</button>
+              </div>
+            </>}
+          </div>
+          </>}
+        </div>
+      </div>);
+  }
+
+  // ═══ IDENTITY — Race, Gender, Name with Portrait ═══
+  if(phase==='identity'){
+    const previewClass=startingClass||'alchemist';
+    return(
+      <div style={S.app}><link href="https://fonts.googleapis.com/css2?family=Almendra:wght@400;700&display=swap" rel="stylesheet"/>
+        <div style={{maxWidth:700,padding:'30px 20px',width:'100%'}}>
+          <div style={{fontSize:28,color:TH.gold,textAlign:'center',letterSpacing:3,marginBottom:16}}>⚗️ Forge Your Identity</div>
+
+          {/* Portrait Preview — prominent at top */}
+          <div style={{textAlign:'center',marginBottom:16}}>
+            {charRace&&charGender?
+              <Portrait cls={previewClass} race={charRace} gender={charGender} size={140}/>:
+              <div style={{width:140,height:187,background:TH.panelLight,borderRadius:8,border:`2px dashed ${TH.border}`,display:'inline-flex',alignItems:'center',justifyContent:'center',color:TH.textDim,fontSize:16}}>Choose race & gender</div>}
+            {charRace&&charGender&&<div style={{fontSize:14,color:TH.textDim,marginTop:4}}>Preview as {CLASSES[previewClass]?.name}</div>}
+          </div>
+
+          {/* Name */}
+          <div style={S.card}><div style={S.cT}>Name</div>
+            <input value={charName} onChange={e=>setCharName(e.target.value)} placeholder="Your artisan..."
+              style={{width:'100%',padding:'8px',background:TH.panelLight,border:`1px solid ${TH.border}`,borderRadius:4,color:TH.textBright,fontFamily:'inherit',fontSize:18,boxSizing:'border-box'}}/>
+          </div>
+
+          {/* Gender */}
+          <div style={S.card}><div style={S.cT}>Gender</div>
+            <div style={{display:'flex',gap:8,justifyContent:'center'}}>
+              {GENDERS.map(g=>{const sel=charGender===g.id;return(
+                <div key={g.id} onClick={()=>setCharGender(g.id)} style={{cursor:'pointer',padding:'10px 24px',background:sel?TH.gold+'20':TH.panelLight,border:`2px solid ${sel?TH.gold:TH.border}`,borderRadius:6,textAlign:'center',transition:'all .2s'}}>
+                  <div style={{fontSize:24}}>{g.icon}</div>
+                  <div style={{fontSize:16,color:sel?TH.gold:TH.text}}>{g.name}</div>
+                </div>);})}
+            </div>
+          </div>
+
+          {/* Race */}
+          <div style={S.card}><div style={S.cT}>Race</div>
+            <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(180px,1fr))',gap:8}}>
+              {RACE_IDS.map(rid=>{const r=RACES[rid];const sel=charRace===rid;const bonusEntries=Object.entries(r.skillBonus||{});return(
+                <div key={rid} onClick={()=>setCharRace(rid)} style={{cursor:'pointer',padding:'10px',background:sel?TH.gold+'15':TH.panelLight,border:`2px solid ${sel?TH.gold:TH.border}`,borderRadius:6,textAlign:'center',transition:'all .2s'}}>
+                  <div style={{fontSize:28}}>{r.icon}</div>
+                  <div style={{fontSize:17,color:sel?TH.gold:TH.textBright,fontWeight:'bold'}}>{r.name}</div>
+                  <div style={{fontSize:13,color:TH.textDim,lineHeight:1.3,marginTop:2,marginBottom:4}}>{r.desc}</div>
+                  {bonusEntries.length>0&&<div style={{padding:'4px 6px',background:TH.green+'12',border:`1px solid ${TH.green}33`,borderRadius:4,marginBottom:4}}>
+                    {bonusEntries.map(([skId,val])=><div key={skId} style={{fontSize:14,color:TH.green,fontWeight:'bold'}}>{SKILLS[skId]?.icon} +{val} {SKILLS[skId]?.name}</div>)}
+                  </div>}
+                  {sel&&<div style={{fontSize:13,color:TH.text,fontStyle:'italic',lineHeight:1.4,padding:'6px',background:TH.bg+'80',borderRadius:4,textAlign:'left'}}>{r.tip}</div>}
+                </div>);})}
+            </div>
+          </div>
+
+          <div style={{textAlign:'center',marginTop:10}}>
+            <button style={S.btn(charName.trim()&&charRace&&charGender?'gold':'dim')} disabled={!charName.trim()||!charRace||!charGender} onClick={()=>setPhase('class')}>Continue →</button>
+            <button style={{...S.btn('dim'),marginLeft:8}} onClick={()=>setGameStarted(false)}>← Back</button>
+          </div>
+        </div>
+      </div>);
+  }
+
+  if(phase==='stats'){
+    return(
+      <div style={S.app}><link href="https://fonts.googleapis.com/css2?family=Almendra:wght@400;700&display=swap" rel="stylesheet"/>
+        <div style={{maxWidth:700,padding:'30px 20px',width:'100%'}}>
+          <div style={{fontSize:28,color:TH.gold,textAlign:'center',letterSpacing:3,marginBottom:16}}>⚗️ Assign Your Stats</div>
+          {/* Portrait + identity summary */}
+          <div style={{textAlign:'center',marginBottom:12}}>
+            <Portrait cls={startingClass||'alchemist'} race={charRace} gender={charGender} size={100}/>
+            <div style={{fontSize:17,color:TH.textBright,marginTop:4}}>{charName} · {RACES[charRace]?.icon} {RACES[charRace]?.name}</div>
+          </div>
+          <div style={S.card}><div style={S.cT}>Stats <span style={{color:TH.goldBright}}>({ptsLeft}pts)</span></div>
+            <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(170px,1fr))',gap:6}}>
+              {STAT_IDS.map(sid=>{const st=STATS[sid];const v=stats[sid];const mod=getMod(v);return(
+                <div key={sid} style={{padding:'6px',background:TH.panelLight,borderRadius:4,border:`1px solid ${st.color}44`}}>
+                  <div style={{display:'flex',justifyContent:'space-between'}}><span style={{color:st.color,fontSize:16}}>{st.icon} {st.name}</span>
+                    <span style={{color:TH.textBright}}>{v} <span style={{fontSize:14,color:mod>=0?TH.green:TH.red}}>({mod>=0?'+':''}{mod})</span></span></div>
+                  <div style={{display:'flex',gap:4,justifyContent:'center',marginTop:3}}>
+                    <button style={S.btn(v>8?'def':'dim')} onClick={()=>{if(v>8){setStats(p=>({...p,[sid]:p[sid]-1}));setPtsLeft(p=>p+1);}}}>−</button>
+                    <div style={{width:30,textAlign:'center',fontSize:20,color:st.color}}>{v}</div>
+                    <button style={S.btn(ptsLeft>0&&v<18?'def':'dim')} onClick={()=>{if(ptsLeft>0&&v<18){setStats(p=>({...p,[sid]:p[sid]+1}));setPtsLeft(p=>p-1);}}}>+</button>
+                  </div>
+                  <div style={{fontSize:13,color:TH.textDim,marginTop:2}}>{SK_IDS.filter(sk=>SKILLS[sk].stat===sid).map(sk=>SKILLS[sk].name).join(', ')}</div>
+                </div>);})}
+            </div>
+          </div>
+          <div style={{textAlign:'center',marginTop:10}}>
+            <button style={S.btn(ptsLeft===0?'gold':'dim')} disabled={ptsLeft!==0} onClick={()=>{
+              const c=CLASSES[startingClass];
+              const locN=LOCATIONS[gameLocation]?.name||'Cindervale';
+              addLog(zui.classIntros[startingClass]?`${charName} the ${c.name} ${zui.classIntros[startingClass]}`:`${charName} the ${c.name} arrives at ${locN} for the first time.`,'story');
+              addLog('💡 You have 4 skill points to spend! Visit Your Quarters on the map.','level');setPhase('play');
+              try{if(localStorage.getItem('cindervale_seenIntro')!=='1')setShowHandbookIntro(true);}catch(e){setShowHandbookIntro(true);}
+              const initBQ=genBoardQuests(0,1,0,gameLocation,known);setBoardQ(initBQ);
+              const initCust=genCust();
+              const firstNPC={icon:'🛒',text:zui.starter.intro,to:'market',label:'🛒 Meet '+zui.starter.name,color:TH.gold,npc:zui.starter.npc};
+              const firstRegion={icon:'🗺️',text:zui.starterRegion+' are open for foraging.',to:'worldmap',label:'🗺️ Explore',color:TH.teal};
+              const initNews=[{icon:'📊',text:'Welcome! You have 4 skill points to spend.',to:'character',label:'📊 Your Quarters',color:TH.purple},firstNPC,firstRegion,{icon:'📌',text:initBQ.length+' requests on the village notice board.',to:'quests',label:'📜 Quests',color:TH.cyan}];
+              if((initCust.ench||0)+(initCust.pot||0)>0){const cp=[];if(initCust.ench>0)cp.push(initCust.ench+' enchant');if(initCust.pot>0)cp.push(initCust.pot+' potion');initNews.push({icon:'🛒',text:cp.join(' & ')+' customer'+(((initCust.ench||0)+(initCust.pot||0))>1?'s':'')+' waiting!',to:'enchant',label:'🛒 Customers',color:TH.purple});}
+              setNews(initNews);
+            }}>Begin Adventure →</button>
+            <button style={{...S.btn('dim'),marginLeft:8}} onClick={()=>setPhase('class')}>← Back</button>
+          </div>
+        </div>
+      </div>);
+  }
+
+  // ═══ CLASS SELECT ═══
+  if(phase==='class'){
+    return(
+      <div style={S.app}><link href="https://fonts.googleapis.com/css2?family=Almendra:wght@400;700&display=swap" rel="stylesheet"/>
+        <div style={{maxWidth:780,padding:'30px 20px',width:'100%'}}>
+          <div style={{fontSize:24,color:TH.gold,textAlign:'center',marginBottom:4}}>Choose Your Starting Discipline</div>
+          <div style={{fontSize:15,color:TH.textDim,textAlign:'center',marginBottom:8}}>This is your first class — you'll be able to multiclass into others as you level up.</div>
+          {/* Portrait with selected class */}
+          <div style={{textAlign:'center',marginBottom:12}}>
+            <Portrait cls={classPreview||startingClass||'alchemist'} race={charRace} gender={charGender} size={110}/>
+            <div style={{fontSize:16,color:TH.textBright,marginTop:4}}>{charName} · {RACES[charRace]?.icon} {RACES[charRace]?.name}</div>
+            <div style={{fontSize:14,color:(classPreview||startingClass)?CLASSES[classPreview||startingClass]?.color:TH.textDim,marginTop:2}}>{CLASSES[classPreview||startingClass||'alchemist']?.icon} {CLASSES[classPreview||startingClass||'alchemist']?.name}</div>
+          </div>
+          <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(210px,1fr))',gap:8}}>
+            {Object.keys(CLASSES).map(cid=>{const c=CLASSES[cid];const rec=cid==='alchemist';const sel=startingClass===cid;return(
+              <div key={cid} style={{...S.card,cursor:'pointer',textAlign:'center',border:`2px solid ${sel?c.color:rec?TH.gold:TH.border}`,transition:'border-color 0.2s'}}
+                onMouseEnter={e=>{e.currentTarget.style.borderColor=c.color;setClassPreview(cid);}} onMouseLeave={e=>{e.currentTarget.style.borderColor=sel?c.color:rec?TH.gold:TH.border;setClassPreview(null);}}
+                onClick={()=>{
+                  setClassLevels({[cid]:1});setStartingClass(cid);
+                  const ranks={};c.profSkills.forEach(sk=>ranks[sk]=1);setSkRanks(ranks);setSkPts(4);
+                }}>
+                <div style={{fontSize:32}}>{c.icon}</div>
+                {rec&&!startingClass&&<div style={{fontSize:13,color:TH.gold,background:`${TH.gold}20`,padding:'1px 6px',borderRadius:3,display:'inline-block',marginBottom:2}}>★ Recommended</div>}
+                {sel&&<div style={{fontSize:13,color:c.color,background:`${c.color}20`,padding:'1px 6px',borderRadius:3,display:'inline-block',marginBottom:2}}>✓ Selected</div>}
+                <div style={{fontSize:18,color:c.color,fontWeight:'bold'}}>{c.name}</div>
+                <div style={{fontSize:13,color:STATS[c.primaryStat]?.color,marginBottom:3}}>{STATS[c.primaryStat]?.icon} {STATS[c.primaryStat]?.name}</div>
+                <div style={{fontSize:14,color:TH.textDim,marginBottom:4,lineHeight:1.3}}>{c.shortDesc}</div>
+                {c.features.filter(f=>f.classLv<=2).map(f=><div key={f.name} style={{fontSize:14,color:TH.text}}>Lv{f.classLv}: <b>{f.name}</b></div>)}
+                <button style={{fontSize:14,color:c.color,background:'none',border:`1px solid ${c.color}44`,borderRadius:4,padding:'3px 10px',cursor:'pointer',fontFamily:'inherit',marginTop:6}}
+                  onClick={e=>{e.stopPropagation();setClassDetail(cid);}}>📖 View Full Progression</button>
+                <div style={{fontSize:13,color:c.color,marginTop:4}}>Specs: {Object.values(c.specs).map(s=>s.name).join(', ')}</div>
+              </div>);})}
+          </div>
+          {/* ═══ PRESTIGE CLASS PREVIEW ═══ */}
+          <div style={{...S.card,marginTop:12,borderColor:TH.purple+'66'}}>
+            <div style={{fontSize:17,color:TH.purple,fontWeight:'bold',marginBottom:6}}>✨ Prestige Classes — Multiclass Rewards</div>
+            <div style={{fontSize:13,color:TH.textDim,marginBottom:8}}>Reach level 3 in two different classes to unlock powerful prestige paths. Prestige levels advance BOTH the prestige class and one parent class simultaneously.</div>
+            <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(220px,1fr))',gap:6}}>
+              {Object.values(PRESTIGE_CLASSES).map(pc=>{
+                const reqText=formatPrestigeReq(pc.req);
+                const involves=Object.keys(pc.req).some(k=>k===startingClass);
+                return <div key={pc.id} style={{padding:'6px 8px',borderRadius:4,
+                  background:involves?pc.color+'12':TH.panelLight,
+                  border:'1px solid '+(involves?pc.color+'44':TH.border),
+                  opacity:involves?1:0.7}}>
+                  <div style={{fontSize:14,color:pc.color,fontWeight:'bold'}}>{pc.icon} {pc.name}</div>
+                  <div style={{fontSize:11,color:involves?TH.text:TH.textDim,marginBottom:2}}>Requires: {reqText}</div>
+                  <div style={{fontSize:12,color:TH.textDim}}>{pc.desc}</div>
+                </div>;
+              })}
+            </div>
+          </div>
+          <div style={{textAlign:'center',marginTop:8}}>
+            <button style={S.btn(startingClass?'gold':'dim')} disabled={!startingClass} onClick={()=>setPhase('stats')}>Continue →</button>
+            <button style={{...S.btn('dim'),marginLeft:8}} onClick={()=>setPhase('identity')}>← Back</button>
+          </div>
+        </div>
+
+        {/* ═══ CLASS DETAIL POPUP ═══ */}
+        {(()=>{const detailCls=classDetail?CLASSES[classDetail]:null;return detailCls?<div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'#000000dd',display:'flex',alignItems:'center',justifyContent:'center',zIndex:9999,padding:12}} onClick={()=>setClassDetail(null)}>
+          <div style={{background:`linear-gradient(160deg,${TH.panelAlt},${TH.panel})`,border:`2px solid ${detailCls.color}`,borderRadius:12,padding:0,maxWidth:640,width:'100%',maxHeight:'90vh',overflowY:'auto',boxShadow:`0 0 60px ${detailCls.color}30`}} onClick={e=>e.stopPropagation()}>
+
+            {/* Sticky Header */}
+            <div style={{padding:'20px 24px 16px',borderBottom:`1px solid ${TH.border}`,textAlign:'center',position:'sticky',top:0,background:TH.panel,zIndex:1,borderRadius:'12px 12px 0 0'}}>
+              <Portrait cls={classDetail} race={charRace} gender={charGender} size={80}/>
+              <div style={{fontSize:26,color:detailCls.color,fontWeight:'bold',marginTop:6}}>{detailCls.icon} {detailCls.name}</div>
+              <div style={{fontSize:16,color:TH.textDim,lineHeight:1.5,maxWidth:480,margin:'4px auto 0'}}>{detailCls.desc}</div>
+              <div style={{display:'flex',justifyContent:'center',gap:12,marginTop:8,flexWrap:'wrap'}}>
+                <div style={{fontSize:15,padding:'3px 10px',borderRadius:4,background:`${STATS[detailCls.primaryStat]?.color}15`,border:`1px solid ${STATS[detailCls.primaryStat]?.color}44`,color:STATS[detailCls.primaryStat]?.color}}>
+                  {STATS[detailCls.primaryStat]?.icon} Primary: {STATS[detailCls.primaryStat]?.name}
+                </div>
+                {detailCls.profSkills.map(sk=>{const skill=SKILLS[sk];return skill?<div key={sk} style={{fontSize:15,padding:'3px 10px',borderRadius:4,background:`${TH.green}12`,border:`1px solid ${TH.green}33`,color:TH.green}}>
+                  {skill.icon} {skill.name} <span style={{fontSize:13,color:TH.textDim}}>({STATS[skill.stat]?.icon})</span>
+                </div>:null;})}
+              </div>
+            </div>
+
+            <div style={{padding:'16px 24px 20px'}}>
+
+              {/* Feature Progression */}
+              <div style={{marginBottom:20}}>
+                <div style={{fontSize:18,color:TH.gold,fontWeight:'bold',marginBottom:10,paddingBottom:4,borderBottom:`1px solid ${TH.border}22`}}>📋 Class Feature Progression</div>
+                <div style={{fontSize:14,color:TH.textDim,marginBottom:8}}>You gain these features automatically as you level this class. Mechanical effects are shown as tags below each description.</div>
+                {detailCls.features.map((f,i)=>{
+                  const isSpec=f.classLv===3&&f.name==='Specialization';
+                  return(<div key={i} style={{display:'flex',gap:10,marginBottom:2,padding:'8px 10px',borderRadius:6,background:i%2===0?'transparent':`${TH.bg}40`,border:isSpec?`1px dashed ${detailCls.color}44`:'1px solid transparent'}}>
+                    <div style={{minWidth:38,textAlign:'center',paddingTop:2}}>
+                      <div style={{width:28,height:28,borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto',fontSize:18,fontWeight:'bold',
+                        background:f.classLv<=1?`${TH.green}20`:f.classLv<=3?`${detailCls.color}20`:f.classLv<=6?`${TH.gold}20`:f.classLv<=9?`${TH.orange}20`:`${TH.goldBright}20`,
+                        color:f.classLv<=1?TH.green:f.classLv<=3?detailCls.color:f.classLv<=6?TH.gold:f.classLv<=9?TH.orange:TH.goldBright,
+                        border:`2px solid ${f.classLv<=1?TH.green:f.classLv<=3?detailCls.color:f.classLv<=6?TH.gold:f.classLv<=9?TH.orange:TH.goldBright}44`}}>
+                        {f.classLv}
+                      </div>
+                    </div>
+                    <div style={{flex:1}}>
+                      <div style={{fontSize:16,color:TH.textBright,fontWeight:'bold'}}>{f.name}{isSpec?' ★':''}</div>
+                      <div style={{fontSize:14,color:TH.text,lineHeight:1.5,marginTop:2}}>{f.desc}</div>
+                      {f.effects&&<div style={{display:'flex',flexWrap:'wrap',gap:3,marginTop:4}}>
+                        {Object.entries(f.effects).map(([k,v])=>{
+                          const isNum=typeof v==='number';
+                          const label=k.replace(/([A-Z])/g,' $1').replace(/^./,s=>s.toUpperCase());
+                          return<span key={k} style={{fontSize:13,padding:'1px 6px',borderRadius:3,background:`${detailCls.color}12`,border:`1px solid ${detailCls.color}22`,color:detailCls.color}}>
+                            {label}: {isNum?(v>0&&v<1?(v*100).toFixed(0)+'%':v>0?'+'+v:v):v===true?'✓':String(v)}
+                          </span>;
+                        })}
+                      </div>}
+                    </div>
+                  </div>);
+                })}
+              </div>
+
+              {/* Specializations */}
+              <div>
+                <div style={{fontSize:18,color:TH.gold,fontWeight:'bold',marginBottom:4,paddingBottom:4,borderBottom:`1px solid ${TH.border}22`}}>🔀 Specializations <span style={{fontSize:14,fontWeight:'normal',color:TH.textDim}}>— choose at Class Level 3</span></div>
+                <div style={{fontSize:14,color:TH.textDim,marginBottom:10,lineHeight:1.4}}>Each spec grants bonus features at class levels 3, 6, and 10 — these stack on top of the base class features above. Your choice shapes your playstyle for the rest of the game.</div>
+
+                <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(170px,1fr))',gap:10}}>
+                  {Object.values(detailCls.specs).map(spec=>(
+                    <div key={spec.id} style={{background:TH.panelLight,border:`1px solid ${spec.color}44`,borderRadius:8,padding:'12px 10px',display:'flex',flexDirection:'column'}}>
+                      <div style={{textAlign:'center',marginBottom:8}}>
+                        <div style={{fontSize:26}}>{spec.icon}</div>
+                        <div style={{fontSize:17,color:spec.color,fontWeight:'bold'}}>{spec.name}</div>
+                        <div style={{fontSize:13,color:STATS[spec.bStat]?.color,marginTop:2}}>{STATS[spec.bStat]?.icon} {STATS[spec.bStat]?.name} focused</div>
+                        <div style={{display:'flex',justifyContent:'center',gap:4,marginTop:4,flexWrap:'wrap'}}>
+                          {spec.bSkills.map(sk=>{const skill=SKILLS[sk];return skill?<span key={sk} style={{fontSize:12,padding:'1px 5px',borderRadius:3,background:`${TH.green}12`,border:`1px solid ${TH.green}22`,color:TH.green}}>{skill.icon} {skill.name}</span>:null;})}
+                        </div>
+                      </div>
+                      {/* The spec's unique mechanic — sources sp.mechDesc (same surface fix as the level-up
+                          spec picker); without this, systems like the Apothecary Clinic were never explained
+                          at character selection. Falls back to sp.desc if mechDesc is absent. */}
+                      {spec.desc&&<div style={{fontSize:13,color:TH.textDim,fontStyle:'italic',marginBottom:6,lineHeight:1.4}}>{spec.desc}</div>}
+                      {spec.mechDesc&&<div style={{fontSize:13,color:TH.text,marginBottom:8,padding:'6px 8px',background:`${spec.color}10`,border:`1px solid ${spec.color}44`,borderRadius:5,lineHeight:1.45}}>{spec.mechDesc}</div>}
+                      {spec.features.map((f,fi)=>(
+                        <div key={fi} style={{marginBottom:8,padding:'6px 8px',borderRadius:4,background:`${TH.bg}60`,border:`1px solid ${TH.border}`}}>
+                          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:3}}>
+                            <span style={{fontSize:15,color:spec.color,fontWeight:'bold'}}>{f.name}</span>
+                            <span style={{fontSize:13,padding:'1px 5px',borderRadius:3,background:`${spec.color}15`,color:spec.color}}>Lv{f.classLv}</span>
+                          </div>
+                          <div style={{fontSize:14,color:TH.textDim,lineHeight:1.4}}>{f.desc}</div>
+                          {f.effects&&<div style={{display:'flex',flexWrap:'wrap',gap:2,marginTop:3}}>
+                            {Object.entries(f.effects).map(([k,v])=>{
+                              const isNum=typeof v==='number';
+                              const label=k.replace(/([A-Z])/g,' $1').replace(/^./,s=>s.toUpperCase());
+                              return<span key={k} style={{fontSize:12,padding:'1px 4px',borderRadius:2,background:`${spec.color}12`,border:`1px solid ${spec.color}22`,color:spec.color}}>
+                                {label}: {isNum?(v>0&&v<1?(v*100).toFixed(0)+'%':v>0?'+'+v:v):v===true?'✓':String(v)}
+                              </span>;
+                            })}
+                          </div>}
+                        </div>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Bottom actions */}
+              <div style={{textAlign:'center',marginTop:16,paddingTop:12,borderTop:`1px solid ${TH.border}22`,display:'flex',justifyContent:'center',gap:8,flexWrap:'wrap'}}>
+                <button style={{...S.btn('gold'),fontSize:16,padding:'8px 24px'}} onClick={()=>{
+                  const cid=classDetail;const c=CLASSES[cid];
+                  setClassLevels({[cid]:1});setStartingClass(cid);
+                  const ranks={};c.profSkills.forEach(sk=>ranks[sk]=1);setSkRanks(ranks);setSkPts(4);
+                  setClassDetail(null);
+                }}>{detailCls.icon} Choose {detailCls.name}</button>
+                <button style={{...S.btn('dim'),fontSize:16,padding:'8px 20px'}} onClick={()=>setClassDetail(null)}>Back to Classes</button>
+              </div>
+            </div>
+          </div>
+        </div>:null;})()}
+      </div>);
+  }
+
+
+  // ═══ MAIN GAME ═══
+  const availPool=(()=>{
+    const pool=locApprentices.filter(ap=>!hiredAppr.find(h=>h.id===ap.id));
+    // Seed-shuffle based on day so pool rotates daily
+    const hashStr=(s,seed)=>{let h=seed;for(let i=0;i<s.length;i++){h=((h<<5)-h+s.charCodeAt(i))|0;}return(h>>>0);};
+    const shuffled=[...pool].sort((a,b)=>hashStr(a.id,day*2654435761)-hashStr(b.id,day*2654435761));
+    const showN=3+Math.floor(level/3)+getFeatureVal('hireBonusCandidates');
+    const statBoost=getFeatureVal('hireBonusStat');
+    const candidates=shuffled.slice(0,showN).map(ap=>statBoost>0?{...ap,baseStat:Object.fromEntries(Object.entries(ap.baseStat).map(([k,v])=>[k,v+statBoost]))}:ap);
+    return candidates;
+  })();
+
+  // ─── MAP NOTIFICATIONS ───
+  const bqReady=readyBQ.length;const bqAvail=boardQ.length;
+  const questNote=readyQ.length>0||bqReady>0?'!':(aQ.length+activeBQ.length>0?aQ.length+activeBQ.length:(bqAvail>0?'📌':null));
+  const staffNote=hiredAppr.length>0?hiredAppr.length:null;
+  const enchNote=(enchQ.length>0?enchQ.length:0)+potCustQ.length||null;
+  const charNote=skPts>0?skPts:(pendingLevelUp?'!':null);
+
+  // ─── MAP BUILDING ───
+  // ─── ART RESOLVER (single helper for hub tiles + screen backdrop) ─────────────
+  // "One image, two contexts" per design lock §4. Priority order:
+  //   region-specific town location  → TOWN_IMGS[region_screen] || TOWN_IMGS[screen]
+  //   workshop                       → laboratory room-hero (ROOM_DEFS[0]) at current tier
+  //   character                      → Living Quarters room-hero (ROOM_DEFS quarters) at current tier
+  //   threats                        → TOWN_IMGS['threats']
+  //   anything else (map / sub-tools)→ fall-through to seasonal()
+  // Final fallback for every branch: seasonal ZONE_IMGS, then null (caller paints gradient).
+  // Never throws; returns null on total miss. Keep this as ONE helper — do NOT scatter the branches.
+  const TOWN_LOC_SCREENS=['market','tavern','worldmap','quests','staff','factions'];
+  const resolveArt=(scr)=>{
+    // seasonal ambient = the per-location seasonal hero. Matches expedition heroImg's
+    // final fallback (curSeason.img). Note: ZONE_IMGS keys are
+    // zone-specific (ashfields, ironwood, kelp_forest…), NOT gameLocation-level — so
+    // the design-lock pseudocode's `ZONE_IMGS[reg.id]` does not resolve at the location
+    // scope. `curSeason.img` IS the proper per-location/per-season ambient (the same
+    // image the expedition view falls back to). Also try ZONE_IMGS[gameLocation+_+season]
+    // first for forward-compat in case Jim ever adds gameLocation-level seasonal keys.
+    const seasonal=(()=>{
+      try{
+        const cs=(typeof getSeason==='function')?getSeason(day,gameLocation):null;
+        if(typeof ZONE_IMGS!=='undefined'){
+          const z=(cs&&ZONE_IMGS[gameLocation+'_'+cs.id])||ZONE_IMGS[gameLocation];
+          if(z)return z;
+        }
+        return cs&&cs.img||null;
+      }catch(e){return null;}
+    })();
+    // Helper: pull a ROOM_IMGS hero at current tier from a ROOM_DEFS entry.
+    const roomHero=(roomDef)=>{
+      if(!roomDef||typeof ROOM_IMGS==='undefined')return null;
+      const owned=roomDef.upgrades.filter(uid=>upgrades.includes(uid)).length;
+      const tier=(typeof getRoomTier==='function')?getRoomTier(owned,roomDef):1;
+      return ROOM_IMGS['room_'+roomDef.id+'_t'+tier]||ROOM_IMGS['room_'+roomDef.id]||null;
+    };
+    if(TOWN_LOC_SCREENS.indexOf(scr)>=0){
+      const town=(typeof TOWN_IMGS!=='undefined')?(TOWN_IMGS[gameLocation+'_'+scr]||TOWN_IMGS[scr]):null;
+      return town||seasonal||null;
+    }
+    if(scr==='workshop'){
+      // Workshop hero = the room the workshop screen defaults to (laboratory = ROOM_DEFS[0])
+      const lab=(typeof ROOM_DEFS!=='undefined'&&ROOM_DEFS[0])?ROOM_DEFS[0]:null;
+      return roomHero(lab)||seasonal||null;
+    }
+    if(scr==='character'){
+      // Quarters hero = Living Quarters room (ROOM_DEFS entry with id 'quarters')
+      const qr=(typeof ROOM_DEFS!=='undefined')?ROOM_DEFS.find(r=>r.id==='quarters'):null;
+      return roomHero(qr)||seasonal||null;
+    }
+    if(scr==='threats'){
+      const t=(typeof TOWN_IMGS!=='undefined')?TOWN_IMGS['threats']:null;
+      return t||seasonal||null;
+    }
+    return seasonal||null;
+  };
+  // Inline modal-clear used by every navigation path (tiles, stub bar, back control).
+  // Tactical replication per design lock §8 — no central router introduced.
+  const navClearModals=()=>{setDlgNpc(null);setShowShop(false);setConfirmRest(false);setQuestDlg(null);};
+
+
+  // ─── BACK BAR ───
+  // Per design lock §6: `back` prop drives a per-screen back control. Default `back='map'`
+  // (back to town); workshop sub-tools pass `back='workshop'` to preserve the 2-level
+  // Town → Workshop → sub-tool hierarchy. Click navigates + clears modals via navClearModals.
+  // Sits just above the screen's hero/backdrop art per the spec.
+  const BackBar=({title,icon:ic,back='map'})=>{
+    const backLabel=back==='workshop'?'⚗️ Workshop':'🏘️ Town';
+    return(
+      <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:8,flexWrap:'wrap'}}>
+        {back&&<button onClick={()=>{setScreen(back);navClearModals();}}
+          style={{background:'rgba(20,16,28,0.6)',border:`1px solid ${TH.borderGold}`,
+            color:TH.gold,cursor:'pointer',padding:'3px 10px',fontFamily:'inherit',
+            fontSize:13,borderRadius:6,whiteSpace:'nowrap'}}
+          title={`Back to ${back==='workshop'?'Workshop':'Town'}`}
+          onMouseEnter={e=>{e.currentTarget.style.background=TH.gold+'25';e.currentTarget.style.color=TH.goldBright;}}
+          onMouseLeave={e=>{e.currentTarget.style.background='rgba(20,16,28,0.6)';e.currentTarget.style.color=TH.gold;}}>
+          ← {backLabel}
+        </button>}
+        <span style={{fontSize:19,color:TH.gold}}>{ic} {title}</span>
+      </div>
+    );
+  };
+
+  const SaveOverlay=()=>showSaveMenu?(
+    <div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'#000000cc',display:'flex',alignItems:'center',justifyContent:'center',zIndex:9999}} onClick={()=>setShowSaveMenu(false)}>
+      <div style={{...S.card,maxWidth:400,width:'90%',padding:20}} onClick={e=>e.stopPropagation()}>
+        {/* Pass the Torch */}
+        {getLvl(xp)>=9&&<div style={{...S.card,borderColor:'#c050e044',marginBottom:8}}>
+          <div style={{...S.cT,color:'#c050e0'}}>🔥 Pass the Torch</div>
+          {!canPassTorch?<div style={{padding:'6px 10px',background:'#40102066',borderRadius:6,border:'1px solid #a040c044'}}>
+            <div style={{fontSize:13,color:TH.textDim}}>{hollowMarch?.active?'Clear '+(HOLLOW_MARCH.wavesForTorch-marchWavesCleared)+' more wave'+(HOLLOW_MARCH.wavesForTorch-marchWavesCleared!==1?'s':'')+'.':'The March must begin first.'} <b style={{color:'#c060e0'}}>{marchWavesCleared}/{HOLLOW_MARCH.wavesForTorch}</b></div>
+          </div>
+          :hiredAppr.length===0?<div style={{fontSize:14,color:TH.textDim}}>Hire an apprentice first.</div>
+          :<button style={{...S.btn('gold'),fontSize:15,width:'100%'}} onClick={()=>{setTorchStep(1);setTorchApprentice(null);setTorchHeirloom(null);setTorchLegacy(null);setShowSaveMenu(false);}}>🔥 Pass the Torch</button>}
+        </div>}
+                <div style={S.cT}>💾 Save / Load {fbUser&&<span style={{fontSize:13,color:TH.green,fontWeight:'normal'}}>☁️ {fbUser.displayName||'Cloud'}</span>}</div>
+        {[1,2].map(i=>{const data=saveSlots[i-1];return(
+          <div key={i} style={{padding:'6px 8px',background:TH.panelLight,borderRadius:4,marginBottom:4,border:`1px solid ${data?TH.borderGold:TH.border}`}}>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+              <span style={{fontSize:15,color:data?TH.textBright:TH.textDim}}>Slot {i}{data?`: ${data.charName} Lv${getLvl(data.xp||0)+1} D${data.day}`:': Empty'}</span>
+              <div style={S.row}>
+                <button style={{...S.btn('gold'),fontSize:14}} onClick={()=>{manualSave(i);setShowSaveMenu(false);}}>Save</button>
+                {data&&<button style={{...S.btn(),fontSize:14}} onClick={async()=>{await loadSlot(i);setShowSaveMenu(false);}}>Load</button>}
+              </div>
+            </div>
+          </div>);})}
+        <div style={{...S.row,justifyContent:'space-between',marginTop:6}}>
+          <button style={S.btn('dim')} onClick={()=>setShowSaveMenu(false)}>Close</button>
+          <button style={{...S.btn(),fontSize:14}} onClick={()=>{exportSave();setShowSaveMenu(false);}}>📤 Export</button>
+          <button style={S.btn('red')} onClick={()=>{setGameStarted(false);setShowSaveMenu(false);}}>🚪 Title</button>
+        </div>
+      </div>
+    </div>
+  ):null;
+
+  // App root background is overridden to transparent on the main render (not in S.app, which is
+  // shared with pre-game intro/onboarding renders that need TH.bg). The global art backdrop
+  // renders at position:fixed z-index:-2 and would be occluded by any opaque ancestor — transparent
+  // here lets it show through. Body CSS (background:#1a1a2e at line 18) is the dark fallback when
+  // no backdrop image resolves; onboarding screens still get TH.bg via S.app intact.
+  return(
+    <div style={{...S.app,paddingBottom:48,background:'transparent'}}><link href="https://fonts.googleapis.com/css2?family=Almendra:wght@400;700&display=swap" rel="stylesheet"/>
+      <SaveOverlay/>
+      {/* ═══ FIRST-LAUNCH HANDBOOK INTRO ═══ */}
+      {showHandbookIntro&&(()=>{
+        const dismiss=()=>{try{localStorage.setItem('cindervale_seenIntro','1');}catch(e){}setShowHandbookIntro(false);};
+        return(<div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'#000000dd',display:'flex',alignItems:'center',justifyContent:'center',zIndex:10000,padding:16}}
+          onClick={dismiss}>
+          <div style={{background:TH.bg,border:'2px solid '+TH.borderGold,borderRadius:12,padding:24,maxWidth:520,width:'100%',maxHeight:'90vh',overflowY:'auto'}} onClick={e=>e.stopPropagation()}>
+            <div style={{fontSize:22,color:TH.gold,textAlign:'center',marginBottom:6}}>Welcome to Cindervale</div>
+            <div style={{fontSize:14,color:TH.textBright,lineHeight:1.55,marginBottom:14}}>
+              Your workshop is yours to build, but the world has its own rules — five stats, seventeen skills, classes, prestige paths, foraging, brewing, factions, and more. The <strong style={{color:TH.gold}}>Player's Handbook</strong> is the complete reference for everything you can do here. It's worth a skim before your first day.
+            </div>
+            <div style={{fontSize:13,color:TH.textDim,marginBottom:16,fontStyle:'italic'}}>
+              You can re-open the handbook any time from the 📖 Handbook button at the top of the screen.
+            </div>
+            <div style={{display:'flex',flexDirection:'column',gap:8}}>
+              <a href="cindervale_handbook.html" target="_blank" rel="noopener noreferrer"
+                style={{...S.btn('gold'),fontSize:15,padding:'10px 16px',textAlign:'center',textDecoration:'none',display:'block'}}
+                onClick={dismiss}>📖 Open the Player's Handbook</a>
+              <button style={{...S.btn('dim'),fontSize:14,padding:'8px 16px'}}
+                onClick={dismiss}>I'll Explore on My Own</button>
+            </div>
+          </div>
+        </div>);
+      })()}
+      {/* ═══ PASS THE TORCH — Stepped Modal ═══ */}
+      {torchStep>0&&<div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'#000000dd',display:'flex',alignItems:'center',justifyContent:'center',zIndex:10000,padding:16}}
+        onClick={()=>setTorchStep(0)}>
+        <div style={{background:TH.bg,border:'2px solid #c050e0',borderRadius:12,padding:24,maxWidth:620,width:'100%',maxHeight:'90vh',overflowY:'auto'}} onClick={e=>e.stopPropagation()}>
+          {/* Step indicator */}
+          <div style={{display:'flex',gap:4,justifyContent:'center',marginBottom:16}}>
+            {['Successor','Heirloom','Legacy','Location'].map((label,i)=>{
+              const step=i+1;const active=torchStep===step;const done=torchStep>step;
+              return <div key={i} style={{display:'flex',alignItems:'center',gap:4}}>
+                <div style={{width:28,height:28,borderRadius:'50%',display:'flex',alignItems:'center',justifyContent:'center',fontSize:14,fontWeight:'bold',
+                  background:done?'#c050e0':active?TH.gold+'33':'transparent',border:'2px solid '+(done?'#c050e0':active?TH.gold:TH.border),
+                  color:done?TH.bg:active?TH.gold:TH.textDim}}>{done?'✓':step}</div>
+                <span style={{fontSize:13,color:active?TH.gold:done?'#c050e0':TH.textDim,fontWeight:active?'bold':'normal'}}>{label}</span>
+                {i<3&&<span style={{color:TH.border,margin:'0 2px'}}>→</span>}
+              </div>;
+            })}
+          </div>
+          <div style={{fontSize:20,color:'#c050e0',textAlign:'center',marginBottom:4}}>🔥 Pass the Torch</div>
+          <div style={{fontSize:13,color:TH.textDim,textAlign:'center',marginBottom:16}}>{charName}'s legacy lives on through their apprentice.</div>
+
+          {/* Step 1: Choose Successor */}
+          {torchStep===1&&<>
+            <div style={{fontSize:16,color:TH.gold,marginBottom:8}}>Choose your successor:</div>
+            <div style={{display:'flex',flexDirection:'column',gap:6}}>
+              {hiredAppr.map(ap=>{const sel=torchApprentice?.id===ap.id;return(
+                <div key={ap.id} style={{padding:'10px 14px',background:sel?TH.gold+'15':TH.panel,borderRadius:8,border:'2px solid '+(sel?TH.gold:TH.border),cursor:'pointer',transition:'all .15s'}}
+                  onClick={()=>setTorchApprentice(ap)}>
+                  <div style={{display:'flex',alignItems:'center',gap:8}}>
+                    <span style={{fontSize:24}}>{ap.icon}</span>
+                    <div style={{flex:1}}>
+                      <div style={{fontSize:16,color:sel?TH.gold:TH.textBright,fontWeight:'bold'}}>{ap.name}{sel&&<span style={{fontSize:13,marginLeft:6}}>✓ Selected</span>}</div>
+                      <div style={{fontSize:13,color:TH.textDim}}>{ap.specialty} specialist · Level {getApprLvl(ap.id)}</div>
+                    </div>
+                  </div>
+                </div>);})}
+            </div>
+            <div style={{display:'flex',gap:8,marginTop:16}}>
+              <button style={{...S.btn(torchApprentice?'gold':'dim'),flex:1,fontSize:15,padding:'8px 0'}} disabled={!torchApprentice}
+                onClick={()=>setTorchStep(2)}>Next: Choose Heirloom →</button>
+              <button style={{...S.btn('dim'),padding:'8px 16px'}} onClick={()=>setTorchStep(0)}>Cancel</button>
+            </div>
+          </>}
+
+          {/* Step 2: Choose Heirloom */}
+          {torchStep===2&&<>
+            <div style={{fontSize:16,color:TH.gold,marginBottom:4}}>Choose an heirloom upgrade for {torchApprentice?.name}:</div>
+            <div style={{fontSize:13,color:TH.textDim,marginBottom:10}}>Your apprentice starts with this workshop upgrade already built.</div>
+            <div style={{display:'flex',flexDirection:'column',gap:6}}>
+              {upgrades.map(uid=>{const u=UPGRADES[uid];if(!u)return null;const sel=torchHeirloom===uid;return(
+                <div key={uid} style={{padding:'8px 12px',background:sel?TH.gold+'15':TH.panel,borderRadius:6,border:'2px solid '+(sel?TH.gold:TH.border),cursor:'pointer',transition:'all .15s'}}
+                  onClick={()=>setTorchHeirloom(sel?null:uid)}>
+                  <div style={{display:'flex',alignItems:'center',gap:6}}>
+                    <span style={{fontSize:20}}>{u.icon}</span>
+                    <div style={{flex:1}}>
+                      <div style={{fontSize:15,color:sel?TH.gold:TH.textBright,fontWeight:sel?'bold':'normal'}}>{u.name}{sel&&<span style={{fontSize:12,marginLeft:6}}>✓</span>}</div>
+                      <div style={{fontSize:12,color:TH.textDim}}>{u.desc}</div>
+                    </div>
+                  </div>
+                </div>);})}
+            </div>
+            <div style={{display:'flex',gap:8,marginTop:16}}>
+              <button style={{...S.btn('dim'),padding:'8px 16px'}} onClick={()=>setTorchStep(1)}>← Back</button>
+              <button style={{...S.btn('gold'),flex:1,fontSize:15,padding:'8px 0'}}
+                onClick={()=>setTorchStep(3)}>Next: Choose Legacy →</button>
+            </div>
+            <div style={{fontSize:12,color:TH.textDim,textAlign:'center',marginTop:4}}>{torchHeirloom?UPGRADES[torchHeirloom]?.icon+' '+UPGRADES[torchHeirloom]?.name+' selected':'No heirloom selected (that\'s ok)'}</div>
+          </>}
+
+          {/* Step 3: Choose Legacy Feature */}
+          {torchStep===3&&(()=>{
+            const options=getLegacyOptions();
+            const fmtEffect=(k,v)=>{
+              if(typeof v==='boolean')return k.replace(/([A-Z])/g,' $1').toLowerCase();
+              if(typeof v==='number'&&v<1&&v>0)return '+'+Math.round(v*100)+'% '+k.replace(/([A-Z])/g,' $1').toLowerCase();
+              return '+'+v+' '+k.replace(/([A-Z])/g,' $1').toLowerCase();
+            };
+            return <>
+              <div style={{fontSize:16,color:'#c050e0',marginBottom:4}}>📜 Choose a Legacy Feature for {torchApprentice?.name}:</div>
+              <div style={{fontSize:13,color:TH.textDim,marginBottom:10,lineHeight:1.5}}>
+                Pass on mastered techniques. Your apprentice gains ALL features in the chain from Day 1 — a permanent gift from {charName}'s expertise.
+              </div>
+              {options.length===0&&<div style={{padding:16,textAlign:'center',color:TH.textDim}}>No specialization or prestige features to pass on. Mentor bonuses from your class will still apply.</div>}
+              <div style={{display:'flex',flexDirection:'column',gap:8}}>
+                {options.map((opt,i)=>{const sel=torchLegacy===opt;return(
+                  <div key={i} style={{padding:'12px 14px',background:sel?opt.color+'15':TH.panel,borderRadius:8,border:'2px solid '+(sel?opt.color:TH.border),cursor:'pointer',transition:'all .15s'}}
+                    onClick={()=>setTorchLegacy(sel?null:opt)}>
+                    <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:4}}>
+                      <span style={{fontSize:28}}>{opt.icon}</span>
+                      <div style={{flex:1}}>
+                        <div style={{fontSize:16,color:sel?opt.color:TH.textBright,fontWeight:'bold'}}>{opt.name}{sel&&<span style={{fontSize:12,marginLeft:6}}>✓ Selected</span>}</div>
+                        <div style={{fontSize:13,color:TH.textDim}}>{opt.source}</div>
+                      </div>
+                      <div style={{fontSize:12,color:opt.type==='prestige'?'#c050e0':opt.color,background:(opt.type==='prestige'?'#c050e0':opt.color)+'15',padding:'2px 8px',borderRadius:4}}>{opt.type==='prestige'?'★ Prestige':'Specialization'}</div>
+                    </div>
+                    {/* Feature chain */}
+                    {opt.featureChain&&<div style={{fontSize:12,color:TH.textDim,marginBottom:4,paddingLeft:36}}>
+                      Includes: {opt.featureChain.map(f=>'Lv'+f.lv+' '+f.name).join(' → ')}
+                    </div>}
+                    {/* Merged effects */}
+                    <div style={{display:'flex',flexWrap:'wrap',gap:4,paddingLeft:36}}>
+                      {Object.entries(opt.effects||{}).map(([k,v])=>
+                        <span key={k} style={{fontSize:12,padding:'2px 6px',background:opt.color+'15',border:'1px solid '+opt.color+'33',borderRadius:3,color:opt.color}}>{fmtEffect(k,v)}</span>
+                      )}
+                    </div>
+                  </div>);})}
+              </div>
+              <div style={{display:'flex',gap:8,marginTop:16}}>
+                <button style={{...S.btn('dim'),padding:'8px 16px'}} onClick={()=>setTorchStep(2)}>← Back</button>
+                <button style={{...S.btn('gold'),flex:1,fontSize:15,padding:'8px 0'}}
+                  onClick={()=>setTorchStep(4)}>Next: Choose Location →</button>
+              </div>
+              <div style={{fontSize:12,color:TH.textDim,textAlign:'center',marginTop:4}}>{torchLegacy?torchLegacy.icon+' '+torchLegacy.name+' selected':'No legacy selected (that\'s ok)'}</div>
+            </>;
+          })()}
+
+          {/* Step 4: Choose Location & Confirm */}
+          {torchStep===4&&<>
+            <div style={{fontSize:16,color:TH.gold,marginBottom:4}}>Choose where {torchApprentice?.name} will begin:</div>
+            {/* Summary */}
+            <div style={{padding:'8px 12px',background:TH.panel,borderRadius:6,marginBottom:12,border:'1px solid #c050e033'}}>
+              <div style={{fontSize:13,color:TH.textDim}}>
+                <b style={{color:TH.textBright}}>Successor:</b> {torchApprentice?.icon} {torchApprentice?.name}
+                {torchHeirloom&&<span> · <b style={{color:TH.textBright}}>Heirloom:</b> {UPGRADES[torchHeirloom]?.icon} {UPGRADES[torchHeirloom]?.name}</span>}
+                {torchLegacy&&<span> · <b style={{color:'#c050e0'}}>Legacy:</b> {torchLegacy.icon} {torchLegacy.name}</span>}
+              </div>
+            </div>
+            <div style={{display:'flex',flexDirection:'column',gap:8}}>
+              {Object.values(LOCATIONS).map(loc=>(
+                <div key={loc.id} style={{padding:'14px 16px',background:TH.panel,borderRadius:8,border:'2px solid '+TH.border,cursor:'pointer',transition:'all .15s'}}
+                  onMouseEnter={e=>{e.currentTarget.style.borderColor=TH.gold;e.currentTarget.style.boxShadow='0 0 12px '+TH.gold+'33';}}
+                  onMouseLeave={e=>{e.currentTarget.style.borderColor=TH.border;e.currentTarget.style.boxShadow='none';}}
+                  onClick={()=>{passTorch(torchApprentice,torchHeirloom,loc.id,torchLegacy);}}>
+                  <div style={{fontSize:18,color:TH.gold,fontWeight:'bold'}}>{loc.icon} {loc.name}</div>
+                  <div style={{fontSize:14,color:TH.textDim,marginTop:3,lineHeight:1.4}}>{loc.desc}</div>
+                </div>
+              ))}
+            </div>
+            <div style={{display:'flex',gap:8,marginTop:16}}>
+              <button style={{...S.btn('dim'),padding:'8px 16px'}} onClick={()=>setTorchStep(3)}>← Back</button>
+              <button style={{...S.btn('dim'),flex:1}} onClick={()=>setTorchStep(0)}>Cancel</button>
+            </div>
+          </>}
+        </div>
+      </div>}
+      {/* ═══ DEBUG PANEL ═══ */}
+      {debugMode&&gameStarted&&<>
+        <div style={{position:'fixed',bottom:8,right:8,zIndex:1001}}>
+          <button onClick={()=>setShowDebug(p=>!p)} style={{background:showDebug?'#ff4444':'#444',color:'#fff',border:'none',borderRadius:'50%',width:36,height:36,fontSize:18,cursor:'pointer',boxShadow:'0 2px 8px #000a'}}>🐛</button>
+        </div>
+        {showDebug&&<div style={{position:'fixed',bottom:50,right:8,zIndex:1001,background:'#1a1a2a',border:'1px solid #555',borderRadius:8,padding:10,width:320,maxHeight:'80vh',overflow:'auto',fontSize:13,color:'#ddd',boxShadow:'0 4px 20px #000a'}} onClick={e=>e.stopPropagation()}>
+          <div style={{fontSize:16,color:'#ff8',marginBottom:6,display:'flex',justifyContent:'space-between'}}><b>🐛 Debug Panel</b><span style={{cursor:'pointer'}} onClick={()=>setShowDebug(false)}>✕</span></div>
+          <div style={{color:'#aaa',fontSize:11,marginBottom:8}}>Day {day} · ⚡{energy} · Lv{getLvl(xp)+1} · {fmtMoney(gold)} · {xp}xp</div>
+
+          <div style={{marginBottom:6}}><b style={{color:'#8cf'}}>💰 Resources</b></div>
+          <div style={{display:'flex',flexWrap:'wrap',gap:3,marginBottom:8}}>
+            <button onClick={()=>setGold(g=>g+100)} style={{padding:'2px 6px',fontSize:12,background:'#333',color:'#fd4',border:'1px solid #555',borderRadius:3,cursor:'pointer'}}>+{fmtMoney(100)}</button>
+            <button onClick={()=>setGold(g=>g+1000)} style={{padding:'2px 6px',fontSize:12,background:'#333',color:'#fd4',border:'1px solid #555',borderRadius:3,cursor:'pointer'}}>+{fmtMoney(1000)}</button>
+            <button onClick={()=>setGold(g=>g+10000)} style={{padding:'2px 6px',fontSize:12,background:'#333',color:'#fd4',border:'1px solid #555',borderRadius:3,cursor:'pointer'}}>+{fmtMoney(10000)}</button>
+            <button onClick={()=>setXp(x=>x+500)} style={{padding:'2px 6px',fontSize:12,background:'#333',color:'#8f8',border:'1px solid #555',borderRadius:3,cursor:'pointer'}}>+500xp</button>
+            <button onClick={()=>setXp(x=>x+2000)} style={{padding:'2px 6px',fontSize:12,background:'#333',color:'#8f8',border:'1px solid #555',borderRadius:3,cursor:'pointer'}}>+2000xp</button>
+            <button onClick={()=>setSkPts(p=>p+5)} style={{padding:'2px 6px',fontSize:12,background:'#333',color:'#f8f',border:'1px solid #555',borderRadius:3,cursor:'pointer'}}>+5 SkPts</button>
+            <button onClick={()=>setEnergy(300)} style={{padding:'2px 6px',fontSize:12,background:'#333',color:'#8ff',border:'1px solid #555',borderRadius:3,cursor:'pointer'}}>Set 300⚡</button>
+          </div>
+
+          <div style={{marginBottom:6}}><b style={{color:'#8cf'}}>🌿 Ingredients</b></div>
+          <div style={{display:'flex',flexWrap:'wrap',gap:2,marginBottom:4}}>
+            {Object.entries(INGR).map(([id,ing])=><button key={id} onClick={()=>setInv(p=>({...p,[id]:(p[id]||0)+10}))} style={{padding:'1px 4px',fontSize:11,background:'#333',color:'#ccc',border:'1px solid #444',borderRadius:2,cursor:'pointer'}} title={ing.name+' +10'}>{ing.icon}</button>)}
+          </div>
+          <div style={{display:'flex',gap:3,marginBottom:8}}>
+            <button onClick={()=>{const n={};Object.keys(INGR).forEach(id=>n[id]=(inv[id]||0)+20);setInv(p=>({...p,...n}));}} style={{padding:'2px 6px',fontSize:12,background:'#335',color:'#8cf',border:'1px solid #555',borderRadius:3,cursor:'pointer'}}>+20 ALL</button>
+            <button onClick={()=>{const n={};Object.keys(INGR).forEach(id=>n[id]=(inv[id]||0)+99);setInv(p=>({...p,...n}));}} style={{padding:'2px 6px',fontSize:12,background:'#335',color:'#8cf',border:'1px solid #555',borderRadius:3,cursor:'pointer'}}>+99 ALL</button>
+          </div>
+
+          <div style={{marginBottom:6}}><b style={{color:'#8cf'}}>📜 Recipes</b></div>
+          <div style={{display:'flex',gap:3,marginBottom:4}}>
+            <button onClick={()=>setKnown(RECIPES.map(r=>r.id))} style={{padding:'2px 6px',fontSize:12,background:'#353',color:'#8f8',border:'1px solid #555',borderRadius:3,cursor:'pointer'}}>Learn ALL</button>
+            <span style={{fontSize:11,color:'#888'}}>Known: {known.length}/{RECIPES.length}</span>
+          </div>
+          <div style={{display:'flex',flexWrap:'wrap',gap:2,marginBottom:8}}>
+            {RECIPES.filter(r=>!known.includes(r.id)).slice(0,12).map(r=><button key={r.id} onClick={()=>setKnown(p=>[...p,r.id])} style={{padding:'1px 4px',fontSize:11,background:'#333',color:known.includes(r.id)?'#8f8':'#ccc',border:'1px solid #444',borderRadius:2,cursor:'pointer'}}>{r.name}</button>)}
+          </div>
+
+          <div style={{marginBottom:6}}><b style={{color:'#8cf'}}>🏗️ Upgrades</b></div>
+          <div style={{display:'flex',gap:3,marginBottom:4}}>
+            <button onClick={()=>setUpgrades(Object.keys(UPGRADES))} style={{padding:'2px 6px',fontSize:12,background:'#353',color:'#8f8',border:'1px solid #555',borderRadius:3,cursor:'pointer'}}>Buy ALL</button>
+            <span style={{fontSize:11,color:'#888'}}>Owned: {upgrades.length}/{Object.keys(UPGRADES).length}</span>
+          </div>
+          <div style={{display:'flex',flexWrap:'wrap',gap:2,marginBottom:8}}>
+            {Object.values(UPGRADES).filter(u=>!upgrades.includes(u.id)).map(u=><button key={u.id} onClick={()=>setUpgrades(p=>[...p,u.id])} style={{padding:'1px 4px',fontSize:11,background:'#333',color:'#ccc',border:'1px solid #444',borderRadius:2,cursor:'pointer'}}>{u.icon}{u.name}</button>)}
+          </div>
+
+          <div style={{marginBottom:6}}><b style={{color:'#8cf'}}>⏩ Time & Quests</b></div>
+          <div style={{display:'flex',flexWrap:'wrap',gap:3,marginBottom:8}}>
+            <button onClick={()=>setDay(d=>d+1)} style={{padding:'2px 6px',fontSize:12,background:'#333',color:'#ff8',border:'1px solid #555',borderRadius:3,cursor:'pointer'}}>+1 Day</button>
+            <button onClick={()=>setDay(d=>d+7)} style={{padding:'2px 6px',fontSize:12,background:'#333',color:'#ff8',border:'1px solid #555',borderRadius:3,cursor:'pointer'}}>+7 Days</button>
+            <button onClick={()=>{aQ.forEach(q=>{const p=qP(q);if(p.c<p.n)setInv(iv=>{const n={...iv};(q.goals||[]).forEach(g=>{if(g.type==='gather')n[g.item]=(n[g.item]||0)+g.qty;if(g.type==='brew')setPots(pp=>({...pp,[g.item]:(pp[g.item]||0)+g.qty}));});return n;});});}} style={{padding:'2px 6px',fontSize:12,background:'#533',color:'#f88',border:'1px solid #555',borderRadius:3,cursor:'pointer'}}>Fill Quests</button>
+          </div>
+
+          <div style={{marginBottom:6}}><b style={{color:'#8cf'}}>🎭 Factions</b></div>
+          <div style={{display:'flex',flexWrap:'wrap',gap:3,marginBottom:8}}>
+            {Object.keys(fRep).map(f=><button key={f} onClick={()=>setFRep(p=>({...p,[f]:(p[f]||0)+50}))} style={{padding:'2px 6px',fontSize:11,background:'#333',color:'#fc8',border:'1px solid #444',borderRadius:2,cursor:'pointer'}}>{f} +50</button>)}
+          </div>
+
+          <div style={{marginBottom:6}}><b style={{color:'#8cf'}}>🧪 Potions</b></div>
+          <div style={{display:'flex',flexWrap:'wrap',gap:2,marginBottom:8}}>
+            {RECIPES.filter(r=>known.includes(r.id)).map(r=><button key={r.id} onClick={()=>setPots(p=>({...p,[r.id]:(p[r.id]||0)+5}))} style={{padding:'1px 4px',fontSize:11,background:'#333',color:'#ccc',border:'1px solid #444',borderRadius:2,cursor:'pointer'}}>{r.icon||'🧪'}+5</button>)}
+          </div>
+
+          <div style={{marginBottom:6}}><b style={{color:'#8cf'}}>📍 Navigation</b></div>
+          <div style={{display:'flex',flexWrap:'wrap',gap:2,marginBottom:4}}>
+            {['map','workshop','market','tavern','worldmap','character','upgrades','enchant','staff','factions'].map(s=><button key={s} onClick={()=>setScreen(s)} style={{padding:'1px 5px',fontSize:11,background:screen===s?'#553':'#333',color:screen===s?'#ff8':'#ccc',border:'1px solid #444',borderRadius:2,cursor:'pointer'}}>{s}</button>)}
+          </div>
+        </div>}
+      </>}
+      {saveMsg&&<div style={{position:'fixed',top:8,right:12,background:TH.greenDim,color:TH.green,padding:'4px 12px',borderRadius:4,fontSize:15,zIndex:1000,border:`1px solid ${TH.green}44`}}>{saveMsg}</div>}
+
+      {/* HEADER */}
+      <div style={{width:'100%',maxWidth:1200,padding:'6px 16px',borderBottom:`1px solid ${TH.border}`,position:'relative'}}>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+          {/* Location-name → setScreen('map') click path removed per design lock §6/§8: back-to-town
+              is now the stub home icon + per-screen BackBar control. handleDevTap() preserved (dev mode). */}
+          <div style={{fontSize:20,color:TH.gold,letterSpacing:2,cursor:'pointer'}} onClick={()=>{handleDevTap();}}>⚗️ {locName}</div>
+          <div style={{fontSize:11,color:TH.gold,position:'absolute',right:8,top:2}}>{BUILD_VERSION}</div>
+          <div style={{display:'flex',gap:4}}>
+            {/* Pending level-up indicator — appears whenever there's a minimized wizard or queued level-ups
+                awaiting resolution. Click to unminimize / reopen the wizard. The pulsing gold border draws the
+                eye since pending advancement holds locked feat / class / ASI choices the player is forfeiting
+                if they ignore the indicator. */}
+            {(pendingLevelUp||pendingLevelUpQueue.length>0)&&<button
+              style={{...S.btn('gold'),fontSize:14,padding:'3px 10px',borderColor:TH.goldBright,boxShadow:'0 0 6px '+TH.goldBright+'66',fontWeight:'bold'}}
+              onClick={()=>{if(pendingLevelUp){setPendingLevelUp(p=>({...p,_minimized:false}));}else if(pendingLevelUpQueue.length>0){setPendingLevelUp(pendingLevelUpQueue[0]);setPendingLevelUpQueue(q=>q.slice(1));}}}
+              title="Resume your pending level-up. Feat / class / skill-point choices are preserved until you confirm.">
+              ⬆ Lv{((pendingLevelUp?.newCharLevel||0)+1)}{pendingLevelUpQueue.length>0?' (+'+pendingLevelUpQueue.length+')':''}
+            </button>}
+            <button style={{...S.btn('gold'),fontSize:14,padding:'3px 10px'}} onClick={()=>setConfirmRest(true)}>🌙 Rest (⚡{energy})</button>
+            {undoStack.length>0&&<button style={{...S.btn('def'),fontSize:14,padding:'3px 8px'}} onClick={undo}>↩️ Undo</button>}
+            <button style={{...S.btn(expedition.active?'dim':'dim'),fontSize:14,padding:'3px 8px',opacity:expedition.active?0.4:1,cursor:expedition.active?'not-allowed':'pointer'}}
+              onClick={()=>{if(!expedition.active)setShowSaveMenu(true);}}
+              title={expedition.active?'Return to town before saving':'Save / Load'}
+              disabled={expedition.active}>💾</button>
+            <a href="cindervale_handbook.html" target="_blank" rel="noopener noreferrer" style={{...S.btn('def'),fontSize:14,padding:'3px 8px',textDecoration:'none',display:'inline-flex',alignItems:'center'}}>📖 Handbook</a>
+            <button style={{...S.btn((musicOn||sfxOn)?'gold':'dim'),fontSize:14,padding:'3px 8px'}} onClick={()=>setShowAudioPanel(p=>!p)} title="Audio Settings">🎵</button>
+          </div>
+        </div>
+        {/* Audio Settings Panel */}
+        {showAudioPanel&&<>
+          <div style={{position:'fixed',top:0,left:0,right:0,bottom:0,zIndex:89}} onClick={()=>setShowAudioPanel(false)}/>
+          <div style={{position:'absolute',right:16,top:38,zIndex:90,background:TH.panel,border:`1px solid ${TH.borderGold}`,borderRadius:8,padding:'12px 16px',width:220,boxShadow:'0 4px 20px rgba(0,0,0,0.5)'}}>
+            <div style={{fontSize:16,color:TH.gold,marginBottom:10,fontWeight:'bold'}}>🎵 Audio Settings</div>
+            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:6}}>
+              <span style={{fontSize:15,color:TH.text}}>Music</span>
+              <button style={{...S.btn(musicOn?'gold':'dim'),fontSize:13,padding:'2px 10px'}} onClick={toggleMusic}>{musicOn?'On':'Off'}</button>
+            </div>
+            <div style={{marginBottom:10}}>
+              <div style={{display:'flex',justifyContent:'space-between',fontSize:14,color:TH.textDim,marginBottom:2}}>
+                <span>Volume</span><span>{musicVol}%</span>
+              </div>
+              <input type="range" min="0" max="100" value={musicVol} onChange={e=>setMusicVol(+e.target.value)}
+                style={{width:'100%',accentColor:TH.gold,height:4,cursor:'pointer'}}/>
+            </div>
+            <div style={{borderTop:`1px solid ${TH.border}`,paddingTop:10}}>
+              <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:6}}>
+                <span style={{fontSize:15,color:TH.text}}>Sound Effects</span>
+                <button style={{...S.btn(sfxOn?'gold':'dim'),fontSize:13,padding:'2px 10px'}} onClick={()=>setSfxOn(p=>!p)}>{sfxOn?'On':'Off'}</button>
+              </div>
+              <div style={{marginBottom:4}}>
+                <div style={{display:'flex',justifyContent:'space-between',fontSize:14,color:TH.textDim,marginBottom:2}}>
+                  <span>Volume</span><span>{sfxVol}%</span>
+                </div>
+                <input type="range" min="0" max="100" value={sfxVol} onChange={e=>setSfxVol(+e.target.value)}
+                  style={{width:'100%',accentColor:TH.gold,height:4,cursor:'pointer'}}/>
+              </div>
+              <button style={{fontSize:13,color:TH.cyan,background:'none',border:'none',cursor:'pointer',fontFamily:'inherit',marginTop:4}}
+                onClick={async()=>{await ensureTone();sfxSuccess(volToDb(sfxVol));}}>▶ Test Sound</button>
+            </div>
+          </div>
+        </>}
+        <div style={{display:'flex',justifyContent:'center',gap:10,fontSize:15,color:TH.textDim,flexWrap:'wrap',alignItems:'center'}}>
+          <Portrait cls={startingClass||'alchemist'} race={charRace} gender={charGender} size={22} style={{borderWidth:1,borderRadius:4}}/>
+          <span style={{color:TH.textBright}}>{charName}</span>
+          <span>{Object.entries(classLevels).filter(([cid])=>CLASSES[cid]).map(([cid,lv])=>CLASSES[cid]?.icon).join('')}</span>
+          <span>📅{day}</span>
+          {/* ─── Season indicator with hover/tap tooltip showing current-season gameplay effects ─── */}
+          {(()=>{
+            const cs=getSeason(day,gameLocation);
+            if(!cs)return null;
+            const tipOpen=seasonTipPinned||seasonTipHover;
+            // Build human-readable effect lines from the season's modifier fields.
+            // Only show non-zero modifiers (accuracy over comprehensiveness).
+            const effects=[];
+            if(cs.yieldMod)effects.push({label:'Forage yield',val:(cs.yieldMod>0?'+':'')+cs.yieldMod,good:cs.yieldMod>0});
+            if(cs.floraYieldBonus)effects.push({label:'Flora yield',val:(cs.floraYieldBonus>0?'+':'')+cs.floraYieldBonus,good:cs.floraYieldBonus>0});
+            if(cs.travelMod){const suffix=cs.travelMinDiff?` (regions diff ≥${cs.travelMinDiff})`:'';effects.push({label:'Travel cost',val:(cs.travelMod>0?'+':'')+cs.travelMod+'⚡'+suffix,good:cs.travelMod<0});}
+            if(cs.customerMod)effects.push({label:'Customers/day',val:(cs.customerMod>0?'+':'')+cs.customerMod,good:cs.customerMod>0});
+            if(cs.spoilMod)effects.push({label:'Spoil threshold',val:(cs.spoilMod>0?'+':'')+cs.spoilMod,good:cs.spoilMod>0});
+            if(cs.dangerMod)effects.push({label:'Danger',val:(cs.dangerMod>0?'+':'')+cs.dangerMod,good:cs.dangerMod<0});
+            if(cs.moraleMod)effects.push({label:'Morale',val:(cs.moraleMod>0?'+':'')+cs.moraleMod,good:cs.moraleMod>0});
+            if(cs.questGoldMod)effects.push({label:'Quest gold',val:(cs.questGoldMod>0?'+':'')+Math.round(cs.questGoldMod*100)+'%',good:cs.questGoldMod>0});
+            if(cs.threatMod){Object.entries(cs.threatMod).forEach(([tid,v])=>{if(v){const tf=(typeof THREAT_FACTIONS!=='undefined')?THREAT_FACTIONS[tid]:null;const tname=tf?tf.name:tid;effects.push({label:tname+' threat',val:(v>0?'+':'')+v,good:v<0});}});}
+            return(<span style={{position:'relative',display:'inline-block'}}
+              onMouseEnter={()=>setSeasonTipHover(true)}
+              onMouseLeave={()=>setSeasonTipHover(false)}>
+              <span style={{color:cs.color,cursor:'pointer',textDecoration:tipOpen?'underline dotted':'none'}}
+                onClick={()=>setSeasonTipPinned(p=>!p)}
+                title={tipOpen?'':'Hover or tap for current-season effects'}>
+                {cs.icon}{cs.name}
+              </span>
+              {tipOpen&&<div style={{position:'absolute',top:'120%',left:'50%',transform:'translateX(-50%)',background:'rgba(20,16,28,0.97)',border:`1px solid ${cs.color}66`,borderRadius:8,padding:'10px 14px',minWidth:240,maxWidth:320,zIndex:45,boxShadow:'0 4px 18px rgba(0,0,0,0.6)',fontSize:13,color:TH.text,whiteSpace:'normal',textAlign:'left',pointerEvents:'auto'}} onClick={e=>e.stopPropagation()}>
+                <div style={{fontSize:16,color:cs.color,fontWeight:'bold',marginBottom:4}}>{cs.icon} {cs.name}</div>
+                {cs.desc&&<div style={{fontSize:12,color:TH.textDim,marginBottom:6,fontStyle:'italic',lineHeight:1.4}}>{cs.desc}</div>}
+                {effects.length>0?<div style={{display:'flex',flexDirection:'column',gap:2}}>
+                  {effects.map((eff,i)=><div key={i} style={{display:'flex',justifyContent:'space-between',gap:8,fontSize:13}}>
+                    <span style={{color:TH.textDim}}>{eff.label}</span>
+                    <span style={{color:eff.good?TH.green:TH.red,fontWeight:'bold'}}>{eff.val}</span>
+                  </div>)}
+                </div>:<div style={{fontSize:12,color:TH.textDim,fontStyle:'italic'}}>No mechanical modifiers this season.</div>}
+                {seasonTipPinned&&<div style={{fontSize:11,color:TH.textDim,marginTop:6,textAlign:'center',opacity:0.7}}>(tap again to close)</div>}
+              </div>}
+            </span>);
+          })()}
+          <span>⚡{energy}</span><span style={{color:TH.gold}}>Lv{displayLevel}</span><span style={{color:debt>0?'#c04040':TH.gold}}>💰{fmtMoney(gold)}{debt>0&&<span style={{fontSize:11,color:'#c04040'}}> (debt:{fmtMoney(debt)})</span>}</span>
+        </div>
+        {nextXp&&<div style={{width:'100%',maxWidth:250,height:4,background:TH.panel,borderRadius:3,overflow:'hidden',margin:'2px auto'}}>
+          <div style={{height:'100%',borderRadius:3,width:`${((xp-XP_TBL[getLvl(xp)])/(nextXp-XP_TBL[getLvl(xp)]))*100}%`,background:`linear-gradient(90deg,${TH.goldDim},${TH.gold})`}}/>
+        </div>}
+      </div>
+
+      {/* ═══ STUB BAR (thin always-visible icon strip — pinned to viewport bottom) ═══
+          Locked principle (design lock §5): one tap to anywhere from anywhere, never hidden,
+          never collapsed-by-default. Pinned `position:fixed; bottom:0` so it survives page scroll
+          on long screens (Quest Board, character sheet) — the "always one tap" promise the redesign
+          rides on. z-index 40 sits above page content (default 0) and below modals (50+), preserving
+          modal layering. Backdrop (-2) + scrim (-1) remain untouched. Matching paddingBottom on the
+          app root keeps the last bit of scrolling content from hiding behind this strip. */}
+      <div style={{position:'fixed',bottom:0,left:0,right:0,zIndex:40,padding:'2px 8px',display:'flex',justifyContent:'center',borderTop:`1px solid ${TH.borderGold}`,background:'rgba(20,16,28,0.94)',boxShadow:'0 -2px 12px rgba(0,0,0,0.5)',backdropFilter:'blur(4px)',WebkitBackdropFilter:'blur(4px)'}}>
+        <div style={{display:'flex',gap:3,padding:'2px 0',flexWrap:'wrap',justifyContent:'center',maxWidth:1200,width:'100%'}}>
+          {[
+            {id:'map',icon:'🏘️',label:'Town'},
+            {id:'workshop',icon:'⚗️',label:'Workshop'},
+            {id:'market',icon:'🛒',label:'Market'},
+            {id:'tavern',icon:'🍺',label:'Tavern'},
+            {id:'worldmap',icon:'🗺️',label:'Wilds'},
+            {id:'quests',icon:'📜',label:'Quests'},
+            {id:'factions',icon:'🏛️',label:'Factions'},
+            {id:'staff',icon:'👥',label:'Staff'},
+            {id:'character',icon:'📋',label:'Character'},
+            {id:'threats',icon:'⚔️',label:'Threats'},
+          ].map(nav=>{
+            const active=screen===nav.id||(nav.id==='workshop'&&['research','enchant','transmute','upgrades'].includes(screen));
+            return(<button key={nav.id} title={nav.label}
+              onClick={()=>{setScreen(nav.id);navClearModals();}}
+              style={{
+                background:active?TH.gold+'25':'transparent',
+                border:active?`1px solid ${TH.gold}`:`1px solid ${TH.border}55`,
+                color:active?TH.goldBright:TH.text,
+                cursor:'pointer',padding:'4px 8px',fontFamily:'inherit',transition:'all .15s',
+                borderRadius:6,fontSize:18,lineHeight:1,minWidth:32,
+                boxShadow:active?`0 0 8px ${TH.gold}55`:'none',
+              }}
+              onMouseEnter={e=>{if(!active){e.currentTarget.style.borderColor=TH.gold+'88';e.currentTarget.style.color=TH.gold;}}}
+              onMouseLeave={e=>{if(!active){e.currentTarget.style.borderColor=TH.border+'55';e.currentTarget.style.color=TH.text;}}}>
+              {nav.icon}
+            </button>);
+          })}
+        </div>
+      </div>
+
+      {/* THREE-COLUMN LAYOUT with background image */}
+      <div style={{display:'flex',width:'100%',maxWidth:1200,flex:1,gap:0,justifyContent:'center',position:'relative'}}>
+
+      {/* ─── GLOBAL ART BACKDROP (single full-viewport fixed layer behind all UI chrome) ───
+          Image = resolveArt(currentScreen): location screens → their town image; workshop/character →
+          room-hero; threats → guard tower; hub & sub-tools → seasonal region ambient. Scrim sits
+          between backdrop and UI for legibility (mirrors expedition-view recipe). Renders nothing
+          when no image resolves (gradient body bg shows through cleanly). */}
+      {(()=>{const bgImg=resolveArt(screen);
+        return bgImg?<>
+          <div style={{position:'fixed',top:0,left:0,right:0,bottom:0,backgroundImage:`url(${bgImg})`,backgroundSize:'cover',backgroundPosition:'center',opacity:0.55,pointerEvents:'none',zIndex:-2}}/>
+          <div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'linear-gradient(180deg, rgba(20,16,28,0.85) 0%, rgba(20,16,28,0.45) 28%, rgba(20,16,28,0.45) 70%, rgba(20,16,28,0.92) 100%)',pointerEvents:'none',zIndex:-1}}/>
+        </>:null;
+      })()}
+
+      {/* LEFT SIDEBAR — Adventure Journal */}
+      <div className="cv-sidebar-left" style={{...S.sidebar,display:'none',position:'relative'}}>
+        <div style={S.sideSec}>
+          <div style={S.sideHd}>📜 Adventure Journal</div>
+          <div ref={el=>{if(el)el.scrollTop=el.scrollHeight;}} style={{maxHeight:'calc(100vh - 160px)',overflowY:'auto',overflowAnchor:'none'}}>
+            {log.slice(-40).map((e,i)=><div key={i} style={{color:LC[e.type]||TH.text,fontSize:14,lineHeight:1.5,padding:'2px 0',borderBottom:`1px solid ${TH.border}11`}}>{e.text}</div>)}
+          </div>
+        </div>
+      </div>
+
+      <div style={{width:'100%',maxWidth:660,flex:1,padding:'8px 16px',minWidth:0,overflowAnchor:'none',position:'relative',zIndex:1}}>
+
+      {/* NEWS TOASTS — event-driven notifications */}
+      {news.length>0&&<div style={{marginBottom:8,overflowAnchor:'none'}}>
+        <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:6}}>
+          <Portrait cls={startingClass||'alchemist'} race={charRace} gender={charGender} size={36} style={{borderWidth:1}}/>
+          <div style={{flex:1}}>
+            <span style={{fontSize:17,color:TH.gold,fontWeight:'bold'}}>✦ What's New</span>
+            <div style={{fontSize:14,color:TH.textDim}}>{charName} · Day {day}</div>
+          </div>
+          <button style={{fontSize:13,color:TH.textDim,background:'none',border:'none',cursor:'pointer',fontFamily:'inherit',textDecoration:'underline'}} onClick={()=>setNews([])}>dismiss all</button>
+        </div>
+        {news.map((n,i)=><div key={i} style={{padding:'8px 12px',background:`${n.color||TH.gold}15`,borderRadius:6,border:`1px solid ${n.color||TH.gold}44`,marginBottom:4,display:'flex',alignItems:'center',gap:8,animation:'fadeIn .3s ease'}}>
+          <span style={{fontSize:22}}>{n.icon}</span>
+          <span style={{flex:1,fontSize:16,color:TH.textBright,lineHeight:1.4}}>{n.text}</span>
+          <button style={{...S.btn('gold'),fontSize:14,padding:'4px 10px',whiteSpace:'nowrap'}} onClick={()=>{
+            setScreen(n.to);setNews(p=>p.filter((_,j)=>j!==i));
+            if(n.npc){openNpc(n.npc);}
+          }}>{n.label}</button>
+          <button style={{fontSize:15,color:TH.textDim,background:'none',border:'none',cursor:'pointer',padding:0}} onClick={()=>setNews(p=>p.filter((_,j)=>j!==i))}>✕</button>
+        </div>)}
+      </div>}
+
+      {/* ALERTS */}
+      {alerts.length>0&&<div style={{marginBottom:6,overflowAnchor:'none'}}>
+        {alerts.map((a,i)=><div key={i} style={{padding:'5px 10px',background:`${TH.gold}10`,borderRadius:4,border:`1px solid ${TH.gold}33`,marginBottom:3,display:'flex',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',gap:4}}>
+          <span style={{fontSize:15,color:TH.gold}}>💡 {a.text}</span>
+          <GoBtn to={a.to} label={a.label} npc={a.npc}/>
+        </div>)}
+      </div>}
+
+      {/* REST CONFIRMATION — global */}
+      {confirmRest&&<div style={{...S.card,borderColor:TH.gold,background:TH.panelAlt}}>
+        <div style={{fontSize:17,color:TH.gold,marginBottom:6}}>🌙 End the Day?</div>
+        <div style={{fontSize:15,color:TH.text,marginBottom:4,lineHeight:1.5}}>
+          {energy>125?'The sun still hangs high — are you sure you want to close up shop early?':
+           energy>50?'The afternoon wanes. A decent day\'s work, but there\'s still time if you need it.':
+           energy>0?('The last light fades over '+locName+'. A good time to rest.'):
+           'Night has fallen. Nothing left to do but rest and prepare for tomorrow.'}
+        </div>
+        <div style={{fontSize:15,color:TH.textDim,marginBottom:8}}>
+          {energy>0&&<span>You'll lose your remaining <b style={{color:TH.goldBright}}>⚡{energy} Energy</b>. </span>}
+          {hiredAppr.length>0&&<span>Your {hiredAppr.length} staff will complete their assignments overnight. </span>}
+          {hiredAppr.reduce((s,a)=>s+a.salary,0)>0&&<span>Payroll: {fmtMoney(hiredAppr.reduce((s,a)=>s+a.salary,0))}. </span>}
+          {hiredAppr.reduce((s,a)=>s+a.salary,0)>gold&&<div style={{color:TH.red,marginTop:4}}>⚠️ You can't cover payroll! ({fmtMoney(hiredAppr.reduce((s,a)=>s+a.salary,0))} needed, {fmtMoney(gold)} available)</div>}
+        </div>
+        {/* Unused free actions warning */}
+        {(()=>{
+          const unused=[];
+          const freeRes=getFeatureVal('freeResearchPerDay')+upEff('freeResearchPerDay')+getFeatureVal('researchSlotBonus');const freeResUsed=dayFlags.filter(f=>f==='free_research_used').length;
+          if(freeRes>freeResUsed)unused.push({icon:'📖',name:'Free Research',remaining:freeRes-freeResUsed,nav:'research'});
+          if(freeCraftsLeft()>0)unused.push({icon:'✨',name:'Free Craft (no ingredients)',remaining:freeCraftsLeft(),nav:'workshop'});
+          if(freeBrewsLeft()>0)unused.push({icon:'⚗️',name:'Free Brew (no energy cost)',remaining:freeBrewsLeft(),nav:'workshop'});
+          const earlyRise=getFeatureVal('firstActionFree')+upEff('firstActionFree');
+          if(earlyRise>0&&!dayFlags.includes('first_action_used'))unused.push({icon:'🌅',name:'Early Riser (first action free)',remaining:1,nav:'workshop'});
+          if(unused.length===0)return null;
+          return <div style={{marginBottom:10,padding:'10px 12px',background:'#c0604015',borderRadius:6,border:'2px solid #c0604088',boxShadow:'0 0 12px #c0604020'}}>
+            <div style={{fontSize:16,color:'#e08050',fontWeight:'bold',marginBottom:6}}>⚠️ Unused Free Actions!</div>
+            <div style={{fontSize:14,color:TH.text,lineHeight:1.6}}>
+              {unused.map(u=><div key={u.name} style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:4,padding:'3px 6px',background:TH.panel,borderRadius:4,border:'1px solid '+TH.border}}>
+                <span>{u.icon} <b>{u.name}</b> — {u.remaining} remaining</span>
+                <button style={{...S.btn('gold'),fontSize:12,padding:'3px 10px'}} onClick={()=>{setConfirmRest(false);setScreen(u.nav);}}>{u.icon} Use it →</button>
+              </div>)}
+            </div>
+            <div style={{fontSize:13,color:'#c08060',fontStyle:'italic',marginTop:6}}>⚡ These free actions don't cost energy and will be lost when you rest!</div>
+          </div>;
+        })()}
+        {getFeatureVal('nightExpeditions')>0&&(()=>{
+          const {rounds:nightH,dcPen:nightDCPen}=getNightInfo();
+          return(
+            <div style={{marginBottom:10,padding:'10px 12px',background:`${TH.purple}12`,borderRadius:6,border:`1px solid ${TH.purple}55`,boxShadow:`0 0 12px ${TH.purple}15`}}>
+              <div style={{fontSize:16,color:TH.purple,fontWeight:'bold',marginBottom:4}}>🌙 Night Expedition Available ({nightH} rounds)</div>
+              <div style={{fontSize:14,color:TH.textDim,marginBottom:4}}>After resting, you can forage in the dark — bonus resources with higher danger (DC +{nightDCPen}).</div>
+              <div style={{fontSize:14,color:TH.text,fontStyle:'italic'}}>Choose your region after you rest.</div>
+            </div>
+          );
+        })()}
+        <div style={S.row}>
+          {getFeatureVal('nightExpeditions')>0&&<button style={{...S.btn('def'),background:`${TH.purple}30`,border:`1px solid ${TH.purple}`,color:TH.textBright}} onClick={()=>{setConfirmRest(false);setDeferredNewDay(true);setNightExpPending(true);setScreen('map');}}>🌙 Rest & Night Forage</button>}
+          <button style={S.btn('gold')} onClick={()=>{setConfirmRest(false);newDay();setScreen('map');}}>Yes, Rest</button>
+          <button style={S.btn('dim')} onClick={()=>setConfirmRest(false)}>Cancel</button>
+        </div>
+      </div>}
+
+      {/* MORNING REPORT POPUP — overnight summary */}
+      {morningReport&&<div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'#000000cc',display:'flex',alignItems:'center',justifyContent:'center',zIndex:99999,padding:8}} onClick={()=>{if(!morningReport?.isGameOver)setMorningReport(null);}}>
+        <div style={{background:`linear-gradient(160deg,${TH.panelAlt},${TH.panel})`,border:`2px solid ${TH.borderGold}`,borderRadius:12,padding:'20px 24px',maxWidth:960,width:'calc(100% - 16px)',maxHeight:'92vh',overflowY:'auto',boxShadow:`0 0 40px ${TH.gold}20`,position:'relative'}} onClick={e=>e.stopPropagation()}>
+          {morningReport.season?.img&&<img src={morningReport.season.img} alt="" style={{position:'absolute',top:0,left:0,width:'100%',height:'100%',objectFit:'cover',opacity:0.12,pointerEvents:'none',borderRadius:10}}/>}
+          <div style={{position:'relative',zIndex:1}}>
+          <div style={{textAlign:'center',marginBottom:12}}>
+            <Portrait cls={startingClass||'alchemist'} race={charRace} gender={charGender} size={90} style={{marginBottom:8}}/>
+            <div style={{fontSize:22,color:TH.gold,letterSpacing:2,marginBottom:4}}>🌅 Dawn of Day {morningReport.dayNum}</div>
+            {morningReport.season&&<div style={{fontSize:14,color:morningReport.season.color,marginBottom:2}}>{morningReport.season.icon} {morningReport.season.name}{morningReport.season.desc?' — '+morningReport.season.desc:''}</div>}
+            <div style={{fontSize:16,color:TH.textBright}}>{charName} · {RACES[charRace]?.icon} {RACES[charRace]?.name}</div>
+            <div style={{fontSize:14,color:TH.textDim,marginTop:2}}>
+              {Object.entries(classLevels).filter(([cid])=>CLASSES[cid]).map(([cid,lv])=>CLASSES[cid]?.icon+' '+CLASSES[cid]?.name+' '+lv).join(' · ')} · Lv{displayLevel} · 💰{fmtMoney(gold)}
+            </div>
+            <div style={{fontSize:14,color:TH.textDim,marginTop:4,fontStyle:'italic'}}>{morningReport.flavor}</div>
+            <div style={{fontSize:15,color:TH.textBright,marginTop:4}}>⏳ ⚡{morningReport.baseE} Energy for today{hiredAppr.length>0?` · ${hiredAppr.length} staff on duty`:''}</div>
+          </div>
+          {morningReport.sections.map((sec,si)=><div key={si} style={{marginBottom:10}}>
+            <div style={{fontSize:16,color:TH.gold,fontWeight:'bold',borderBottom:`1px solid ${TH.border}`,paddingBottom:3,marginBottom:6,display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+              <span>{sec.title}</span>
+              {sec.net!=null&&<span style={{fontSize:16,color:sec.net>=0?TH.green:TH.red,fontWeight:'bold'}}>{sec.net>=0?'+':''}{fmtMoney(sec.net)} net</span>}
+            </div>
+            {sec.lines.map((ln,li)=><div key={li} style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',padding:'3px 4px',borderRadius:3,background:li%2===0?'transparent':`${TH.bg}40`,gap:8}}>
+              <span style={{fontSize:15,color:TH.text,flex:1}}>{ln.icon} {ln.label}</span>
+              <span style={{fontSize:15,color:ln.color||TH.text,fontWeight:'bold',whiteSpace:'nowrap',textAlign:'right'}}>{ln.val}</span>
+            </div>)}
+          </div>)}
+          <div style={{textAlign:'center',marginTop:12}}>
+            <button style={{...S.btn('gold'),fontSize:16,padding:'8px 24px'}} onClick={()=>{if(morningReport?.isGameOver){setGameStarted(false);setMorningReport(null);return;}setMorningReport(null);}}>{morningReport?.isGameOver?'Return to Title':'Begin the Day'}</button>
+          </div>
+          </div>{/* close z-index wrapper */}
+        </div>
+      </div>}
+
+      {/* ═══ COMPANION REPORT POPUP ═══ */}
+      {!morningReport&&companionReport&&<div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'#000000dd',display:'flex',alignItems:'center',justifyContent:'center',zIndex:99998,padding:8}} onClick={()=>setCompanionReport(null)}>
+        <div style={{background:`linear-gradient(160deg,#1a2a1a,#0a1a0a)`,border:'2px solid #4a8a4a',borderRadius:16,padding:'20px 24px',maxWidth:500,width:'calc(100% - 16px)',maxHeight:'85vh',overflowY:'auto',boxShadow:'0 0 60px #2a6a2a30',position:'relative'}} onClick={e=>e.stopPropagation()}>
+          <div style={{textAlign:'center',marginBottom:16}}>
+            <div style={{fontSize:24,letterSpacing:3,color:'#8ac08a',marginBottom:4}}>🐾 Companion Report</div>
+            <div style={{fontSize:13,color:'#6a8a6a'}}>Your companions were busy overnight</div>
+          </div>
+          {companionReport.companions.map((c,ci)=>{
+            const imgSrc=c.img||null;
+            return <div key={c.id} style={{position:'relative',marginBottom:16,borderRadius:12,overflow:'hidden',border:'1px solid #4a8a4a44',background:'#0a150a'}}>
+              {imgSrc&&<img src={imgSrc} alt="" style={{position:'absolute',top:0,left:0,width:'100%',height:'100%',objectFit:'cover',opacity:0.2,pointerEvents:'none'}}
+                onError={e=>{e.target.style.display='none';}}/>}
+              <div style={{position:'relative',zIndex:1,padding:'16px 20px'}}>
+                <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:8}}>
+                  {imgSrc?<img src={imgSrc} alt={c.name} style={{width:48,height:48,borderRadius:'50%',border:'2px solid #8ac08a',objectFit:'cover',filter:'drop-shadow(0 2px 8px rgba(0,0,0,0.6))'}}/>
+                    :<div style={{fontSize:36,filter:'drop-shadow(0 2px 8px rgba(0,0,0,0.6))'}}>{c.icon}</div>}
+                  <div>
+                    <div style={{fontSize:18,fontWeight:'bold',color:'#c0e0c0',textShadow:'0 1px 4px rgba(0,0,0,0.5)'}}>{c.name}</div>
+                    <div style={{fontSize:12,color:'#8aaa8a'}}>{'★'.repeat(c.loyalty)}{'☆'.repeat(5-c.loyalty)} Loyalty {c.loyalty}</div>
+                  </div>
+                </div>
+                {c.actions.map((a,ai)=><div key={ai} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'4px 8px',marginBottom:3,borderRadius:4,background:'rgba(0,0,0,0.3)'}}>
+                  <span style={{fontSize:14,color:'#b0d0b0'}}>{a.text}</span>
+                  <span style={{fontSize:14,fontWeight:'bold',color:a.color||'#8ac08a',whiteSpace:'nowrap',marginLeft:8}}>{a.val}</span>
+                </div>)}
+              </div>
+            </div>;
+          })}
+          <div style={{textAlign:'center',marginTop:8}}>
+            <button style={{...S.btn('green'),fontSize:16,padding:'8px 24px'}} onClick={()=>setCompanionReport(null)}>Continue</button>
+          </div>
+        </div>
+      </div>}
+
+      {/* ═══ EVENT POPUP — Shows after morning report is dismissed ═══ */}
+      {!morningReport&&!companionReport&&eventPopup&&(()=>{
+        const evt=eventPopup.events[eventPopup.idx];if(!evt)return null;
+        const vibe=EVENT_VIBES[evt.vibe]||EVENT_VIBES.social;
+        const isLast=eventPopup.idx>=eventPopup.events.length-1;
+        const particles=vibe.particles;
+        return <div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'#000000ee',display:'flex',alignItems:'center',justifyContent:'center',zIndex:9999,padding:16}}
+          onClick={()=>{if(isLast)setEventPopup(null);else setEventPopup(p=>({...p,idx:p.idx+1}));}}>
+          <div style={{background:vibe.bg,border:'2px solid '+vibe.border,borderRadius:16,padding:'28px 24px',maxWidth:460,width:'100%',maxHeight:'85vh',overflowY:'auto',boxShadow:'0 0 80px '+vibe.border+'40',position:'relative',textAlign:'center'}} onClick={e=>e.stopPropagation()}>
+            {/* Floating particles */}
+            <div style={{position:'absolute',top:0,left:0,right:0,bottom:0,overflow:'hidden',borderRadius:14,pointerEvents:'none'}}>
+              {particles.map((p,i)=><div key={i} style={{position:'absolute',fontSize:20+Math.random()*16,opacity:0.15+Math.random()*0.15,
+                left:Math.random()*80+'%',top:Math.random()*80+'%'}}>{p}</div>)}
+            </div>
+            {/* Main scene icon */}
+            <div style={{fontSize:vibe.sceneSize,lineHeight:1,marginBottom:12,filter:'drop-shadow(0 0 20px '+vibe.border+'80)'}}>{vibe.scene}</div>
+            {/* Title */}
+            <div style={{fontSize:20,color:vibe.text,fontWeight:'bold',letterSpacing:2,marginBottom:8,textShadow:'0 0 20px '+vibe.border+'60'}}>{vibe.title}</div>
+            {/* Ambiance text */}
+            <div style={{fontSize:14,color:vibe.text+'aa',fontStyle:'italic',marginBottom:12}}>{vibe.ambiance}</div>
+            {/* Event description */}
+            <div style={{fontSize:17,color:'#e0d8d0',lineHeight:1.5,padding:'12px 16px',background:'#00000040',borderRadius:8,marginBottom:10,textAlign:'left',border:'1px solid '+vibe.border+'33'}}>
+              {evt.text}
+            </div>
+            {/* Result */}
+            {evt.result&&evt.result.msg&&evt.result.msg!==''&&<div style={{fontSize:15,color:vibe.text,padding:'8px 12px',background:vibe.border+'15',borderRadius:6,marginBottom:10,border:'1px solid '+vibe.border+'33'}}>
+              {evt.result.msg}
+            </div>}
+            {/* Flavor text for gossip */}
+            {evt.flavor&&<div style={{fontSize:15,color:'#c0b8a8',fontStyle:'italic',padding:'6px 12px',background:'#ffffff08',borderRadius:6,marginBottom:10}}>
+              "{evt.flavor}"
+            </div>}
+            {/* Continue button */}
+            <button style={{fontSize:16,padding:'8px 32px',background:vibe.border+'30',border:'2px solid '+vibe.border,borderRadius:8,color:vibe.text,cursor:'pointer',fontFamily:'inherit',fontWeight:'bold',marginTop:4}}
+              onClick={()=>{if(isLast)setEventPopup(null);else setEventPopup(p=>({...p,idx:p.idx+1}));}}>
+              {isLast?'Continue to Day':'Next Event →'}
+            </button>
+            {eventPopup.events.length>1&&<div style={{fontSize:12,color:vibe.text+'66',marginTop:6}}>{eventPopup.idx+1} of {eventPopup.events.length}</div>}
+          </div>
+        </div>;
+      })()}
+
+      {nightExpPending&&!morningReport&&!eventPopup&&(()=>{
+        const nightRegs=locRegions.filter(r=>level>=regUnlock(r)&&(!r.faction||getRL(r.faction)>=(r.fReq||0)));
+        const {rounds:nightH,dcPen:nightDCPen,dangerRed:nightDR}=getNightInfo();
+        return(<div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'#000000cc',display:'flex',alignItems:'center',justifyContent:'center',zIndex:9999,padding:16}}>
+        <div style={{background:`linear-gradient(160deg,${TH.panelAlt},${TH.panel})`,border:`2px solid ${TH.purple}`,borderRadius:12,padding:'20px 24px',maxWidth:540,width:'100%',maxHeight:'85vh',overflowY:'auto',boxShadow:`0 0 40px ${TH.purple}30`}} onClick={e=>e.stopPropagation()}>
+          <div style={{textAlign:'center',marginBottom:12}}>
+            <div style={{fontSize:22,color:TH.purple,letterSpacing:2,marginBottom:4}}>🌙 Night Expedition</div>
+            <div style={{fontSize:15,color:TH.textBright}}>The day is done, but the night belongs to the Sentinel.</div>
+            <div style={{fontSize:14,color:TH.textDim,marginTop:4}}>Choose a region and site to forage under cover of darkness ({nightH} rounds, DC +{nightDCPen}{nightDR?', reduced danger':''}).</div>
+          </div>
+          <div style={{display:'flex',flexDirection:'column',gap:10,marginBottom:12}}>
+            {nightRegs.map(reg=>{
+              const nightDC=reg.dc+nightDCPen;
+              return(<div key={reg.id} style={{...S.card,borderColor:TH.purple+'44',padding:'10px 12px'}}>
+                <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:6}}>
+                  <span style={{fontSize:22}}>{reg.icon}</span>
+                  <div style={{flex:1}}>
+                    <div style={{fontSize:16,color:TH.textBright,fontWeight:'bold'}}>{reg.name}</div>
+                    <div style={{fontSize:13,color:TH.textDim}}>DC {nightDC} · {nightH} rounds · {nightDR?'⚠️ Reduced':'⚠️ High'} danger</div>
+                  </div>
+                  <button style={{...S.btn('def'),fontSize:13,padding:'3px 8px',borderColor:TH.purple+'66'}} onClick={()=>doNightExpedition(reg.id,null)}>🎲 Random</button>
+                </div>
+                {reg.sites&&<div style={{display:'flex',gap:4,flexWrap:'wrap'}}>
+                  {reg.sites.map(site=>{
+                    const favored=Object.entries(site.weights).sort((a,b)=>b[1]-a[1]).slice(0,2);
+                    return(<button key={site.id} style={{...S.btn('def'),fontSize:13,padding:'4px 8px',borderColor:TH.purple+'55',flex:'1 1 auto',textAlign:'left',display:'flex',alignItems:'center',gap:4}}
+                      onClick={()=>doNightExpedition(reg.id,site.id)}>
+                      <span>{site.icon}</span>
+                      <span style={{flex:1}}>{site.name}</span>
+                      <span style={{color:TH.textDim,fontSize:12}}>{favored.map(([id])=><span key={id} title={INGR[id]?.name||id}>{INGR[id]?.icon}</span>)}</span>
+                    </button>);
+                  })}
+                </div>}
+              </div>);
+            })}
+          </div>
+          <div style={{textAlign:'center'}}>
+            <button style={S.btn('dim')} onClick={()=>{setNightExpPending(false);setDeferredNewDay(false);newDay();}}>Skip — Just Sleep</button>
+          </div>
+        </div>
+      </div>);
+      })()}
+
+      {/* ═══ ZONE DETAIL POPUP ═══ */}
+      {zonePopup&&(()=>{
+        const reg=locRegions.find(r=>r.id===zonePopup);if(!reg)return null;
+        const locked=level<regUnlock(reg)||(reg.faction&&getRL(reg.faction)<(reg.fReq||0));
+        const info=getExpeditionInfo(reg);const canGo=!locked&&info&&info.gatherHours>=1;
+        const imgUrl=typeof ZONE_IMGS!=='undefined'?ZONE_IMGS[reg.id]:(reg.id+'.jpg');
+        const pickN=reg.pick||reg.ingr.length;
+        return(<div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'#000000dd',display:'flex',alignItems:'center',justifyContent:'center',zIndex:9998,padding:12}} onClick={()=>setZonePopup(null)}>
+          <div style={{background:`linear-gradient(160deg,${TH.panelAlt},${TH.panel})`,border:`2px solid ${reg.color||TH.border}`,borderRadius:12,maxWidth:580,width:'100%',maxHeight:'90vh',overflowY:'auto',boxShadow:`0 0 60px ${reg.color||TH.gold}30`}} onClick={e=>e.stopPropagation()}>
+            {/* Zone Illustration Header */}
+            {imgUrl&&<div style={{position:'relative',width:'100%',borderRadius:'10px 10px 0 0',overflow:'hidden',height:180}}>
+              <img src={imgUrl} alt={reg.name} style={{width:'100%',height:'100%',objectFit:'cover',objectPosition:'center 70%',display:'block'}}
+                onError={e=>{e.target.parentElement.style.display='none';}}/>
+              <div style={{position:'absolute',bottom:0,left:0,right:0,background:'linear-gradient(transparent,#000000cc)',padding:'30px 16px 10px'}}>
+                <div style={{fontSize:24,color:TH.goldBright,fontWeight:'bold',textShadow:'0 2px 8px #000'}}>{reg.icon} {reg.name}</div>
+                <div style={{fontSize:14,color:'#ffffffcc',textShadow:'0 1px 4px #000'}}>Tier {reg.diff} · DC {reg.dc} · ⚡{reg.time} travel · {reg.ingr.length} ingredient types</div>
+              </div>
+            </div>}
+            {!imgUrl&&<div style={{padding:'16px 16px 8px'}}>
+              <div style={{fontSize:24,color:TH.goldBright,fontWeight:'bold'}}>{reg.icon} {reg.name}</div>
+              <div style={{fontSize:14,color:TH.textDim}}>Tier {reg.diff} · DC {reg.dc} · ⚡{reg.time} travel</div>
+            </div>}
+
+            <div style={{padding:'12px 16px 16px'}}>
+              {/* Flavor text */}
+              {selFlavor&&<div style={{fontSize:15,color:TH.text,fontStyle:'italic',margin:'0 0 10px',lineHeight:1.5}}>{selFlavor}</div>}
+
+              {/* Expedition info */}
+              {canGo&&<div style={{background:TH.bg,borderRadius:6,padding:'8px 10px',marginBottom:12,border:'1px solid '+TH.border}}>
+                <div style={{fontSize:14,color:TH.textDim,lineHeight:1.6}}>
+                  🚶 Travel: <b style={{color:TH.orange}}>⚡{info.travelTime}</b> · ⛏️ Gathering pool: <b style={{color:TH.green}}>⚡{Math.max(0,energy-info.travelTime)}</b> ({Math.floor(Math.max(0,energy-info.travelTime)/10)} roll{Math.floor(Math.max(0,energy-info.travelTime)/10)===1?'':'s'} at 10⚡ each, ~{pickN} ingredient types/check)
+                </div>
+                {(()=>{const s=getSeason(day,gameLocation);const mods=[];
+                  if(s.floraYieldBonus)mods.push(s.icon+' +'+s.floraYieldBonus+' flora yield');
+                  if(s.yieldMod>0)mods.push(s.icon+' +'+s.yieldMod+' yield');
+                  if(s.yieldMod<0)mods.push(s.icon+' '+s.yieldMod+' yield');
+                  if(s.travelMod>0&&(!s.travelMinDiff||reg.diff>=s.travelMinDiff))mods.push(s.icon+' +'+s.travelMod+' travel');
+                  if(s.travelMod<0)mods.push(s.icon+' '+s.travelMod+' travel');
+                  if(s.dangerMod>0)mods.push(s.icon+' +'+s.dangerMod+'% danger');
+                  if(s.dangerMod<0)mods.push(s.icon+' '+Math.abs(s.dangerMod)+'% safer');
+                  const si=getSeasonalIngr(s,gameLocation);if(si.length>0)mods.push(s.icon+' Seasonal: '+si.map(id=>(INGR[id]?.icon||'')+INGR[id]?.name).join(', '));
+                  return mods.length>0?<div style={{fontSize:12,color:s.color,marginTop:2}}>{mods.join(' · ')}</div>:null;
+                })()}
+              </div>}
+
+              {/* Ingredients overview */}
+              <div style={{marginBottom:12}}>
+                <div style={{fontSize:15,color:TH.gold,marginBottom:4}}>Available Ingredients:</div>
+                <div style={{display:'flex',flexWrap:'wrap',gap:2}}>{reg.ingr.map(id=><span key={id} title={INGR[id]?.name||id} style={{...S.tag,fontSize:14,padding:'2px 5px',cursor:'help'}}>{INGR[id]?.icon} {INGR[id]?.name} <span style={{color:TH.textDim}}>({inv[id]||0})</span></span>)}</div>
+              </div>
+
+              {/* Targeted Foraging */}
+              <div style={{marginBottom:12,padding:'8px 10px',background:TH.bg,borderRadius:6,border:'1px solid '+TH.border}}>
+                <div style={{fontSize:14,color:TH.gold,marginBottom:5}}>{'🎯'} Target Ingredient <span style={{fontSize:12,color:TH.textDim}}>(optional)</span></div>
+                <div style={{display:'flex',flexWrap:'wrap',gap:3}}>
+                  {reg.ingr.map(id=>{
+                    const isTgt=targetIngr===id;
+                    return <button key={id} style={{padding:'4px 8px',fontSize:13,borderRadius:4,cursor:'pointer',fontFamily:'inherit',
+                      background:isTgt?TH.gold+'25':'transparent',
+                      color:isTgt?TH.goldBright:TH.text,
+                      border:'1px solid '+(isTgt?TH.gold:TH.border+'66'),
+                      fontWeight:isTgt?'bold':'normal'}}
+                      onClick={()=>setTargetIngr(isTgt?null:id)}>
+                      {isTgt&&'🎯 '}<span title={INGR[id]?.name||id}>{INGR[id]?.icon} {INGR[id]?.name}</span>
+                    </button>;
+                  })}
+                </div>
+                {targetIngr&&<div style={{fontSize:12,marginTop:4,color:'#c0a040',lineHeight:1.4}}>
+                  {'🎯'} Targeting {INGR[targetIngr]?.icon}{INGR[targetIngr]?.name}: 3{'\u00d7'} drop rate, others reduced
+                  {getFeatureVal('targetNoYieldPenalty')?<span style={{color:TH.green}}> {'\u00b7'} {'🐾'} Tracker: no yield penalty!</span>
+                  :<span> {'\u00b7'} -25% total yield</span>}
+                </div>}
+              </div>
+
+              {/* Sites */}
+              {reg.sites&&reg.sites.length>0&&<>
+                <div style={{fontSize:16,color:TH.goldBright,fontWeight:'bold',marginBottom:8,borderTop:`1px solid ${TH.border}`,paddingTop:10}}>📍 Foraging Sites</div>
+                <div style={{display:'flex',flexDirection:'column',gap:8,marginBottom:12}}>
+                  {reg.sites.map(site=>{
+                    const sorted=Object.entries(site.weights).sort((a,b)=>b[1]-a[1]);
+                    const isSelected=selectedSite?.regId===reg.id&&selectedSite?.siteId===site.id;
+                    return(<div key={site.id} style={{background:isSelected?`${TH.gold}15`:TH.bg,borderRadius:6,border:`1px solid ${isSelected?TH.gold:TH.border}`,padding:'10px 12px',cursor:canGo?'pointer':'default',transition:'all .15s'}}
+                      onClick={()=>{if(canGo){setSelectedSite({regId:reg.id,siteId:site.id});}}}
+                      onMouseEnter={e=>{if(canGo)e.currentTarget.style.borderColor=TH.gold;}}
+                      onMouseLeave={e=>{if(!isSelected)e.currentTarget.style.borderColor=TH.border;}}>
+                      <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:4}}>
+                        <span style={{fontSize:18}}>{site.icon}</span>
+                        <div style={{flex:1}}>
+                          <div style={{fontSize:16,color:isSelected?TH.goldBright:TH.textBright,fontWeight:'bold'}}>{site.name}{isSelected?' ✓':''}</div>
+                          <div style={{fontSize:13,color:TH.textDim,lineHeight:1.4}}>{site.desc}</div>
+                        </div>
+                      </div>
+                      {/* Weight bars for favored ingredients */}
+                      <div style={{display:'flex',flexWrap:'wrap',gap:3,marginTop:6}}>
+                        {sorted.slice(0,4).map(([id,w])=>{
+                          const isFav=w>=20;
+                          return(<div key={id} style={{display:'flex',alignItems:'center',gap:3,fontSize:13,minWidth:0}}>
+                            <span title={INGR[id]?.name||id}>{INGR[id]?.icon}</span>
+                            <div style={{width:50,height:6,background:TH.border,borderRadius:3,overflow:'hidden'}}>
+                              <div style={{width:`${w}%`,height:'100%',background:isFav?TH.gold:TH.textDim,borderRadius:3}}/>
+                            </div>
+                            <span style={{color:isFav?TH.gold:TH.textDim}}>{w}%</span>
+                          </div>);
+                        })}
+                      </div>
+                    </div>);
+                  })}
+                </div>
+              </>}
+
+              {/* ═══ MAPPED HIDDEN AREAS (Cartographer) ═══ */}
+              {(()=>{
+                const cLv=prestigeLevels.cartographer||0;
+                if(cLv<1)return null;
+                const regionHidden=HIDDEN_REGIONS.filter(hr=>hr.region===reg.id&&(!hr.legendary||cLv>=5));
+                if(regionHidden.length===0)return null;
+                const mapped=regionHidden.filter(hr=>mappedRegions.includes(hr.id));
+                const unmapped=regionHidden.filter(hr=>!mappedRegions.includes(hr.id));
+                return <div style={{marginBottom:12}}>
+                  <div style={{fontSize:15,color:'#50a0a0',fontWeight:'bold',marginBottom:6,borderTop:'1px solid #50a0a033',paddingTop:8}}>🗺️ Hidden Areas <span style={{fontSize:12,color:TH.textDim,fontWeight:'normal'}}>— Cartographer-exclusive foraging sites</span></div>
+                  {mapped.map(hr=>{
+                    const isSelected=selectedSite?.regId===reg.id&&selectedSite?.siteId===hr.id&&selectedSite?.isHidden;
+                    return <div key={hr.id} style={{padding:'10px 12px',marginBottom:6,background:isSelected?'#50a0a015':TH.bg,borderRadius:6,border:`1px solid ${isSelected?'#50a0a0':TH.border}`,cursor:canGo?'pointer':'default',transition:'all .15s'}}
+                      onClick={()=>{if(canGo)setSelectedSite({regId:reg.id,siteId:hr.id,isHidden:true});}}
+                      onMouseEnter={e=>{if(canGo)e.currentTarget.style.borderColor='#50a0a0';}}
+                      onMouseLeave={e=>{if(!isSelected)e.currentTarget.style.borderColor=TH.border;}}>
+                      <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:4}}>
+                        <span style={{fontSize:18}}>{hr.icon}</span>
+                        <div style={{flex:1}}>
+                          <div style={{fontSize:16,color:isSelected?'#70e0e0':'#70c0c0',fontWeight:'bold'}}>{hr.name}{isSelected?' ✓':''} <span style={{fontSize:11,color:TH.green,fontWeight:'normal'}}>✓ Mapped</span></div>
+                          <div style={{fontSize:13,color:TH.textDim,lineHeight:1.4}}>{hr.desc}</div>
+                        </div>
+                      </div>
+                      <div style={{display:'flex',gap:4,flexWrap:'wrap',marginTop:4}}>
+                        {hr.ingr.map(id=>{
+                          const isHidIngr=HIDDEN_INGR&&HIDDEN_INGR[id];
+                          return <span key={id} style={{display:'inline-flex',alignItems:'center',gap:3,fontSize:13,padding:'2px 6px',borderRadius:3,background:isHidIngr?'#50a0a015':'transparent',border:'1px solid '+(isHidIngr?'#50a0a044':TH.border+'44')}}>
+                            <span title={INGR[id]?.name||id}>{INGR[id]?.icon}</span> <b style={{color:isHidIngr?'#70c0c0':TH.text}}>{INGR[id]?.name}</b>
+                            <span style={{color:TH.textDim}}>({inv[id]||0})</span>
+                            {isHidIngr&&<span style={{fontSize:11,color:'#50a0a0'}}>~35%</span>}
+                          </span>;
+                        })}
+                      </div>
+                    </div>;
+                  })}
+                  {unmapped.map(hr=><div key={hr.id} style={{padding:'8px 10px',marginBottom:3,background:TH.bg,borderRadius:6,border:'1px dashed #50a0a022',opacity:0.6}}>
+                    <div style={{fontSize:13,color:TH.textDim}}>❓ Undiscovered hidden area — forage here to find it {hr.legendary&&<span style={{color:'#d4a420'}}>(★ Legendary)</span>}</div>
+                  </div>)}
+                </div>;
+              })()}
+
+              {/* Action buttons */}
+              <div style={{display:'flex',gap:6,flexWrap:'wrap',alignItems:'center'}}>
+                {canGo&&selectedSite?.regId===reg.id&&<button style={{...S.btn('gold'),flex:1,fontSize:16}} onClick={()=>{setZonePopup(null);doHarvest();}}>
+                  ⛏️ Forage at {selectedSite.isHidden?(HIDDEN_REGIONS.find(hr=>hr.id===selectedSite.siteId)?.name||'hidden area'):(reg.sites?.find(s=>s.id===selectedSite.siteId)?.name||'selected site')}{targetIngr&&reg.ingr.includes(targetIngr)?' 🎯 '+INGR[targetIngr]?.icon:''}
+                </button>}
+                {canGo&&<button style={{...S.btn(selectedSite?.regId===reg.id?'def':'gold'),flex:selectedSite?.regId===reg.id?0:1,fontSize:14}} onClick={()=>{setSelectedSite(null);setZonePopup(null);doHarvest();}}>
+                  🎲 Random{targetIngr&&reg.ingr.includes(targetIngr)?' 🎯 '+INGR[targetIngr]?.icon:''}
+                </button>}
+                {!canGo&&<div style={{flex:1,fontSize:15,color:TH.red,textAlign:'center',padding:6}}>
+                  {locked?`🔒 Requires Lv${regUnlock(reg)+1}${reg.faction?' + '+FACTIONS[reg.faction]?.name+' rep':''}`:`⚡ Need ${(info?.travelTime||reg.time)+10}+ to forage (have ⚡${energy})`}
+                </div>}
+                <button style={S.btn('dim')} onClick={()=>{setZonePopup(null);setTargetIngr(null);}}>Close</button>
+              </div>
+              {canGo&&<div style={{fontSize:13,color:TH.textDim,marginTop:4,textAlign:'center'}}>⚡{info.travelTime} paid up front for travel · then ⚡10 per forage roll inside the expedition</div>}
+            </div>
+          </div>
+        </div>);
+      })()}
+
+      {/* ═══ LEVEL-UP WIZARD ═══ */}
+      {pendingLevelUp&&!pendingLevelUp._minimized&&<div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'#000000dd',display:'flex',alignItems:'center',justifyContent:'center',zIndex:1000,padding:12}}>
+        <div style={{background:`linear-gradient(160deg,${TH.panelAlt},${TH.panel})`,border:`2px solid ${TH.gold}`,borderRadius:12,padding:'20px 20px',maxWidth:520,width:'100%',maxHeight:'90vh',overflowY:'auto',boxShadow:`0 0 60px ${TH.gold}30`}} onClick={e=>e.stopPropagation()}>
+          {/* Step progress */}
+          {pendingLevelUp.step!=='overview'&&(()=>{
+            const allSteps=['class'];
+            if(pendingLevelUp.needsSpec)allSteps.push('spec');
+            if(pendingLevelUp.needsFeat)allSteps.push('feat');
+            if(pendingLevelUp.needsASI)allSteps.push('asi');
+            allSteps.push('skills','confirm');
+            const labels={class:'Class',spec:'Spec',feat:'Feat',asi:'ASI',skills:'Skills',confirm:'✓'};
+            const curIdx=allSteps.indexOf(pendingLevelUp.step);
+            return(
+              <div style={{display:'flex',gap:2,justifyContent:'center',marginBottom:12}}>
+                {allSteps.map((s,i)=>(
+                  <div key={s} style={{fontSize:13,padding:'2px 8px',borderRadius:10,
+                    background:i===curIdx?TH.gold:i<curIdx?TH.green+'30':TH.panel,
+                    color:i===curIdx?TH.bg:i<curIdx?TH.green:TH.textDim,
+                    border:`1px solid ${i===curIdx?TH.gold:i<curIdx?TH.green+'44':TH.border}`,
+                    fontWeight:i===curIdx?'bold':'normal'}}>
+                    {labels[s]}
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
+          {/* ── STEP: OVERVIEW ── */}
+          {pendingLevelUp.step==='overview'&&<>
+            <div style={{textAlign:'center',marginBottom:8}}>
+              <Portrait cls={startingClass||'alchemist'} race={charRace} gender={charGender} size={100}/>
+            </div>
+            <div style={{textAlign:'center',marginBottom:16}}>
+              <div style={{fontSize:26,color:TH.gold,letterSpacing:2}}>⬆ Level {pendingLevelUp.newCharLevel+1}!</div>
+              <div style={{fontSize:16,color:TH.textDim,marginTop:4}}>Your experience has unlocked new potential.</div>
+            </div>
+            <div style={{marginBottom:12}}>
+              <div style={{fontSize:15,color:TH.textBright,marginBottom:4}}>Today's advancement:</div>
+              <div style={{fontSize:15,color:TH.gold,padding:'4px 8px',background:TH.gold+'10',borderRadius:4,marginBottom:3}}>📋 Choose a class to advance</div>
+              {pendingLevelUp.needsFeat&&<div style={{fontSize:15,color:TH.purple,padding:'4px 8px',background:TH.purple+'10',borderRadius:4,marginBottom:3}}>🌟 Select a feat</div>}
+              {pendingLevelUp.needsASI&&<div style={{fontSize:15,color:TH.cyan,padding:'4px 8px',background:TH.cyan+'10',borderRadius:4,marginBottom:3}}>📊 Ability Score Increase (+2 to stats)</div>}
+              <div style={{fontSize:15,color:TH.green,padding:'4px 8px',background:TH.green+'10',borderRadius:4,marginBottom:3}}>🎓 Assign {pendingLevelUp.skillPointsAvailable} skill points{pendingLevelUp.skillPointsAvailable>3?` (3 base + ${pendingLevelUp.skillPointsAvailable-3} 🧠 Focused Mind)`:''}</div>
+            </div>
+            <div style={{textAlign:'center'}}>
+              <button style={{...S.btn('gold'),fontSize:17,padding:'8px 28px'}} onClick={()=>setPendingLevelUp(p=>({...p,step:'class'}))}>Begin Advancement →</button>
+            </div>
+          </>}
+
+          {/* ── STEP: CLASS SELECTION ── */}
+          {pendingLevelUp.step==='class'&&<>
+            <div style={{textAlign:'center',marginBottom:12}}>
+              <div style={{fontSize:20,color:TH.gold}}>Choose Class to Advance</div>
+              <div style={{fontSize:14,color:TH.textDim}}>Select which discipline to train. You can advance an existing class or begin a new one.</div>
+            </div>
+            <div style={{display:'flex',flexDirection:'column',gap:6}}>
+              {Object.keys(CLASSES).map(cid=>{const c=CLASSES[cid];const curLv=classLevels[cid]||0;const nextLv=curLv+1;const isNew=curLv===0;
+                const nextFeature=c.features.find(f=>f.classLv===nextLv);
+                const selected=pendingLevelUp.chosenClass===cid;
+                const showProg=pendingLevelUp._showProg===cid;
+                const specId=specs[cid];const spec=specId?c.specs?.[specId]:null;
+                return(
+                <div key={cid} style={{padding:'8px 10px',background:selected?c.color+'18':TH.panelLight,borderRadius:6,border:`2px solid ${selected?c.color:TH.border}`,cursor:'pointer',transition:'all 0.15s'}}
+                  onClick={()=>{
+                    const needsSpec=nextLv===3&&!specs[cid];
+                    setPendingLevelUp(p=>({...p,chosenClass:cid,needsSpec,chosenSpec:null}));
+                  }}>
+                  <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                    <div>
+                      <span style={{fontSize:18,color:c.color,fontWeight:'bold'}}>{c.icon} {c.name}</span>
+                      <span style={{fontSize:14,color:TH.textDim,marginLeft:6}}>{isNew?'NEW':'Lv '+curLv+' → '+nextLv}</span>
+                      {spec&&<span style={{fontSize:13,color:spec.color,marginLeft:6}}>{spec.icon} {spec.name}</span>}
+                    </div>
+                    <div style={{fontSize:13,color:STATS[c.primaryStat]?.color}}>{STATS[c.primaryStat]?.icon} {STATS[c.primaryStat]?.name}</div>
+                  </div>
+                  {isNew&&<div style={{fontSize:13,color:TH.textDim,marginTop:2}}>Proficiency: {c.profSkills.map(sk=>SKILLS[sk]?.name).join(', ')}</div>}
+                  {nextFeature&&<div style={{fontSize:14,color:c.color,marginTop:3,padding:'3px 6px',background:c.color+'10',borderRadius:3}}>
+                    <b>Lv{nextLv}: {nextFeature.name}</b> — {nextFeature.desc}
+                  </div>}
+                  {nextLv===3&&!specs[cid]&&<div style={{fontSize:13,color:TH.purple,marginTop:2}}>⭐ Specialization choice at this level!</div>}
+                  {/* View Full Progression toggle */}
+                  <div style={{marginTop:4}}>
+                    <button style={{background:'none',border:'none',color:TH.gold,fontSize:13,cursor:'pointer',padding:0,fontFamily:'inherit',textDecoration:'underline'}}
+                      onClick={e=>{e.stopPropagation();setPendingLevelUp(p=>({...p,_showProg:showProg?null:cid}));}}>
+                      {showProg?'▾ Hide Progression':'▸ View Full Progression'}
+                    </button>
+                  </div>
+                  {showProg&&<div style={{marginTop:4,padding:'6px 8px',background:TH.bg,borderRadius:4,border:'1px solid '+TH.border}} onClick={e=>e.stopPropagation()}>
+                    <div style={{fontSize:13,color:TH.gold,fontWeight:'bold',marginBottom:4}}>Class Features:</div>
+                    {c.features.map(f=>{
+                      const earned=f.classLv<=curLv;const isNext=f.classLv===nextLv;
+                      return <div key={f.name} style={{fontSize:12,padding:'2px 0',color:earned?TH.green:isNext?c.color:TH.textDim,opacity:earned?0.7:1}}>
+                        {earned?'✓':'◦'} <b>Lv{f.classLv}: {f.name}</b> — {f.desc}
+                      </div>;
+                    })}
+                    {spec&&<>
+                      <div style={{fontSize:13,color:spec.color,fontWeight:'bold',marginTop:6,marginBottom:4}}>{spec.icon} {spec.name} Features:</div>
+                      {spec.features.map(f=>{
+                        const earned=f.classLv<=curLv;const isNext=f.classLv===nextLv;
+                        return <div key={f.name} style={{fontSize:12,padding:'2px 0',color:earned?TH.green:isNext?spec.color:TH.textDim,opacity:earned?0.7:1}}>
+                          {earned?'✓':'◦'} <b>Lv{f.classLv}: {f.name}</b> — {f.desc}
+                        </div>;
+                      })}
+                    </>}
+                    {!spec&&curLv<3&&<div style={{fontSize:12,color:TH.purple,marginTop:4}}>⭐ Specialization unlocks at Lv3 — choose your path!</div>}
+                    {!spec&&curLv>=3&&<>
+                      <div style={{fontSize:13,color:TH.purple,fontWeight:'bold',marginTop:6,marginBottom:4}}>Available Specializations:</div>
+                      {Object.values(c.specs||{}).map(sp=>
+                        <div key={sp.id} style={{fontSize:12,padding:'2px 0'}}>
+                          <span style={{color:sp.color,fontWeight:'bold'}}>{sp.icon} {sp.name}</span>
+                          {sp.features.map(f=><div key={f.name} style={{fontSize:11,color:TH.textDim,paddingLeft:12}}>Lv{f.classLv}: {f.name}</div>)}
+                        </div>
+                      )}
+                    </>}
+                  </div>}
+                </div>);})}
+            </div>
+            {/* ═══ PRESTIGE CLASSES ═══ */}
+            {(()=>{
+              const available=Object.values(PRESTIGE_CLASSES).filter(pc=>{
+                const meets=checkPrestigeReq(pc.req);
+                const curLv=prestigeLevels[pc.id]||0;
+                return meets&&curLv<pc.maxLv;
+              });
+              if(available.length===0)return null;
+              return <div style={{marginTop:12}}>
+                <div style={{fontSize:16,color:TH.purple,fontWeight:'bold',marginBottom:6,borderTop:'1px solid '+TH.border,paddingTop:8}}>✨ Prestige Classes</div>
+                <div style={{fontSize:13,color:TH.textDim,marginBottom:6}}>Advance a prestige class AND gain a level in one parent class.</div>
+                {available.map(pc=>{
+                  const curLv=prestigeLevels[pc.id]||0;const nextLv=curLv+1;
+                  const nextFeature=pc.features.find(f=>f.lv===nextLv);
+                  const selected=pendingLevelUp.chosenClass==='prestige_'+pc.id;
+                  const showProg=pendingLevelUp._showProg==='prestige_'+pc.id;
+                  return <div key={pc.id} style={{padding:'8px 10px',background:selected?pc.color+'18':TH.panelLight,borderRadius:6,border:'2px solid '+(selected?pc.color:TH.border),cursor:'pointer',marginBottom:6}}
+                    onClick={()=>{const opts=Object.keys(pc.req).filter(cid=>CLASSES[cid]&&(classLevels[cid]||0)>0);const only=opts.length===1?opts[0]:null;
+                      setPendingLevelUp(p=>({...p,chosenClass:'prestige_'+pc.id,chosenSpec:null,prestigeParentClass:only,needsSpec:only?(classLevels[only]||0)+1===3&&!specs[only]:false}));}}>
+                    <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                      <span style={{fontSize:18,color:pc.color,fontWeight:'bold'}}>{pc.icon} {pc.name} <span style={{fontSize:14,color:TH.textDim}}>{curLv>0?'Lv '+curLv+' \u2192 '+nextLv:'NEW'}</span></span>
+                      <span style={{fontSize:12,color:TH.textDim}}>{formatPrestigeReqShort(pc.req)}</span>
+                    </div>
+                    <div style={{fontSize:13,color:TH.textDim,margin:'2px 0'}}>{pc.desc}</div>
+                    {nextFeature&&<div style={{fontSize:14,color:pc.color,marginTop:3,padding:'3px 6px',background:pc.color+'10',borderRadius:3}}>
+                      <b>Lv{nextLv}: {nextFeature.name}</b> {'\u2014'} {nextFeature.desc}
+                    </div>}
+                    {selected&&<div style={{marginTop:6,padding:'6px 8px',background:TH.bg,borderRadius:4,border:'1px solid '+TH.gold+'44'}} onClick={e=>e.stopPropagation()}>
+                      {(()=>{
+                        const parentOptions=Object.keys(pc.req).filter(cid=>CLASSES[cid]&&(classLevels[cid]||0)>0);
+                        return <>
+                        <div style={{fontSize:13,color:TH.gold,marginBottom:4}}>{parentOptions.length>1?'Also advance one parent class:':'Advancing parent class:'}</div>
+                        <div style={{display:'flex',gap:6}}>
+                        {parentOptions.map(cid=>{const c=CLASSES[cid];const cLv=classLevels[cid]||0;
+                          const parentSel=pendingLevelUp.prestigeParentClass===cid;
+                          const nextF=c.features.find(f=>f.classLv===cLv+1);
+                          const needsNewSpec=cLv+1===3&&!specs[cid];
+                          return <div key={cid} style={{flex:1,padding:'6px 8px',borderRadius:4,cursor:'pointer',
+                            background:parentSel?c.color+'20':TH.panelLight,border:'2px solid '+(parentSel?c.color:TH.border)}}
+                            onClick={()=>setPendingLevelUp(p=>({...p,prestigeParentClass:cid,needsSpec:needsNewSpec}))}>
+                            <div style={{fontSize:14,color:c.color,fontWeight:'bold'}}>{c.icon} {c.name} Lv{cLv} {'\u2192'} {cLv+1}</div>
+                            {nextF&&<div style={{fontSize:11,color:TH.textDim}}>{nextF.name}</div>}
+                            {needsNewSpec&&<div style={{fontSize:11,color:TH.purple}}>+ Spec choice!</div>}
+                          </div>;
+                        })}
+                        </div>
+                        </>;
+                      })()}
+                    </div>}
+                    <button style={{background:'none',border:'none',color:pc.color,fontSize:12,cursor:'pointer',padding:0,fontFamily:'inherit',textDecoration:'underline',marginTop:3}}
+                      onClick={e=>{e.stopPropagation();setPendingLevelUp(p=>({...p,_showProg:showProg?null:'prestige_'+pc.id}));}}>
+                      {showProg?'\u25BE Hide':'\u25B8 View Progression'}
+                    </button>
+                    {showProg&&<div style={{marginTop:3,padding:'4px 8px',background:TH.bg,borderRadius:4,border:'1px solid '+TH.border}} onClick={e=>e.stopPropagation()}>
+                      {pc.features.map(f=>{const earned=f.lv<=curLv;return <div key={f.lv} style={{fontSize:12,padding:'1px 0',color:earned?TH.green:f.lv===nextLv?pc.color:TH.textDim}}>
+                        {earned?'\u2713':'\u25E6'} <b>Lv{f.lv}: {f.name}</b> {'\u2014'} {f.desc}
+                      </div>;})}
+                    </div>}
+                  </div>;
+                })}
+              </div>;
+            })()}
+            {(()=>{
+              const locked=Object.values(PRESTIGE_CLASSES).filter(pc=>!checkPrestigeReq(pc.req));
+              if(locked.length===0)return null;
+              return <div style={{marginTop:8}}>
+                <div style={{fontSize:13,color:TH.textDim,marginBottom:4}}>Locked Prestige Classes:</div>
+                <div style={{display:'flex',flexWrap:'wrap',gap:3}}>
+                  {locked.map(pc=><span key={pc.id} style={{padding:'2px 6px',fontSize:11,borderRadius:3,background:tapInfo==='pc_'+pc.id?pc.color+'15':TH.bg,border:'1px solid '+(tapInfo==='pc_'+pc.id?pc.color+'44':TH.border),color:TH.textDim,cursor:'pointer'}}
+                    onClick={()=>setTapInfo(tapInfo==='pc_'+pc.id?null:'pc_'+pc.id)}>
+                    {pc.icon} {pc.name} ({formatPrestigeReqShort(pc.req)})
+                    {tapInfo==='pc_'+pc.id&&<div style={{fontSize:11,color:TH.text,marginTop:3,fontStyle:'italic'}}>{pc.desc}<br/><span style={{color:pc.color}}>Requires: {formatPrestigeReq(pc.req)}</span></div>}
+                  </span>
+                  )}
+                </div>
+              </div>;
+            })()}
+            <div style={{display:'flex',justifyContent:'space-between',marginTop:12}}>
+              <button style={S.btn('dim')} onClick={()=>setPendingLevelUp(p=>({...p,step:'overview'}))}>← Back</button>
+              <button style={S.btn((pendingLevelUp.chosenClass&&(!pendingLevelUp.chosenClass.startsWith('prestige_')||pendingLevelUp.prestigeParentClass))?'gold':'dim')} disabled={!pendingLevelUp.chosenClass||(pendingLevelUp.chosenClass.startsWith('prestige_')&&!pendingLevelUp.prestigeParentClass)}
+                onClick={()=>{
+                  const next=pendingLevelUp.needsSpec?'spec':pendingLevelUp.needsFeat?'feat':pendingLevelUp.needsASI?'asi':'skills';
+                  setPendingLevelUp(p=>({...p,step:next}));
+                }}>Continue →</button>
+            </div>
+          </>}
+
+          {/* ── STEP: SPECIALIZATION ── */}
+          {pendingLevelUp.step==='spec'&&<>
+            <div style={{textAlign:'center',marginBottom:12}}>
+              <div style={{fontSize:20,color:TH.gold}}>🎓 Choose Specialization</div>
+              <div style={{fontSize:14,color:TH.textDim}}>Your {CLASSES[pendingLevelUp.chosenClass?.startsWith('prestige_')?pendingLevelUp.prestigeParentClass:pendingLevelUp.chosenClass]?.name} training has reached a crossroads. This choice is permanent.</div>
+            </div>
+            {Object.values(CLASSES[pendingLevelUp.chosenClass?.startsWith('prestige_')?pendingLevelUp.prestigeParentClass:pendingLevelUp.chosenClass]?.specs||{}).map(sp=>{
+              const selected=pendingLevelUp.chosenSpec===sp.id;
+              return(
+              <div key={sp.id} style={{padding:'8px 10px',background:selected?sp.color+'15':TH.panelLight,borderRadius:6,marginBottom:6,border:`2px solid ${selected?sp.color:TH.border}`,cursor:'pointer'}}
+                onClick={()=>setPendingLevelUp(p=>({...p,chosenSpec:sp.id}))}>
+                <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:4}}>
+                  <span style={{fontSize:17,color:sp.color,fontWeight:'bold'}}>{sp.icon} {sp.name}</span>
+                  <span style={{fontSize:14,color:TH.gold}}>+2 {STATS[sp.bStat]?.name}</span>
+                </div>
+                <div style={{fontSize:14,color:TH.textDim,marginBottom:4}}>Bonus skills: {sp.bSkills.map(sk=>SKILLS[sk]?.icon+' '+SKILLS[sk]?.name).join(', ')}</div>
+                {/* Mechanical description — the unique system this spec unlocks, shown prominently at the
+                    moment of the irreversible choice. Sources `sp.mechDesc` from game-data.js (previously
+                    orphaned). Falls back to `sp.desc` if mechDesc is absent. */}
+                {(sp.mechDesc||sp.desc)&&<div style={{fontSize:14,color:TH.text,marginBottom:6,padding:'7px 9px',background:sp.color+'10',border:`1px solid ${sp.color}44`,borderRadius:5,lineHeight:1.45}}>
+                  {sp.mechDesc||sp.desc}
+                </div>}
+                {sp.features.map(f=><div key={f.name} style={{fontSize:14,color:sp.color,padding:'1px 0'}}>
+                  Lv{f.classLv}: <b>{f.name}</b> — {f.desc}
+                </div>)}
+              </div>);})}
+            <div style={{display:'flex',justifyContent:'space-between',marginTop:8}}>
+              <button style={S.btn('dim')} onClick={()=>setPendingLevelUp(p=>({...p,step:'class'}))}>← Back</button>
+              <button style={S.btn(pendingLevelUp.chosenSpec?'gold':'dim')} disabled={!pendingLevelUp.chosenSpec}
+                onClick={()=>{
+                  const next=pendingLevelUp.needsFeat?'feat':pendingLevelUp.needsASI?'asi':'skills';
+                  setPendingLevelUp(p=>({...p,step:next}));
+                }}>Continue →</button>
+            </div>
+          </>}
+
+          {/* ── STEP: FEAT SELECTION ── */}
+          {pendingLevelUp.step==='feat'&&<>
+            <div style={{textAlign:'center',marginBottom:12}}>
+              <div style={{fontSize:20,color:TH.gold}}>🌟 Choose a Feat</div>
+              <div style={{fontSize:14,color:TH.textDim}}>Feats are permanent talents that enhance your abilities.</div>
+            </div>
+            {Object.entries(FEAT_CATEGORIES).map(([catId,cat])=>{
+              const catFeats=FEAT_IDS.filter(fid=>FEATS[fid].cat===catId&&!playerFeats.includes(fid));
+              if(catFeats.length===0)return null;
+              return(<div key={catId} style={{marginBottom:8}}>
+                <div style={{fontSize:15,color:cat.color,fontWeight:'bold',marginBottom:4}}>{cat.icon} {cat.name}</div>
+                {catFeats.map(fid=>{const f=FEATS[fid];const selected=pendingLevelUp.chosenFeat===fid;
+                  // Check feat prereqs
+                  let locked=false,lockReason='';
+                  if(f.req){
+                    if(f.req.feat&&!playerFeats.includes(f.req.feat)){locked=true;lockReason='Requires '+FEATS[f.req.feat]?.name;}
+                    Object.entries(f.req).forEach(([k,v])=>{if(k!=='feat'&&CLASSES[k]&&eCL(k)<v){locked=true;lockReason='Requires '+CLASSES[k].icon+' '+CLASSES[k].name+' '+v;}});
+                  }
+                  return(
+                  <div key={fid} style={{padding:'5px 8px',background:locked?TH.bg:selected?cat.color+'15':TH.panelLight,borderRadius:4,marginBottom:3,border:`1px solid ${locked?TH.border+'66':selected?cat.color:TH.border}`,cursor:locked?'not-allowed':'pointer',fontSize:14,opacity:locked?0.5:1}}
+                    onClick={()=>{if(!locked)setPendingLevelUp(p=>({...p,chosenFeat:fid}));}}>
+                    <span style={{color:cat.color}}>{f.icon}</span> <b>{f.name}</b> — {f.desc}
+                    {locked&&<span style={{fontSize:12,color:TH.red,marginLeft:6}}>🔒 {lockReason}</span>}
+                  </div>
+                );})}
+              </div>);})}
+            <div style={{display:'flex',justifyContent:'space-between',marginTop:8}}>
+              <button style={S.btn('dim')} onClick={()=>{
+                const prev=pendingLevelUp.needsSpec?'spec':'class';
+                setPendingLevelUp(p=>({...p,step:prev}));
+              }}>← Back</button>
+              <button style={S.btn(pendingLevelUp.chosenFeat?'gold':'dim')} disabled={!pendingLevelUp.chosenFeat}
+                onClick={()=>{
+                  const next=pendingLevelUp.needsASI?'asi':'skills';
+                  setPendingLevelUp(p=>({...p,step:next}));
+                }}>Continue →</button>
+            </div>
+          </>}
+
+          {/* ── STEP: ASI ── */}
+          {pendingLevelUp.step==='asi'&&<>
+            <div style={{textAlign:'center',marginBottom:12}}>
+              <div style={{fontSize:20,color:TH.gold}}>📊 Ability Score Increase</div>
+              <div style={{fontSize:14,color:TH.textDim}}>Assign +2 to one stat, or +1 to two different stats.</div>
+            </div>
+            {(()=>{
+              const asiC=pendingLevelUp.asiChoices||{};
+              const spent=Object.values(asiC).reduce((s,v)=>s+v,0);
+              return(<>
+                <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:4}}>
+                  {STAT_IDS.map(sid=>{const st=STATS[sid];const v=eStat(sid);const bonus=asiC[sid]||0;return(
+                    <div key={sid} style={{padding:6,background:bonus>0?st.color+'15':TH.panelLight,borderRadius:4,border:`1px solid ${bonus>0?st.color:TH.border}44`,textAlign:'center'}}>
+                      <div style={{fontSize:14,color:st.color}}>{st.icon} {st.name}</div>
+                      <div style={{fontSize:18,color:TH.textBright}}>{v}{bonus>0&&<span style={{color:TH.green}}> +{bonus}</span>}</div>
+                      <div style={{display:'flex',gap:4,justifyContent:'center',marginTop:3}}>
+                        <button style={S.btn(bonus>0?'def':'dim')} onClick={()=>{if(bonus>0)setPendingLevelUp(p=>({...p,asiChoices:{...asiC,[sid]:bonus-1}}));}}>−</button>
+                        <button style={S.btn(spent<2&&bonus<2?'def':'dim')} onClick={()=>{if(spent<2&&bonus<2)setPendingLevelUp(p=>({...p,asiChoices:{...asiC,[sid]:bonus+1}}));}}>+</button>
+                      </div>
+                    </div>);})}
+                </div>
+                <div style={{textAlign:'center',fontSize:14,color:spent===2?TH.green:TH.textDim,marginTop:6}}>{spent}/2 points assigned</div>
+                <div style={{display:'flex',justifyContent:'space-between',marginTop:8}}>
+                  <button style={S.btn('dim')} onClick={()=>{
+                    const prev=pendingLevelUp.needsFeat?'feat':pendingLevelUp.needsSpec?'spec':'class';
+                    setPendingLevelUp(p=>({...p,step:prev}));
+                  }}>← Back</button>
+                  <button style={S.btn(spent===2?'gold':'dim')} disabled={spent!==2}
+                    onClick={()=>setPendingLevelUp(p=>({...p,step:'skills'}))}>Continue →</button>
+                </div>
+              </>);
+            })()}
+          </>}
+
+          {/* ── STEP: SKILL POINTS ── */}
+          {pendingLevelUp.step==='skills'&&<>
+            <div style={{textAlign:'center',marginBottom:8}}>
+              <div style={{fontSize:20,color:TH.gold}}>🎓 Assign Skill Points</div>
+              <div style={{fontSize:14,color:TH.textDim}}>Spend {pendingLevelUp.skillPointsAvailable} skill points to improve your abilities.{pendingLevelUp.skillPointsAvailable>3&&<span style={{color:TH.gold}}> (3 base + {pendingLevelUp.skillPointsAvailable-3} from 🧠 Focused Mind)</span>}</div>
+              {getFeatureVal('bonusSkillEveryOther')>0&&<div style={{fontSize:12,color:TH.textDim}}>Focused Mind: +1 skill point every other level (Lv{pendingLevelUp.newCharLevel+1} {pendingLevelUp.newCharLevel%2===0?'→ bonus applies':'→ no bonus this level'})</div>}
+            </div>
+            {(()=>{
+              const tempSpent=pendingLevelUp.skillPointsSpent||{};
+              const remaining=pendingLevelUp.skillPointsAvailable-Object.values(tempSpent).reduce((s,v)=>s+v,0);
+              return(<>
+                <div style={{fontSize:14,color:remaining>0?TH.goldBright:TH.green,textAlign:'center',marginBottom:6}}>{remaining} points remaining</div>
+                {STAT_IDS.map(sid=>{
+                  const statSkills=SK_IDS.filter(sk=>SKILLS[sk].stat===sid);
+                  return(<div key={sid} style={{marginBottom:4}}>
+                    <div style={{fontSize:14,color:STATS[sid].color}}>{STATS[sid].icon} {STATS[sid].name}</div>
+                    {statSkills.map(skId=>{const sk=SKILLS[skId];const curRank=levelUpBaseRank(pendingLevelUp,skId);const existProg=skProgress[skId]||0;const added=tempSpent[skId]||0;
+                      const rp=computeRankProg(curRank,existProg,added);const effRank=rp.rank;const effProg=rp.prog;
+                      const ranksGained=effRank-curRank;const totalMod=getSkMod(skId)+(ranksGained>0?rankB(effRank,pb)-rankB(curRank,pb):0);const rb=getRaceSkBonus(skId);
+                      const canAdd=remaining>=1&&effRank<3;
+                      return(<div key={skId}>
+                        <div style={{display:'flex',alignItems:'center',gap:4,padding:'2px 4px',fontSize:14}}>
+                        <span>{sk.icon}</span>
+                        <span style={{flex:1,color:effRank>0?STATS[sid].color:TH.text}}>{sk.name} ({RANKS[effRank]}){ranksGained>0&&<span style={{color:TH.green}}> ↑{ranksGained}</span>}{rb>0&&<span style={{fontSize:12,color:TH.green,marginLeft:2}}>+{rb}{RACES[charRace]?.icon}</span>}</span>
+                        <span style={{fontSize:13,color:TH.cyan,cursor:'pointer',padding:'0 3px',border:'1px solid '+TH.cyan+'44',borderRadius:8,lineHeight:'14px'}} onClick={()=>setSkillTip(skillTip===skId?null:skId)} title="Show details">ⓘ</span>
+                        <span style={{color:totalMod>=0?TH.green:TH.text,fontWeight:'bold'}}>+{totalMod}</span>
+                        {canAdd&&<button style={{...S.btn('gold'),fontSize:12,padding:'1px 4px'}}
+                          onClick={()=>setPendingLevelUp(p=>({...p,skillPointsSpent:{...tempSpent,[skId]:added+1}}))}>↑+1</button>}
+                        {added>0&&<button style={{...S.btn('dim'),fontSize:12,padding:'1px 4px'}}
+                          onClick={()=>setPendingLevelUp(p=>{const ns={...tempSpent,[skId]:added-1};if(ns[skId]<=0)delete ns[skId];return{...p,skillPointsSpent:ns};})}>↓</button>}
+                      </div>
+                      {effProg>0&&effRank<3&&<div style={{margin:'2px 4px 2px 20px'}}>
+                        <div style={{fontSize:11,color:TH.gold}}>Training toward {RANKS[effRank+1]}: {effProg}/{effRank+1}</div>
+                        <div style={{height:5,background:TH.bg,borderRadius:3,overflow:'hidden',border:'1px solid '+TH.border}}>
+                          <div style={{height:'100%',width:`${(effProg/(effRank+1))*100}%`,background:`linear-gradient(90deg,${TH.gold},${TH.ember})`,borderRadius:3}}/>
+                        </div>
+                      </div>}
+                      {skillTip===skId&&<div style={{fontSize:13,color:TH.text,margin:'2px 4px 4px 20px',padding:'6px 8px',background:TH.bg,borderRadius:4,border:'1px solid '+TH.cyan+'44',lineHeight:1.5}}>
+                        <div style={{color:TH.cyan,fontWeight:'bold',marginBottom:2}}>📊 {sk.name}</div>
+                        <div style={{color:TH.textDim,marginBottom:3}}>{sk.uses}</div>
+                        <div>{sk.mech}</div>
+                        <div style={{color:TH.textDim,marginTop:3}}>Current modifier: <b style={{color:totalMod>=0?TH.green:TH.red}}>{totalMod>=0?'+':''}{totalMod}</b> (stat {getMod(eStat(sk.stat))>=0?'+':''}{getMod(eStat(sk.stat))} + rank {rankB(effRank,pb)}{rb>0?` + ${RACES[charRace]?.icon}race +${rb}`:''})</div>
+                      </div>}
+                      </div>);})}
+                  </div>);})}
+                <div style={{display:'flex',justifyContent:'space-between',marginTop:8}}>
+                  <button style={S.btn('dim')} onClick={()=>{
+                    const prev=pendingLevelUp.needsASI?'asi':pendingLevelUp.needsFeat?'feat':pendingLevelUp.needsSpec?'spec':'class';
+                    setPendingLevelUp(p=>({...p,step:prev}));
+                  }}>← Back</button>
+                  <button style={{...S.btn('gold'),fontSize:16}} onClick={()=>setPendingLevelUp(p=>({...p,step:'confirm'}))}>Review & Confirm →</button>
+                </div>
+              </>);
+            })()}
+          </>}
+
+          {/* ── STEP: CONFIRM ── */}
+          {pendingLevelUp.step==='confirm'&&<>
+            <div style={{textAlign:'center',marginBottom:12}}>
+              <div style={{fontSize:22,color:TH.gold}}>✨ Confirm Advancement</div>
+              <div style={{fontSize:15,color:TH.textDim}}>Review your choices before committing.</div>
+            </div>
+            <div style={{fontSize:15,lineHeight:1.6,marginBottom:12}}>
+              {(()=>{const rawCid=pendingLevelUp.chosenClass;const isP=rawCid.startsWith('prestige_');const cid=isP?pendingLevelUp.prestigeParentClass:rawCid;const c=CLASSES[cid];if(!c)return null;const nextLv=(classLevels[cid]||0)+1;const feat=c.features.find(f=>f.classLv===nextLv);return(
+                <div style={{padding:'6px 8px',background:c.color+'10',borderRadius:4,marginBottom:6,border:'1px solid '+c.color+'33'}}>
+                  <div style={{color:c.color,fontWeight:'bold'}}>{c.icon} {c.name} → Level {nextLv}</div>
+                  {feat&&<div style={{fontSize:14,color:TH.text}}>Gained: <b>{feat.name}</b> — {feat.desc}</div>}
+                  {nextLv===1&&<div style={{fontSize:14,color:TH.textDim}}>New proficiencies: {c.profSkills.map(sk=>SKILLS[sk]?.name).join(', ')}</div>}
+                </div>
+              );})()}
+              {pendingLevelUp.chosenClass.startsWith('prestige_')&&(()=>{
+                const pcId=pendingLevelUp.chosenClass.replace('prestige_','');
+                const pc=PRESTIGE_CLASSES[pcId];const curLv=prestigeLevels[pcId]||0;const nextLv=curLv+1;
+                const feat=pc?.features.find(f=>f.lv===nextLv);
+                return pc?<div style={{padding:'6px 8px',background:pc.color+'10',borderRadius:4,marginBottom:6,border:'1px solid '+pc.color+'33'}}>
+                  <div style={{color:pc.color,fontWeight:'bold'}}>{pc.icon} Prestige: {pc.name} → Level {nextLv}</div>
+                  {feat&&<div style={{fontSize:14,color:TH.text}}>Gained: <b>{feat.name}</b> — {feat.desc}</div>}
+                </div>:null;
+              })()}
+              {pendingLevelUp.chosenSpec&&(()=>{const c=CLASSES[pendingLevelUp.chosenClass?.startsWith('prestige_')?pendingLevelUp.prestigeParentClass:pendingLevelUp.chosenClass];const sp=c?.specs?.[pendingLevelUp.chosenSpec];return sp?(
+                <div style={{padding:'6px 8px',background:sp.color+'10',borderRadius:4,marginBottom:6,border:'1px solid '+sp.color+'33'}}>
+                  <div style={{color:sp.color,fontWeight:'bold'}}>{sp.icon} Specialization: {sp.name}</div>
+                  <div style={{fontSize:14,color:TH.text}}>+2 {STATS[sp.bStat]?.name} · {sp.bSkills.map(sk=>SKILLS[sk]?.name).join(', ')}</div>
+                </div>
+              ):null;})()}
+              {pendingLevelUp.chosenFeat&&(()=>{const f=FEATS[pendingLevelUp.chosenFeat];return f?(
+                <div style={{padding:'6px 8px',background:TH.purple+'10',borderRadius:4,marginBottom:6,border:'1px solid '+TH.purple+'33'}}>
+                  <div style={{color:TH.purple,fontWeight:'bold'}}>{f.icon} Feat: {f.name}</div>
+                  <div style={{fontSize:14,color:TH.text}}>{f.desc}</div>
+                </div>
+              ):null;})()}
+              {pendingLevelUp.asiChoices&&Object.values(pendingLevelUp.asiChoices).some(v=>v>0)&&(
+                <div style={{padding:'6px 8px',background:TH.cyan+'10',borderRadius:4,marginBottom:6,border:'1px solid '+TH.cyan+'33'}}>
+                  <div style={{color:TH.cyan,fontWeight:'bold'}}>📊 Ability Score Increase</div>
+                  <div style={{fontSize:14,color:TH.text}}>{Object.entries(pendingLevelUp.asiChoices).filter(([,v])=>v>0).map(([sid,v])=>`+${v} ${STATS[sid]?.name}`).join(', ')}</div>
+                </div>
+              )}
+              {Object.keys(pendingLevelUp.skillPointsSpent||{}).length>0&&(
+                <div style={{padding:'6px 8px',background:TH.green+'10',borderRadius:4,marginBottom:6,border:'1px solid '+TH.green+'33'}}>
+                  <div style={{color:TH.green,fontWeight:'bold'}}>🎓 Skill Points</div>
+                  <div style={{fontSize:14,color:TH.text}}>{Object.entries(pendingLevelUp.skillPointsSpent).map(([sk,v])=>{
+                    const base=levelUpBaseRank(pendingLevelUp,sk);const rp=computeRankProg(base,(skProgress[sk]||0),v);
+                    const gained=rp.rank-base;
+                    return `${SKILLS[sk]?.name} +${v}pt${gained>0?' → '+RANKS[rp.rank]:''}${rp.prog>0?' ('+rp.prog+'/'+(rp.rank+1)+')':''}`;
+                  }).join(', ')}</div>
+                </div>
+              )}
+            </div>
+            <div style={{display:'flex',justifyContent:'space-between'}}>
+              <button style={S.btn('dim')} onClick={()=>setPendingLevelUp(p=>({...p,step:'skills'}))}>← Back</button>
+              <button style={{...S.btn('gold'),fontSize:17,padding:'8px 24px'}} onClick={()=>{
+                // ── COMMIT ALL CHANGES ──
+                const isPrestige=pendingLevelUp.chosenClass.startsWith('prestige_');
+                const prestigeId=isPrestige?pendingLevelUp.chosenClass.replace('prestige_',''):null;
+                const parentCid=isPrestige?pendingLevelUp.prestigeParentClass:null;
+                const cid=isPrestige?parentCid:pendingLevelUp.chosenClass;
+                // Validate FIRST before any state changes
+                if(!cid||!CLASSES[cid]){addLog('Error: No valid class for advancement (parent: '+cid+')','error');advanceLevelUpQueue();return;}
+                const c=CLASSES[cid];
+                const newClassLv=(classLevels[cid]||0)+1;
+                // Advance prestige level if applicable
+                if(isPrestige&&prestigeId){
+                  setPrestigeLevels(p=>({...p,[prestigeId]:(p[prestigeId]||0)+1}));
+                  const pc=PRESTIGE_CLASSES[prestigeId];
+                  const newPLv=(prestigeLevels[prestigeId]||0)+1;
+                  const pFeat=pc?.features.find(f=>f.lv===newPLv);
+                  addLog('✨ Prestige: '+pc.icon+pc.name+' Level '+newPLv+'!'+(pFeat?' Gained: '+pFeat.name:''),'level');
+                }
+                // Advance parent/base class level — validate cid first
+                setClassLevels(p=>({...p,[cid]:(p[cid]||0)+1}));
+                // Grant proficiency skills if new class
+                if(newClassLv===1&&c){setSkRanks(p=>{const n={...p};c.profSkills.forEach(sk=>{n[sk]=Math.max(n[sk]||0,1);});return n;});}
+                // Apply spec
+                if(pendingLevelUp.chosenSpec){
+                  setSpecs(p=>({...p,[cid]:pendingLevelUp.chosenSpec}));
+                  const sp=c?.specs?.[pendingLevelUp.chosenSpec];
+                  if(sp){setSkRanks(p=>{const n={...p};sp.bSkills.forEach(sk=>{n[sk]=Math.max(n[sk]||0,1);});return n;});}
+                }
+                // Apply feat
+                if(pendingLevelUp.chosenFeat){
+                  setPlayerFeats(p=>[...p,pendingLevelUp.chosenFeat]);
+                  // Grant retroactive skill points for feats with bonusSkillEveryOther
+                  const featDef=FEATS[pendingLevelUp.chosenFeat];
+                  if(featDef?.effects?.bonusSkillEveryOther){
+                    const retroPts=Math.floor((pendingLevelUp.newCharLevel+1)/2);
+                    setSkPts(p=>p+retroPts);
+                    addLog(`🧠 ${featDef.name}: +${retroPts} retroactive skill points (every other level × ${(pendingLevelUp.newCharLevel+1)} levels)`,'level');
+                  }
+                  // Grant immediate enchantment patterns for learnEnchOnPick
+                  if(featDef?.effects?.learnEnchOnPick){
+                    const n=featDef.effects.learnEnchOnPick;
+                    const unk=ENCHANTMENTS.filter(e=>!knownEnch.includes(e.id));
+                    const picks=unk.sort(()=>Math.random()-0.5).slice(0,n);
+                    if(picks.length>0){setKnownEnch(p=>[...p,...picks.map(e=>e.id)]);
+                      addLog(`📖 ${featDef.name}: Learned ${picks.map(e=>e.icon+e.name).join(', ')}!`,'level');}
+                  }
+                  // asiBonus: Prodigy feat grants +1 to two ability scores (auto-selects lowest two)
+                  if(featDef?.effects?.asiBonus){
+                    const asiN=featDef.effects.asiBonus;
+                    const sids=Object.keys(STATS);
+                    const sorted=sids.map(s=>({s,v:eStat(s)})).sort((a,b)=>a.v-b.v);
+                    const asiPicks={};sorted.slice(0,asiN).forEach(x=>{asiPicks[x.s]=1;});
+                    setAsiSpent(p=>[...p,{lv:pendingLevelUp.newCharLevel,choices:asiPicks,source:'prodigy'}]);
+                    addLog(`🌟 Prodigy: +1 to ${sorted.slice(0,asiN).map(x=>STATS[x.s]?.name).join(' & ')}!`,'level');
+                  }
+                }
+                // Apply ASI
+                if(pendingLevelUp.asiChoices&&Object.values(pendingLevelUp.asiChoices).some(v=>v>0)){
+                  setAsiSpent(p=>[...p,{lv:pendingLevelUp.newCharLevel,choices:pendingLevelUp.asiChoices}]);
+                }
+                // Apply skill points via progress system
+                if(pendingLevelUp.skillPointsSpent){
+                  // Both setters work from the same base rank (including this level's proficiency/spec bumps above),
+                  // so ranks and progress can't disagree and no point is lost.
+                  const spent=pendingLevelUp.skillPointsSpent;
+                  const rps={};Object.entries(spent).forEach(([sk,pts])=>{rps[sk]=computeRankProg(levelUpBaseRank(pendingLevelUp,sk),(skProgress[sk]||0),pts);});
+                  setSkRanks(prev=>{const n={...prev};Object.entries(rps).forEach(([sk,rp])=>{n[sk]=Math.max(n[sk]||0,rp.rank);});return n;});
+                  setSkProgress(prev=>{const n={...prev};Object.entries(rps).forEach(([sk,rp])=>{if(rp.prog>0)n[sk]=rp.prog;else delete n[sk];});return n;});
+                }
+                // Remaining unspent skill points go to pool
+                const spent=Object.values(pendingLevelUp.skillPointsSpent||{}).reduce((s,v)=>s+v,0);
+                const leftover=pendingLevelUp.skillPointsAvailable-spent;
+                if(leftover>0)setSkPts(p=>p+leftover);
+                // Log and close
+                const feat=c.features.find(f=>f.classLv===newClassLv);
+                addLog(`⬆ Advanced ${c.name} to Level ${newClassLv}!${feat?' Gained: '+feat.name:''}`,'level');
+                // Apply one-time recipe/enchant grants tied to this class feature
+                if(feat)applyFeatureGrants(feat,cid+':'+newClassLv,c.name+' Lv'+newClassLv);
+                // Apply one-time grants tied to a spec feature at the same level (e.g. Apothecary Lv6 Panacea)
+                const _activeSpecId=pendingLevelUp.chosenSpec||specs[cid];
+                if(_activeSpecId&&c.specs?.[_activeSpecId]){
+                  const _specFeat=c.specs[_activeSpecId].features.find(f=>f.classLv===newClassLv);
+                  if(_specFeat)applyFeatureGrants(_specFeat,_activeSpecId+':'+newClassLv,c.specs[_activeSpecId].name+' Lv'+newClassLv);
+                }
+                // Drain the queue: if a level-up was deferred while this one was open, surface it next.
+                advanceLevelUpQueue();
+              }}>✨ Confirm Advancement</button>
+            </div>
+          </>}
+
+          {/* Skip for later */}
+          <div style={{textAlign:'center',marginTop:12}}>
+            <button style={{background:'none',border:'none',color:TH.textDim,fontSize:13,cursor:'pointer',textDecoration:'underline'}}
+              onClick={()=>{setPendingLevelUp(p=>p?{...p,_minimized:true}:p);addLog('⬆ Level-up minimized. Click the ⬆ indicator in the header to resume.','info');}}
+              title="Hide this window but keep all your choices. Reopen from the ⬆ indicator in the header.">
+              Save for later
+            </button>
+          </div>
+        </div>
+      </div>}
+
+      {/* ═══════════ VILLAGE MAP HUB ═══════════ */}
+      {screen==='map'&&<>
+        {/* Daily report */}
+        {dailyReport.length>0&&<div style={S.card}>
+          <div style={{...S.cT,display:'flex',justifyContent:'space-between',cursor:'pointer'}} onClick={()=>setShowReport(p=>!p)}>
+            <span>📋 Day {day} Report ({dailyReport.length})</span>
+            <div style={{display:'flex',gap:8,alignItems:'center'}}>
+              <span style={{fontSize:13,color:TH.textDim}}>{showReport?'▲ hide':'▼ show'}</span>
+              <span style={{fontSize:13,color:TH.textDim,cursor:'pointer'}} onClick={e=>{e.stopPropagation();setDailyReport([]);}}>✕ dismiss</span>
+            </div>
+          </div>
+          {showReport&&dailyReport.map((r,i)=><div key={i} style={{fontSize:14,padding:'4px 6px',marginBottom:2,borderRadius:3,background:r.t==='ok'?TH.green+'10':r.t==='fail'?TH.red+'10':TH.bg,border:'1px solid '+(r.t==='ok'?TH.green+'33':r.t==='fail'?TH.red+'33':TH.border),color:r.t==='ok'?TH.green:r.t==='fail'?TH.red:TH.textDim}}>
+            {r.i} <b>{r.n}:</b> {r.r}
+          </div>)}
+          {!showReport&&<div style={{fontSize:13,color:TH.textDim,marginTop:2}}>
+            {dailyReport.filter(r=>r.t==='ok').length} succeeded · {dailyReport.filter(r=>r.t==='fail').length} failed · {dailyReport.filter(r=>r.t==='idle').length} idle
+          </div>}
+        </div>}
+
+        {/* ── HOLLOW MARCH BANNER (map screen) ── */}
+        {hollowMarch?.active&&!hollowMarch?.finalStandComplete&&<div style={{...S.card,padding:'8px 12px',borderColor:'#a040c066',background:'linear-gradient(90deg,#1a0e1a,#14110c)',cursor:'pointer',boxShadow:'0 0 12px #a040c015'}} onClick={()=>setScreen('threats')}>
+          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+            <div style={{display:'flex',alignItems:'center',gap:8}}>
+              <span style={{fontSize:24}}>💀</span>
+              <div>
+                <div style={{fontSize:15,fontWeight:'bold',color:hollowMarch.finalStandInProgress?'#ffd700':'#c060e0'}}>{hollowMarch.finalStandInProgress?'👑 The Final Stand':'The Hollow March — Wave '+hollowMarch.wave}</div>
+                <div style={{fontSize:12,color:TH.textDim}}>
+                  {hollowMarch.demands.filter(d=>d.resolved&&d.result?.success).length}/{hollowMarch.demands.length} {hollowMarch.finalStandInProgress?'crises overcome':'demands met'}
+                  {!hollowMarch.finalStandInProgress&&hollowMarch.nextWaveDay>day&&<span> · <b style={{color:hollowMarch.nextWaveDay-day<=2?'#cc2020':'#c060e0'}}>{hollowMarch.nextWaveDay-day}d</b> until next wave</span>}
+                  {hollowMarch.finalStandInProgress&&<span> · Need {Math.ceil(hollowMarch.demands.length*0.67)} to win</span>}
+                </div>
+              </div>
+            </div>
+            <span style={{fontSize:13,color:'#c060e0'}}>View →</span>
+          </div>
+        </div>}
+        {hollowMarch?.finalStandComplete&&<div style={{...S.card,padding:'6px 12px',borderColor:TH.gold+'44',background:TH.green+'08'}}>
+          <div style={{fontSize:14,color:TH.gold}}>👑 Defender of {locName} — The Hollow March is broken</div>
+        </div>}
+
+        {/* ── THE MAP ── */}
+        <div style={{background:`linear-gradient(160deg,${TH.panelAlt},${TH.panel}90)`,border:`1px solid ${TH.border}`,borderRadius:10,padding:'16px 12px',position:'relative',overflow:'hidden'}}>
+          {/* Decorative path lines */}
+          <svg style={{position:'absolute',top:0,left:0,width:'100%',height:'100%',pointerEvents:'none',zIndex:0}} viewBox="0 0 400 200" preserveAspectRatio="none">
+            <path d="M50 55 L350 55" fill="none" stroke={TH.border} strokeWidth="1.5" strokeDasharray="6 4"/>
+            <path d="M50 145 L350 145" fill="none" stroke={TH.border} strokeWidth="1.5" strokeDasharray="6 4"/>
+            <path d="M100 40 L100 160" fill="none" stroke={TH.border} strokeWidth="1" strokeDasharray="4 4"/>
+            <path d="M300 40 L300 160" fill="none" stroke={TH.border} strokeWidth="1" strokeDasharray="4 4"/>
+          </svg>
+
+          <div style={{textAlign:'center',marginBottom:12,position:'relative',zIndex:1}}>
+            <div style={{fontSize:18,color:TH.gold,letterSpacing:4}}>— {(locName||'Cindervale').toUpperCase()} —</div>
+            <div style={{fontSize:14,color:TH.textDim}}>{debt>200?'Your shop is PADLOCKED. Reduce debt to reopen.':debt>100?'Creditors circle. Some upgrades have been repossessed.':debt>50?'The town council is watching your finances closely.':energy>100?'The day stretches ahead.':energy>25?'Shadows lengthen across the village.':energy>0?'The last light fades.':'Night has fallen.'} Day {day} · {getSeason(day,gameLocation).icon} {getSeason(day,gameLocation).name} · ⚡{energy} Energy</div>
+          </div>
+
+          {/* ─── ART-DRIVEN HUB — 9 tiles (region/seasonal-aware), each tile's art via resolveArt() ───
+              Click → setScreen(target) + navClearModals(). Image renders as a backgroundImage
+              with the existing gradient fallback recipe (matches expedition view); onError-hidden
+              <img> off-screen used to detect deployed art and swap the fallback off. Threats is
+              now a real 9th tile (was nav-bar-only). Settlement Skyline SVG below stays intact. */}
+          {(()=>{
+            const tiles=[
+              {tgt:'workshop',label:'Workshop',sub:`${upgrades.length} upgrades`,color:TH.green,note:null},
+              {tgt:'market',label:zui.market,sub:zui.marketSub,color:TH.gold,note:null},
+              {tgt:'tavern',label:zui.tavern,sub:zui.tavernSub,color:TH.ember,note:null},
+              {tgt:'worldmap',label:zui.gates,sub:`⚡${energy} to explore`,color:TH.teal,note:null},
+              {tgt:'quests',label:'Quest Board',sub:null,color:TH.cyan,note:questNote},
+              {tgt:'staff',label:'Staff Hall',sub:`${hiredAppr.length}/${maxAppr}`,color:TH.orange,note:staffNote},
+              {tgt:'character',label:'Your Quarters',sub:'Skills · Gear',color:TH.purple,note:charNote},
+              {tgt:'factions',label:'Faction Hall',sub:factionAlign?FACTIONS[factionAlign]?.icon+' Aligned':null,color:TH.blue,note:availQ.filter(q=>q.chain).length>0?'!':null},
+              {tgt:'threats',label:'Threats',sub:'Guard Tower',color:'#c06040',note:null},
+            ];
+            return(<div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(150px,1fr))',gap:10,position:'relative',zIndex:1}}>
+              {tiles.map(t=>{
+                const img=resolveArt(t.tgt);
+                const act=screen===t.tgt;
+                return(<div key={t.tgt}
+                  onClick={()=>{setScreen(t.tgt);navClearModals();}}
+                  style={{position:'relative',cursor:'pointer',borderRadius:8,overflow:'hidden',aspectRatio:'16/10',
+                    border:`2px solid ${act?(t.color||TH.gold)+'aa':TH.border}`,
+                    backgroundImage:img?`url(${img})`:`linear-gradient(135deg,${(t.color||TH.gold)+'22'},${TH.panelLight})`,
+                    backgroundSize:'cover',backgroundPosition:'center',
+                    boxShadow:act?`0 0 14px ${(t.color||TH.gold)+'55'}`:'0 2px 6px rgba(0,0,0,0.4)',
+                    transition:'transform .15s, box-shadow .15s'}}
+                  onMouseEnter={e=>{e.currentTarget.style.transform='translateY(-2px)';e.currentTarget.style.boxShadow=`0 0 16px ${(t.color||TH.gold)+'66'}`;}}
+                  onMouseLeave={e=>{e.currentTarget.style.transform='none';e.currentTarget.style.boxShadow=act?`0 0 14px ${(t.color||TH.gold)+'55'}`:'0 2px 6px rgba(0,0,0,0.4)';}}>
+                  {/* Bottom legibility gradient + label band */}
+                  <div style={{position:'absolute',left:0,right:0,bottom:0,
+                    background:'linear-gradient(0deg,rgba(0,0,0,0.88) 0%,rgba(0,0,0,0.55) 55%,transparent 100%)',
+                    padding:'24px 10px 8px',color:TH.textBright}}>
+                    <div style={{fontSize:15,fontWeight:'bold',color:act?(t.color||TH.gold):TH.textBright,textShadow:'0 2px 4px #000',lineHeight:1.15}}>{t.label}</div>
+                    {t.sub&&<div style={{fontSize:12,color:TH.textDim,textShadow:'0 1px 3px #000',marginTop:1}}>{t.sub}</div>}
+                  </div>
+                  {/* Note badge (corner pip) */}
+                  {t.note&&<div style={{position:'absolute',top:6,right:6,background:TH.gold,color:TH.bg,fontSize:12,fontWeight:'bold',borderRadius:10,padding:'2px 6px',minWidth:18,textAlign:'center',boxShadow:'0 1px 4px rgba(0,0,0,0.5)'}}>{t.note}</div>}
+                </div>);
+              })}
+            </div>);
+          })()}
+        </div>
+
+        {/* Milestone notification popup */}
+        {newMilestone&&<div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'#000000aa',zIndex:9999,display:'flex',alignItems:'center',justifyContent:'center'}} onClick={()=>setNewMilestone(null)}>
+          <div style={{background:TH.panel,border:`2px solid ${TH.gold}`,borderRadius:10,padding:'24px 32px',textAlign:'center',maxWidth:340,boxShadow:`0 0 40px ${TH.goldDim}`}} onClick={e=>e.stopPropagation()}>
+            <div style={{fontSize:15,color:TH.textDim,letterSpacing:2,textTransform:'uppercase',marginBottom:4}}>Milestone Reached</div>
+            <div style={{fontSize:32,marginBottom:4}}>{newMilestone.icon}</div>
+            <div style={{fontSize:20,color:TH.goldBright,marginBottom:8}}>{newMilestone.name}</div>
+            <div style={{fontSize:16,color:TH.text,lineHeight:1.6,marginBottom:14}}>{newMilestone.desc}</div>
+            <button style={S.btn('gold')} onClick={()=>setNewMilestone(null)}>Continue your journey</button>
+          </div>
+        </div>}
+
+        {/* Milestones earned */}
+        {milestones.length>0&&<div style={{...S.card,marginTop:8}} className={isWsOpen('ws1')?'':'ws-closed'}>
+          {wsHead('ws1',<>🏆 Milestones ({milestones.length}/{Object.keys(MILESTONES).length})</>)}
+          <div style={{display:'flex',flexWrap:'wrap',gap:6}}>
+            {milestones.map(mid=>{const m=MILESTONES[mid];return m?<div key={mid} style={{...S.tag,border:`1px solid ${TH.goldDim}`,background:TH.panelAlt}}>
+              <span>{m.icon}</span><span style={{color:TH.gold,fontSize:14}}>{m.name}</span>
+            </div>:null;})}
+            {Object.keys(MILESTONES).filter(mid=>!milestones.includes(mid)).map(mid=>{const m=MILESTONES[mid];return m?<div key={mid} style={{...S.tag,opacity:0.35}}>
+              <span>❔</span><span style={{fontSize:14}}>???</span>
+            </div>:null;})}
+          </div>
+        </div>}
+
+        {/* ═══ SETTLEMENT INVESTMENT ═══ */}
+        {level>=4&&<div style={{...S.card,borderColor:'#80a060'}}>
+          <div style={{...S.cT}}>🏘️ Settlement Investment</div>
+          <div style={{fontSize:13,color:TH.textDim,marginBottom:8}}>Invest coin and materials to develop the settlement. Projects provide permanent bonuses.</div>
+          {/* ─── Settlement Skyline Art ─── */}
+          {(()=>{
+            const cp=settlementProjects||[];const bc=settlementConstruction;const bcId=bc?.projectId;
+            const has=id=>cp.includes(id);const bldgCheck=id=>bcId===id;
+            const locC=zui.skyline;
+            const bldg=(id,col)=>has(id)?col:bldgCheck(id)?col+'55':'transparent';
+            const strk=(id)=>has(id)?'none':bldgCheck(id)?TH.gold+'66':'none';
+            const scaff=(id)=>bldgCheck(id);
+            return <svg viewBox="0 0 360 130" style={{width:'100%',maxWidth:400,display:'block',margin:'0 auto 10px',borderRadius:8,overflow:'hidden'}}>
+              <defs><linearGradient id="sky_g" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={locC.sky1}/><stop offset="100%" stopColor={locC.sky2+'44'}/></linearGradient></defs>
+              <rect width="360" height="130" fill="url(#sky_g)"/>
+              {[40,90,150,200,260,310].map((x,i)=><circle key={i} cx={x} cy={8+i*4} r={0.8} fill="#ffffff66"/>)}
+              <rect x="0" y="95" width="360" height="35" fill={locC.ground}/><rect x="0" y="98" width="360" height="32" fill={locC.groundDk}/>
+              {locC.water&&<rect x="0" y="110" width="360" height="20" fill={locC.water} opacity="0.4"/>}
+              {(has('sp_roads')||bldgCheck('sp_roads'))&&<><rect x="0" y="93" width="360" height="6" fill={bldg('sp_roads','#8a7a60')} stroke={strk('sp_roads')} strokeWidth="0.5" strokeDasharray={scaff('sp_roads')?'3,2':'none'}/>{has('sp_roads')&&[30,80,130,180,230,280,330].map((x,i)=><rect key={i} x={x} y="94.5" width="8" height="1" fill="#a0906888" rx="0.5"/>)}</>}
+              {(has('sp_walls')||bldgCheck('sp_walls'))&&<><rect x="0" y="55" width="12" height="45" fill={bldg('sp_walls','#706050')} stroke={strk('sp_walls')} strokeWidth="0.5" strokeDasharray={scaff('sp_walls')?'3,2':'none'} rx="1"/><rect x="348" y="55" width="12" height="45" fill={bldg('sp_walls','#706050')} stroke={strk('sp_walls')} strokeWidth="0.5" strokeDasharray={scaff('sp_walls')?'3,2':'none'} rx="1"/>{has('sp_walls')&&<><rect x="0" y="52" width="16" height="6" fill="#807060" rx="1"/><rect x="344" y="52" width="16" height="6" fill="#807060" rx="1"/>{[2,6,10].map(i=><rect key={i} x={i*1.2+1} y="54" width="2" height="3" fill="#908070" rx="0.5"/>)}{[348,352,356].map((x,i)=><rect key={i} x={x} y="54" width="2" height="3" fill="#908070" rx="0.5"/>)}</>}</>}
+              {(has('sp_garden')||bldgCheck('sp_garden'))&&<g><rect x="18" y="85" width="40" height="10" fill={bldg('sp_garden','#405030')} stroke={strk('sp_garden')} strokeWidth="0.5" strokeDasharray={scaff('sp_garden')?'3,2':'none'} rx="2"/>{has('sp_garden')&&<>{[22,30,38,46].map((x,i)=><g key={'f'+i}><circle cx={x} cy={82} r={3} fill={['#60a040','#80c050','#40a060','#70b040'][i]} opacity="0.85"/><rect x={x-0.5} y={85} width={1} height={5} fill="#506030"/></g>)}{[25,34,43,50].map((x,i)=><circle key={'b'+i} cx={x} cy={84} r={1.5} fill={['#e08080','#e0e060','#c080e0','#80c0e0'][i]}/>)}</>}</g>}
+              {(has('sp_market')||bldgCheck('sp_market'))&&<g>{[{x:65,c:'#c06030'},{x:85,c:'#3060c0'},{x:105,c:'#c0a030'}].map((s,i)=><g key={i}><rect x={s.x} y="75" width="16" height="20" fill={bldg('sp_market','#806050')} stroke={strk('sp_market')} strokeWidth="0.5" strokeDasharray={scaff('sp_market')?'3,2':'none'} rx="1"/>{has('sp_market')&&<><polygon points={`${s.x-2},73 ${s.x+8},68 ${s.x+18},73`} fill={s.c} opacity="0.8"/><rect x={s.x+3} y="82" width="10" height="3" fill="#a09070" rx="0.5"/></>}</g>)}</g>}
+              {(has('sp_academy')||bldgCheck('sp_academy'))&&<g><rect x="130" y="65" width="30" height="30" fill={bldg('sp_academy','#706080')} stroke={strk('sp_academy')} strokeWidth="0.5" strokeDasharray={scaff('sp_academy')?'3,2':'none'} rx="1"/>{has('sp_academy')&&<><ellipse cx="145" cy="65" rx="16" ry="10" fill="#807090"/><circle cx="145" cy="56" r="2" fill={TH.gold||'#c0a040'}/><rect x="138" y="78" width="6" height="12" fill="#50405088" rx="1"/><rect x="148" y="78" width="6" height="12" fill="#50405088" rx="1"/></>}</g>}
+              {(has('sp_guild')||bldgCheck('sp_guild'))&&<g><rect x="170" y="60" width="35" height="35" fill={bldg('sp_guild','#705040')} stroke={strk('sp_guild')} strokeWidth="0.5" strokeDasharray={scaff('sp_guild')?'3,2':'none'} rx="1"/>{has('sp_guild')&&<><polygon points="168,60 187,48 207,60" fill="#906050"/><rect x="183" y="75" width="8" height="15" fill="#40302088" rx="1"/><rect x="173" y="68" width="6" height="6" fill="#c0a04030" rx="0.5"/><rect x="195" y="68" width="6" height="6" fill="#c0a04030" rx="0.5"/></>}</g>}
+              {(has('sp_library')||bldgCheck('sp_library'))&&<g><rect x="215" y="55" width="30" height="40" fill={bldg('sp_library','#605070')} stroke={strk('sp_library')} strokeWidth="0.5" strokeDasharray={scaff('sp_library')?'3,2':'none'} rx="1"/>{has('sp_library')&&<><rect x="213" y="52" width="34" height="5" fill="#706080" rx="1"/>{[219,225,231,237].map((x,i)=><rect key={i} x={x} y="57" width="2" height="35" fill="#908090" rx="0.5"/>)}<polygon points="213,52 230,44 247,52" fill="#807090"/></>}</g>}
+              {(has('sp_depot')||bldgCheck('sp_depot'))&&<g><rect x="255" y="70" width="28" height="25" fill={bldg('sp_depot','#706050')} stroke={strk('sp_depot')} strokeWidth="0.5" strokeDasharray={scaff('sp_depot')?'3,2':'none'} rx="1"/>{has('sp_depot')&&<><polygon points="253,70 269,62 285,70" fill="#806050"/><rect x="265" y="80" width="8" height="12" fill="#40302088" rx="1"/><line x1="286" y1="65" x2="286" y2="95" stroke="#908070" strokeWidth="2"/><line x1="283" y1="68" x2="286" y2="65" stroke="#908070" strokeWidth="1.5"/><line x1="286" y1="68" x2="292" y2="72" stroke="#80706088" strokeWidth="1"/></>}</g>}
+              {(has('sp_watchtower')||bldgCheck('sp_watchtower'))&&<g><rect x="300" y="45" width="14" height="50" fill={bldg('sp_watchtower','#807060')} stroke={strk('sp_watchtower')} strokeWidth="0.5" strokeDasharray={scaff('sp_watchtower')?'3,2':'none'} rx="1"/>{has('sp_watchtower')&&<><rect x="298" y="42" width="18" height="5" fill="#908070" rx="1"/><rect x="302" y="50" width="4" height="4" fill="#c0a04040" rx="0.5"/><rect x="308" y="50" width="4" height="4" fill="#c0a04040" rx="0.5"/><polygon points="298,42 307,35 316,42" fill="#a09070"/>{has('sp_walls')&&<circle cx="307" cy="37" r="1.5" fill="#c0a040" opacity="0.8"/>}</>}</g>}
+              {(has('sp_monument')||bldgCheck('sp_monument'))&&<g><rect x="185" y="38" width="6" height="55" fill={bldg('sp_monument','#a0906888')} stroke={strk('sp_monument')} strokeWidth="0.5" strokeDasharray={scaff('sp_monument')?'3,2':'none'} rx="1"/>{has('sp_monument')&&<><polygon points="183,38 188,28 193,38" fill={TH.gold||'#c0a040'}/><circle cx="188" cy="30" r="2.5" fill={TH.gold||'#c0a040'} opacity="0.9"/><rect x="183" y="88" width="10" height="5" fill="#807060" rx="1"/><rect x="181" y="91" width="14" height="3" fill="#706050" rx="1"/></>}</g>}
+              {bc&&<g><rect x="130" y="118" width="100" height="12" fill="#00000066" rx="3"/><rect x="131" y="119" width={Math.max(2,98*(1-bc.daysLeft/((SETTLEMENT_PROJECTS.find(p=>p.id===bc.projectId)?.buildDays)||10)))} height="10" fill={TH.gold||'#c0a040'} rx="2" opacity="0.7"/><text x="180" y="127" textAnchor="middle" fill="white" fontSize="8" fontFamily="monospace">🏗️ {SETTLEMENT_PROJECTS.find(p=>p.id===bc.projectId)?.name} — {bc.daysLeft}d</text></g>}
+              {cp.length===0&&!bc&&<text x="180" y="75" textAnchor="middle" fill="#ffffff44" fontSize="11" fontFamily="inherit">Your settlement awaits...</text>}
+            </svg>;
+          })()}
+          {(()=>{
+            const completed=settlementProjects||[];
+            const building=settlementConstruction;
+            const buildingProj=building?SETTLEMENT_PROJECTS.find(p=>p.id===building.projectId):null;
+            const totalInvested=SETTLEMENT_PROJECTS.filter(p=>completed.includes(p.id)).reduce((s,p)=>s+p.cost.gold,0);
+            return <>
+              {completed.length>0&&<div style={{marginBottom:8}}>
+                <div style={{fontSize:14,color:TH.green,marginBottom:4}}>✅ Completed ({completed.length}/{SETTLEMENT_PROJECTS.length})</div>
+                <div style={{display:'flex',flexWrap:'wrap',gap:4}}>
+                  {completed.map(pid=>{const p=SETTLEMENT_PROJECTS.find(x=>x.id===pid);return p?
+                    <span key={pid} style={{...S.tag,borderColor:TH.green+'66',background:tapInfo==='sp_'+pid?TH.green+'20':TH.green+'10',fontSize:13,cursor:'pointer'}} onClick={()=>setTapInfo(tapInfo==='sp_'+pid?null:'sp_'+pid)}>
+                      {p.icon} {p.name}{tapInfo==='sp_'+pid&&<div style={{fontSize:11,color:TH.textDim,marginTop:2}}>{p.effectDesc}</div>}
+                    </span>:null;})}
+                </div>
+                <div style={{fontSize:12,color:TH.textDim,marginTop:2}}>Total invested: {fmtMoney(totalInvested)}</div>
+              </div>}
+              {building&&buildingProj&&<div style={{padding:'8px',background:TH.gold+'08',borderRadius:4,border:'1px solid '+TH.gold+'33',marginBottom:8}}>
+                <div style={{fontSize:15,color:TH.gold,fontWeight:'bold'}}>🏗️ Under Construction: {buildingProj.icon} {buildingProj.name}</div>
+                <div style={{display:'flex',alignItems:'center',gap:6,margin:'4px 0'}}>
+                  <div style={{flex:1,height:8,background:TH.panel,borderRadius:4,overflow:'hidden'}}>
+                    <div style={{height:'100%',width:Math.floor((1-building.daysLeft/buildingProj.buildDays)*100)+'%',background:TH.gold,borderRadius:4,transition:'width 0.3s'}}/>
+                  </div>
+                  <span style={{fontSize:13,color:TH.gold}}>{building.daysLeft} days left</span>
+                </div>
+                <div style={{fontSize:13,color:TH.textDim}}>{buildingProj.effectDesc}</div>
+                <div style={{fontSize:12,color:TH.textDim,marginTop:2}}>
+                  Staff assigned: {building.staffAssigned||0} (each = -1 day/morning)
+                  {hiredAppr.filter(a=>!apprTasks[a.id]).length>(building.staffAssigned||0)&&(building.staffAssigned||0)<3&&
+                    <button style={{...S.btn('def'),fontSize:11,padding:'1px 6px',marginLeft:6}} onClick={()=>{
+                      setSettlementConstruction(prev=>prev?{...prev,staffAssigned:(prev.staffAssigned||0)+1}:null);
+                    }}>+ Assign Staff</button>}
+                  {(building.staffAssigned||0)>0&&
+                    <button style={{...S.btn('dim'),fontSize:11,padding:'1px 6px',marginLeft:4}} onClick={()=>{
+                      setSettlementConstruction(prev=>prev?{...prev,staffAssigned:Math.max(0,(prev.staffAssigned||0)-1)}:null);
+                    }}>- Remove</button>}
+                </div>
+              </div>}
+              {/* Available/upcoming projects — always visible so you can plan ingredient gathering */}
+              {SETTLEMENT_PROJECTS.filter(p=>!completed.includes(p.id)&&(!building||p.id!==building.projectId)).length>0&&<div>
+                <div style={{fontSize:14,color:TH.gold,marginBottom:6}}>{building?'📋 Upcoming Projects':'Available Projects'}</div>
+                {SETTLEMENT_PROJECTS.filter(p=>!completed.includes(p.id)&&(!building||p.id!==building.projectId)).map(p=>{
+                  const meetsReq=!p.req||completed.includes(p.req);
+                  const reqProj=p.req?SETTLEMENT_PROJECTS.find(x=>x.id===p.req):null;
+                  const matCostObj=p.matCost?.[gameLocation]||{};
+                  const canAffordGold=gold>=p.cost.gold;
+                  const canAffordMats=Object.entries(matCostObj).every(([id,q])=>(inv[id]||0)>=q);
+                  const canBuild=!building&&meetsReq&&canAffordGold&&canAffordMats;
+                  return <div key={p.id} style={{padding:'8px 10px',background:meetsReq?TH.panelAlt:TH.panel,borderRadius:6,marginBottom:6,border:'1px solid '+(canBuild?TH.green+'44':meetsReq?TH.border:TH.border+'66'),opacity:meetsReq?1:0.5}}>
+                    <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                      <span style={{fontSize:16,color:TH.textBright,fontWeight:'bold'}}>{p.icon} {p.name}</span>
+                      <span style={{fontSize:13,color:canAffordGold?TH.gold:TH.red}}>{fmtMoney(p.cost.gold)} · {p.buildDays} days</span>
+                    </div>
+                    <div style={{fontSize:13,color:TH.textDim,margin:'3px 0'}}>{p.desc}</div>
+                    <div style={{fontSize:13,color:TH.green,margin:'2px 0'}}>{p.effectDesc}</div>
+                    {!meetsReq&&<div style={{fontSize:12,color:TH.red}}>🔒 Requires: {reqProj?.icon} {reqProj?.name}</div>}
+                    {meetsReq&&<div style={{display:'flex',flexWrap:'wrap',gap:3,margin:'4px 0'}}>
+                      {Object.entries(matCostObj).map(([id,q])=>{const have=(inv[id]||0)>=q;
+                        return <span key={id} title={INGR[id]?.name||id} style={{fontSize:13,color:have?TH.green:TH.red,cursor:'help'}}>
+                          {INGR[id]?.icon||id} {inv[id]||0}/{q}
+                        </span>;})}
+                    </div>}
+                    {meetsReq&&!building&&<button style={{...S.btn(canBuild?'gold':'dim'),fontSize:14,padding:'4px 12px',marginTop:4,width:'100%'}}
+                      disabled={!canBuild}
+                      onClick={()=>{
+                        setGold(g=>g-p.cost.gold);
+                        Object.entries(matCostObj).forEach(([id,q])=>modInv(id,-q));
+                        setSettlementConstruction({projectId:p.id,daysLeft:p.buildDays,staffAssigned:0});
+                        addLog(`🏗️ Broke ground on ${p.icon} ${p.name}! ${p.buildDays} days to complete.`,'quest');
+                      }}>
+                      {canBuild?'🏗️ Begin Construction':'Gather Resources'}
+                    </button>}
+                    {meetsReq&&building&&<div style={{fontSize:12,color:TH.textDim,marginTop:4,fontStyle:'italic'}}>🏗️ Construction slot in use — finish current project first</div>}
+                  </div>;})}
+              </div>}
+            </>;
+          })()}
+        </div>}
+
+        {/* Journal on map — hidden on desktop where sidebar shows */}
+        <div className="cv-journal-mobile" style={{display:'none'}}>
+        <div style={{...S.card,marginTop:4,overflowAnchor:'none'}} className={isWsOpen('ws2')?'':'ws-closed'}>{wsHead('ws2',<>📜 Journal</>)}
+          <div style={S.logBox}>{log.slice(-30).map((e,i)=><div key={i} style={{color:LC[e.type]||TH.text}}>{e.text}</div>)}</div>
+        </div>
+        </div>
+      </>}
+
+      {/* ═══════════ MARKET ═══════════ */}
+      {screen==='market'&&<>
+        <BackBar title={zui.marketTitle} icon="🛒"/>
+        <div style={S.card}>
+          <div style={{...S.row,marginBottom:8}}>
+            <button style={S.btn(showShop?'gold':'def')} onClick={()=>{setShowShop(true);setDlgNpc(null);setQuestDlg(null);}}>🛒 Shop</button>
+            {zui.marketNpcs.map(([n,label])=><button key={n} style={S.btn(dlgNpc===n?'gold':'def')} onClick={()=>openNpc(n)}>💬 {label}</button>)}
+          </div>
+          {showShop&&<div>
+            <div style={{fontSize:16,color:TH.gold,marginBottom:4}}>Buy Ingredients{dayFlags.includes('bargain_day')?' — 🏷️ Half Price Today!':''}</div>
+            {[...SHOP_I].filter(s=>!s.loc||s.loc===gameLocation).sort((a,b)=>(INGR[a.id]?.name||'').localeCompare(INGR[b.id]?.name||'')).map(item=>{let bp=getBuyPrice(Math.max(1,item.price-Math.floor(getFeatureVal('buyDiscount')*5)));if(dayFlags.includes('bargain_day'))bp=Math.max(1,Math.floor(bp/2));const have=inv[item.id]||0;return(
+              <div key={item.id} style={{display:'flex',alignItems:'center',gap:6,padding:'3px 0',fontSize:16}}>
+                <span>{INGR[item.id]?.icon} {INGR[item.id]?.name}</span>
+                <span style={{fontSize:14,color:TH.textDim}}>×{have}</span>
+                <span style={{color:TH.gold,marginLeft:'auto'}}>{fmtMoney(bp)}</span>
+                <button style={S.btn(gold>=bp?'def':'dim')} onClick={()=>{if(gold>=bp){setGold(g=>g-bp);modInv(item.id,1);}}} disabled={gold<bp}>+1</button>
+                <button style={S.btn(gold>=bp*5?'def':'dim')} onClick={()=>{const n=Math.min(5,Math.floor(gold/bp));if(n>0){setGold(g=>g-bp*n);modInv(item.id,n);}}} disabled={gold<bp*5}>+5</button>
+              </div>);})}
+            {procureItems.length>0&&<>
+              <div style={{fontSize:16,color:TH.purple,marginTop:8,marginBottom:4}}>📦 Rare Finds (today only)</div>
+              {[...procureItems].sort((a,b)=>(a.name||'').localeCompare(b.name||'')).map(item=>{let bp=getBuyPrice(Math.max(1,item.price-Math.floor(getFeatureVal('buyDiscount')*5)));const have=inv[item.id]||0;return(
+                <div key={item.id} style={{display:'flex',alignItems:'center',gap:6,padding:'3px 0',fontSize:16,background:TH.purple+'08',borderRadius:3,paddingLeft:4}}>
+                  <span>{item.icon} {item.name}</span>
+                  <span style={{fontSize:14,color:TH.textDim}}>×{have}</span>
+                  <span style={{color:TH.purple,marginLeft:'auto'}}>{fmtMoney(bp)}</span>
+                  <button style={S.btn(gold>=bp?'def':'dim')} onClick={()=>{if(gold>=bp){setGold(g=>g-bp);modInv(item.id,1);}}} disabled={gold<bp}>+1</button>
+                </div>);})}</>}            {Object.entries(pots).filter(([,q])=>q>0).length>0&&<div style={{fontSize:16,color:TH.gold,marginTop:8,marginBottom:4}}>Sell Potions</div>}
+            {Object.entries(pots).filter(([,q])=>q>0).map(([id,qty])=>{const baseId=getBaseRecipeId(id);const r=RECIPES.find(r=>r.id===baseId);if(!r)return null;const pq=getPotQuality(id);const qT=QUALITY[pq]||QUALITY.std;
+              const _isFresh=isFreshPot(id);const freshMult=_isFresh?getFreshMult(prestigeLevels.wildcrafter||0):1;
+              const sp=getPotionSellPrice(id);return(
+              <div key={id} style={{display:'flex',alignItems:'center',gap:6,padding:'3px 0',fontSize:16}}>
+                <span>{r.icon}{r.name}{qT.icon?' '+qT.icon:''}{_isFresh?' 🌿':''} ×{qty}</span>{_isFresh&&<span style={{fontSize:11,color:'#60a040',fontWeight:'bold'}}>Fresh {freshMult}×</span>}<span style={{color:TH.gold,marginLeft:'auto'}}>{fmtMoney(sp)} ea</span>
+                <button style={S.btn()} onClick={()=>sellPotion(id,1,sp,r)}>Sell 1</button>
+                {qty>1&&<button style={S.btn()} onClick={()=>sellPotion(id,qty,sp,r)}>All ({fmtMoney(sp*qty)})</button>}
+              </div>);})}
+            {Object.entries(inv).filter(([,q])=>q>0).length>0&&<div style={{fontSize:16,color:TH.gold,marginTop:8,marginBottom:4}}>Sell Ingredients</div>}
+            {Object.entries(inv).filter(([,q])=>q>0).map(([id,qty])=>{const ig=INGR[id];if(!ig)return null;const sp=getIngrSellPrice(id);
+              const spThresh=getSpoilThreshold(id);return(
+              <div key={id} style={{display:'flex',alignItems:'center',gap:6,padding:'3px 0',fontSize:16}}>
+                <span>{ig.icon}{ig.name} ×{qty}</span><span style={{color:TH.gold,marginLeft:'auto'}}>{fmtMoney(sp)} ea</span>
+                <button style={S.btn()} onClick={()=>{modInv(id,-1);setGold(g=>g+sp);addLog(`Sold ${ig.icon}${ig.name}. (+${fmtMoney(sp)})`,'info');}}>Sell 1</button>
+                {qty>spThresh&&<button style={{...S.btn('green'),fontSize:13}} onClick={()=>{const excess=qty-spThresh;modInv(id,-excess);setGold(g=>g+sp*excess);addLog(`Sold ${excess}× ${ig.icon}${ig.name} for ${fmtMoney(sp*excess)} (trimmed to safe storage).`,'info');}}>Safe ({qty-spThresh}×{fmtMoney(sp)})</button>}
+                {qty>1&&<button style={S.btn()} onClick={()=>{modInv(id,-qty);setGold(g=>g+sp*qty);addLog(`Sold ${qty}× ${ig.icon}${ig.name}. (+${fmtMoney(sp*qty)})`,'info');}}>All ({fmtMoney(sp*qty)})</button>}
+              </div>);})}
+          </div>}
+          {(dlgNpc==='brenna'||dlgNpc==='sola'||dlgNpc==='razak'||dlgNpc==='mako'||dlgNpc==='finn'||dlgNpc==='sr_kael')&&!showShop&&NPCS[dlgNpc]&&<NpcDlg npc={{...NPCS[dlgNpc],id:dlgNpc}} {...{dlgLine,setDlgLine,setDlgNpc,availQ,aQ,acceptQ,compQ,qP,qObj,S,questDlg,setQuestDlg,openNpc}}/>}
+        </div>
+        {/* ═══ INGREDIENT CONTRACTS ═══ */}
+        {level>=5&&<div style={{...S.card,borderColor:'#6080a0'}}>
+          <div style={{...S.cT}}>📦 Ingredient Contracts</div>
+          <div style={{fontSize:13,color:TH.textDim,marginBottom:8}}>Commission suppliers to deliver ingredients daily. Gold buys you time.</div>
+          {(()=>{
+            const tier=getContractTier(level,classLevels,fRep);const tierInfo=CONTRACT_TIERS[tier];
+            const maxSlots=getContractSlots(level,classLevels);
+            const usedSlots=ingredientContracts.length;
+            const allForaged=new Set();Object.keys(inv).forEach(id=>{if(INGR[id])allForaged.add(id);});
+            locRegions.filter(r=>level>=regUnlock(r)).forEach(r=>r.ingr.forEach(id=>allForaged.add(id)));
+            const availIngr=[...allForaged].filter(id=>{
+              const ig=INGR[id];if(!ig)return false;
+              if(ig.val>tierInfo.maxVal)return false;
+              if(ingredientContracts.find(c=>c.ingrId===id))return false;
+              return true;
+            }).sort((a,b)=>(INGR[a]?.val||0)-(INGR[b]?.val||0));
+            const totalDailyCost=ingredientContracts.reduce((s,c)=>s+c.dailyCost,0);
+            return <>
+              <div style={{fontSize:13,marginBottom:6}}>
+                <span style={{color:TH.textBright}}>Tier: <b style={{color:TH.gold}}>{tierInfo.label}</b></span>
+                <span style={{color:TH.textDim,marginLeft:8}}>Max value: {tierInfo.maxVal===999?'Any':fmtMoney(tierInfo.maxVal)}</span>
+                <span style={{color:TH.textDim,marginLeft:8}}>Max qty: {tierInfo.maxQty}/day</span>
+                <span style={{color:totalDailyCost>0?TH.red:TH.textDim,marginLeft:8}}>Daily cost: {fmtMoney(totalDailyCost)}</span>
+              </div>
+              <div style={{fontSize:14,color:TH.gold,marginBottom:4}}>Active Contracts ({usedSlots}/{maxSlots})</div>
+              {ingredientContracts.length===0&&<div style={{fontSize:13,color:TH.textDim,fontStyle:'italic',padding:'4px 0'}}>No active contracts. Set one up below.</div>}
+              {ingredientContracts.map((c,i)=>{const ig=INGR[c.ingrId];return ig?<div key={i} style={{display:'flex',alignItems:'center',gap:8,padding:'4px 8px',background:TH.bg,borderRadius:4,marginBottom:3,border:'1px solid '+TH.border}}>
+                <span style={{fontSize:16}}>{ig.icon}</span>
+                <span style={{flex:1,color:TH.textBright}}>{ig.name} <span style={{color:TH.textDim}}>×{c.qty}/day</span></span>
+                <span style={{color:TH.red,fontSize:13}}>{fmtMoney(-c.dailyCost)}/day</span>
+                <button style={{...S.btn('dim'),fontSize:12,padding:'2px 6px'}} onClick={()=>{
+                  setIngredientContracts(prev=>prev.filter((_,j)=>j!==i));
+                  addLog(`📦 Cancelled contract for ${ig.icon}${ig.name}.`,'info');
+                }}>✕ Cancel</button>
+              </div>:null;})}
+              {usedSlots<maxSlots&&<div style={{marginTop:8,padding:'8px',background:TH.panelAlt,borderRadius:4,border:'1px solid '+TH.border}}>
+                <div style={{fontSize:14,color:TH.gold,marginBottom:4}}>📋 New Contract</div>
+                <div style={{display:'flex',gap:4,flexWrap:'wrap',marginBottom:6}}>
+                  {availIngr.slice(0,24).map(id=>{const ig=INGR[id];const setupFee=Math.floor(ig.val*3);const dailyPer=Math.max(1,Math.floor(ig.val*0.4));
+                    return <button key={id} style={{...S.tag,cursor:'pointer',border:'1px solid '+TH.borderLight,background:TH.panelLight,fontSize:13}}
+                      onClick={()=>{
+                        const qty=Math.min(tierInfo.maxQty,3);const cost=qty*dailyPer;const fee=setupFee;
+                        if(gold<fee){addLog('Not enough coin for the setup fee ('+fmtMoney(fee)+').','error');return;}
+                        setGold(g=>g-fee);
+                        setIngredientContracts(prev=>[...prev,{id:'ic_'+Date.now(),ingrId:id,qty,dailyCost:cost,setupDay:day}]);
+                        addLog(`📦 Contracted ${ig.icon}${ig.name}: ${qty}/day for ${fmtMoney(cost)}/day (setup: ${fmtMoney(fee)}).`,'info');
+                      }}>
+                      {ig.icon} {ig.name} <span style={{color:TH.textDim,fontSize:11}}>({fmtMoney(setupFee)} setup · {fmtMoney(dailyPer)}/ea/day)</span>
+                    </button>;})}
+                </div>
+                {availIngr.length===0&&<div style={{fontSize:13,color:TH.textDim}}>No eligible ingredients at your tier. Forage new regions or upgrade tier.</div>}
+                {availIngr.length>24&&<div style={{fontSize:12,color:TH.textDim}}>Showing first 24 — higher tiers unlock rarer ingredients.</div>}
+              </div>}
+            </>;
+          })()}
+        </div>}
+      </>}
+
+      {/* ═══════════ TAVERN ═══════════ */}
+      {screen==='tavern'&&<>
+        <BackBar title={zui.tavern} icon="🍺"/>
+        <div style={S.card}>
+          <div style={{...S.row,marginBottom:8}}>
+            {zui.tavernNpcs.filter(n=>NPCS[n]).map(n=><button key={n} style={S.btn(dlgNpc===n?'gold':'def')} onClick={()=>openNpc(n)}>{NPCS[n].icon} {NPCS[n].name}</button>)}
+          </div>
+          {dlgNpc&&(NPCS[dlgNpc]?.loc==='chapel'||NPCS[dlgNpc]?.loc==='tavern')&&<NpcDlg npc={{...NPCS[dlgNpc],id:dlgNpc}} {...{dlgLine,setDlgLine,setDlgNpc,availQ,aQ,acceptQ,compQ,qP,qObj,S,questDlg,setQuestDlg,openNpc}}/>}
+          {!dlgNpc&&<div style={{color:TH.textDim,fontSize:15,textAlign:'center',padding:12,fontStyle:'italic'}}>The warm hearth crackles softly. Choose someone to speak with.</div>}
+        </div>
+      </>}
+
+      {/* ═══════════ WORLD MAP ═══════════ */}
+      {screen==='worldmap'&&<>
+        <BackBar title="The Wilds" icon="🗺️"/>
+        {/* ── Threat Bar ── */}
+        {day>3&&locThreatIds.some(tid=>(threats[tid]||0)>0)&&<div style={{...S.card,padding:'6px 10px',borderColor:'#cc444444'}}>
+          <div style={{fontSize:14,fontWeight:'bold',color:TH.textBright,marginBottom:4}}>⚔️ External Threats</div>
+          <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
+            {locThreatIds.map(tid=>{const val=threats[tid]||0;const tf=THREAT_FACTIONS[tid];
+              return <div key={tid} style={{flex:'1 1 120px',minWidth:100}}>
+                <div style={{fontSize:13,color:tf.color,marginBottom:2}}>{tf.icon} {tf.name}</div>
+                <div style={{height:8,background:TH.bg,borderRadius:4,border:'1px solid '+TH.border,overflow:'hidden'}}>
+                  <div style={{height:'100%',width:val+'%',background:getThreatColor(val),borderRadius:4,transition:'width 0.3s'}}/>
+                </div>
+                <div style={{fontSize:11,color:getThreatColor(val),textAlign:'right'}}>{getThreatLabel(val)} ({val})</div>
+              </div>;})}
+          </div>
+          {defenseQuests.length>0&&<div style={{marginTop:4,borderTop:'1px solid '+TH.border,paddingTop:4}}>
+            <div style={{fontSize:13,fontWeight:'bold',color:TH.gold,marginBottom:2}}>🛡️ Defense Requests</div>
+            {defenseQuests.map(dq=>{
+              const {tf,have,canFill}=dqStatus(dq);
+              return <div key={dq.id} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'2px 4px',marginBottom:2,fontSize:13,background:canFill?TH.greenDim:TH.panel,borderRadius:3}}>
+                <span>{dq.desc} <span style={{color:TH.textDim}}>({have}/{dq.qty})</span> <span style={{color:TH.gold}}>→ {tf.icon}-{dq.reward}</span></span>
+                <button style={{...S.btn(canFill?'gold':'dim'),fontSize:11,padding:'1px 5px'}} disabled={!canFill} onClick={()=>completeDefenseQuest(dq.id)}>Fulfill</button>
+              </div>;})}
+          </div>}
+          {getFeatureVal('preemptiveStrike')>0&&energy>=50&&<div style={{marginTop:4,borderTop:'1px solid '+TH.border,paddingTop:4}}>
+            <div style={{fontSize:13,fontWeight:'bold',color:'#c05050',marginBottom:2}}>⚔️ Preemptive Strike (⚡50 Energy)</div>
+            <div style={{display:'flex',gap:4,flexWrap:'wrap'}}>
+              {locThreatIds.filter(tid=>(threats[tid]||0)>=10).map(tid=>{const tf=THREAT_FACTIONS[tid];
+                return <button key={tid} style={{...S.btn('def'),fontSize:12,padding:'2px 8px',background:'#c0505015',border:'1px solid #c0505044',color:'#c05050'}}
+                  onClick={()=>{snapshot();spendEnergy(50);/* route through spendEnergy so Early Riser / Endurance fire */ const reduc=20;setThreats(p=>{const n={...p};n[tid]=Math.max(0,(n[tid]||0)-reduc);return n;});const strikeXp=40+level*3;const strikeGold=Math.floor(15+level*2);gainXP(strikeXp);setGold(g=>g+strikeGold);addLog(`⚔️ Preemptive Strike: ${tf.icon} ${tf.name} threat reduced by ${reduc}! +${strikeXp} XP +${fmtMoney(strikeGold)}`,'quest');showResult('⚔️ Preemptive Strike!','craft',`${tf.icon} ${tf.name} threat -${reduc}\n+${strikeXp} XP  +${fmtMoney(strikeGold)}\nYour vigilance keeps the settlement safe.`);}}>{tf.icon} Strike {tf.name}</button>;})}
+            </div>
+          </div>}
+        </div>}
+        {/* ── Outposts (Siege Engineer) ── */}
+        {seLv>=1&&<div style={{...S.card,borderColor:'#80806044'}} className={isWsOpen('ws3')?'':'ws-closed'}>
+          {wsHead('ws3',<>🏗️ Outposts ({outposts.filter(op=>op.built).length}/{maxOutpostSlots} slots)</>)}
+          {outposts.map(op=>{
+            const reg=REGIONS.find(r=>r.id===op.regionId);if(!reg)return null;
+            // Mirrors newDay: diff 5+ suppresses every threat at 40%, diff 3-4 the corruption threat, else the bandit threat
+            const tfOf=i=>THREAT_FACTIONS[locThreatIds[i]];
+            const suppressTarget=reg.diff>=5?'all threats':reg.diff>=3?(tfOf(1)?.icon+' '+tfOf(1)?.name):(tfOf(0)?.icon+' '+tfOf(0)?.name);
+            const suppressAmt=reg.diff>=5?Math.floor(outpostSuppressAmt*0.4):outpostSuppressAmt;
+            return <div key={op.id} style={{padding:'6px 8px',background:TH.panelLight,borderRadius:4,marginBottom:4,border:'1px solid '+(op.built?'#80806044':TH.border)}}>
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                <span style={{fontSize:15,color:TH.textBright}}>{reg.icon} {reg.name} {op.fortress?FORTRESS_TYPES[op.fortress]?.icon+' '+FORTRESS_TYPES[op.fortress]?.name:op.built?'Outpost':'(Building...)'}</span>
+                {!op.built&&<span style={{fontSize:13,color:TH.gold}}>{op.daysLeft} day{op.daysLeft>1?'s':''} left</span>}
+              </div>
+              {op.built&&<div style={{fontSize:13,color:TH.textDim,marginTop:2}}>
+                📦 Gathers {outpostGatherAmt}/morning · 🛡️ Suppresses {suppressTarget} -{suppressAmt}/day
+                {op.recipe&&<span> · ⚗️ Auto-brew: {RECIPES.find(r=>r.id===op.recipe)?.icon}{RECIPES.find(r=>r.id===op.recipe)?.name}</span>}
+              </div>}
+              {op.built&&seLv>=3&&<div style={{marginTop:3}}>
+                <select style={{fontSize:12,background:TH.bg,color:TH.text,border:'1px solid '+TH.border,borderRadius:3,padding:'1px 4px'}}
+                  value={op.recipe||''} onChange={e=>setOutpostRecipe(op.id,e.target.value||null)}>
+                  <option value="">No auto-brew</option>
+                  {RECIPES.filter(r=>known.includes(r.id)&&!r.fieldOnly).map(r=><option key={r.id} value={r.id}>{r.icon} {r.name}</option>)}
+                </select>
+                {seLv>=5&&!op.fortress&&!outposts.some(o=>o.fortress)&&<span style={{marginLeft:6}}>
+                  {Object.entries(FORTRESS_TYPES).filter(([,ft])=>!ft.loc||ft.loc===gameLocation).map(([ftId,ft])=>
+                    <button key={ftId} style={{...S.btn(gold>=ft.cost?'gold':'dim'),fontSize:11,padding:'1px 5px',marginLeft:3}} disabled={gold<ft.cost}
+                      onClick={()=>upgradeFortress(op.id,ftId)}>{ft.icon} {ft.name} ({fmtMoney(ft.cost)})</button>
+                  )}
+                </span>}
+              </div>}
+            </div>;})}
+          {outposts.length<maxOutpostSlots&&<div style={{marginTop:4}}>
+            <select style={{fontSize:13,background:TH.bg,color:TH.text,border:'1px solid '+TH.border,borderRadius:4,padding:'3px 6px'}}
+              value="" onChange={e=>{if(e.target.value)buildOutpost(e.target.value);}}>
+              <option value="">+ Build new outpost...</option>
+              {locRegions.filter(reg=>level>=regUnlock(reg)&&!outposts.some(op=>op.regionId===reg.id)).map(reg=>{
+                const cost=50+reg.diff*25;
+                return <option key={reg.id} value={reg.id}>{reg.icon} {reg.name} (Diff {reg.diff}, {fmtMoney(cost)})</option>;
+              })}
+            </select>
+          </div>}
+        </div>}
+        <div style={S.card} className={isWsOpen('ws4')?'':'ws-closed'}>{wsHead('ws4',<>Expeditions — ⚡{energy} Energy remaining</>)}
+          {dayFlags.includes('ash_storm')&&<div style={{fontSize:14,color:TH.red,marginBottom:4,padding:'3px 6px',background:`${TH.red}10`,borderRadius:3}}>⚠️ Ash Storm — travel +25 Energy today</div>}
+          {dayFlags.includes('clear_sky')&&<div style={{fontSize:14,color:TH.green,marginBottom:4,padding:'3px 6px',background:`${TH.green}10`,borderRadius:3}}>☀️ Clear Skies — extraction DCs reduced by 2 today</div>}
+          <div style={{fontSize:14,color:TH.textDim,marginBottom:6}}>Expeditions use your remaining energy. Travel takes time — leave earlier to gather more.</div>
+          <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(130px,1fr))',gap:5}}>
+            {(()=>{
+              // Naturalist L10: highlight the region with the currently-highest yield (matches the picker's own
+              // estPerHr × gatherHours formula at the detail panel; estPerHr is constant so highest gatherHours wins).
+              // Ties resolve to the first region by definition order — deterministic, no flicker.
+              const showBest=getFeatureVal('revealHighestYieldRegion');
+              let _bestRegId=null;
+              if(showBest){
+                let bestScore=-1;
+                for(const r of locRegions){
+                  if(level<regUnlock(r)||(r.faction&&getRL(r.faction)<(r.fReq||0)))continue;
+                  const _info=getExpeditionInfo(r);
+                  if(!_info||_info.gatherHours<1)continue;
+                  if(_info.gatherHours>bestScore){bestScore=_info.gatherHours;_bestRegId=r.id;}
+                }
+              }
+              return locRegions.map(reg=>{const locked=level<regUnlock(reg)||(reg.faction&&getRL(reg.faction)<(reg.fReq||0));const sel=selHex===reg.id;
+              const info=getExpeditionInfo(reg);const canGo=!locked&&info&&info.gatherHours>=1;
+              const showReg=((prestigeLevels?.cartographer||0)>=3||getFeatureVal('revealRegionIngredients'))&&!locked;
+              const isBest=_bestRegId===reg.id;
+              // Affordability tooltip — unaffordable tiles show needed/have so the player understands the lockout at a glance.
+              const tileTitle=locked?(`Locked — requires Lv${regUnlock(reg)+1}${reg.faction?' + '+FACTIONS[reg.faction]?.name+' rep':''}`):(canGo?(`⚡${info.travelTime} travel + at least ⚡10 per forage roll`):`Need ⚡${(info?.travelTime||reg.time)+10} total (have ⚡${energy})`);
+              const rollsAvail=info?Math.floor(Math.max(0,energy-info.travelTime)/10):0;
+              return(
+              <div key={reg.id} onClick={()=>!locked&&pickHex(reg.id)} title={tileTitle} style={{padding:6,borderRadius:4,background:sel?`${reg.color}44`:TH.panelLight,border:`1px solid ${sel?TH.goldBright:isBest?'#60a060':TH.border}`,cursor:locked?'not-allowed':canGo?'pointer':'not-allowed',opacity:locked?.35:canGo?1:.5,textAlign:'center',boxShadow:isBest&&!sel?'0 0 6px #60a06066':'none'}}>
+                <div style={{fontSize:20}}>{locked?'🔒':reg.icon}</div>
+                <div style={{fontSize:15,color:sel?TH.goldBright:TH.textBright}}>{reg.name}</div>
+                <div style={{fontSize:13,color:TH.textDim}}>{locked?`Lv${regUnlock(reg)+1}`:canGo?`⚡${info.travelTime} travel · ${rollsAvail} roll${rollsAvail===1?'':'s'}`:`Need ⚡${(info?.travelTime||reg.time)+10}+`}</div>
+                <div style={{fontSize:13,color:locked?TH.textDim:TH.gold}}>DC{reg.dc}</div>
+                {showReg&&<div style={{fontSize:12,color:TH.textDim,marginTop:2,lineHeight:1.2}} title={reg.ingr.map(id=>INGR[id]?.name||id).join(', ')}>{reg.ingr.slice(0,5).map(id=>INGR[id]?.icon||'').join(' ')}{reg.ingr.length>5?'…':''}</div>}
+                {isBest&&<div style={{fontSize:12,color:'#60a060',fontWeight:'bold',marginTop:2}} title="Naturalist's Library: currently the highest-yield region.">🌿 Best yield</div>}
+              </div>);});
+            })()}
+          </div>
+        </div>
+        {/* Night Expeditions — info card when warden sentinel unlocked */}
+        {getFeatureVal('nightExpeditions')>0&&(()=>{
+          const {rounds:nightH,dcPen:nightDCPen,dangerRed:nightDR}=getNightInfo();
+          return(<div style={{...S.card,borderColor:TH.purple+'66',background:`${TH.purple}08`}} className={isWsOpen('ws5')?'':'ws-closed'}>
+            {wsHead('ws5',<>🌙 Night Expeditions</>)}
+            <div style={{fontSize:14,color:TH.text,lineHeight:1.5,marginBottom:6}}>
+              Your Sentinel training lets you forage after dark for <b style={{color:TH.purple}}>{nightH} bonus gathering rounds</b> (DC +{nightDCPen}, higher danger{nightDR?' — reduced by Trap Setter':''}).
+            </div>
+            <div style={{fontSize:14,color:TH.gold,padding:'6px 10px',background:`${TH.gold}10`,borderRadius:4,border:`1px solid ${TH.gold}33`}}>
+              💡 Use the <b>🌙 Rest & Night Forage</b> button when you end your day to launch a night expedition.
+            </div>
+          </div>);
+        })()}
+        {selHex&&(()=>{const reg=locRegions.find(r=>r.id===selHex);if(!reg)return null;
+          const info=getExpeditionInfo(reg);const canGo=info&&info.gatherHours>=1;
+          const estPerHr=3; // avg of 2-4 normal success
+          const pickN=reg.pick||reg.ingr.length;
+          return(
+          <div style={S.card} className={isWsOpen('ws6')?'':'ws-closed'}>{wsHead('ws6',<>{reg.icon} {reg.name}</>)}
+            {selFlavor&&<div style={{fontSize:15,color:TH.text,fontStyle:'italic',margin:'0 0 6px',lineHeight:1.5}}>{selFlavor}</div>}
+            <div style={{fontSize:14,color:TH.textDim,marginBottom:4}}>Difficulty {reg.diff}/5 · DC{reg.dc} Extraction</div>
+            {canGo&&(()=>{const rolls=Math.floor(Math.max(0,energy-info.travelTime)/10);return <div style={{background:TH.bg,borderRadius:4,padding:'6px 8px',marginBottom:6,border:'1px solid '+TH.border}}>
+              <div style={{fontSize:15,color:TH.textBright,marginBottom:2}}>📊 Expedition Plan</div>
+              <div style={{fontSize:14,color:TH.textDim,lineHeight:1.6}}>
+                <div>🚶 Travel: <b style={{color:TH.orange}}>⚡{info.travelTime}</b> (one-way)</div>
+                <div>⛏️ Forage budget: <b style={{color:TH.green}}>⚡{Math.max(0,energy-info.travelTime)}</b> ({rolls} roll{rolls===1?'':'s'} at ⚡10 each)</div>
+                <div>📦 Est. yield: <b style={{color:TH.gold}}>~{rolls*estPerHr} items</b> (~{estPerHr}/roll on success · {pickN} of {reg.ingr.length} types per check)</div>
+              </div>
+            </div>;})()}
+            <div style={{fontSize:15,color:TH.gold,marginBottom:3}}>Available ingredients ({pickN} types gathered per check):</div>
+            <div style={{marginBottom:8}}>{reg.ingr.map(id=><span key={id} title={INGR[id]?.name||id} style={{...S.tag,padding:'3px 6px',cursor:'help'}}>{INGR[id]?.icon} {INGR[id]?.name} <span style={{color:TH.textDim,fontSize:13}}>(have {inv[id]||0})</span></span>)}</div>
+            <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
+              <button style={{...S.btn(canGo?'gold':'dim'),opacity:canGo?1:0.45,cursor:canGo?'pointer':'not-allowed'}} onClick={()=>setZonePopup(reg.id)} disabled={!canGo}
+                title={canGo?'Open the expedition plan for '+reg.name:`Need ⚡${(info?.travelTime||reg.time)+10}+ to start an expedition (have ⚡${energy})`}>
+                {canGo?`📍 Choose Forage Site in ${reg.name}`:`Need ⚡${(info?.travelTime||reg.time)+10}+ (have ⚡${energy})`}
+              </button>
+              {canGo&&selectedSite?.regId===reg.id&&<button style={{...S.btn('green'),fontSize:14}} onClick={doHarvest}>
+                ⛏️ Quick Forage ({selectedSite.isHidden?(HIDDEN_REGIONS.find(hr=>hr.id===selectedSite.siteId)?.name||'hidden'):(reg.sites?.find(s=>s.id===selectedSite.siteId)?.name||'selected')})
+              </button>}
+            </div>
+            {canGo&&<div style={{fontSize:13,color:TH.textDim,marginTop:3,textAlign:'center'}}>⚡{info.travelTime} paid up front · then ⚡10 per forage roll · return any time</div>}
+            {getFeatureVal('soloExpedition')>0&&!dayFlags.includes('solo_exp_used')&&(()=>{
+              const activeComps=companions.filter(cc=>cc.active);const best=activeComps.sort((a,b)=>b.loyalty-a.loyalty)[0];
+              if(!best)return null;const bComp=RANGER_COMPANIONS.find(rc=>rc.id===best.compId);if(!bComp)return null;
+              return <div style={{marginTop:4}}><button style={{...S.btn('def'),fontSize:13,background:'#60a06010',border:'1px solid #60a06044',color:'#60a060'}}
+                onClick={()=>sendSoloForage(bComp,best.loyalty,reg)}>🐾 Send {bComp.icon}{bComp.name} Alone (1/day, no ⚡)</button></div>;
+            })()}
+          </div>);})()}
+        {lastCheck&&<div style={{...S.card,borderColor:lastCheck.success?TH.green:TH.red}}>
+          <div style={{fontSize:16,color:lastCheck.success?TH.green:TH.red,marginBottom:2}}>{lastCheck.success?'✅ Success!':'❌ Failed!'}</div>
+          <div style={{fontSize:15,color:TH.text}}>Your {lastCheck.name} check: rolled {lastCheck.roll} + {lastCheck.mod} skill + {lastCheck.rb} rank = <b style={{color:lastCheck.success?TH.green:TH.red}}>{lastCheck.total}</b> vs DC{lastCheck.dc}</div>
+        </div>}
+
+      </>}
+
+      {/* ═══════════ WORKSHOP ═══════════ */}
+      {screen==='workshop'&&<>
+        <BackBar title="Workshop" icon="⚗️"/>
+        {/* Compact Threat Bar */}
+        {day>3&&locThreatIds.some(tid=>(threats[tid]||0)>0)&&<div style={{display:'flex',gap:6,padding:'3px 8px',marginBottom:4,fontSize:12,flexWrap:'wrap'}}>
+          {locThreatIds.filter(tid=>(threats[tid]||0)>=25).map(tid=>{const val=threats[tid]||0;const tf=THREAT_FACTIONS[tid];
+            return <span key={tid} style={{color:getThreatColor(val)}}>{tf.icon} {getThreatLabel(val)} ({val})</span>;})}
+          <span style={{color:TH.textDim,cursor:'pointer',textDecoration:'underline'}} onClick={()=>setScreen('worldmap')}>View →</span>
+        </div>}
+        <div style={{...S.row,marginBottom:8,borderBottom:`1px solid ${TH.border}`,paddingBottom:6}}>
+          <span style={{fontSize:16,color:TH.gold,fontWeight:'bold'}}>⚗️ Crafting</span>
+          <button style={{...S.btn(),fontSize:14}} onClick={()=>setScreen('research')}>📚 Research</button>
+          {getFeatureVal('canTransmute')>0&&<button style={{...S.btn(),fontSize:14}} onClick={()=>setScreen('transmute')}>🔄 Transmute</button>}
+          <button style={{...S.btn(),fontSize:14}} onClick={()=>setScreen('enchant')}>🛒 Customers{enchNote?' ('+enchNote+')':''}</button>
+          <button style={{...S.btn(),fontSize:14}} onClick={()=>setScreen('upgrades')}>🏗️ Upgrades ({upgrades.length})</button>
+        </div>
+
+        {/* Daily Costs Summary */}
+        {debt>0&&<div style={{display:'flex',flexWrap:'wrap',gap:4,marginBottom:8,padding:'6px 10px',background:'#c0404015',borderRadius:6,border:'1px solid #c0404044'}}>
+          <span style={{fontSize:13,color:'#c04040',fontWeight:'bold',flex:1}}>⚠️ Debt: {fmtMoney(debt)} {debt>=200?'| SHOP LOCKED':debt>=100?'| Upgrades at risk':debt>=50?'| Morale dropping':''}</span>
+          <span style={{fontSize:12,color:TH.textDim}}>Daily costs: ~{fmtMoney(calcUpkeep())}</span>
+        </div>}
+
+        {/* Active Elixir Buffs */}
+        {Object.entries(activeBuffs).filter(([,b])=>b.daysLeft>0).length>0&&<div style={{display:'flex',flexWrap:'wrap',gap:4,marginBottom:8,padding:'6px 10px',background:'#50c07010',borderRadius:6,border:'1px solid #50c07033'}}>
+          <span style={{fontSize:13,color:'#50c070',fontWeight:'bold',alignSelf:'center'}}>🧪 Active:</span>
+          {Object.entries(activeBuffs).filter(([,b])=>b.daysLeft>0).map(([buffId,buff])=>{
+            const eb=ELIXIR_BUFFS[buffId];if(!eb)return null;
+            return <span key={buffId} style={{padding:'2px 8px',fontSize:12,borderRadius:10,background:tapInfo==='buff_'+buffId?'#50c07028':'#50c07018',border:'1px solid #50c07044',color:'#50c070',cursor:'pointer'}}
+              onClick={()=>setTapInfo(tapInfo==='buff_'+buffId?null:'buff_'+buffId)}>
+              {eb.icon} {eb.name} ({buff.daysLeft}d)
+              {tapInfo==='buff_'+buffId&&<div style={{fontSize:11,color:TH.text,marginTop:2}}>{eb.buffDesc}</div>}
+            </span>;
+          })}
+        </div>}
+
+        {/* ═══ ELIXIR CABINET — Full brew & drink interface for personal buff potions ═══ */}
+        {(()=>{
+          const elixirRecipes=RECIPES.filter(r=>known.includes(r.id)&&r.buff&&ELIXIR_BUFFS[r.buff]);
+          // Also find owned consumable potions from field-only recipes (not in known)
+          const ownedFieldElixirs=RECIPES.filter(r=>r.fieldOnly&&r.buff&&ELIXIR_BUFFS[r.buff]&&!known.includes(r.id))
+            .filter(r=>Object.entries(pots).some(([pid,q])=>q>0&&getBaseRecipeId(pid)===r.id));
+          if(elixirRecipes.length===0&&ownedFieldElixirs.length===0)return null;
+          return <div style={{...S.card,borderColor:'#50a0a044',background:'linear-gradient(135deg,#14110c,#0e1418)'}} className={isWsOpen('ws7')?'':'ws-closed'}>
+            {wsHead('ws7',<>🧪 Elixir Cabinet <span style={{fontSize:13,color:TH.textDim,fontWeight:'normal'}}>— personal buff potions (brew & drink)</span></>)}
+            <div style={{display:'flex',flexDirection:'column',gap:8}}>
+              {/* Field-brewed consumables (drink only — can't brew in workshop) */}
+              {ownedFieldElixirs.map(r=>{
+                const buff=ELIXIR_BUFFS[r.buff];if(!buff)return null;
+                const ownedPots=Object.entries(pots).filter(([id,q])=>q>0&&getBaseRecipeId(id)===r.id);
+                const totalOwned=ownedPots.reduce((s,[,q])=>s+q,0);
+                const isActive=activeBuffs[r.buff]?.daysLeft>0;
+                return <div key={r.id} style={{padding:'10px 12px',background:isActive?TH.green+'06':TH.panel,borderRadius:6,border:'1px solid '+(isActive?TH.green+'33':'#60a04033')}}>
+                  <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:4}}>
+                    <span style={{fontSize:28}}>{buff.icon}</span>
+                    <div style={{flex:1}}>
+                      <div style={{fontSize:16,color:isActive?TH.green:'#60a040',fontWeight:'bold'}}>
+                        {buff.name} <span style={{fontSize:12,color:TH.textDim,fontWeight:'normal'}}>🌿 Field-brewed</span>
+                        {totalOwned>0&&<span style={{fontSize:13,color:TH.textDim,fontWeight:'normal',marginLeft:6}}>×{totalOwned} in stock</span>}
+                        {isActive&&<span style={{fontSize:12,color:TH.green,marginLeft:6}}>✓ Active ({activeBuffs[r.buff].daysLeft}d)</span>}
+                      </div>
+                      <div style={{fontSize:13,color:'#60a040'}}>{buff.buffDesc} ({buff.duration}d)</div>
+                    </div>
+                  </div>
+                  <div style={{fontSize:13,color:TH.textDim,fontStyle:'italic',marginBottom:6}}>{r.desc}</div>
+                  {totalOwned>0&&<button style={{...S.btn(isActive?'dim':'green'),fontSize:14,padding:'5px 14px'}}
+                    disabled={isActive} onClick={()=>consumeElixir(r.buff)}>
+                    {isActive?'✓ Active':'🧪 Drink'}
+                  </button>}
+                </div>;
+              })}
+              {elixirRecipes.map(r=>{
+                const buff=ELIXIR_BUFFS[r.buff];if(!buff)return null;
+                const cost={};r.ingr.forEach(id=>{const lid=li(id);cost[lid]=(cost[lid]||0)+1;});
+                const elixCost=getActionEnergyCost('brew',25);
+                const elixFreeForFirst=(freeBrewsLeft()>0)||(getFeatureVal('firstActionFree')&&!dayFlags.includes('first_action_used'));
+                const elixEffCost=elixFreeForFirst?0:elixCost;
+                const hasIngr=Object.entries(cost).every(([id,q])=>(inv[id]||0)>=q);
+                const canBrew=hasIngr&&energy>=elixEffCost;
+                const fOk=!r.faction||getRL(r.faction)>=(r.fReq||0);
+                const masteryD=getMasteryDiscount(brewCounts,r.id,getFeatureVal('masteryDiscountBonus'));
+                const adjDC=Math.max(5,r.dc-masteryD);
+                const craftSk=r.stat==='inu'?'attunement':r.stat==='tec'?'precision':r.stat==='acu'?'research':'improvisation';
+                const totalMod=getSkMod(craftSk)+upEff('craftSkillBonus')+getFeatureVal('craftBonus');
+                const successPct=Math.min(95,Math.max(5,Math.floor((21-(adjDC-totalMod))/20*100)));
+                // Find owned stock (all quality variants)
+                const ownedPots=Object.entries(pots).filter(([id,q])=>q>0&&getBaseRecipeId(id)===r.id);
+                const totalOwned=ownedPots.reduce((s,[,q])=>s+q,0);
+                const isActive=activeBuffs[r.buff]?.daysLeft>0;
+                return <div key={r.id} style={{padding:'10px 12px',background:isActive?TH.green+'06':TH.panel,borderRadius:6,border:'1px solid '+(isActive?TH.green+'33':'#50a0a033')}}>
+                  {/* Header: icon, name, buff, active status */}
+                  <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:6}}>
+                    <span style={{fontSize:28}}>{buff.icon}</span>
+                    <div style={{flex:1}}>
+                      <div style={{fontSize:16,color:isActive?TH.green:'#70c0c0',fontWeight:'bold'}}>
+                        {buff.name}
+                        {totalOwned>0&&<span style={{fontSize:13,color:TH.textDim,fontWeight:'normal',marginLeft:6}}>×{totalOwned} in stock</span>}
+                        {isActive&&<span style={{fontSize:12,color:TH.green,marginLeft:6}}>✓ Active ({activeBuffs[r.buff].daysLeft}d remaining)</span>}
+                      </div>
+                      <div style={{fontSize:13,color:'#50a0a0'}}>{buff.buffDesc} ({buff.duration}d{buff.legendary?' ★ Legendary':''})</div>
+                    </div>
+                  </div>
+                  {/* Desc */}
+                  <div style={{fontSize:13,color:TH.textDim,fontStyle:'italic',marginBottom:6}}>{r.desc}</div>
+                  {/* Ingredients */}
+                  <div style={{display:'flex',flexWrap:'wrap',gap:2,marginBottom:6}}>
+                    {Object.entries(cost).map(([id,q])=>{
+                      const have=(inv[id]||0)>=q;const srcs=getIngrSource(id);const _ek='elix_'+r.id+'_'+id;const _eo=tapInfo===_ek;
+                      return <span key={id} style={{...S.tag,fontSize:13,borderColor:have?TH.green+'88':TH.red+'88',cursor:'pointer',background:_eo?TH.panel:'transparent'}}
+                        onClick={()=>setTapInfo(_eo?null:_ek)}>
+                        {INGR[id]?.icon}{INGR[id]?.name} <b style={{color:have?TH.green:TH.red}}>{inv[id]||0}/{q}</b>
+                        {_eo&&<div style={{fontSize:11,color:TH.textDim,marginTop:2}} onClick={e=>e.stopPropagation()}>{srcs.length>0?srcs.map((s,i)=><div key={i}>{s.text}</div>):'Source unknown'}</div>}
+                      </span>;
+                    })}
+                    <span style={{fontSize:12,color:TH.textDim,alignSelf:'center',marginLeft:4}}>DC{adjDC}{masteryD>0?' (-'+masteryD+')':''} · {successPct}%</span>
+                  </div>
+                  {/* Action buttons */}
+                  <div style={{display:'flex',gap:6,flexWrap:'wrap',alignItems:'center'}}>
+                    <button style={{...S.btn(canBrew&&fOk?'gold':'dim'),fontSize:14,padding:'5px 14px',opacity:(canBrew&&fOk)?1:0.45,cursor:(canBrew&&fOk)?'pointer':'not-allowed'}}
+                      disabled={!canBrew||!fOk}
+                      onClick={()=>doCraft(r,'std')}
+                      title={!fOk?'Faction reputation too low':!hasIngr?'Not enough ingredients':energy<elixEffCost?'Need ⚡'+elixEffCost+' Energy (have ⚡'+energy+')':(elixFreeForFirst?'Free this turn':'Cost: ⚡'+elixEffCost)}>
+                      ⚗️ Brew ({elixFreeForFirst?'FREE':'⚡'+elixEffCost})
+                    </button>
+                    {totalOwned>0&&<button style={{...S.btn(isActive?'dim':'green'),fontSize:14,padding:'5px 14px'}}
+                      disabled={isActive}
+                      onClick={()=>consumeElixir(r.buff)}>
+                      {isActive?'✓ Active':'🧪 Drink'}
+                    </button>}
+                    {totalOwned>0&&ownedPots.some(([id])=>getPotQuality(id)!=='std')&&
+                      <span style={{fontSize:12,color:TH.gold}}>★ {ownedPots.filter(([id])=>getPotQuality(id)!=='std').map(([id,q])=>{const pq=getPotQuality(id);return QUALITY[pq]?.icon+' '+QUALITY[pq]?.name+' ×'+q;}).join(', ')}</span>
+                    }
+                  </div>
+                </div>;
+              })}
+            </div>
+          </div>;
+        })()}
+
+        {/* ═══ APOTHECARY CLINIC ═══ */}
+        {clinicPatients.length>0&&<div style={{...S.card,borderColor:'#6a9a6a',background:'#6a9a6a08'}} className={isWsOpen('ws8')?'':'ws-closed'}>
+          {wsHead('ws8',<>🏥 Apothecary Clinic — {clinicPatients.filter(p=>!p.prescribed).length} patient{clinicPatients.filter(p=>!p.prescribed).length!==1?'s':''} waiting</>)}
+          {clinicPatients.map(patient=>{
+            const ailment=CLINIC_AILMENTS.find(a=>a.id===patient.ailmentId);if(!ailment)return null;
+            const treated=patient.prescribed;
+            return(<div key={patient.id} style={{padding:'8px 10px',background:treated?TH.green+'08':TH.panelLight,borderRadius:6,marginBottom:6,border:'1px solid '+(treated?TH.green+'44':TH.border),opacity:treated?0.6:1}}>
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                <div><span style={{fontSize:16,color:TH.textBright}}>{ailment.icon} {patient.patientName}</span>
+                  {treated&&<span style={{color:patient.matchQuality==='great'?TH.green:patient.matchQuality==='good'?TH.gold:TH.red,fontSize:13,marginLeft:6}}>
+                    {patient.matchQuality==='great'?'✅ Cured!':patient.matchQuality==='good'?'🟡 Helped':'❌ Wrong remedy'}</span>}
+                </div>
+              </div>
+              <div style={{fontSize:14,fontStyle:'italic',color:TH.textDim,margin:'4px 0'}}>{ailment.desc}</div>
+              {!treated&&<>
+                {/* Diagnosis info */}
+                {patient.examined&&<div style={{fontSize:14,color:patient.diagLevel>=2?TH.green:patient.diagLevel>=1?TH.gold:TH.textDim,margin:'4px 0',padding:'4px 8px',background:TH.bg,borderRadius:4,border:'1px solid '+TH.border}}>
+                  🩺 {patient.diagLevel>=2?ailment.hints.full:patient.diagLevel>=1?ailment.hints.partial:ailment.hints.fail}
+                </div>}
+                <div style={{...S.row,marginTop:6,flexWrap:'wrap'}}>
+                  {!patient.examined&&<button style={{...S.btn('gold'),fontSize:14}} onClick={()=>examinePatient(patient.id)}
+                    title={'Diagnosis roll: beat the DC for a partial read, beat it by 5+ for a full diagnosis.'+(eCL('alchemist')>=10?' Apothecary Lv10: always a full diagnosis.':eCL('alchemist')>=6?' Apothecary Lv6: a near-miss (within 2) still gives a partial read.':'')}>
+                    🩺 Examine <span style={{fontSize:12,opacity:0.8}}>(Attunement DC{8+ailment.tier*3})</span></button>}
+                  <select onChange={e=>{if(e.target.value)prescribePotion(patient.id,e.target.value);}} value="" style={{padding:'4px 6px',background:TH.panelLight,color:TH.text,border:'1px solid '+TH.border,borderRadius:4,fontFamily:'inherit',fontSize:14,flex:1,minWidth:140}}>
+                    <option value="">💊 Prescribe a potion...</option>
+                    {Object.entries(pots).filter(([pid,q])=>q>0&&RECIPES.some(r=>r.id===getBaseRecipeId(pid))).sort((a,b)=>potDisplayName(a[0]).localeCompare(potDisplayName(b[0]))).map(([pid,q])=>
+                      <option key={pid} value={pid}>{potDisplayName(pid)} ({q})</option>)}
+                  </select>
+                </div>
+              </>}
+            </div>);
+          })}
+        </div>}
+
+        {/* ═══ VENOMIST CONTRACTS ═══ */}
+        {venomContracts.length>0&&<div style={{...S.card,borderColor:'#9a4a6a',background:'#9a4a6a08'}} className={isWsOpen('ws9')?'':'ws-closed'}>
+          {wsHead('ws9',<>☠️ Venom Contracts — {venomContracts.filter(v=>!v.fulfilled).length} active</>)}
+          {venomContracts.map(vc=>{
+            const contract=VENOM_CONTRACTS.find(c=>c.id===vc.contractId);if(!contract)return null;
+            const done=vc.fulfilled;
+            const venLv=eCL('alchemist');
+            const maxPotIdx=venLv>=10?3:venLv>=6?2:1;
+            const hasIngr=lia(contract.ingredients).every((id,i)=>(inv[id]||0)>=(contract.ingredientQty[i]||0));
+            return(<div key={vc.id} style={{padding:'8px 10px',background:done?(vc.success?TH.green+'08':TH.red+'08'):TH.panelLight,borderRadius:6,marginBottom:6,border:'1px solid '+(done?(vc.success?TH.green+'44':TH.red+'44'):TH.border),opacity:done?0.6:1}}>
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                <span style={{fontSize:16,color:TH.textBright}}>{contract.icon} {contract.name} <span style={{fontSize:13,color:TH.textDim}}>· Tier {contract.tier}</span></span>
+                {done&&<span style={{color:vc.success?TH.green:TH.red,fontSize:13}}>{vc.success?'✅ Fulfilled':'❌ Failed'}</span>}
+              </div>
+              <div style={{fontSize:14,fontStyle:'italic',color:TH.textDim,margin:'4px 0'}}>{contract.desc}</div>
+              <div style={{fontSize:13,color:TH.text,margin:'2px 0'}}>Weakness: <b style={{color:'#c060a0'}}>{contract.weakness}</b> · Faction: {FACTIONS[lf(contract.faction)]?.icon} {FACTIONS[lf(contract.faction)]?.name}</div>
+              {!done&&<>
+                <div style={{fontSize:13,color:TH.textDim,margin:'3px 0'}}>
+                  Ingredients: {lia(contract.ingredients).map((id,i)=>{const q=contract.ingredientQty[i];if(!q)return null;const have=(inv[id]||0);return <span key={id} style={{color:have>=q?TH.green:TH.red,marginRight:6}}>{INGR[id]?.icon||id} {have}/{q}</span>;}).filter(Boolean)}
+                </div>
+                <div style={{...S.row,marginTop:6,flexWrap:'wrap',gap:4}}>
+                  {POTENCY_LEVELS.slice(0,maxPotIdx+1).map(pot=>{
+                    const goldEst=Math.floor(contract.basePay*pot.payMult);
+                    return <button key={pot.id} style={{...S.btn(hasIngr&&energy>=25?'gold':'dim'),fontSize:13,padding:'3px 8px'}}
+                      disabled={!hasIngr||energy<25||done}
+                      onClick={()=>fulfillContract(vc.id,pot.id)}
+                      title={'DC '+pot.dc+' · ~'+fmtMoney(goldEst)}
+                    >{pot.icon} {pot.name} (DC{pot.dc} · ~{fmtMoney(goldEst)})</button>;
+                  })}
+                </div>
+              </>}
+            </div>);
+          })}
+        </div>}
+
+        {/* ═══ RUNESMITH FORGE ═══ */}
+        {eSpec('enchanter')==='runesmith'&&<div style={{...S.card,borderColor:'#d08040',background:'#d0804008'}} className={isWsOpen('ws10')?'':'ws-closed'}>
+          {wsHead('ws10',<>🔨 Runesmith Forge — {(()=>{const used=dayFlags.filter(f=>f==='forge_used').length;const rsLv=eCL('enchanter');const max=rsLv>=10?3:rsLv>=6?2:1;return `${max-used}/${max} forges remaining`;})()}</>)}
+          {(()=>{
+            const rsLv=eCL('enchanter');
+            const maxTier=rsLv>=10?3:rsLv>=6?2:1;
+            const available=FORGE_WEAPONS.filter(w=>w.tier<=maxTier);
+            const weaponEnchs=ENCHANTMENTS.filter(e=>e.cat==='weapon'&&knownEnch.includes(e.id));
+            const forgesToday=dayFlags.filter(f=>f==='forge_used').length;
+            const maxForges=rsLv>=10?3:rsLv>=6?2:1;
+            // Forging is free (no spendEnergy in forgeWeapon); the legacy `energy>=50` gate was a Phase 1 sweep miss.
+            const canForge=forgesToday<maxForges;
+            return <>
+              <div style={{fontSize:12,color:TH.textDim,marginBottom:6,padding:'4px 8px',background:TH.bg,borderRadius:4,border:'1px solid '+TH.border,lineHeight:1.5}}>
+                Forging costs materials only (free action, {maxForges}/day at your level). Two checks: 🎯 Precision vs the weapon's forge DC, then ✍️ Inscription vs the enchantment's DC (your flat inscription bonuses apply). Fail the forge — materials lost. Fail the inscription — sold immediately as a plain weapon for a little coin. Succeed at both — a Named Weapon joins the Display Case below, and each displayed weapon attracts +1 premium customer/day (up to +3). Sell a displayed weapon any time for its listed value — you trade its customer draw for coin.
+              </div>
+              {available.map(w=>{
+                const hasMats=Object.entries(lmc(w.matCost)).every(([id,q])=>(inv[id]||0)>=q);
+                return <div key={w.id} style={{padding:'6px 10px',background:TH.panelLight,borderRadius:6,marginBottom:5,border:'1px solid '+TH.border}}>
+                  <div style={{...S.row,justifyContent:'space-between'}}>
+                    <span style={{fontSize:15,color:TH.textBright}}>{w.icon} {w.name} <span style={{fontSize:12,color:TH.textDim}}>T{w.tier} · DC{w.forgeDC}</span></span>
+                    <span style={{fontSize:12,color:TH.textDim}}>
+                      {Object.entries(lmc(w.matCost)).map(([id,q])=>{const have=inv[id]||0;return <span key={id} style={{color:have>=q?TH.green:TH.red,marginLeft:4}}>{INGR[id]?.icon||id}{have}/{q}</span>;})}{' · '+(maxForges-forgesToday)+'/day'}
+                    </span>
+                  </div>
+                  <div style={{...S.row,marginTop:4,flexWrap:'wrap',gap:3}}>
+                    {weaponEnchs.map(e=>
+                      <button key={e.id} style={{...S.btn(canForge&&hasMats?'gold':'dim'),fontSize:12,padding:'2px 6px'}}
+                        disabled={!canForge||!hasMats} onClick={()=>forgeWeapon(w.id,e.id)}
+                        title={e.name+' (DC'+e.dc+')'}>{e.icon} {e.name}</button>
+                    )}
+                    {weaponEnchs.length===0&&<span style={{fontSize:12,color:TH.textDim}}>Learn weapon enchantments to forge</span>}
+                  </div>
+                </div>;
+              })}
+              {forgedWeapons.length>0&&<>
+                <div style={{fontSize:14,color:'#d08040',fontWeight:'bold',marginTop:8,marginBottom:4}}>⚔️ Display Case ({forgedWeapons.filter(w=>w.displayed).length} weapons · +{Math.min(3,forgedWeapons.filter(w=>w.displayed).length)} bonus customers/day)</div>
+                <div style={{display:'flex',flexWrap:'wrap',gap:4}}>
+                  {forgedWeapons.map(w=>
+                    <div key={w.id} style={{padding:'3px 8px',background:'#d0804015',borderRadius:4,border:'1px solid #d0804033',fontSize:13,display:'flex',alignItems:'center',gap:4}}>
+                      <span style={{color:'#d08040',fontWeight:'bold'}}>{w.weaponIcon} {w.name}</span>
+                      <span style={{color:TH.textDim}}>({w.weaponType}+{w.enchantName})</span>
+                      <button style={{...S.btn('gold'),fontSize:11,padding:'1px 6px'}} onClick={()=>sellForgedWeapon(w.id)}
+                        title="Selling removes this weapon's +1 customer/day display draw">💰 Sell {fmtMoney(w.goldValue||0)}</button>
+                    </div>
+                  )}
+                </div>
+              </>}
+            </>;
+          })()}
+        </div>}
+
+        {/* ═══ WARDKEEPER SHIELD COMMISSIONS ═══ */}
+        {shieldCommissions.length>0&&<div style={{...S.card,borderColor:'#4080d0',background:'#4080d008'}} className={isWsOpen('ws11')?'':'ws-closed'}>
+          {wsHead('ws11',<>🛡️ Shield Commissions — {shieldCommissions.filter(c=>!c.done).length} active</>)}
+          {shieldCommissions.map(sc=>{
+            const comm=SHIELD_COMMISSIONS.find(c=>c.id===sc.commissionId);if(!comm)return null;
+            const totalLayers=comm.layers.length;
+            const currentLayerIdx=sc.layersCompleted+sc.layersFailed;
+            const currentEnchId=currentLayerIdx<totalLayers?comm.layers[currentLayerIdx]:null;
+            const currentEnch=currentEnchId?ENCHANTMENTS.find(e=>e.id===currentEnchId):null;
+            const lwt=comm.wardTarget?lt(comm.wardTarget):null;
+            return(<div key={sc.id} style={{padding:'8px 10px',background:sc.isThreatWard?(getThreatColor(threats[lwt]||0)+'10'):sc.done?TH.green+'08':TH.panelLight,borderRadius:6,marginBottom:6,border:'1px solid '+(sc.isThreatWard?getThreatColor(threats[lwt]||0)+'66':sc.done?TH.green+'44':TH.border),opacity:sc.done?0.6:1}}>
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                <span style={{fontSize:16,color:TH.textBright}}>{comm.icon} {sc.clientName} <span style={{fontSize:13,color:TH.textDim}}>· {comm.name}</span></span>
+                {sc.done&&<span style={{color:TH.green,fontSize:13}}>✅ Complete ({sc.layersCompleted}/{totalLayers})</span>}
+              </div>
+              <div style={{fontSize:14,fontStyle:'italic',color:TH.textDim,margin:'4px 0'}}>{comm.desc}</div>
+              {lwt&&!sc.done&&<div style={{fontSize:12,color:getThreatColor(threats[lwt]||0),marginBottom:4}}>
+                {THREAT_FACTIONS[lwt]?.icon} Reduces {THREAT_FACTIONS[lwt]?.name} threat by {comm.threatReduction||(eCL('enchanter')>=8?5:eCL('enchanter')>=5?4:3)} on completion
+              </div>}
+              {/* Layer progress bar */}
+              <div style={{display:'flex',gap:3,margin:'6px 0'}}>
+                {comm.layers.map((enchId,i)=>{
+                  const ench=ENCHANTMENTS.find(e=>e.id===enchId);
+                  const isNext=i===currentLayerIdx&&!sc.done;
+                  // Better tracking: layers 0..layersCompleted-1 are successes, then failures
+                  const isSuccess=i<currentLayerIdx&&i<sc.layersCompleted;
+                  const isFail=i<currentLayerIdx&&!isSuccess;
+                  return <div key={i} style={{flex:1,padding:'3px 6px',borderRadius:4,fontSize:12,textAlign:'center',
+                    background:isSuccess?TH.green+'20':isFail?TH.red+'20':isNext?'#4080d020':TH.bg,
+                    border:'1px solid '+(isSuccess?TH.green+'66':isFail?TH.red+'66':isNext?'#4080d066':TH.border),
+                    color:isSuccess?TH.green:isFail?TH.red:isNext?'#4080d0':TH.textDim}}>
+                    {isSuccess?'✓':isFail?'✗':''} {ench?.icon} {ench?.name||enchId}
+                  </div>;
+                })}
+              </div>
+              {!sc.done&&currentEnch&&<div style={{...S.row,marginTop:4}}>
+                <button style={{...S.btn('gold'),fontSize:14}}
+                  onClick={()=>inscribeCommissionLayer(sc.id)}>
+                  ✨ Inscribe {currentEnch.icon} {currentEnch.name} (DC{currentEnch.dc||12})
+                </button>
+                {sc.retryUsed&&<span style={{fontSize:12,color:TH.textDim,marginLeft:6}}>Retry used</span>}
+              </div>}
+            </div>);
+          })}
+        </div>}
+
+        {/* ═══ SPELLWEAVER PLANAR ATTUNEMENT ═══ */}
+        {eSpec('enchanter')==='spellweaver'&&<div style={{...S.card,borderColor:'#a060e0',background:'#a060e008'}} className={isWsOpen('ws12')?'':'ws-closed'}>
+          {wsHead('ws12',<>🌀 Planar Attunement</>)}
+          {(()=>{
+            const swLv=eCL('enchanter');
+            const activePlanes=getActivePlanes();
+            const combo=getPlanarCombo();
+            const maxPlanes=swLv>=10?2:1;
+            const availCount=swLv>=6?4:2;
+            const available=PLANAR_FOCUSES.slice(0,availCount);
+            const canAttune=activePlanes.length<maxPlanes||(activePlanes.length>0&&planarFocus.expiresDay<=day);
+            // All effect text below is derived from getPlanarEffects()/formatPlanarEffects (designlock §B locked semantics).
+            // Raw plane.desc / combo.desc fields are intentionally NOT rendered — they contain literal-interpretation
+            // wording for 4 reinterpreted effects (fadeChance, dualChanceBonus, bonusEnchantChance, critFailDestroy).
+            const activeEfx=getPlanarEffects();
+            const daysLeft=planarFocus?Math.max(0,planarFocus.expiresDay-day):0;
+            return <>
+              {/* Active attunement display */}
+              {activePlanes.length>0&&<div style={{padding:'8px 12px',background:'#a060e015',borderRadius:6,marginBottom:8,border:'1px solid #a060e044'}}>
+                {combo?<>
+                  <div style={{fontSize:16,color:'#d090ff',fontWeight:'bold'}}>{combo.icon} {combo.name} — Convergence Active</div>
+                  <div style={{fontSize:11,color:TH.textDim,fontStyle:'italic',margin:'2px 0 4px'}}>Combo replaces individual plane effects.</div>
+                  {formatPlanarEffects(activeEfx).map((l,i)=>
+                    <div key={i} style={{fontSize:13,color:l.good?TH.green:'#e08080'}}>{l.good?'✓':'⚠'} {l.txt}</div>)}
+                </>:<>
+                  {activePlanes.map(pid=>{const p=PLANAR_FOCUSES.find(f=>f.id===pid);return p?
+                    <div key={pid} style={{marginBottom:4}}>
+                      <div style={{fontSize:16,color:p.color,fontWeight:'bold'}}>{p.icon} {p.name}</div>
+                      {formatPlanarEffects(p.effects).map((l,i)=>
+                        <div key={i} style={{fontSize:13,color:l.good?TH.green:'#e08080',marginLeft:6}}>{l.good?'✓':'⚠'} {l.txt}</div>)}
+                    </div>:null;})}
+                </>}
+                <div style={{fontSize:12,color:TH.textDim,marginTop:4}}>Expires: Day {planarFocus?.expiresDay} ({daysLeft} day{daysLeft===1?'':'s'} left)
+                  {swLv>=10&&activePlanes.length<2&&' · Can add second plane (Convergence)'}</div>
+              </div>}
+              {activePlanes.length===0&&<div style={{fontSize:14,color:TH.textDim,marginBottom:6}}>No active attunement. Choose a plane to channel its energy into your enchantments.</div>}
+              {/* Plane selection */}
+              <div style={{display:'flex',flexWrap:'wrap',gap:6}}>
+                {available.map(plane=>{
+                  const isActive=activePlanes.includes(plane.id);
+                  // At Lv10 with 1 plane already active, preview the combo this selection would form.
+                  const comboPreview=(swLv>=10&&activePlanes.length===1&&!isActive)?
+                    (PLANAR_COMBOS[[activePlanes[0],plane.id].sort().join('+')]||PLANAR_COMBOS[[activePlanes[0],plane.id].sort().reverse().join('+')]):null;
+                  return <button key={plane.id} style={{flex:'1 1 45%',padding:'8px 10px',borderRadius:6,cursor:isActive?'default':'pointer',
+                    background:isActive?plane.color+'25':TH.panelLight,border:'2px solid '+(isActive?plane.color:TH.border),
+                    color:isActive?plane.color:TH.text,textAlign:'left',fontFamily:'inherit',fontSize:13,opacity:isActive?0.7:canAttune?1:0.45}}
+                    disabled={isActive||!canAttune} onClick={()=>attunePlane(plane.id)}>
+                    <div style={{fontWeight:'bold',fontSize:14}}>{plane.icon} {plane.name}</div>
+                    {formatPlanarEffects(plane.effects).map((l,i)=>
+                      <div key={i} style={{fontSize:11,color:l.good?TH.green:'#e08080',marginTop:1}}>{l.good?'+':'•'} {l.txt}</div>)}
+                    {comboPreview&&<>
+                      <div style={{fontSize:11,color:'#d090ff',marginTop:4,fontWeight:'bold'}}>→ Convergence: {comboPreview.icon} {comboPreview.name}</div>
+                      {formatPlanarEffects(comboPreview.effects).map((l,i)=>
+                        <div key={'cp'+i} style={{fontSize:11,color:l.good?TH.green:'#e08080',marginLeft:8}}>{l.good?'+':'•'} {l.txt}</div>)}
+                      <div style={{fontSize:10,color:TH.textDim,fontStyle:'italic',marginTop:2}}>(combo replaces both planes' individual effects)</div>
+                    </>}
+                  </button>;
+                })}
+              </div>
+              {swLv<6&&<div style={{fontSize:12,color:TH.textDim,marginTop:6}}>🔒 More planes unlock at Enchanter Lv6</div>}
+              {swLv>=6&&swLv<10&&<div style={{fontSize:12,color:TH.textDim,marginTop:6}}>🔒 Convergence (dual attunement) unlocks at Enchanter Lv10</div>}
+            </>;
+          })()}
+        </div>}
+
+        {/* ═══ TINKERER GADGET BENCH ═══ */}
+        {eSpec('artificer')==='tinkerer'&&<div style={{...S.card,borderColor:'#c0a040',background:'#c0a04008'}} className={isWsOpen('ws13')?'':'ws-closed'}>
+          {wsHead('ws13',<>⚙️ Gadget Bench — {gadgets.filter(g=>g.equipped).length}/{getGadgetSlots()} slots</>)}
+          {(()=>{
+            const tkLv=eCL('artificer');
+            const maxTier=tkLv>=10?3:tkLv>=6?2:1;
+            const maxMk=getMaxMk();
+            const available=GADGET_BLUEPRINTS.filter(b=>b.tier<=maxTier&&(!b.legendary||maxMk>=3));
+            const owned=gadgets.map(g=>g.blueprintId);
+            return <>
+              {tkLv>=10&&<div style={{fontSize:12,color:'#d4a420',marginBottom:6,padding:'3px 8px',background:'#d4a42010',borderRadius:4,border:'1px solid #d4a42033'}}>
+                ⭐ Masterwork Tools active: +2 gadget slots · ★ legendary blueprints unlocked · Mk III gadgets run at 150% output · gadgets immune to expedition damage
+              </div>}
+              {/* Equipped gadgets */}
+              {gadgets.length>0&&<div style={{marginBottom:8}}>
+                <div style={{fontSize:13,color:'#c0a040',fontWeight:'bold',marginBottom:4}}>Your Gadgets:</div>
+                {gadgets.map(g=>{
+                  const bp=GADGET_BLUEPRINTS.find(b=>b.id===g.blueprintId);if(!bp)return null;
+                  const mkLabel=['I','II','III'][g.mk-1];
+                  return <div key={g.id} style={{display:'flex',alignItems:'center',gap:6,padding:'4px 8px',background:g.equipped?'#c0a04015':TH.bg,borderRadius:4,marginBottom:3,border:'1px solid '+(g.equipped?'#c0a04044':TH.border)}}>
+                    <button style={{fontSize:12,padding:'1px 6px',background:g.equipped?TH.green+'20':'#44444480',color:g.equipped?TH.green:TH.textDim,border:'1px solid '+(g.equipped?TH.green+'66':TH.border),borderRadius:3,cursor:'pointer',fontFamily:'inherit'}}
+                      onClick={()=>toggleGadget(g.id)}>{g.equipped?'✓ ON':'OFF'}</button>
+                    <span style={{color:TH.textBright,fontSize:14}}>{bp.icon} {bp.name} <span style={{color:'#c0a040'}}>Mk {mkLabel}</span></span>
+                    <span style={{fontSize:12,color:TH.textDim,flex:1}}>{bp.effectDesc[g.mk-1]}</span>
+                    {g.mk<maxMk&&<button style={{...S.btn('gold'),fontSize:11,padding:'1px 6px'}}
+                      onClick={()=>upgradeGadget(g.id)} title={'Upgrade to Mk '+['I','II','III'][g.mk]+' ('+((g.mk+1))+'× materials, free action)'}>↑ Mk {['I','II','III'][g.mk]}</button>}
+                  </div>;
+                })}
+              </div>}
+              {/* Craftable blueprints */}
+              {available.filter(b=>!owned.includes(b.id)).length>0&&<>
+                <div style={{fontSize:13,color:TH.textDim,marginBottom:4}}>Blueprints:</div>
+                {available.filter(b=>!owned.includes(b.id)).map(bp=>{
+                  const hasMats=Object.entries(lmc(bp.matCost)).every(([id,q])=>(inv[id]||0)>=q);
+                  return <div key={bp.id} style={{padding:'5px 8px',background:TH.panelLight,borderRadius:4,marginBottom:3,border:'1px solid '+TH.border}}>
+                    <div style={{...S.row,justifyContent:'space-between'}}>
+                      <span style={{fontSize:14,color:TH.textBright}}>{bp.icon} {bp.name} {bp.legendary&&<span style={{color:'#d4a420',fontSize:11}}>★ LEGENDARY</span>}</span>
+                      <button style={{...S.btn(hasMats?'gold':'dim'),fontSize:12,padding:'2px 8px',opacity:hasMats?1:0.45,cursor:hasMats?'pointer':'not-allowed'}} disabled={!hasMats}
+                        onClick={()=>craftGadget(bp.id)}
+                        title={hasMats?'Free action':'Not enough materials'}>🔨 Craft (DC{bp.dc})</button>
+                    </div>
+                    <div style={{fontSize:12,color:TH.textDim}}>{bp.desc}</div>
+                    <div style={{fontSize:12,marginTop:2}}>
+                      <span style={{color:TH.textDim}}>Effect: </span><span style={{color:'#c0a040'}}>{bp.effectDesc[0]}</span>
+                      <span style={{color:TH.textDim,marginLeft:8}}>Materials: </span>
+                      {Object.entries(lmc(bp.matCost)).map(([id,q])=>{const have=inv[id]||0;return <span key={id} style={{color:have>=q?TH.green:TH.red,marginRight:4}}>{INGR[id]?.icon||id}{have}/{q}</span>;})}
+                    </div>
+                  </div>;
+                })}
+              </>}
+              {tkLv<6&&<div style={{fontSize:12,color:TH.textDim,marginTop:4}}>🔒 More slots & Mk II upgrades at Artificer Lv6</div>}
+              {tkLv>=6&&tkLv<10&&<div style={{fontSize:12,color:TH.textDim,marginTop:4}}>🔒 Mk III & legendary gadgets at Artificer Lv10</div>}
+            </>;
+          })()}
+        </div>}
+
+        {/* ═══ CONSTRUCTOR BLUEPRINTS ═══ */}
+        {eSpec('artificer')==='constructor'&&<div style={{...S.card,borderColor:'#8090a0',background:'#8090a008'}} className={isWsOpen('ws14')?'':'ws-closed'}>
+          {wsHead('ws14',<>🏗️ Blueprint Workshop — {blueprints.length}/{getBPSlots()} projects</>)}
+          {(()=>{
+            const cLv=eCL('artificer');
+            const maxTier=cLv>=10?3:cLv>=6?2:1;
+            const available=CONSTRUCTOR_BPS.filter(b=>b.tier<=maxTier&&(!b.legendary||(cLv>=10)));
+            const owned=blueprints.map(b=>b.bpId);
+            const sanctum=hasSanctum();
+            return <>
+              {/* Active projects */}
+              {blueprints.length>0&&<div style={{marginBottom:8}}>
+                {blueprints.map(entry=>{
+                  const bp=CONSTRUCTOR_BPS.find(b=>b.id===entry.bpId);if(!bp)return null;
+                  const sessions=sanctum&&entry.bpId!=='bp_sanctum'?Math.ceil(bp.buildSessions/2):bp.buildSessions;
+                  const pct=Math.round(entry.buildProgress/sessions*100);
+                  return <div key={entry.id} style={{padding:'6px 10px',background:entry.complete?'#8090a015':TH.panelLight,borderRadius:6,marginBottom:4,border:'1px solid '+(entry.complete?TH.green+'44':TH.border)}}>
+                    <div style={{...S.row,justifyContent:'space-between'}}>
+                      <span style={{fontSize:15,color:TH.textBright}}>{bp.icon} {bp.name} {bp.legendary&&<span style={{color:'#d4a420',fontSize:11}}>★</span>}
+                        {entry.complete&&<span style={{color:TH.green,fontSize:13,marginLeft:6}}>✅ Active{sanctum&&entry.bpId!=='bp_sanctum'?' (Reinforced)':''}</span>}
+                      </span>
+                      {!entry.complete&&<span style={{fontSize:12,color:TH.textDim}}>{entry.buildProgress}/{sessions} sessions</span>}
+                    </div>
+                    {entry.complete?<div style={{fontSize:13,color:TH.green}}>{bp.effectDesc}{sanctum&&entry.bpId!=='bp_sanctum'?' (+50%)':''}</div>
+                    :<>
+                      <div style={{width:'100%',height:6,background:TH.panel,borderRadius:3,margin:'4px 0'}}>
+                        <div style={{height:'100%',width:pct+'%',background:'#8090a0',borderRadius:3,transition:'width 0.3s'}}/>
+                      </div>
+                      <div style={{...S.row,gap:4}}>
+                        {(()=>{const bbCost=cLv>=6?13:25;return <button style={{...S.btn(energy>=bbCost?'gold':'dim'),fontSize:13,opacity:energy>=bbCost?1:0.45,cursor:energy>=bbCost?'pointer':'not-allowed'}} disabled={energy<bbCost}
+                          onClick={()=>buildBlueprint(entry.id)}
+                          title={energy>=bbCost?'Cost: ⚡'+bbCost:'Need ⚡'+bbCost+' Energy (have ⚡'+energy+')'}>🔨 Build (⚡{bbCost} · Precision DC{bp.draftDC-2})</button>;})()}
+                        <span style={{fontSize:12,color:TH.textDim}}>Materials/session: {Object.entries(lmc(bp.matCost)).map(([id,q])=>{
+                          const perSession=Math.max(1,Math.ceil(q/sessions));const have=inv[id]||0;
+                          return <span key={id} style={{color:have>=perSession?TH.green:TH.red,marginRight:3}}>{INGR[id]?.icon||id}{have}/{perSession}</span>;})}</span>
+                      </div>
+                    </>}
+                  </div>;
+                })}
+              </div>}
+              {/* Available blueprints to draft */}
+              {available.filter(b=>!owned.includes(b.id)).length>0&&blueprints.length<getBPSlots()&&<>
+                <div style={{fontSize:13,color:TH.textDim,marginBottom:4}}>Available Blueprints:</div>
+                {available.filter(b=>!owned.includes(b.id)).map(bp=>
+                  <div key={bp.id} style={{padding:'5px 8px',background:TH.panelLight,borderRadius:4,marginBottom:3,border:'1px solid '+TH.border}}>
+                    <div style={{...S.row,justifyContent:'space-between'}}>
+                      <span style={{fontSize:14,color:TH.textBright}}>{bp.icon} {bp.name} {bp.legendary&&<span style={{color:'#d4a420',fontSize:11}}>★ LEGENDARY</span>}
+                        <span style={{fontSize:12,color:TH.textDim,marginLeft:6}}>T{bp.tier} · {sanctum?Math.ceil(bp.buildSessions/2):bp.buildSessions} sessions</span></span>
+                      <button style={{...S.btn('gold'),fontSize:12,padding:'2px 8px'}}
+                        onClick={()=>draftBlueprint(bp.id)}
+                        title="Free action">📐 Draft (DC{bp.draftDC})</button>
+                    </div>
+                    <div style={{fontSize:12,color:TH.textDim}}>{bp.desc}</div>
+                    <div style={{fontSize:12,color:'#8090a0'}}>Effect: {bp.effectDesc}</div>
+                  </div>
+                )}
+              </>}
+              {cLv<6&&<div style={{fontSize:12,color:TH.textDim,marginTop:4}}>🔒 More slots & faster building at Artificer Lv6</div>}
+              {cLv>=6&&cLv<10&&<div style={{fontSize:12,color:TH.textDim,marginTop:4}}>🔒 Legendary blueprints at Artificer Lv10</div>}
+            </>;
+          })()}
+        </div>}
+
+        {/* ═══ RECLAIMER DECONSTRUCTION LAB ═══ */}
+        {eSpec('artificer')==='reclaimer'&&<div style={{...S.card,borderColor:'#60a080',background:'#60a00808'}} className={isWsOpen('ws15')?'':'ws-closed'}>
+          {wsHead('ws15',<>♻️ Deconstruction Lab</>)}
+          {(()=>{
+            const rcLv=eCL('artificer');
+            const auctionUsed=dayFlags.includes('salvage_auction_used');
+            const freeCraftUsed=dayFlags.includes('free_craft_used');
+            return <>
+              {/* Potion Breakdown */}
+              <div style={{fontSize:14,color:'#60a080',fontWeight:'bold',marginBottom:4}}>🧪 Potion Breakdown {rcLv>=10?'(150% yield)':rcLv>=6?'(100% recovery)':'(50-75% recovery)'}</div>
+              <div style={{display:'flex',flexWrap:'wrap',gap:3,marginBottom:8}}>
+                {Object.entries(pots).filter(([id,q])=>q>0).map(([id,q])=>{
+                  const r=RECIPES.find(x=>x.id===getBaseRecipeId(id));if(!r)return null;
+                  const bdCost=25;const bdCanAfford=energy>=bdCost;
+                  return <button key={id} style={{...S.btn(bdCanAfford?'gold':'dim'),fontSize:12,padding:'2px 6px',opacity:bdCanAfford?1:0.45,cursor:bdCanAfford?'pointer':'not-allowed'}} disabled={!bdCanAfford}
+                    onClick={()=>breakdownPotion(id)}
+                    title={bdCanAfford?'Cost: ⚡'+bdCost:'Need ⚡'+bdCost+' Energy (have ⚡'+energy+')'}>{r.icon} {r.name} ({q}) → ingredients (⚡{bdCost})</button>;
+                })}
+                {Object.entries(pots).filter(([,q])=>q>0).length===0&&<span style={{fontSize:13,color:TH.textDim}}>No potions to break down</span>}
+              </div>
+
+              {/* Ingredient Transmutation */}
+              <div style={{fontSize:14,color:'#60a080',fontWeight:'bold',marginBottom:4}}>🔄 Transmutation ({rcLv>=6?'2':'3'}:1 ratio)</div>
+              {(()=>{
+                const ratio=rcLv>=6?2:3;
+                const eligible=Object.entries(inv).filter(([id,q])=>q>=ratio);
+                return <div style={{display:'flex',gap:4,alignItems:'center',marginBottom:8,flexWrap:'wrap'}}>
+                  <select id="tx_src" style={{padding:'3px 6px',background:TH.panelLight,color:TH.text,border:'1px solid '+TH.border,borderRadius:4,fontFamily:'inherit',fontSize:13}}>
+                    <option value="">From...</option>
+                    {eligible.map(([id,q])=><option key={id} value={id}>{INGR[id]?.icon||''} {INGR[id]?.name||id} ({q})</option>)}
+                  </select>
+                  <span style={{color:TH.textDim}}>→</span>
+                  <select id="tx_tgt" style={{padding:'3px 6px',background:TH.panelLight,color:TH.text,border:'1px solid '+TH.border,borderRadius:4,fontFamily:'inherit',fontSize:13}}>
+                    <option value="">To...</option>
+                    {Object.entries(INGR).filter(([id])=>id!=='unknown').map(([id,ig])=><option key={id} value={id}>{ig.icon||''} {ig.name||id}</option>)}
+                  </select>
+                  <button style={{...S.btn('gold'),fontSize:13,padding:'2px 8px'}}
+                    onClick={()=>{const s=document.getElementById('tx_src')?.value;const t=document.getElementById('tx_tgt')?.value;
+                      if(s&&t&&s!==t)reclaimerTransmute(s,t);else addLog('Select different source and target ingredients.','error');}}
+                    title="Free action">
+                    ♻️ Transmute</button>
+                </div>;
+              })()}
+
+              {/* Salvage Auction (Lv6+) */}
+              {rcLv>=6&&<>
+                <div style={{fontSize:14,color:'#60a080',fontWeight:'bold',marginBottom:4}}>📦 Salvage Auction {auctionUsed?'(used today)':''}{rcLv>=10?' · ⭐ Rare trade possible':''}</div>
+                {!auctionUsed?<div style={{display:'flex',gap:4,alignItems:'center',flexWrap:'wrap'}}>
+                  <select id="salv_ingr" style={{padding:'3px 6px',background:TH.panelLight,color:TH.text,border:'1px solid '+TH.border,borderRadius:4,fontFamily:'inherit',fontSize:13,minWidth:140}}>
+                    <option value="">Pick ingredient...</option>
+                    {Object.entries(inv).filter(([,q])=>q>0).map(([id,q])=><option key={id} value={id}>{INGR[id]?.icon||''} {INGR[id]?.name||id} ({q})</option>)}
+                  </select>
+                  <select id="salv_qty" style={{padding:'3px 6px',background:TH.panelLight,color:TH.text,border:'1px solid '+TH.border,borderRadius:4,fontFamily:'inherit',fontSize:13}}>
+                    {[1,2,3,5,10].map(n=><option key={n} value={n}>×{n}</option>)}
+                  </select>
+                  <button style={{...S.btn('gold'),fontSize:13,padding:'2px 8px'}}
+                    onClick={()=>{const id=document.getElementById('salv_ingr')?.value;const qty=parseInt(document.getElementById('salv_qty')?.value||'1');
+                      if(id&&qty>0&&(inv[id]||0)>=qty)doSalvageAuction({[id]:qty});else addLog('Select an ingredient you have enough of.','error');}}>
+                    💰 Sell</button>
+                </div>:<span style={{fontSize:13,color:TH.textDim}}>Come back tomorrow for another auction.</span>}
+              </>}
+
+              {/* Free Craft (Lv10) */}
+              {rcLv>=10&&!freeCraftUsed&&<div style={{fontSize:13,color:TH.green,marginTop:6,padding:'4px 8px',background:TH.green+'08',borderRadius:4}}>
+                ✨ Perfect Reclamation: Your next craft today consumes no ingredients (applied automatically)
+              </div>}
+            </>;
+          })()}
+        </div>}
+
+        {/* ═══ NATURALIST FIELD JOURNAL ═══ */}
+        {eSpec('scholar')==='naturalist'&&<div style={{...S.card,borderColor:'#60b060',background:'#60b00808'}} className={isWsOpen('ws16')?'':'ws-closed'}>
+          {wsHead('ws16',<>🌿 Field Journal — {fieldJournal.length} discoveries</>)}
+          {(()=>{
+            const natLv=eCL('scholar');
+            const canGeo=natLv>=6;
+            const totalPossible=Object.entries(FIELD_DISCOVERIES).reduce((s,[,discs])=>s+discs.filter(d=>d.type!=='geological'||canGeo).length,0);
+            const regions=locRegions.filter(r=>level>=regUnlock(r));
+            // ─── Region Mastery summary (Lv10) ───────────────────────────────────────
+            // Live-derived counts. Total masterable zones = the FIELD_DISCOVERIES keys that have any
+            // available entry under current canGeo. Locations = 4 (the four gameLocations).
+            const hasMastery=natLv>=10; // mirrors Naturalist Lv10 gate on regionMasteryBonus
+            const zonesMastered=getZonesMastered();
+            const locsComplete=getLocationsComplete();
+            const totalZones=Object.entries(FIELD_DISCOVERIES).filter(([,d])=>d.filter(x=>x.type!=='geological'||canGeo).length>0).length;
+            const masteryEnergy=zonesMastered*REGION_MASTERY_ENERGY_PER_ZONE+locsComplete*REGION_MASTERY_ENERGY_PER_LOCATION;
+            // Is the CURRENT gameLocation fully complete? (drives the prominent milestone banner)
+            const currentLocationComplete=(()=>{
+              if(typeof REGIONS==='undefined')return false;
+              const locZoneIds=REGIONS.filter(r=>r.loc===gameLocation).map(r=>r.id);
+              const journaled=locZoneIds.filter(zid=>FIELD_DISCOVERIES[zid]&&FIELD_DISCOVERIES[zid].length>0);
+              if(journaled.length===0)return false;
+              return journaled.every(zid=>{
+                const avail=FIELD_DISCOVERIES[zid].filter(d=>d.type!=='geological'||canGeo);
+                return avail.length>0&&avail.every(d=>fieldJournal.includes(d.id));
+              });
+            })();
+            return <>
+              <div style={{fontSize:13,color:TH.textDim,marginBottom:6}}>
+                Documented: {fieldJournal.length}/{totalPossible} · Discovery chance: {natLv>=10?'40%':natLv>=6?'30%':'20%'}/forage roll
+                {natLv>=10&&' · Auto-document'}
+                {!canGeo&&' · 🔒 Geological at Scholar Lv6'}
+              </div>
+              {/* ─── Region Mastery summary line (Lv10+) ─── */}
+              {hasMastery&&<div style={{fontSize:13,padding:'5px 8px',background:'#60b06010',border:'1px solid #60b06044',borderRadius:4,marginBottom:8,color:TH.text}}>
+                <span style={{color:'#60b060',fontWeight:'bold'}}>🌿 Region Mastery</span> · Zones Mastered: <b style={{color:TH.gold}}>{zonesMastered}/{totalZones}</b> · Regions Complete: <b style={{color:TH.gold}}>{locsComplete}/4</b>
+                <div style={{fontSize:12,color:TH.textDim,marginTop:2}}>
+                  +{zonesMastered} from zones, +{locsComplete*REGION_MASTERY_ENERGY_PER_LOCATION} from completed regions = <b style={{color:'#60b060'}}>+{masteryEnergy} Energy/day</b>
+                </div>
+              </div>}
+              {/* ─── Prominent per-location milestone (felt — distinct from per-zone ★) ─── */}
+              {hasMastery&&currentLocationComplete&&<div style={{padding:'10px 14px',marginBottom:10,background:'linear-gradient(90deg,'+TH.gold+'18,'+TH.gold+'08)',border:'2px solid '+TH.gold,borderRadius:8,boxShadow:'0 0 16px '+TH.gold+'40',textAlign:'center'}}>
+                <div style={{fontSize:18,color:TH.goldBright,fontWeight:'bold',letterSpacing:1,textShadow:'0 1px 3px rgba(0,0,0,0.5)'}}>👑 {LOCATIONS[gameLocation]?.name||gameLocation} — REGION FULLY MASTERED</div>
+                <div style={{fontSize:13,color:TH.text,marginTop:3}}>Every zone here is documented. +{REGION_MASTERY_ENERGY_PER_LOCATION} Energy/day from this region.</div>
+              </div>}
+              {regions.map(reg=>{
+                const regDiscs=FIELD_DISCOVERIES[reg.id]||[];
+                if(regDiscs.length===0)return null;
+                const available=regDiscs.filter(d=>d.type!=='geological'||canGeo);
+                const documented=available.filter(d=>fieldJournal.includes(d.id));
+                const allDone=documented.length===available.length&&available.length>0;
+                return <div key={reg.id} style={{marginBottom:6}}>
+                  <div style={{fontSize:14,fontWeight:'bold',color:allDone?TH.green:TH.text}}>
+                    {reg.icon} {reg.name} — {documented.length}/{available.length}
+                    {allDone&&<span style={{color:TH.green,marginLeft:6,fontSize:12}}>★ Zone Mastered{hasMastery?' · +'+REGION_MASTERY_ENERGY_PER_ZONE+' Energy':''}</span>}
+                  </div>
+                  <div style={{display:'flex',flexWrap:'wrap',gap:3,marginTop:2}}>
+                    {available.map(d=>{
+                      const found=fieldJournal.includes(d.id);const _tip=found?d.desc+'\n\nBonus: '+(d.bonus.extraYield?'+'+d.bonus.extraYield+' '+(INGR[d.bonus.ingredient]?.name||d.bonus.ingredient)+'/roll':d.bonus.dangerReduce?'-'+Math.round(d.bonus.dangerReduce*100)+'% danger':''):'Undiscovered — forage this region to find it';
+                      return <div key={d.id} style={{padding:'2px 6px',fontSize:12,borderRadius:3,
+                        background:found?'#60b06015':'#33333380',border:'1px solid '+(found?'#60b06044':TH.border),
+                        color:found?'#60b060':TH.textDim,cursor:'pointer'}} title={_tip} onClick={tapToggle('fj_'+d.id)}>
+                        {found?d.icon:'❓'} {found?d.name:'???'}
+                        {found&&<span style={{marginLeft:3,color:TH.textDim}}>({d.type})</span>}
+                        {tapText('fj_'+d.id,_tip)}
+                      </div>;
+                    })}
+                  </div>
+                </div>;
+              })}
+            </>;
+          })()}
+        </div>}
+
+        {/* ═══ ARCHIVIST LORE ARCHIVE ═══ */}
+        {eSpec('scholar')==='archivist'&&<div style={{...S.card,borderColor:'#c0a060',background:'#c0a06008'}} className={isWsOpen('ws17')?'':'ws-closed'}>
+          {wsHead('ws17',<>📜 Lore Archive — {loreFragments.length}/{ALL_LORE_FRAGMENTS.length} fragments</>)}
+          {(()=>{
+            const arcLv=eCL('scholar');
+            const chainsAvail=arcLv>=6?4:2;
+            const chains=Object.values(LORE_CHAINS).slice(0,chainsAvail);
+            const allChainsComplete=chains.every(c=>c.fragments.every(f=>loreFragments.includes(f.id)));
+            return <>
+              <div style={{fontSize:13,color:TH.textDim,marginBottom:6}}>
+                Fragment chance: {arcLv>=10?'50%':arcLv>=6?'40%':'30%'} per quest · {arcLv>=6?'Double':'Standard'} XP per fragment
+                {arcLv<6&&' · 🔒 More chains at Scholar Lv6'}
+              </div>
+              {chains.map(chain=>{
+                const found=chain.fragments.filter(f=>loreFragments.includes(f.id));
+                const complete=found.length===chain.fragments.length;
+                return <div key={chain.id} style={{marginBottom:8,padding:'8px 10px',background:complete?chain.color+'15':TH.panelLight,borderRadius:6,border:'1px solid '+(complete?chain.color+'66':TH.border)}}>
+                  <div style={{fontSize:15,fontWeight:'bold',color:complete?chain.color:TH.textBright}}>
+                    {chain.icon} {chain.name} — {found.length}/{chain.fragments.length}
+                    {complete&&<span style={{marginLeft:6,fontSize:12,color:TH.green}}>✅ {chain.rewardDesc}</span>}
+                  </div>
+                  <div style={{fontSize:13,color:TH.textDim,margin:'2px 0'}}>{chain.desc}</div>
+                  <div style={{display:'flex',flexWrap:'wrap',gap:3,marginTop:4}}>
+                    {chain.fragments.map(frag=>{
+                      const have=loreFragments.includes(frag.id);
+                      const _tip=have?frag.desc:'Undiscovered — complete quests related to: '+frag.factions.map(f=>FACTIONS[f]?.name||f).join(', ');
+                      return <div key={frag.id} style={{padding:'2px 8px',fontSize:12,borderRadius:3,
+                        background:have?chain.color+'20':'#33333380',border:'1px solid '+(have?chain.color+'44':TH.border),
+                        color:have?chain.color:TH.textDim,cursor:'pointer'}}
+                        title={_tip} onClick={tapToggle('lf_'+frag.id)}>
+                        {have?'📜':'❓'} {have?frag.name:'???'}
+                        {tapText('lf_'+frag.id,_tip)}
+                      </div>;
+                    })}
+                  </div>
+                </div>;
+              })}
+              {allChainsComplete&&chainsAvail>=4&&<div style={{padding:'8px 12px',background:'#d4a42015',borderRadius:6,border:'2px solid #d4a42066',textAlign:'center',marginTop:4}}>
+                <div style={{fontSize:16,color:'#d4a420',fontWeight:'bold'}}>📜 Grand Archive Complete!</div>
+                <div style={{fontSize:14,color:TH.text}}>All lore chains documented. +25% all gold, +25% all XP</div>
+              </div>}
+            </>;
+          })()}
+        </div>}
+
+        {/* ═══ RANGER COMPANIONS ═══ */}
+        {eSpec('warden')==='ranger'&&<div style={{...S.card,borderColor:'#40a060',background:'#40a00808'}} className={isWsOpen('ws18')?'':'ws-closed'}>
+          {wsHead('ws18',<>🦊 Companions — {companions.length}/{eCL('warden')>=10?3:eCL('warden')>=6?2:1} slots</>)}
+          {companions.length===0&&<div style={{fontSize:14,color:TH.textDim,marginBottom:6}}>
+            No companions yet. Forage in the wilds — creatures may appear and can be tamed with an Attunement check.
+            <br/>Encounter chance: {eCL('warden')>=10?'35%':eCL('warden')>=6?'25%':'15%'} per forage roll.
+          </div>}
+          {companions.map(c=>{
+            const comp=RANGER_COMPANIONS.find(r=>r.id===c.compId);if(!comp)return null;
+            const loy=c.loyalty;const loyPct=Math.min(100,((loy-1)*25)+Math.min(25,((day-c.tamedDay)%3)/3*25));
+            const hasSecondary=comp.secondary;
+            const secUnlocked=loy>=(comp.secondary?.unlockLv||3);
+            const hasLegendary=!!comp.legendary;
+            const legUnlocked=loy>=5;
+            return <div key={c.compId} style={{padding:'8px 10px',background:c.active?comp.color+'10':TH.bg,borderRadius:6,marginBottom:5,border:'2px solid '+(c.active?comp.color+'66':TH.border)}}>
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                <div style={{display:'flex',alignItems:'center'}}>
+                  {comp.img?<img src={comp.img} alt={comp.name} style={{width:36,height:36,borderRadius:'50%',border:'2px solid '+comp.color,objectFit:'cover',marginRight:6}}/>
+                    :<span style={{fontSize:18,marginRight:4}}>{comp.icon}</span>}
+                  <span style={{fontSize:16,color:comp.color,fontWeight:'bold'}}>{comp.name}</span>
+                  <span style={{color:TH.gold,marginLeft:6}}>{'★'.repeat(loy)}{'☆'.repeat(5-loy)}</span>
+                  <span style={{fontSize:12,color:TH.textDim,marginLeft:4}}>({['Bonded','Trusted','Devoted','Inseparable','Soulbound'][loy-1]})</span>
+                </div>
+                <button style={{fontSize:12,padding:'2px 8px',background:c.active?TH.green+'20':'#44444480',color:c.active?TH.green:TH.textDim,border:'1px solid '+(c.active?TH.green+'66':TH.border),borderRadius:3,cursor:'pointer',fontFamily:'inherit'}}
+                  onClick={()=>setCompanions(prev=>prev.map(x=>x.compId===c.compId?{...x,active:!x.active}:x))}>{c.active?'✓ Active':'Idle'}</button>
+              </div>
+              <div style={{fontSize:13,color:TH.textDim,margin:'3px 0'}}>{comp.desc}</div>
+              {/* Loyalty bar */}
+              {loy<5&&<div style={{display:'flex',alignItems:'center',gap:4,margin:'3px 0'}}>
+                <span style={{fontSize:11,color:TH.textDim,minWidth:50}}>Loyalty</span>
+                <div style={{flex:1,height:4,background:TH.panel,borderRadius:2}}><div style={{height:'100%',width:loyPct+'%',background:comp.color,borderRadius:2}}/></div>
+                <span style={{fontSize:11,color:comp.color}}>→ {'★'.repeat(loy+1)}</span>
+              </div>}
+              {/* Abilities — always show all three tiers, dim if locked */}
+              <div style={{display:'flex',flexDirection:'column',gap:3,marginTop:4}}>
+                <span style={{padding:'2px 6px',fontSize:12,background:comp.color+'15',border:'1px solid '+comp.color+'33',borderRadius:3,color:comp.color}}>
+                  {comp.role==='gatherer'||comp.role==='gather'?'🌿':comp.role==='shopkeeper'?'🏪':comp.role==='scout'||comp.role==='combat'?'🦅':comp.role==='greeter'||comp.role==='trade'?'🐕':comp.role==='guardian'?'🛡️':comp.role==='muse'||comp.role==='research'?'✨':'🔥'} <b>Primary:</b> {comp.primary.type==='gather'?'Gather — brings '+comp.primary.baseYield[Math.min(loy-1,4)]+' ingredients/day':comp.primary.type==='shop'?'Shop — earns '+fmtMoney(comp.primary.baseGold[Math.min(loy-1,4)])+'/day':comp.primary.type==='customers'?'Greeter — +'+comp.primary.values[Math.min(loy-1,4)]+' customers/day':comp.primary.type==='staff_morale'?'Guardian — +'+comp.primary.values[Math.min(loy-1,4)]+'% staff morale':comp.primary.type==='research'?'Muse — +'+(comp.primary.values[Math.min(loy-1,4)]*100).toFixed(0)+'% discovery':comp.primary.type==='danger_reduce'||comp.primary.type==='danger'?'Scout — -'+(comp.primary.values[Math.min(loy-1,4)]*100).toFixed(0)+'% danger':comp.role}
+                </span>
+                {hasSecondary&&<span style={{padding:'2px 6px',fontSize:12,background:secUnlocked?TH.gold+'15':TH.panel,border:'1px solid '+(secUnlocked?TH.gold+'33':TH.border),borderRadius:3,color:secUnlocked?TH.gold:TH.textDim,opacity:secUnlocked?1:0.6}}>
+                  {secUnlocked?'🔓':'🔒'} <b>Secondary{secUnlocked?'':' (★'+(comp.secondary.unlockLv||3)+')'}</b>: {comp.secondary.desc||comp.secondary.type}
+                </span>}
+                {hasLegendary&&<span style={{padding:'2px 6px',fontSize:12,background:legUnlocked?'#d4a42020':TH.panel,border:'1px solid '+(legUnlocked?'#d4a42066':TH.border),borderRadius:3,color:legUnlocked?'#d4a420':TH.textDim,opacity:legUnlocked?1:0.5}}>
+                  {legUnlocked?'⭐':'🔒'} <b>Legendary{legUnlocked?'':' (★5)'}</b>: {comp.legendary}
+                </span>}
+              </div>
+              {comp.passive&&c.active&&<div style={{fontSize:12,color:TH.green,marginTop:3,padding:'3px 6px',background:TH.green+'08',borderRadius:3,border:'1px solid '+TH.green+'22'}}>
+                🔋 Passive: {Object.entries(comp.passive).map(([k,v])=>k.replace(/([A-Z])/g,' $1').replace(/^./,s=>s.toUpperCase())+' +'+(typeof v==='number'&&v<1?(v*100).toFixed(0)+'%':v)).join(', ')}
+              </div>}
+              {/* Solo Expedition button (Apex Predator) */}
+              {c.active&&getFeatureVal('soloExpedition')>0&&!dayFlags.includes('solo_exp_used')&&(()=>{
+                const availRegs=locRegions.filter(r=>level>=regUnlock(r)).sort((a,b)=>b.diff-a.diff);
+                if(availRegs.length===0)return null;
+                return <div style={{marginTop:4,display:'flex',gap:4,alignItems:'center'}}>
+                  <select id={'solo_reg_'+c.compId} style={{flex:1,padding:'4px 6px',fontSize:12,background:TH.panel,color:'#40a060',border:'1px solid #40a06044',borderRadius:4,fontFamily:'inherit'}}>
+                    {availRegs.map(r=><option key={r.id} value={r.id}>{r.icon} {r.name} (★{'★'.repeat(r.diff-1)}) — {r.ingr.length} ingredients</option>)}
+                  </select>
+                  <button style={{fontSize:12,padding:'4px 10px',background:'#40a06010',color:'#40a060',border:'1px solid #40a06044',borderRadius:4,cursor:'pointer',fontFamily:'inherit',whiteSpace:'nowrap'}}
+                    onClick={()=>{
+                      const selId=document.getElementById('solo_reg_'+c.compId)?.value;
+                      const reg=locRegions.find(r=>r.id===selId)||availRegs[0];
+                      sendSoloForage(comp,loy,reg);
+                    }}>🐾 Send Solo (0⚡)</button>
+                </div>;
+              })()}
+            </div>;
+          })}
+          {eCL('warden')<6&&<div style={{fontSize:12,color:TH.textDim,marginTop:4}}>🔒 More slots at Warden Lv6</div>}
+        </div>}
+
+        {/* ═══ QUARTERMASTER SUPPLY NETWORK ═══ */}
+        {eSpec('warden')==='quartermaster'&&<div style={{...S.card,borderColor:'#6080a0',background:'#6080a008'}} className={isWsOpen('ws19')?'':'ws-closed'}>
+          {wsHead('ws19',<>🚚 Supply Network</>)}
+          {(()=>{
+            const qLv=eCL('warden');
+            const maxTier=qLv>=10?3:qLv>=6?2:1;
+            const maxRoutes=qLv>=10?6:qLv>=6?5:3;
+            const activeCaravans=caravans.filter(c=>!c.resolved&&c.returnDay>day);
+            const maxCar=getMaxCaravans();
+            const availRoutes=CARAVAN_ROUTES.filter(r=>(!r.loc||r.loc===gameLocation)).filter((r,i)=>i<maxRoutes);
+            return <>
+              {/* Active caravans */}
+              <div style={{fontSize:14,color:'#6080a0',fontWeight:'bold',marginBottom:4}}>🚚 Caravans ({activeCaravans.length}/{maxCar} active)</div>
+              {activeCaravans.length>0&&<div style={{marginBottom:6}}>
+                {activeCaravans.map(c=>{const route=CARAVAN_ROUTES.find(r=>r.id===c.routeId);const daysLeft=c.returnDay-day;
+                  return <div key={c.id} style={{padding:'3px 8px',background:TH.panelLight,borderRadius:4,marginBottom:2,border:'1px solid '+TH.border,fontSize:13}}>
+                    {route?.icon} {route?.name} — <span style={{color:TH.gold}}>returns in {daysLeft} day{daysLeft!==1?'s':''}</span>
+                  </div>;
+                })}
+              </div>}
+              {/* Dispatch new caravan */}
+              {activeCaravans.length<maxCar&&<div style={{marginBottom:8}}>
+                <div style={{fontSize:13,color:TH.textDim,marginBottom:3}}>Dispatch caravan (load ingredients as cargo):</div>
+                <div style={{display:'flex',flexWrap:'wrap',gap:3}}>
+                  {availRoutes.map(route=>{
+                    const runs=caravanRuns[route.id]||0;
+                    const partner=SUPPLY_PARTNERS.find(p=>p.route===route.id);
+                    return <button key={route.id} style={{...S.btn(energy>=25?'gold':'dim'),fontSize:12,padding:'3px 8px'}} disabled={energy<25}
+                      onClick={()=>{
+                        // Quick dispatch: send 3 of a common ingredient as cargo
+                        const common=Object.entries(inv).filter(([,q])=>q>=3).sort((a,b)=>b[1]-a[1]);
+                        if(common.length===0){addLog('Need at least 3 of any ingredient to load.','error');return;}
+                        dispatchCaravan(route.id,{[common[0][0]]:3});
+                      }}
+                      title={route.desc+'\nRuns completed: '+runs+(partner?' — '+partner.runsNeeded+' needed for supply chain':'')}>
+                      {route.icon} {route.name} (DC{route.dc} · {Math.max(1,route.roundTrip-(qLv>=6?1:0)-getFeatureVal('caravanSpeedBonus'))}d)
+                      {partner&&runs<partner.runsNeeded&&<span style={{color:TH.textDim,marginLeft:3}}>{runs}/{partner.runsNeeded}</span>}
+                    </button>;
+                  })}
+                </div>
+              </div>}
+              {/* Supply Chains */}
+              <div style={{fontSize:14,color:'#6080a0',fontWeight:'bold',marginTop:6,marginBottom:4}}>🤝 Supply Chains ({supplyChains.length}/{getMaxChains()})</div>
+              {/* Established chains */}
+              {supplyChains.map(sc=>{
+                const partner=SUPPLY_PARTNERS.find(p=>p.id===sc.partnerId);if(!partner)return null;
+                const tierKey='t'+sc.tier;
+                const outDesc=(partner.output[tierKey]||[]).map((id,i)=>(INGR[id]?.icon||'')+(INGR[id]?.name||id)+'×'+(partner.outputQty[tierKey]?.[i]||1)).join(', ');
+                return <div key={sc.partnerId} style={{padding:'5px 8px',background:partner.color+'10',borderRadius:4,marginBottom:3,border:'1px solid '+partner.color+'44'}}>
+                  <div style={{...S.row,justifyContent:'space-between'}}>
+                    <span style={{fontSize:14,color:partner.color,fontWeight:'bold'}}>{partner.icon} {partner.name} <span style={{color:TH.gold}}>T{sc.tier}</span></span>
+                    {sc.tier<maxTier&&<button style={{...S.btn('gold'),fontSize:11,padding:'1px 6px'}}
+                      onClick={()=>upgradeChain(sc.partnerId)}>↑ T{sc.tier+1} ({fmtMoney(partner.setupCost*sc.tier)})</button>}
+                  </div>
+                  <div style={{fontSize:12,color:TH.textDim}}>Daily: {outDesc}{partner.goldOutput[tierKey]>0?' +'+fmtMoney(partner.goldOutput[tierKey]):''} · Maint: {fmtMoney(partner.maint)}/day</div>
+                </div>;
+              })}
+              {/* Available to establish */}
+              {SUPPLY_PARTNERS.filter(p=>(!p.loc||p.loc===gameLocation)&&!supplyChains.find(sc=>sc.partnerId===p.id)&&(!p.legendary||qLv>=10)).map(partner=>{
+                const runs=caravanRuns[partner.route]||0;
+                const canEstablish=runs>=partner.runsNeeded&&gold>=partner.setupCost&&supplyChains.length<getMaxChains();
+                const routeName=CARAVAN_ROUTES.find(r=>r.id===partner.route)?.name||'';
+                return <div key={partner.id} style={{padding:'5px 8px',background:TH.panelLight,borderRadius:4,marginBottom:3,border:'1px solid '+TH.border,opacity:runs>=partner.runsNeeded?1:0.7}}>
+                  <div style={{...S.row,justifyContent:'space-between'}}>
+                    <span style={{fontSize:14,color:TH.textBright}}>{partner.icon} {partner.name} {partner.legendary&&<span style={{color:'#d4a420',fontSize:11}}>★</span>}</span>
+                    {canEstablish?<button style={{...S.btn('gold'),fontSize:12,padding:'2px 8px'}}
+                      onClick={()=>establishChain(partner.id)}>🤝 Establish ({fmtMoney(partner.setupCost)})</button>
+                      :<span style={{fontSize:12,color:TH.textDim}}>{runs}/{partner.runsNeeded} runs on {routeName}</span>}
+                  </div>
+                  <div style={{fontSize:12,color:TH.textDim}}>{partner.desc}</div>
+                </div>;
+              })}
+              {qLv<6&&<div style={{fontSize:12,color:TH.textDim,marginTop:4}}>🔒 More caravans & chains at Warden Lv6</div>}
+            </>;
+          })()}
+        </div>}
+
+        {/* ═══ STAFF ACADEMY (Master Trainer feat) ═══ */}
+        {playerFeats.includes('master_trainer')&&<div style={{...S.card,borderColor:'#d0a030',background:'#d0a03008'}} className={isWsOpen('ws20')?'':'ws-closed'}>
+          {wsHead('ws20',<>🎓 Staff Academy</>)}
+          {(()=>{
+            return <>
+              {hiredAppr.length===0&&<div style={{fontSize:14,color:TH.textDim}}>Hire staff first, then train them here.</div>}
+              {hiredAppr.map(ap=>{
+                const aLvl=getApprLvl(ap.id);
+                const inCurriculum=trainingSessions[ap.id];
+                return <div key={ap.id} style={{padding:'6px 10px',background:TH.panelLight,borderRadius:6,marginBottom:5,border:'1px solid '+TH.border}}>
+                  <div style={{fontSize:15,color:TH.textBright,marginBottom:3}}>
+                    {ap.icon} {ap.name} {'★'.repeat(aLvl)||'☆'}
+                    <span style={{fontSize:12,color:TH.textDim,marginLeft:6}}>
+                      {Object.entries(ap.baseStat).map(([s,v])=><span key={s} style={{marginRight:4,color:STATS[s]?.color||TH.text}}>{STATS[s]?.icon||s}{v}</span>)}
+                    </span>
+                  </div>
+                  {inCurriculum&&<div style={{fontSize:13,color:TH.gold,marginBottom:3,padding:'2px 6px',background:TH.gold+'10',borderRadius:3}}>
+                    📚 Curriculum: {STATS[inCurriculum.stat]?.name} — {inCurriculum.daysLeft} day{inCurriculum.daysLeft!==1?'s':''} remaining
+                  </div>}
+                  {/* Train individual stat */}
+                  <div style={{display:'flex',flexWrap:'wrap',gap:3,marginBottom:3}}>
+                    <span style={{fontSize:12,color:TH.textDim,alignSelf:'center'}}>Train (free):</span>
+                    {TRAINABLE_STATS.map(sid=>
+                      <button key={sid} style={{...S.btn('gold'),fontSize:11,padding:'2px 6px'}}
+                        onClick={()=>trainApprentice(ap.id,sid)}
+                        title={'Train '+STATS[sid]?.name+' — Persuasion check'}>
+                        {STATS[sid]?.icon||sid} {STATS[sid]?.name} <span style={{opacity:.7}}>DC{10+Math.floor((ap.baseStat[sid]||10)/3)}</span>
+                      </button>
+                    )}
+                  </div>
+                  {/* Curriculum */}
+                  {!inCurriculum&&<div style={{display:'flex',flexWrap:'wrap',gap:3,marginBottom:3}}>
+                    <span style={{fontSize:12,color:TH.gold,alignSelf:'center'}}>📚 Curriculum (3 days):</span>
+                    {TRAINABLE_STATS.map(sid=>
+                      <button key={sid} style={{...S.btn('def'),fontSize:11,padding:'2px 5px'}}
+                        onClick={()=>startCurriculum(ap.id,sid)}>
+                        {STATS[sid]?.icon||sid}
+                      </button>
+                    )}
+                  </div>}
+                  {/* Teach trait */}
+                  {<div style={{display:'flex',flexWrap:'wrap',gap:3}}>
+                    <span style={{fontSize:12,color:'#d0a030',alignSelf:'center'}}>✨ Teach (Persuasion DC 15):</span>
+                    {TEACHABLE_TRAITS.filter(t=>!(ap.traits||[]).includes(t)).slice(0,5).map(t=>
+                      <button key={t} style={{...S.btn((ap.traits||[]).length>=4?'dim':'gold'),fontSize:11,padding:'2px 5px'}}
+                        disabled={(ap.traits||[]).length>=4}
+                        onClick={()=>teachTrait(ap.id,t)}
+                        title={t+' — free action, DC 15 Persuasion check'}>
+                        {t}
+                      </button>
+                    )}
+                  </div>}
+                </div>;
+              })}
+            </>;
+          })()}
+        </div>}
+
+        {/* ═══ DIPLOMAT EMBASSY ═══ */}
+        {(prestigeLevels?.diplomat||0)>=1&&<div style={{...S.card,borderColor:'#4090c0',background:'#4090c008'}} className={isWsOpen('ws21')?'':'ws-closed'}>
+          {wsHead('ws21',<>🤝 Embassy — Faction Harmony</>)}
+          {(()=>{
+            const maxHarmony=getHarmonyCap();
+            const envoysToday=dayFlags.filter(f=>f==='envoy_sent').length;
+            const maxEnvoys=getMaxEnvoys();
+            const uiPairs=FACTION_PAIRS.filter(fp=>(!fp.loc||fp.loc===gameLocation));
+            const allMax=isGrandAlliance();
+            return <>
+              <div style={{fontSize:13,color:TH.textDim,marginBottom:6}}>
+                Envoys: {maxEnvoys-envoysToday}/{maxEnvoys} remaining today · Harmony cap: {maxHarmony}
+                {(prestigeLevels?.diplomat||0)>=3&&' · +5 rep per successful envoy'}
+              </div>
+              {allMax&&<div style={{padding:'8px 12px',background:'#d4a42015',borderRadius:6,border:'2px solid #d4a42066',textAlign:'center',marginBottom:8}}>
+                <div style={{fontSize:16,color:'#d4a420',fontWeight:'bold'}}>🏛️ Grand Alliance Active!</div>
+                <div style={{fontSize:14,color:TH.text}}>All factions united. +50% rep gains, +25% sell bonus</div>
+              </div>}
+              {uiPairs.map(pair=>{
+                const h=factionHarmony[pair.id]||0;
+                const atCap=h>=maxHarmony;
+                const canSend=envoysToday<maxEnvoys&&!atCap;
+                return <div key={pair.id} style={{padding:'6px 10px',background:h>=3?'#4090c015':TH.panelLight,borderRadius:6,marginBottom:4,border:'1px solid '+(h>=3?'#4090c066':h>0?'#4090c033':TH.border)}}>
+                  <div style={{...S.row,justifyContent:'space-between'}}>
+                    <div>
+                      <span style={{fontSize:15,color:h>=3?'#4090c0':TH.textBright}}>{pair.icon} {pair.name}</span>
+                      <span style={{color:TH.gold,marginLeft:6,fontSize:13}}>{'★'.repeat(h)}{'☆'.repeat(3-h)}</span>
+                    </div>
+                    {!atCap&&<button style={{...S.btn(canSend?'gold':'dim'),fontSize:12,padding:'2px 8px'}} disabled={!canSend}
+                      onClick={()=>dispatchEnvoy(pair.id)}
+                      title="Free action — daily limit applies">
+                      🕊️ Send Envoy (DC{pair.dc+h*2})
+                    </button>}
+                    {atCap&&h<3&&<span style={{fontSize:12,color:TH.textDim}}>🔒 Diplomat Lv{h>=2?5:3} to advance</span>}
+                  </div>
+                  <div style={{fontSize:12,color:TH.textDim,margin:'2px 0'}}>{pair.desc}</div>
+                  {/* Harmony rewards display */}
+                  <div style={{display:'flex',gap:4,marginTop:3}}>
+                    {[0,1,2].map(lvl=>{
+                      const active=h>lvl;
+                      return <span key={lvl} style={{padding:'1px 6px',fontSize:11,borderRadius:3,
+                        background:active?'#4090c020':'#33333380',border:'1px solid '+(active?'#4090c044':TH.border),
+                        color:active?'#4090c0':TH.textDim}}>
+                        {'★'.repeat(lvl+1)} {pair.rewards[lvl]?.split(',')[0]||''}
+                      </span>;
+                    })}
+                  </div>
+                </div>;
+              })}
+              {maxHarmony<2&&<div style={{fontSize:12,color:TH.textDim,marginTop:4}}>🔒 More envoys & Harmony 2 at Diplomat Lv3</div>}
+              {maxHarmony>=2&&maxHarmony<3&&<div style={{fontSize:12,color:TH.textDim,marginTop:4}}>🔒 Harmony 3 & Grand Alliance at Diplomat Lv5</div>}
+            </>;
+          })()}
+        </div>}
+
+        {/* ═══ WILDCRAFTER — WILDCRAFTS ═══ */}
+        {(prestigeLevels.wildcrafter||0)>=2&&<div style={{...S.card,borderColor:'#60a040',background:'#60a04008'}} className={isWsOpen('ws_wc')?'':'ws-closed'}>
+          {wsHead('ws_wc',<>🌿 Wildcrafts — {getWildcraftSlots()-wildcraftsUsedToday}/{getWildcraftSlots()} remaining</>)}
+          {(()=>{
+            const wcLv=prestigeLevels.wildcrafter||0;const maxSlots=getWildcraftSlots();const canBrew=wildcraftsUsedToday<maxSlots;
+            const availIngr=Object.entries(inv).filter(([,q])=>q>0);const hasIngr=availIngr.length>=3;
+            const seasons=SEASONS[gameLocation]||[];
+            const zoneComps=RANGER_COMPANIONS.filter(c=>(!c.loc||c.loc===gameLocation)&&!c.legendary_only);
+            return <div style={{padding:'6px 8px'}}>
+              {/* Seasonal Bypass */}
+              <div style={{marginBottom:8,padding:'6px 8px',background:'#60a04010',borderRadius:4,border:'1px solid #60a04022'}}>
+                <div style={{fontSize:14,color:'#60a040',fontWeight:'bold'}}>🍃 Seasonal Bypass</div>
+                <div style={{fontSize:12,color:TH.textDim}}>Access any season's ingredients on your next forage trip. Cost: 3 unique ingredients.</div>
+                {seasonalOverride?<div style={{fontSize:13,color:'#60a040',marginTop:4}}>Active: {seasons.find(s=>s.id===seasonalOverride.season)?.icon} {seasons.find(s=>s.id===seasonalOverride.season)?.name} → {locRegions.find(r=>r.id===seasonalOverride.region)?.name||seasonalOverride.region} <button style={{...S.btn('dim'),fontSize:11,padding:'1px 4px'}} onClick={()=>setSeasonalOverride(null)}>Cancel</button></div>
+                :<div style={{marginTop:4}}>
+                  <div style={{fontSize:12,color:TH.textDim,marginBottom:3}}>1. Pick region:</div>
+                  <div style={{display:'flex',gap:3,flexWrap:'wrap',marginBottom:6}}>
+                    {locRegions.filter(r=>level>=regUnlock(r)).map(r=>{const sel=wcPickRegion===r.id;return <button key={r.id} style={{...S.btn(sel?'green':'def'),fontSize:12,padding:'2px 6px'}} onClick={()=>setWcPickRegion(sel?null:r.id)}>{r.icon} {r.name}</button>;})}
+                  </div>
+                  {wcPickRegion&&(()=>{
+                    const curSeason=getSeason(day,gameLocation);
+                    return <><div style={{fontSize:12,color:TH.textDim,marginBottom:3}}>2. Pick season (current: {curSeason.icon} {curSeason.name}):</div>
+                    <div style={{display:'flex',flexDirection:'column',gap:4}}>
+                      {seasons.map(s=>{const sIngr=getSeasonalIngr(s,gameLocation,false);const isCur=s.id===curSeason.id;
+                        return <div key={s.id} style={{padding:'5px 8px',background:isCur?'#60a04018':TH.panelLight,borderRadius:4,border:'1px solid '+(isCur?'#60a04044':TH.border),opacity:canBrew&&hasIngr?1:0.5,cursor:canBrew&&hasIngr?'pointer':'default'}}
+                          onClick={()=>{if(canBrew&&hasIngr){brewWildcraft('seasonal_bypass',{region:wcPickRegion,season:s.id});setWcPickRegion(null);}}}>
+                          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                            <span style={{fontSize:13,fontWeight:'bold',color:s.color||'#60a040'}}>{s.icon} {s.name}{isCur?' (current)':''}</span>
+                            {canBrew&&hasIngr&&!isCur&&<span style={{fontSize:11,color:'#60a040'}}>Bypass →</span>}
+                          </div>
+                          {sIngr.length>0?<div style={{fontSize:11,color:TH.textDim,marginTop:2}}>
+                            {sIngr.map(id=><span key={id} style={{marginRight:5}}>{INGR[id]?.icon||''}{INGR[id]?.name||id}</span>)}
+                          </div>:<div style={{fontSize:11,color:TH.textDim,marginTop:2,fontStyle:'italic'}}>No seasonal ingredients</div>}
+                        </div>;})}
+                    </div></>;
+                  })()}
+                </div>}
+              </div>
+              {/* Wild Ally */}
+              {wcLv>=3?<div style={{marginBottom:8,padding:'6px 8px',background:'#40a06010',borderRadius:4,border:'1px solid #40a06022'}}>
+                <div style={{fontSize:14,color:'#40a060',fontWeight:'bold'}}>🐾 Wild Ally</div>
+                <div style={{fontSize:12,color:TH.textDim}}>Attract a temporary companion for {WILDCRAFTS.wild_ally.duration(wcLv)} day{WILDCRAFTS.wild_ally.duration(wcLv)>1?'s':''}. No loyalty, no legendary. Cost: 3 unique ingredients.</div>
+                {wildAlly?<div style={{marginTop:6,padding:'6px 8px',background:'#40a06015',borderRadius:4,border:'1px solid #40a06033'}}>
+                  <div style={{display:'flex',alignItems:'center',gap:8}}>
+                    {(()=>{const comp=RANGER_COMPANIONS.find(c=>c.id===wildAlly.compId);return comp?.img?<img src={comp.img} style={{width:44,height:44,borderRadius:6,objectFit:'cover',border:'2px solid #40a060'}} alt={wildAlly.name}/>:null;})()}
+                    <div>
+                      <div style={{fontSize:14,color:'#40a060',fontWeight:'bold'}}>{wildAlly.icon} {wildAlly.name} <span style={{fontSize:11,color:TH.textDim,fontWeight:'normal'}}>Wild Ally</span></div>
+                      <div style={{fontSize:12,color:TH.textDim}}>{wildAlly.role} — {COMPANION_ROLE_DESC[wildAlly.role]||wildAlly.role}</div>
+                      <div style={{fontSize:12,color:'#40a060'}}>{wildAlly.daysLeft} day{wildAlly.daysLeft>1?'s':''} remaining</div>
+                    </div>
+                  </div>
+                </div>
+                :<div style={{display:'flex',flexDirection:'column',gap:4,marginTop:6}}>
+                  {zoneComps.slice(0,7).map(c=>{
+                    const comp=RANGER_COMPANIONS.find(rc=>rc.id===c.id);
+                    return <div key={c.id} style={{display:'flex',alignItems:'center',gap:8,padding:'6px 8px',background:TH.panelLight,borderRadius:4,border:'1px solid '+(canBrew&&hasIngr?'#40a06033':TH.border),cursor:canBrew&&hasIngr?'pointer':'default',opacity:canBrew&&hasIngr?1:0.5}}
+                      onClick={()=>canBrew&&hasIngr&&brewWildcraft('wild_ally',{compId:c.id})}>
+                      {comp?.img?<img src={comp.img} style={{width:36,height:36,borderRadius:5,objectFit:'cover'}} alt={c.name}/>:<span style={{fontSize:24,width:36,textAlign:'center'}}>{c.icon}</span>}
+                      <div style={{flex:1,minWidth:0}}>
+                        <div style={{fontSize:13,fontWeight:'bold',color:'#40a060'}}>{c.icon} {c.name}</div>
+                        <div style={{fontSize:11,color:TH.textDim}}>{c.role} — {COMPANION_ROLE_DESC[c.role]||c.role}</div>
+                      </div>
+                      {canBrew&&hasIngr&&<span style={{fontSize:11,color:'#40a060',whiteSpace:'nowrap'}}>Summon</span>}
+                    </div>;
+                  })}
+                </div>}
+              </div>
+              :<div style={{marginBottom:8,padding:'6px 8px',background:'#40a06008',borderRadius:4,border:'1px solid #40a06015',opacity:0.6}}>
+                <div style={{fontSize:14,color:'#40a060'}}>🐾 Wild Ally <span style={{fontSize:11,color:TH.textDim}}>— Unlocks at Wildcrafter Lv3</span></div>
+                <div style={{fontSize:12,color:TH.textDim}}>Attract a temporary companion creature.</div>
+              </div>}
+              {/* Threat Suppression */}
+              {wcLv>=4?<div style={{padding:'6px 8px',background:'#4080a010',borderRadius:4,border:'1px solid #4080a022'}}>
+                <div style={{fontSize:14,color:'#4080a0',fontWeight:'bold'}}>🛡️ Threat Suppression</div>
+                <div style={{fontSize:12,color:TH.textDim}}>Reduce a threat by {WILDCRAFTS.threat_suppression.reduction(wcLv)}. Cost: 3 unique ingredients.</div>
+                <div style={{display:'flex',gap:4,marginTop:4}}>
+                  {locThreatIds.map(tid=>{const tf=THREAT_FACTIONS[tid];const tLv=threats[tid]||0;return <button key={tid} style={{...S.btn(canBrew&&hasIngr&&tLv>0?'def':'dim'),fontSize:12,padding:'2px 6px',borderColor:'#4080a044'}} disabled={!canBrew||!hasIngr||tLv<=0}
+                    onClick={()=>brewWildcraft('threat_suppression',{threatId:tid})}>{tf?.icon} {tf?.name} ({tLv})</button>;})}
+                </div>
+              </div>
+              :<div style={{padding:'6px 8px',background:'#4080a008',borderRadius:4,border:'1px solid #4080a015',opacity:0.6}}>
+                <div style={{fontSize:14,color:'#4080a0'}}>🛡️ Threat Suppression <span style={{fontSize:11,color:TH.textDim}}>— Unlocks at Wildcrafter Lv4</span></div>
+                <div style={{fontSize:12,color:TH.textDim}}>Directly reduce a zone threat level.</div>
+              </div>}
+              {!canBrew&&<div style={{fontSize:12,color:TH.textDim,marginTop:6}}>Daily wildcrafts used ({wildcraftsUsedToday}/{maxSlots}). Rest to reset.</div>}
+              {!hasIngr&&canBrew&&<div style={{fontSize:12,color:TH.textDim,marginTop:6}}>Need 3+ unique ingredients in inventory.</div>}
+            </div>;
+          })()}
+        </div>}
+
+        {/* ═══ CARTOGRAPHER — ATLAS ═══ */}
+        {(prestigeLevels.cartographer||0)>=1&&<div style={{...S.card,borderColor:'#50a0a0',background:'linear-gradient(135deg,#1a2828,#1e2e30)'}} className={isWsOpen('ws22')?'':'ws-closed'}>
+          {wsHead('ws22',<>🗺️ Cartographer Atlas — {mappedRegions.length}/{HIDDEN_REGIONS.filter(hr=>!hr.legendary||(prestigeLevels.cartographer||0)>=5).length} hidden areas mapped</>)}
+          {(()=>{
+            const cLv=prestigeLevels.cartographer||0;
+            const discChance=cLv>=2?40:25;
+            return <>
+              <div style={{fontSize:13,color:TH.textDim,marginBottom:8}}>
+                Discovery chance: {discChance}% per forage roll · {cLv>=2?'+1 bonus ingredient from mapped areas':''} {cLv>=3?'· See region ingredients':''}
+                {cLv>=4&&' · Staff use your maps (+25% yield)'}
+              </div>
+              {locRegions.filter(r=>level>=regUnlock(r)).map(reg=>{
+                const regionHidden=HIDDEN_REGIONS.filter(hr=>hr.region===reg.id&&(!hr.legendary||cLv>=5));
+                if(regionHidden.length===0)return null;
+                return <div key={reg.id} style={{marginBottom:6}}>
+                  <div style={{fontSize:14,fontWeight:'bold',color:TH.textBright}}>{reg.icon} {reg.name}</div>
+                  {regionHidden.map(hr=>{
+                    const mapped=mappedRegions.includes(hr.id);
+                    return <div key={hr.id} style={{padding:'5px 10px',marginTop:3,borderRadius:5,
+                      background:mapped?'#50a0a012':'#33333340',
+                      border:'1px solid '+(mapped?'#50a0a044':TH.border)}}>
+                      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                        <span style={{fontSize:14,color:mapped?'#50a0a0':TH.textDim}}>
+                          {mapped?hr.icon:'❓'} {mapped?hr.name:'Undiscovered Hidden Area'}
+                          {hr.legendary&&<span style={{color:'#d4a420',fontSize:12,marginLeft:4}}>★ Legendary</span>}
+                        </span>
+                        {mapped&&<span style={{fontSize:12,color:TH.textDim}}>DC {hr.dc}</span>}
+                      </div>
+                      {mapped&&<div style={{fontSize:13,color:TH.textDim,fontStyle:'italic',margin:'2px 0'}}>{hr.desc}</div>}
+                      {mapped&&<div style={{fontSize:13,marginTop:2}}>
+                        Yields: {hr.ingr.map(id=><span key={id} style={{color:'#50a0a0',marginRight:6}}>{INGR[id]?.icon||'?'}{INGR[id]?.name||id}</span>)}
+                        <span style={{color:TH.textDim,fontSize:12}}>({hr.yieldRange[0]}-{hr.yieldRange[1]}/roll)</span>
+                      </div>}
+                      {!mapped&&<div style={{fontSize:12,color:TH.textDim}}>Forage in {reg.name} to discover</div>}
+                    </div>;
+                  })}
+                </div>;
+              })}
+              {cLv<2&&<div style={{fontSize:12,color:TH.textDim,marginTop:6}}>🔒 +15% discovery & bonus yield at Cartographer Lv2</div>}
+              {cLv>=2&&cLv<5&&<div style={{fontSize:12,color:TH.textDim,marginTop:6}}>🔒 Legendary hidden areas at Cartographer Lv5</div>}
+            </>;
+          })()}
+        </div>}
+
+        {/* ═══ ARCANIST — CUSTOM PATTERNS ═══ */}
+        {(prestigeLevels.arcanist||0)>=1&&(()=>{
+          const aLv=prestigeLevels.arcanist||0;
+          const maxEff=getMaxEffects();
+          // Category, power, and effect selections managed via DOM (getElementById)
+          // Use a ref-based approach for local UI state within the IIFE
+          return <div style={{...S.card,borderColor:'#8060c0',background:'linear-gradient(135deg,#1a1830,#22203a)'}} className={isWsOpen('ws23')?'':'ws-closed'}>
+            {wsHead('ws23',<>✨ Arcanist Pattern Workshop — {customPatterns.length}/{getPatternSlots()} patterns</>)}
+            <div style={{fontSize:13,color:TH.textDim,marginBottom:8}}>
+              Design custom enchantments by combining effects. Max {maxEff} effect{maxEff>1?'s':''} per pattern.
+              {aLv>=2&&' · +2 inscription bonus on custom patterns'}
+              {aLv>=3&&' · Custom patterns sell at 2×'}
+            </div>
+            {/* Research new pattern */}
+            <div style={{padding:'10px 12px',background:'#8060c015',borderRadius:6,border:'1px solid #8060c033',marginBottom:8}}>
+              <div style={{fontSize:14,color:'#b090e0',fontWeight:'bold',marginBottom:6}}>🔬 Research New Pattern</div>
+              {/* Category selector */}
+              <div style={{display:'flex',gap:4,marginBottom:6}}>
+                {Object.entries(ENCH_CATS).map(([catId,cat])=>
+                  <button key={catId} id={'arc_cat_'+catId}
+                    style={{...S.btn('def'),fontSize:13,padding:'3px 10px',borderColor:'#8060c044'}}
+                    onClick={()=>{document.querySelectorAll('[id^=arc_cat_]').forEach(b=>b.style.background='');document.getElementById('arc_cat_'+catId).style.background='#8060c030';document.getElementById('arc_cat_val').value=catId;}}>
+                    {cat.icon} {cat.name}
+                  </button>
+                )}
+                <input type="hidden" id="arc_cat_val" defaultValue="weapon"/>
+              </div>
+              {/* Effect checkboxes */}
+              <div style={{fontSize:13,color:TH.textDim,marginBottom:3}}>Select up to {maxEff} effect{maxEff>1?'s':''}:</div>
+              <div style={{display:'flex',flexWrap:'wrap',gap:4,marginBottom:6}}>
+                {PATTERN_EFFECTS.map(eff=>
+                  <label key={eff.id} style={{display:'flex',alignItems:'center',gap:3,padding:'3px 8px',background:TH.panelLight,borderRadius:4,border:'1px solid '+TH.border,cursor:'pointer',fontSize:12}}>
+                    <input type="checkbox" className="arc_eff_cb" value={eff.id} style={{margin:0}}/>
+                    <span style={{color:'#b090e0'}}>{eff.icon}</span> <span style={{color:TH.text}}>{eff.name}</span>
+                    <span style={{color:TH.textDim,fontSize:11}}>({eff.desc})</span>
+                  </label>
+                )}
+              </div>
+              {/* Power level */}
+              <div style={{display:'flex',gap:4,alignItems:'center',marginBottom:6}}>
+                <span style={{fontSize:13,color:TH.textDim}}>Power:</span>
+                {PATTERN_POWER_NAMES.map((pn,i)=>
+                  <button key={i} id={'arc_pow_'+i}
+                    style={{...S.btn(i===0?'gold':'def'),fontSize:12,padding:'2px 10px',borderColor:'#8060c044'}}
+                    onClick={()=>{document.querySelectorAll('[id^=arc_pow_]').forEach(b=>{b.style.background='';b.style.color='';});const el=document.getElementById('arc_pow_'+i);el.style.background='#8060c030';el.style.color='#b090e0';document.getElementById('arc_pow_val').value=i;}}>
+                    {pn} (DC +{i*3})
+                  </button>
+                )}
+                <input type="hidden" id="arc_pow_val" defaultValue="0"/>
+              </div>
+              {/* Custom name (Lv2+) */}
+              {canNamePatterns()&&<div style={{marginBottom:6}}>
+                <input id="arc_name_input" placeholder="Name your creation (optional)" style={{width:'100%',padding:'4px 8px',background:TH.panelLight,border:'1px solid #8060c044',borderRadius:4,color:TH.textBright,fontFamily:'inherit',fontSize:13,boxSizing:'border-box'}}/>
+              </div>}
+              {/* Research button */}
+              <button style={{...S.btn(energy>=50?'gold':'dim'),fontSize:14,padding:'6px 16px'}} disabled={energy<50}
+                onClick={()=>{
+                  const checked=Array.from(document.querySelectorAll('.arc_eff_cb:checked')).map(cb=>cb.value);
+                  const power=parseInt(document.getElementById('arc_pow_val')?.value||'0');
+                  const cat=document.getElementById('arc_cat_val')?.value||'weapon';
+                  const name=document.getElementById('arc_name_input')?.value||'';
+                  researchPattern(checked,power,cat,name);
+                }}>
+                🔬 Research Pattern (⚡50)
+              </button>
+            </div>
+            {/* Pattern library */}
+            {customPatterns.length>0&&<div>
+              <div style={{fontSize:14,color:'#b090e0',fontWeight:'bold',marginBottom:4}}>📚 Pattern Library</div>
+              {customPatterns.map(pat=>{
+                const effObjs=pat.effects.map(eid=>PATTERN_EFFECTS.find(e=>e.id===eid)).filter(Boolean);
+                return <div key={pat.id} style={{padding:'6px 10px',background:'#8060c010',borderRadius:6,marginBottom:4,border:'1px solid #8060c033',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                  <div>
+                    <div style={{fontSize:15,color:'#c0a0e0',fontWeight:'bold'}}>{pat.name}</div>
+                    <div style={{fontSize:13,color:TH.textDim}}>
+                      {ENCH_CATS[pat.cat]?.icon} {ENCH_CATS[pat.cat]?.name} · {effObjs.map(e=>e.icon+' '+e.name).join(' + ')} · {PATTERN_POWER_NAMES[pat.power]} · DC {pat.dc}
+                    </div>
+                    <div style={{fontSize:12,color:TH.textDim}}>{effObjs.map(e=>e.desc).join(', ')} · {pat.xp} XP · Sell {pat.sellMult}×</div>
+                  </div>
+                  <button style={{...S.btn('dim'),fontSize:11,padding:'2px 6px'}} onClick={()=>deletePattern(pat.id)} title="Remove from library">✕</button>
+                </div>;
+              })}
+            </div>}
+            {aLv<2&&<div style={{fontSize:12,color:TH.textDim,marginTop:4}}>🔒 Named patterns & +2 inscription at Arcanist Lv2</div>}
+            {aLv>=2&&aLv<3&&<div style={{fontSize:12,color:TH.textDim,marginTop:4}}>🔒 Dual-effect patterns & 2× sell at Arcanist Lv3</div>}
+            {aLv>=3&&aLv<5&&<div style={{fontSize:12,color:TH.textDim,marginTop:4}}>🔒 Triple-effect legendary patterns at Arcanist Lv5</div>}
+          </div>;
+        })()}
+
+        {/* ═══ MAGITECH ENGINEER — AUTOMATA ═══ */}
+        {(prestigeLevels.magitech||0)>=1&&<div style={{...S.card,borderColor:'#a0a060',background:'#a0a00808'}} className={isWsOpen('ws24')?'':'ws-closed'}>
+          {wsHead('ws24',<>🤖 Automata — {automata.length}/{getAutoSlots()} slots · Efficiency: {Math.round(getAutoEfficiency()*100)}%</>)}
+          {automata.length===0&&<div style={{fontSize:14,color:TH.textDim,marginBottom:6}}>
+            No automata built yet. Build one to start autonomous operations.
+          </div>}
+          {/* Built automata */}
+          {automata.map((auto,autoIdx)=>{
+            const aLvl=getAutoLvl(auto.id);
+            const xp=auto.xp||0;const curLvXp=aLvl*80;const nextLvXp=(aLvl+1)*80;
+            const prog=xp-curLvXp;const needed=nextLvXp-curLvXp;const pct=Math.min(100,Math.round(prog/needed*100));
+            const mLv=prestigeLevels.magitech||0;
+            const portrait=AUTOMATON_PORTRAITS[autoIdx];
+            return <div key={auto.id} style={{padding:'10px 12px',background:'linear-gradient(135deg,#1a1a2e,#22223a)',borderRadius:8,marginBottom:8,border:'2px solid '+(auto.task?'#a0a06088':'#a0a06033'),boxShadow:auto.task?'0 0 12px #a0a06020':'none'}}>
+              <div style={{display:'flex',gap:12}}>
+                {/* Portrait */}
+                <div style={{flexShrink:0}}>
+                  {portrait?<img src={portrait} alt={auto.name} style={{width:90,height:90,borderRadius:8,border:'2px solid #a0a06066',objectFit:'cover'}}
+                    onError={e=>{e.target.style.display='none';}}/>
+                    :<div style={{width:90,height:90,borderRadius:8,border:'2px solid #a0a06044',background:'#a0a06015',display:'flex',alignItems:'center',justifyContent:'center',fontSize:40}}>🤖</div>}
+                </div>
+                {/* Info column */}
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:2}}>
+                    <div>
+                      <span style={{fontSize:17,color:'#c0c080',fontWeight:'bold'}}>{auto.name}</span>
+                      <span style={{color:TH.gold,marginLeft:6,fontSize:14}}>{'★'.repeat(aLvl)}{'☆'.repeat(5-aLvl)}</span>
+                    </div>
+                    <span style={{fontSize:12,padding:'2px 8px',borderRadius:10,background:auto.task?TH.green+'20':'#44444480',color:auto.task?TH.green:TH.textDim,border:'1px solid '+(auto.task?TH.green+'44':TH.border)}}>{auto.task?'⚡ Active':'💤 Idle'}</span>
+                  </div>
+                  {/* XP bar */}
+                  {mLv>=3&&aLvl<5&&<div style={{display:'flex',alignItems:'center',gap:4,margin:'4px 0'}}>
+                    <span style={{fontSize:11,color:TH.textDim,minWidth:55}}>XP {prog}/{needed}</span>
+                    <div style={{flex:1,height:5,background:'#33333380',borderRadius:3}}><div style={{height:'100%',width:pct+'%',background:'linear-gradient(90deg,#a0a060,#c0c080)',borderRadius:3,transition:'width 0.3s'}}/></div>
+                    <span style={{fontSize:11,color:'#a0a060'}}>→ Lv{aLvl+1}</span>
+                  </div>}
+                  {/* Current assignment */}
+                  {auto.task&&<div style={{fontSize:13,color:'#c0c080',margin:'4px 0',padding:'3px 8px',background:'#a0a06010',borderRadius:4,border:'1px solid #a0a06033'}}>
+                    📋 {auto.task.type==='brew'?'⚗️ Brew '+(RECIPES.find(r=>r.id===auto.task.target)?.icon||'')+(RECIPES.find(r=>r.id===auto.task.target)?.name||auto.task.target)
+                      :auto.task.type==='forage'?'⛏️ Forage '+(locRegions.find(r=>r.id===auto.task.target)?.icon||'')+(locRegions.find(r=>r.id===auto.task.target)?.name||auto.task.target)
+                      :auto.task.type==='shopkeep'?'🏪 Shopkeeping'
+                      :auto.task.type==='enchant'?'✨ Enchanting':'❓ Unknown'}
+                  </div>}
+                  {/* Last report */}
+                  {auto.lastReport&&<div style={{fontSize:12,margin:'3px 0',padding:'3px 8px',background:auto.lastReport.color+'10',borderRadius:4,border:'1px solid '+auto.lastReport.color+'22',color:auto.lastReport.color}}>
+                    📊 Day {auto.lastReport.day}: {auto.lastReport.text} — {auto.lastReport.val}
+                  </div>}
+                </div>
+              </div>
+              {/* Task dropdown — full width below portrait */}
+              <div style={{marginTop:6}}>
+                <select value={auto.task?.type==='brew'?'brew_'+auto.task.target:auto.task?.type==='forage'?'forage_'+auto.task.target:auto.task?.type||''} onChange={e=>{
+                  const v=e.target.value;
+                  if(!v){assignAutoTask(auto.id,null,null);return;}
+                  if(v.startsWith('brew_')){assignAutoTask(auto.id,'brew',v.replace('brew_',''));return;}
+                  if(v.startsWith('forage_')){assignAutoTask(auto.id,'forage',v.replace('forage_',''));return;}
+                  assignAutoTask(auto.id,v,null);
+                }} style={{width:'100%',padding:'5px 8px',background:'#1e1e30',color:TH.text,border:'1px solid #a0a06044',borderRadius:4,fontFamily:'inherit',fontSize:13}}>
+                  <option value="">-- Assign Task --</option>
+                  <optgroup label="⚗️ Brew">
+                    {RECIPES.filter(r=>known.includes(r.id)).map(r=><option key={r.id} value={'brew_'+r.id}>{r.icon} {r.name}</option>)}
+                  </optgroup>
+                  <optgroup label="⛏️ Forage">
+                    {locRegions.filter(r=>level>=regUnlock(r)).map(r=><option key={r.id} value={'forage_'+r.id}>{r.icon} {r.name}</option>)}
+                  </optgroup>
+                  <option value="shopkeep">🏪 Shopkeep</option>
+                  {canAutoEnchant()&&<option value="enchant">✨ Enchant</option>}
+                </select>
+              </div>
+            </div>;
+          })}
+          {/* Build button */}
+          {automata.length<getAutoSlots()&&(()=>{const mc=lmc({ironroot_bark:3,hearthstone:2});const hasMats=Object.entries(mc).every(([id,q])=>(inv[id]||0)>=q);const canBuild=energy>=50&&hasMats;return <button style={{...S.btn(canBuild?'gold':'dim'),fontSize:14,padding:'6px 12px',marginTop:4}}
+            disabled={!canBuild} onClick={()=>buildAutomaton()}>
+            🔨 Build Automaton (⚡50 · {Object.entries(mc).map(([id,q])=>(inv[id]||0)>=q?'✓':'✗').join('')} {Object.entries(mc).map(([id,q])=>q+'× '+(INGR[id]?.icon||'')+INGR[id]?.name).join(' + ')} · DC 12)
+          </button>;})()}
+          {(prestigeLevels.magitech||0)<3&&<div style={{fontSize:12,color:TH.textDim,marginTop:4}}>🔒 Automata gain XP at Magitech Lv3</div>}
+          {(prestigeLevels.magitech||0)>=3&&(prestigeLevels.magitech||0)<4&&<div style={{fontSize:12,color:TH.textDim,marginTop:4}}>🔒 Enchanting task at Magitech Lv4</div>}
+        </div>}
+
+        {/* ── Quest Shopping List ── */}
+        {(()=>{
+          const needs={}; // {potionId: {total, sources:[{label,icon,qty}]}}
+          const addNeed=(potId,qty,label,icon)=>{
+            if(!needs[potId])needs[potId]={total:0,sources:[]};
+            needs[potId].total+=qty;
+            needs[potId].sources.push({label,icon,qty});
+          };
+          // Active NPC quests
+          aQ.forEach(q=>{
+            const isChain=q.chain||q.id.startsWith('fc_');
+            const label=isChain?'Faction':'Quest';
+            const icon=isChain?'🏛️':'📜';
+            if(q.type==='deliver')addNeed(q.target,q.count,label+': '+q.name,icon);
+            if(q.type==='multi')q.targets.forEach(t=>addNeed(t,1,label+': '+q.name,icon));
+          });
+          // Active board quests
+          activeBQ.forEach(bq=>{
+            if(bq.type==='deliver')addNeed(bq.target,bq.count,'Board: '+bq.giver,bq.itemIcon||'📋');
+          });
+          // Defense quests
+          defenseQuests.filter(dq=>!dq.done&&dq.type==='deliver').forEach(dq=>{
+            addNeed(dq.target,dq.qty,'Threat: '+(THREAT_FACTIONS[dq.threatId]?.name||dq.threatId),THREAT_FACTIONS[dq.threatId]?.icon||'⚔️');
+          });
+          const entries=Object.entries(needs).filter(([,n])=>n.total>0);
+          if(entries.length===0)return null;
+          return <div style={{...S.card,borderColor:TH.cyan+'44'}}>
+            <div style={{...S.cT,color:TH.cyan}}>{'📋'} Quest Shopping List</div>
+            <div style={{fontSize:13,color:TH.textDim,marginBottom:6}}>Potions needed across all active quests, board requests, and defense orders:</div>
+            {entries.map(([potId,data])=>{
+              const r=RECIPES.find(x=>x.id===potId);if(!r)return null;
+              const have=countAllPots(potId);
+              const needed=data.total;
+              const done=have>=needed;
+              const stillNeed=Math.max(0,needed-have);
+              // Ingredient check for brewing what's still needed
+              const ingrNeeded={};
+              if(stillNeed>0)r.ingr.forEach(id=>{const lid=li(id);ingrNeeded[lid]=(ingrNeeded[lid]||0)+stillNeed;});
+              return <div key={potId} style={{padding:'6px 8px',background:done?TH.green+'10':TH.panel,borderRadius:5,marginBottom:4,border:'1px solid '+(done?TH.green+'44':TH.border)}}>
+                <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                  <span style={{fontSize:15,color:done?TH.green:TH.textBright,fontWeight:'bold',cursor:known.includes(potId)?'pointer':'default',textDecoration:known.includes(potId)?'underline':'none',textDecorationColor:known.includes(potId)?(done?TH.green+'66':TH.gold+'66'):'transparent',textUnderlineOffset:3}} onClick={()=>{
+                    if(!known.includes(potId))return;
+                    setWsOpen(p=>({...p,ws25:true}));
+                    setTimeout(()=>{const el=document.getElementById('recipe-'+potId);
+                    if(el){el.scrollIntoView({behavior:'smooth',block:'center'});el.style.transition='box-shadow 0.3s';el.style.boxShadow='0 0 20px '+TH.gold+'80';setTimeout(()=>{el.style.boxShadow='none';},1500);}},100);
+                  }}>{r.icon} {r.name}{known.includes(potId)?<span style={{fontSize:11,color:TH.textDim,marginLeft:4}}>↓</span>:''}</span>
+                  <span style={{fontSize:14,color:done?TH.green:have>0?TH.gold:TH.red,fontWeight:'bold'}}>{have}/{needed} {done&&'\u2705'}</span>
+                </div>
+                <div style={{display:'flex',flexWrap:'wrap',gap:3,marginTop:2}}>
+                  {data.sources.map((s,i)=><span key={i} style={{fontSize:11,padding:'1px 5px',background:TH.bg,border:'1px solid '+TH.border,borderRadius:3,color:TH.textDim}}>{s.icon} {s.label} ×{s.qty}</span>)}
+                </div>
+                {!done&&<div style={{fontSize:12,color:TH.textDim,marginTop:2}}>
+                  Brew {stillNeed} more {'\u00b7'} Ingredients per brew: {r.ingr.map(id=>{
+                    const lid=li(id);const ih=inv[lid]||0;const ineed=stillNeed;
+                    return <span key={lid} style={{color:ih>=ineed?TH.green:'#c06040'}}>{INGR[lid]?.icon}{ih}/{ineed} </span>;
+                  })}
+                </div>}
+              </div>;
+            })}
+          </div>;
+        })()}
+
+        {/* ── Customer Shopping List ── */}
+        {(()=>{
+          const custNeeds={};
+          const addCust=(potId,qty,label,icon)=>{
+            if(!custNeeds[potId])custNeeds[potId]={total:0,sources:[]};
+            custNeeds[potId].total+=qty;
+            custNeeds[potId].sources.push({label,icon,qty});
+          };
+          // Potion customers
+          potCustQ.forEach(cust=>{
+            addCust(cust.potionId,cust.qty,'Customer: '+cust.customer,cust.potionIcon||'🧪');
+          });
+          // Enchantment customers — list enchantment ingredients needed
+          const enchNeeds={};
+          enchQ.forEach(cust=>{
+            (cust.reqEnch||[]).forEach(enchId=>{
+              const e=ENCHANTMENTS.find(x=>x.id===enchId);
+              if(e)e.ingr.forEach(id=>{enchNeeds[id]=(enchNeeds[id]||0)+1;});
+            });
+          });
+          const potEntries=Object.entries(custNeeds).filter(([,n])=>n.total>0);
+          const enchEntries=Object.entries(enchNeeds).filter(([,n])=>n>0);
+          if(potEntries.length===0&&enchEntries.length===0)return null;
+          return <div style={{...S.card,borderColor:'#a080d044'}}>
+            {wsHead('cust_shop',<>🛒 Customer Shopping List</>,{color:'#a080d0'})}
+            {isWsOpen('cust_shop')&&<>
+            {potEntries.length>0&&<>
+              <div style={{fontSize:13,color:TH.textDim,marginBottom:4}}>Potions for today's customers:</div>
+              {potEntries.map(([potId,data])=>{
+                const r=RECIPES.find(x=>x.id===potId);if(!r)return null;
+                const have=countAllPots(potId);const needed=data.total;const done=have>=needed;
+                return <div key={potId} style={{padding:'4px 8px',background:done?TH.green+'10':TH.panel,borderRadius:4,marginBottom:3,border:'1px solid '+(done?TH.green+'44':TH.border)}}>
+                  <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                    <span style={{fontSize:14,color:done?TH.green:TH.textBright}}>{r.icon} {r.name}</span>
+                    <span style={{fontSize:13,color:done?TH.green:have>0?TH.gold:TH.red}}>{have}/{needed}{done&&' ✅'}</span>
+                  </div>
+                  <div style={{display:'flex',flexWrap:'wrap',gap:2,marginTop:1}}>
+                    {data.sources.map((s,i)=><span key={i} style={{fontSize:11,padding:'1px 4px',background:TH.bg,border:'1px solid '+TH.border,borderRadius:3,color:TH.textDim}}>{s.icon} {s.label} ×{s.qty}</span>)}
+                  </div>
+                </div>;
+              })}
+            </>}
+            {enchEntries.length>0&&<>
+              <div style={{fontSize:13,color:TH.textDim,marginTop:6,marginBottom:4}}>Ingredients for today's enchantment orders:</div>
+              <div style={{display:'flex',flexWrap:'wrap',gap:4}}>
+                {enchEntries.map(([id,qty])=>{
+                  const have=inv[id]||0;const ok=have>=qty;
+                  const srcs=getIngrSource(id);const _ek2='ench_'+id;const _eo2=tapInfo===_ek2;
+                  return <span key={id} style={{fontSize:13,padding:'2px 6px',background:_eo2?TH.panel:(ok?TH.green+'10':TH.panel),border:'1px solid '+(ok?TH.green+'44':TH.border),borderRadius:4,color:ok?TH.green:'#c06040',cursor:'pointer'}}
+                    onClick={()=>setTapInfo(_eo2?null:_ek2)}>
+                    {INGR[id]?.icon||''}{INGR[id]?.name||id} {have}/{qty}
+                    {_eo2&&<div style={{fontSize:11,color:TH.textDim,marginTop:2}} onClick={e=>e.stopPropagation()}>{srcs.length>0?srcs.map((s,i)=><div key={i}>{s.text}</div>):'Source unknown'}</div>}
+                  </span>;
+                })}
+              </div>
+            </>}
+            </>}
+          </div>;
+        })()}
+
+        {/* ── Brand Manager (Brand Master) ── */}
+        {(prestigeLevels.brandmaster||0)>=1&&<div style={{...S.card,borderColor:'#d0a06044'}}>
+          <div style={{...S.cT,color:'#d0a060',cursor:'pointer',display:'flex',justifyContent:'space-between'}} onClick={()=>setShowBrandMgr(p=>!p)}>
+            <span>{'🏷️'} Brand Manager</span><span style={{fontSize:13,color:TH.textDim}}>{showBrandMgr?'\u25b2':'\u25bc'}</span>
+          </div>
+          {showBrandMgr&&<div>
+            {brands.map(brand=>{const bl=getBrandLevel(brand.sold);const blData=BRAND_LEVELS[bl>=3&&(prestigeLevels.brandmaster||0)<4?2:bl];
+              const nextLv=bl<BRAND_LEVELS.length-1?BRAND_LEVELS[bl+1]:null;
+              return <div key={brand.id} style={{padding:'8px 10px',background:TH.panel,borderRadius:6,marginBottom:6,border:'1px solid #d0a06033'}}>
+                <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                  <span style={{fontSize:16,color:'#d0a060',fontWeight:'bold'}}>{brand.icon} {brand.name}</span>
+                  <span style={{fontSize:13,color:TH.textDim}}>{blData.icon} {blData.name} · {brand.sold} sold{nextLv?' \u00b7 '+nextLv.minSold+' for next':''}</span>
+                </div>
+                <div style={{fontSize:13,color:TH.textDim,marginTop:2}}>Sell bonus: +{Math.round(blData.sellBonus*100)}% · Repeat customers: {blData.repeatCust}/morning</div>
+                <div style={{display:'flex',flexWrap:'wrap',gap:3,marginTop:4}}>
+                  {brand.recipes.map(rid=>{const r=RECIPES.find(x=>x.id===rid);return r?<span key={rid} style={{...S.tag,borderColor:'#d0a060'}}>{r.icon}{r.name}
+                    <button style={{fontSize:10,color:TH.red,background:'none',border:'none',cursor:'pointer',marginLeft:3}} onClick={()=>removeRecipeFromBrand(brand.id,rid)}>✕</button>
+                  </span>:null;})}
+                  {brand.recipes.length<((prestigeLevels.brandmaster||0)>=4?4:(prestigeLevels.brandmaster||0)>=2?3:2)&&
+                    <select style={{fontSize:12,background:TH.bg,color:TH.text,border:'1px solid '+TH.border,borderRadius:3,padding:'1px 4px'}}
+                      value="" onChange={e=>{if(e.target.value)addRecipeToBrand(brand.id,e.target.value);}}>
+                      <option value="">+ Add recipe...</option>
+                      {RECIPES.filter(r=>known.includes(r.id)&&!r.fieldOnly&&!brand.recipes.includes(r.id)&&!brands.some(b=>b.id!==brand.id&&b.recipes.includes(r.id))).map(r=>
+                        <option key={r.id} value={r.id}>{r.icon} {r.name}</option>
+                      )}
+                    </select>}
+                </div>
+              </div>;})}
+            {/* Brand Orders */}
+            {brandOrders.length>0&&<div style={{marginTop:6}}>
+              <div style={{fontSize:14,color:'#d0a060',fontWeight:'bold',marginBottom:3}}>{'📦'} Brand Orders</div>
+              {brandOrders.map((order,oi)=>{const r=RECIPES.find(x=>x.id===order.recipeId);const brand=brands.find(b=>b.id===order.brandId);
+                if(!r||!brand)return null;
+                const have=countAllPots(order.recipeId);const canFill=have>=order.qty;
+                return <div key={oi} style={{padding:'4px 8px',background:canFill?TH.greenDim:TH.panel,borderRadius:4,marginBottom:3,border:'1px solid '+(canFill?TH.green:TH.border),display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                  <span style={{fontSize:14}}>{brand.icon} {order.qty}× {r.icon}{r.name} <span style={{color:TH.gold}}>{fmtMoney(order.price)}</span> <span style={{fontSize:11,color:TH.textDim}}>expires day {order.expires}</span></span>
+                  <button style={S.btn(canFill?'gold':'dim')} disabled={!canFill} onClick={()=>{
+                    consumePots(order.recipeId,order.qty);setGold(g=>g+order.price);
+                    recordBrandSale(order.recipeId,order.qty);
+                    setBrandOrders(prev=>prev.filter((_,i)=>i!==oi));
+                    addLog('📦 Brand order filled: '+order.qty+'\u00d7 '+r.icon+r.name+' for '+fmtMoney(order.price)+'!','quest');
+                    gainXP(Math.floor(r.xp*order.qty*0.5));
+                  }}>Fill Order</button>
+                </div>;})}
+            </div>}
+            {/* Create new brand */}
+            {brands.length<((prestigeLevels.brandmaster||0)>=5?3:(prestigeLevels.brandmaster||0)>=3?2:1)&&<div style={{marginTop:6}}>
+              <button style={{...S.btn('gold'),fontSize:14}} onClick={()=>{
+                const name=prompt('Name your brand:');
+                if(name&&name.trim()){
+                  const iconIdx=Math.floor(Math.random()*BRAND_ICONS.length);
+                  createBrand(name.trim(),BRAND_ICONS[iconIdx]);
+                }
+              }}>+ Create New Brand</button>
+            </div>}
+          </div>}
+        </div>}
+
+        {/* ── Relic Collection (Antiquarian) ── */}
+        {(prestigeLevels.antiquarian||0)>=1&&<div style={{...S.card,borderColor:'#c0a08044'}}>
+          <div style={{...S.cT,color:'#c0a080'}}>📖 Relics & Museum</div>
+          {/* Unappraised relics */}
+          {relics.filter(r=>!r.appraised).length>0&&<div style={{marginBottom:6}}>
+            <div style={{fontSize:14,color:'#c0a080',fontWeight:'bold',marginBottom:3}}>Unappraised ({relics.filter(r=>!r.appraised).length})</div>
+            {relics.filter(r=>!r.appraised).map(relic=>{
+              const cat=RELIC_CATS.find(c=>c.id===relic.category);
+              const aqLv=prestigeLevels.antiquarian||0;
+              return <div key={relic.id} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'3px 6px',background:TH.panel,borderRadius:3,marginBottom:2}}>
+                <span style={{fontSize:14}}>{cat?.icon||'❔'} Mystery Object {aqLv>=2?<span style={{fontSize:11,color:{common:TH.textDim,uncommon:'#50c070',rare:'#d4a420',legendary:'#c050e0'}[relic.rarity]||TH.textDim}}>({relic.rarity})</span>:''} <span style={{fontSize:11,color:TH.textDim}}>from {relic.region}</span></span>
+                {aqLv>=4
+                  ?<button style={{...S.btn('gold'),fontSize:12,padding:'2px 6px'}} onClick={()=>appraiseRelic(relic.id)}>Auto-ID</button>
+                  :<button style={{...S.btn('def'),fontSize:12,padding:'2px 6px'}} onClick={()=>appraiseRelic(relic.id)}>Appraise (DC{RELIC_APPRAISE_DC[relic.rarity]||11})</button>}
+              </div>;})}
+          </div>}
+          {/* Appraised relics */}
+          {relics.filter(r=>r.appraised&&!r.displayed).length>0&&<div style={{marginBottom:6}}>
+            <div style={{fontSize:14,color:'#c0a080',fontWeight:'bold',marginBottom:3}}>Appraised ({relics.filter(r=>r.appraised&&!r.displayed).length})</div>
+            {relics.filter(r=>r.appraised&&!r.displayed).map(relic=>{
+              const cat=RELIC_CATS.find(c=>c.id===relic.category);
+              const aqLv=prestigeLevels.antiquarian||0;
+              const sellPrice=relic.value*(aqLv>=3?3:1);
+              return <div key={relic.id} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'3px 6px',background:TH.panelLight,borderRadius:3,marginBottom:2,border:'1px solid #c0a08022'}}>
+                <span style={{fontSize:14}}>{cat?.icon} {relic.name} <span style={{fontSize:12,color:{common:TH.textDim,uncommon:'#50c070',rare:'#d4a420',legendary:'#c050e0'}[relic.rarity]}}>{relic.rarity}</span> <span style={{color:TH.gold,fontSize:12}}>{fmtMoney(relic.value)}</span></span>
+                <span style={{display:'flex',gap:3}}>
+                  {aqLv>=3&&<button style={{...S.btn('gold'),fontSize:11,padding:'2px 5px'}} onClick={()=>sellRelic(relic.id)}>Sell {fmtMoney(sellPrice)}</button>}
+                  {aqLv>=3&&<button style={{...S.btn('def'),fontSize:11,padding:'2px 5px'}} onClick={()=>displayRelic(relic.id)}>Display</button>}
+                  {aqLv<3&&<button style={{...S.btn('gold'),fontSize:11,padding:'2px 5px'}} onClick={()=>sellRelic(relic.id)}>Sell {fmtMoney(relic.value)}</button>}
+                </span>
+              </div>;})}
+          </div>}
+          {/* Museum collections */}
+          {(prestigeLevels.antiquarian||0)>=3&&<div>
+            <div style={{fontSize:14,color:'#c0a080',fontWeight:'bold',marginBottom:3}}>🏛️ Museum Collections</div>
+            {Object.entries(RELIC_SETS).map(([setId,setData])=>{
+              const count=museum[setId]||0;const complete=count>=setData.needed;
+              return <div key={setId} style={{padding:'3px 6px',marginBottom:2,fontSize:13,color:complete?TH.green:TH.textDim,display:'flex',justifyContent:'space-between'}}>
+                <span>{setData.icon} {setData.name}: {count}/{setData.needed}{complete?' ✅':''}</span>
+                {complete&&<span style={{fontSize:11,color:TH.green}}>{setData.desc}</span>}
+              </div>;})}
+            {Object.keys(RELIC_SETS).every(sid=>(museum[sid]||0)>=RELIC_SETS[sid].needed)&&
+              <div style={{fontSize:14,color:'#c050e0',fontWeight:'bold',textAlign:'center',marginTop:4,padding:4,background:'#c050e010',borderRadius:4}}>🏆 Grand Collection Complete! +{fmtMoney(10)}/morning from museum visitors</div>}
+          </div>}
+          {relics.length===0&&<div style={{fontSize:14,color:TH.textDim,textAlign:'center',padding:6}}>Go on expeditions to discover relics! (15% chance per forage roll)</div>}
+        </div>}
+
+        <div style={S.card} className={isWsOpen('ws25')?'':'ws-closed'}>{wsHead('ws25',<>{'\u2697\ufe0f'} Recipes ({known.filter(id=>{const rx=RECIPES.find(r=>r.id===id);return rx&&!rx.fieldOnly&&!(rx.buff&&ELIXIR_BUFFS[rx.buff]);}).length}/{RECIPES.filter(r=>!r.fieldOnly&&!(r.buff&&ELIXIR_BUFFS[r.buff])&&canCraftAtLocation(r.ingr)).length})</>)}
+        {RECIPES.filter(r=>known.includes(r.id)&&!r.fieldOnly&&!(r.buff&&ELIXIR_BUFFS[r.buff])).map(r=>{
+          const cost={};r.ingr.forEach(id=>{const lid=li(id);cost[lid]=(cost[lid]||0)+1;});const can=Object.entries(cost).every(([id,q])=>(inv[id]||0)>=q);
+          const fOk=!r.faction||getRL(r.faction)>=(r.fReq||0);const masteryD=getMasteryDiscount(brewCounts,r.id,getFeatureVal('masteryDiscountBonus'));const adjDC=Math.max(5,r.dc-masteryD);
+          // Calculate success chance for display (Standard quality)
+          const craftSk=r.stat==='inu'?'attunement':r.stat==='tec'?'precision':r.stat==='acu'?'research':'improvisation';
+          const totalMod=getSkMod(craftSk)+upEff('craftSkillBonus')+getFeatureVal('craftBonus');
+          const needed=adjDC-totalMod;
+          const successPct=Math.min(95,Math.max(5,Math.floor((21-needed)/20*100)));
+          const hagMod=Math.floor(getFeatureVal('buyDiscount')*5);
+          return(<div key={r.id} id={'recipe-'+r.id} style={{padding:'6px 8px',background:TH.panelLight,borderRadius:4,marginBottom:4,border:`1px solid ${can&&fOk?TH.borderGold:TH.border}`,opacity:fOk?1:.5}}>
+            <div style={{display:'flex',justifyContent:'space-between'}}><span style={{fontSize:16,color:TH.textBright}}>{r.icon}{r.name}{(()=>{const br=getBrandForRecipe(r.id);return br?<span style={{fontSize:11,color:'#d0a060',marginLeft:4}}>{br.icon}{br.name}</span>:null;})()}</span>
+              <span style={{fontSize:14}}><span style={{color:TH.textDim}}>DC{adjDC}{masteryD>0?' (-'+masteryD+')':''}</span> <span style={{color:successPct>=70?TH.green:successPct>=40?TH.gold:TH.red,fontSize:13}}>{successPct}%</span></span></div>
+            {r.desc&&<div style={{fontSize:14,color:TH.textDim,fontStyle:'italic',margin:'2px 0'}}>{r.desc}</div>}
+            {!fOk&&<div style={{fontSize:13,color:TH.red,fontWeight:'bold',margin:'3px 0',padding:'2px 6px',background:TH.red+'12',borderRadius:3,border:'1px solid '+TH.red+'33'}}>🔒 Requires {FACTIONS[r.faction]?.icon} {FACTIONS[r.faction]?.name} reputation: {REP_LVS[r.fReq]||'Lv'+r.fReq} (currently: {REP_LVS[getRL(r.faction)]||'Unknown'})</div>}
+            <div style={S.row}>{Object.entries(cost).map(([id,q])=>{
+              const have=(inv[id]||0)>=q;
+              const iQty=inv[id]||0;const iThresh=getSpoilThreshold(id);
+              const iWarn=iQty>iThresh;
+              const srcs=getIngrSource(id);
+              const sWarn=getIngrSeasonWarn(id);const _tipKey='ingr_'+r.id+'_'+id;const _tipOpen=tapInfo===_tipKey;
+              return <span key={id} style={{...S.tag,borderColor:have?TH.green:TH.red,cursor:'pointer',position:'relative',background:_tipOpen?(have?TH.green:TH.red)+'15':'transparent'}}
+                onClick={()=>setTapInfo(_tipOpen?null:_tipKey)}>
+                {INGR[id]?.icon}{INGR[id]?.name} <b style={{color:have?TH.green:TH.red}}>{iQty}/{q}</b>{iWarn&&<span style={{fontSize:10,color:'#c0a040'}}> ⚠️</span>}
+                {sWarn&&<span style={{fontSize:10,color:'#d09030',marginLeft:2}}>⏳</span>}
+                {_tipOpen&&<div style={{fontSize:11,color:TH.text,marginTop:3,lineHeight:1.4,whiteSpace:'pre-line'}} onClick={e=>e.stopPropagation()}>
+                  {srcs.length>0?srcs.map((s,i)=><div key={i} style={{color:s.type==='seasonal'?'#d09030':s.type==='hidden'?'#70c0c0':TH.textDim}}>{s.text}</div>):<div style={{color:TH.textDim}}>Source unknown</div>}
+                </div>}
+              </span>;})}
+            </div>
+            {(()=>{const seasonWarns=Object.keys(cost).filter(id=>getIngrSeasonWarn(id));return seasonWarns.length>0?<div style={{fontSize:12,color:'#d09030',marginTop:2}}>{seasonWarns.map(id=>{const w=getIngrSeasonWarn(id);return <span key={id} style={{marginRight:8}}>⏳ {INGR[id]?.icon}{INGR[id]?.name} — seasonal, available during {w.icon} {w.season}</span>;})}</div>:null;})()}
+            <div style={{marginTop:3}}>
+              {(()=>{
+              const masteryDisc=getMasteryDiscount(brewCounts,r.id,getFeatureVal('masteryDiscountBonus'));
+              const selTier=brewTierSel[r.id]||'std';
+              const selQT=QUALITY[selTier];
+              // Compute cost for selected tier (per unit)
+              const selCost={};r.ingr.forEach(id=>{const lid=li(id);selCost[lid]=(selCost[lid]||0)+1;});
+              if(selQT.extraIngr>=1){const lid=li(r.ingr[0]);selCost[lid]=(selCost[lid]||0)+1;}
+              if(selQT.extraIngr>=2&&r.ingr.length>1){const lid=li(r.ingr[1]);selCost[lid]=(selCost[lid]||0)+1;}
+              if(selQT.extraIngr>=3){const lid=li(r.ingr[Math.min(2,r.ingr.length-1)]);selCost[lid]=(selCost[lid]||0)+1;}
+              // Buy calc for selected tier
+              const selBuyCalc=(n)=>{
+                const needed={};Object.entries(selCost).forEach(([id,q])=>{const need=q*n-(inv[id]||0);if(need>0)needed[id]=need;});
+                const allShop=Object.keys(needed).every(id=>SHOP_I.find(i=>i.id===id&&(!i.loc||i.loc===gameLocation)));
+                const total=Object.entries(needed).reduce((s,[id,q])=>{const si=SHOP_I.find(i=>i.id===id&&(!i.loc||i.loc===gameLocation));return si?s+q*getBuyPrice(Math.max(1,si.price-hagMod)):s;},0);
+                return{needed,allShop,total,canBuy:allShop&&total>0&&total<=gold};
+              };
+              const selDoBuy=(n)=>{const{needed}=selBuyCalc(n);Object.entries(needed).forEach(([id,q])=>{const si=SHOP_I.find(i=>i.id===id&&(!i.loc||i.loc===gameLocation));if(si){const bp=getBuyPrice(Math.max(1,si.price-hagMod));for(let i=0;i<q;i++){setGold(g=>g-bp);modInv(id,1);}}});};
+              return <>
+              {/* Tier selector (toggle, doesn't brew) */}
+              <div style={{display:'flex',gap:2,marginBottom:4}}>
+                <span style={{fontSize:12,color:TH.textDim,alignSelf:'center',marginRight:2}}>Quality:</span>
+                {['std','fine','mw','gm'].map(q=>{
+                  const qT=QUALITY[q];const isSel=selTier===q;
+                  const qDC=Math.max(5,r.dc+qualDCMod(q,'brew')-masteryDisc);
+                  const qNeeded=qDC-totalMod;
+                  const qPct=Math.min(95,Math.max(5,Math.floor((21-qNeeded)/20*100)));
+                  return <button key={q} style={{padding:'3px 8px',fontSize:12,borderRadius:4,cursor:'pointer',fontFamily:'inherit',
+                    background:isSel?(q==='gm'?'#c050e030':q==='mw'?TH.gold:q==='fine'?TH.greenDim:TH.borderLight):'transparent',
+                    color:isSel?(q==='gm'?'#c050e0':q==='mw'?TH.bg:TH.text):TH.textDim,
+                    border:'1px solid '+(isSel?q==='gm'?'#c050e0':q==='mw'?TH.gold:q==='fine'?TH.green:TH.border:TH.border+'66'),
+                    fontWeight:isSel?'bold':'normal'}}
+                    onClick={()=>setBrewTierSel(p=>({...p,[r.id]:q}))}>
+                    {q==='std'?'⚗️':qT.icon} {qT.name} <span style={{fontSize:10,color:isSel?'inherit':TH.textDim}}>DC{qDC} {qPct}% {qT.sellMult}×</span>
+                  </button>;
+                })}
+              </div>
+              {/* Infusion selector (Spellbrewer prestige) */}
+              {(prestigeLevels.spellbrewer||0)>=1&&<div style={{display:'flex',gap:2,marginBottom:4,flexWrap:'wrap'}}>
+                <span style={{fontSize:12,color:TH.textDim,alignSelf:'center',marginRight:2}}>Infuse:</span>
+                <button style={{padding:'2px 6px',fontSize:11,borderRadius:3,cursor:'pointer',fontFamily:'inherit',
+                  background:!brewInfSel[r.id]?TH.borderLight:'transparent',color:!brewInfSel[r.id]?TH.text:TH.textDim,
+                  border:'1px solid '+(!brewInfSel[r.id]?TH.border:TH.border+'66')}} onClick={()=>setBrewInfSel(p=>({...p,[r.id]:null}))}>None</button>
+                {Object.values(INFUSIONS).filter(inf=>inf.unlockLv<=(prestigeLevels.spellbrewer||0)).map(inf=>{
+                  const isSel=brewInfSel[r.id]===inf.id;
+                  const hasCatalyst=Object.entries(inv).some(([id,qty])=>{const usedByRecipe=selCost[id]||0;return qty-usedByRecipe>=1&&qty>=5;});
+                  return <button key={inf.id} style={{padding:'2px 6px',fontSize:11,borderRadius:3,cursor:hasCatalyst?'pointer':'not-allowed',fontFamily:'inherit',
+                    background:isSel?inf.color+'30':'transparent',color:isSel?inf.color:hasCatalyst?TH.textDim:TH.textDim+'66',
+                    border:'1px solid '+(isSel?inf.color:TH.border+'44'),opacity:hasCatalyst?1:.5}}
+                    onClick={()=>hasCatalyst&&setBrewInfSel(p=>({...p,[r.id]:inf.id}))}>
+                    {inf.icon} {inf.name} <span style={{fontSize:10}}>DC+{inf.dcMod-(prestigeLevels.spellbrewer>=2?1:0)} {inf.sellMult}×</span>
+                  </button>;})}
+                {brewInfSel[r.id]&&<span style={{fontSize:11,color:INFUSIONS[brewInfSel[r.id]]?.color||TH.textDim,alignSelf:'center'}}>
+                  {INFUSIONS[brewInfSel[r.id]]?.desc} · {infusionsUsedToday}/{(prestigeLevels.spellbrewer||0)>=5?6:(prestigeLevels.spellbrewer||0)>=4?5:(prestigeLevels.spellbrewer||0)>=3?4:(prestigeLevels.spellbrewer||0)>=2?3:2}/day
+                </span>}
+              </div>}
+              {/* Brew + Batch buttons. Phase-1-sweep-miss fix: batchEC was `n===1?1:Math.ceil(n/2)` (pre-scale
+                  hour values); the actual cost path uses 25⚡ for single and 25*ceil(n/2) for batches. Display + gate
+                  now match the real cost. firstBrewFree (Rapid Infusion) zeroes the n=1 cost when the day's first
+                  brew hasn't fired yet. */}
+              <div style={{display:'flex',gap:3,alignItems:'center',flexWrap:'wrap'}}>
+                {(()=>{const maxBatch=5+Math.floor(getFeatureVal('batchSizeBonus')+upEff('batchSizeBonus'));
+                  const sizes=[1,2,3,5,...(maxBatch>5?[maxBatch]:[])].filter((v,i,a)=>v<=maxBatch&&a.indexOf(v)===i).sort((a,b)=>a-b);
+                  const fbfNow=freeBrewsLeft()>0;
+                  const erNow=getFeatureVal('firstActionFree')&&!dayFlags.includes('first_action_used');
+                  return sizes.map(n=>{
+                  const baseEC=n===1?getActionEnergyCost('brew',25):getActionEnergyCost('brew',25)*Math.ceil(n/2);
+                  const freeForFirst=(n===1&&fbfNow)||erNow;
+                  const effectiveEC=freeForFirst?0:baseEC;
+                  const hasIngr=Object.entries(selCost).every(([id,q])=>(inv[id]||0)>=q*n);
+                  const canN=fOk&&energy>=effectiveEC&&hasIngr;
+                  const bc=selBuyCalc(n);
+                  return <span key={n} style={{display:'inline-flex',gap:2,alignItems:'center'}}>
+                    <button style={{...S.btn(canN?n===1?'gold':'def':'dim'),fontSize:13,padding:'3px 8px',opacity:canN?1:0.45,cursor:canN?'pointer':'not-allowed'}}
+                      onClick={()=>canN&&(n===1?doCraft(r,selTier):doBatchCraft(r,n,selTier))} disabled={!canN}
+                      title={!canN?(!fOk?'Faction reputation too low':!hasIngr?'Not enough ingredients':'Need ⚡'+effectiveEC+' Energy (have ⚡'+energy+')'):(freeForFirst?'Free this turn ('+(fbfNow&&n===1?'Rapid Infusion':'Early Riser')+')':'Cost: ⚡'+effectiveEC)}>
+                      {n===1?('⚗️ Brew '+selQT.name+' ('+(freeForFirst?'FREE':'⚡'+effectiveEC)+')'):('×'+n+' ('+(freeForFirst?'FREE':'⚡'+effectiveEC)+')')}
+                    </button>
+                    {!canN&&bc.canBuy&&fOk&&energy>=effectiveEC&&<button style={{fontSize:11,padding:'2px 5px',background:TH.gold,color:TH.bg,border:'none',borderRadius:3,cursor:'pointer',fontFamily:'inherit'}}
+                      onClick={()=>selDoBuy(n)}>🛒 {fmtMoney(bc.total)}</button>}
+                  </span>;
+                })})()}
+              </div>
+              {/* Show what's needed if can't brew ×1 */}
+              {(()=>{
+                const can1=fOk&&energy>=25&&Object.entries(selCost).every(([id,q])=>(inv[id]||0)>=q);
+                if(can1)return null;
+                const reasons=[];
+                if(!fOk)reasons.push('Faction reputation too low');
+                if(energy<25)reasons.push('No Energy');
+                const missing=Object.entries(selCost).filter(([id,q])=>(inv[id]||0)<q).map(([id,q])=>(INGR[id]?.icon||'')+INGR[id]?.name+' ('+(inv[id]||0)+'/'+q+')');
+                if(missing.length>0)reasons.push('Need: '+missing.join(', '));
+                return reasons.length>0?<div style={{fontSize:11,color:'#c06040',marginTop:2}}>{reasons.join(' · ')}</div>:null;
+              })()}
+              {selTier!=='std'&&<div style={{fontSize:11,color:TH.textDim,marginTop:2}}>
+                {selQT.icon} {selQT.name}: +{selQT.extraIngr} extra ingredient{selQT.extraIngr>1?'s':''}, DC+{selQT.dcMod}, {selQT.sellMult}× sell/{selQT.xpMult}× XP
+              </div>}
+              </>;
+            })()}</div>
+          </div>);})}
+        {/* Undiscovered recipes */}
+        {RECIPES.filter(r=>!known.includes(r.id)&&canCraftAtLocation(r.ingr)).map(r=>{
+          const locked=level<r.unlock||(r.faction&&getRL(r.faction)<(r.fReq||0));
+          const showInfo=getFeatureVal('showRecipeInfo');
+          const showIngr=getFeatureVal('showIngredients');
+          return(<div key={r.id} style={{padding:'4px 8px',background:TH.panel,borderRadius:4,marginBottom:2,opacity:locked?.3:.5}}>
+            <span style={{fontSize:15,color:TH.textDim}}>❔ {locked?'Unlock at Lv'+(r.unlock+1)+(r.faction?' + '+FACTIONS[r.faction]?.name+' rep':''):
+              'Discoverable — use 📚 Research tab to study or experiment!'}</span>
+            {!locked&&showInfo>0&&<div style={{fontSize:14,color:TH.cyan,marginTop:2}}>📚 {r.icon} {r.name} — DC{r.dc} {r.desc?'· '+r.desc:''}</div>}
+            {!locked&&showIngr>0&&<div style={{fontSize:13,color:TH.purple,marginTop:1}}>🔍 Needs: {r.ingr.map(id=>{const lid=li(id);return (INGR[lid]?.icon||'')+(INGR[lid]?.name||lid);}).join(', ')}</div>}
+          </div>);})}
+        </div>
+        {/* Sell potions & ingredients inline */}
+        {(Object.entries(pots).some(([,q])=>q>0)||Object.entries(inv).some(([,q])=>q>0))&&<div style={S.card} className={isWsOpen('ws26')?'':'ws-closed'}>
+          {wsHead('ws26',<>💰 Sell</>)}
+          {Object.entries(pots).filter(([,q])=>q>0).length>0&&<div style={{fontSize:15,color:TH.gold,marginBottom:4}}>Potions</div>}
+          {Object.entries(pots).filter(([,q])=>q>0).map(([id,qty])=>{const baseId=getBaseRecipeId(id);const r=RECIPES.find(r=>r.id===baseId);if(!r)return null;const pq=getPotQuality(id);const qT=QUALITY[pq]||QUALITY.std;const _isFresh=isFreshPot(id);
+            const sp=getPotionSellPrice(id);
+            const hasBuff=r.buff&&ELIXIR_BUFFS[r.buff];
+            const buffActive=hasBuff&&activeBuffs[r.buff]?.daysLeft>0;
+            return(<div key={id} style={{display:'flex',alignItems:'center',gap:6,padding:'3px 0',fontSize:16}}>
+              <span>{r.icon}{r.name}{qT.icon?' '+qT.icon:''}{_isFresh?' 🌿':''} ×{qty}</span>{_isFresh&&<span style={{fontSize:11,color:'#60a040',fontWeight:'bold'}}>Fresh</span>}<span style={{color:TH.gold,marginLeft:'auto'}}>{fmtMoney(sp)} ea</span>
+              {hasBuff&&<button style={{...S.btn(buffActive?'dim':'green'),fontSize:14,padding:'2px 8px'}} disabled={buffActive}
+                onClick={()=>consumeElixir(r.buff)} title={ELIXIR_BUFFS[r.buff].buffDesc}>
+                {buffActive?'✓ Active':'🧪 Drink'}
+              </button>}
+              <button style={S.btn()} onClick={()=>sellPotion(id,1,sp,r)}>Sell 1</button>
+              {qty>1&&<button style={S.btn()} onClick={()=>sellPotion(id,qty,sp,r)}>Sell All ({fmtMoney(sp*qty)})</button>}
+            </div>);})}
+          {Object.entries(inv).filter(([,q])=>q>0).length>0&&<div style={{fontSize:15,color:TH.gold,marginTop:6,marginBottom:4}}>Ingredients</div>}
+          {Object.entries(inv).filter(([,q])=>q>0).map(([id,qty])=>{const ig=INGR[id];if(!ig)return null;const sp=getIngrSellPrice(id);
+            const spThresh=getSpoilThreshold(id);
+            const spColor=qty>spThresh+8?'#c04040':qty>spThresh+4?'#d08030':qty>spThresh?'#c0a040':'';
+            const srcs=getIngrSource(id);
+            const sWarn=getIngrSeasonWarn(id);const _ik='inv_'+id;const _io=tapInfo===_ik;
+            return(
+            <div key={id} style={{padding:'3px 0',fontSize:16}}>
+              <div style={{display:'flex',alignItems:'center',gap:6,cursor:'pointer'}} onClick={()=>setTapInfo(_io?null:_ik)}>
+                <span style={{color:spColor||TH.text}}>{ig.icon}{ig.name} ×{qty}{spColor&&<span style={{fontSize:11,marginLeft:4,color:spColor}}>⚠️</span>}{sWarn&&<span style={{fontSize:11,color:'#d09030',marginLeft:4}}>⏳ {sWarn.icon} {sWarn.season}</span>}</span><span style={{color:TH.gold,marginLeft:'auto'}}>{fmtMoney(sp)} ea</span>
+              <button style={S.btn()} onClick={e=>{e.stopPropagation();modInv(id,-1);setGold(g=>g+sp);addLog(`Sold ${ig.icon}${ig.name} for ${fmtMoney(sp)}.`,'info');}}>Sell 1</button>
+              {qty>spThresh&&<button style={{...S.btn('green'),fontSize:13}} onClick={e=>{e.stopPropagation();const excess=qty-spThresh;modInv(id,-excess);setGold(g=>g+sp*excess);addLog(`Sold ${excess}× ${ig.icon}${ig.name} for ${fmtMoney(sp*excess)} (trimmed to safe storage).`,'info');}}>Sell to Safe ({qty-spThresh}×{fmtMoney(sp)})</button>}
+              {qty>1&&<button style={S.btn()} onClick={e=>{e.stopPropagation();modInv(id,-qty);setGold(g=>g+sp*qty);addLog(`Sold ${qty}× ${ig.icon}${ig.name} for ${fmtMoney(sp*qty)}.`,'info');}}>Sell All ({fmtMoney(sp*qty)})</button>}
+              </div>
+              {_io&&<div style={{fontSize:12,color:TH.textDim,padding:'2px 8px 4px',lineHeight:1.4}}>
+                {srcs.length>0?srcs.map((s,i)=><div key={i} style={{color:s.type==='seasonal'?'#d09030':s.type==='hidden'?'#70c0c0':TH.textDim}}>{s.text}</div>):<div>Source unknown</div>}
+                <div style={{color:TH.textDim}}>Base value: {fmtMoney(ig.val||5)}</div>
+              </div>}
+            </div>);})}
+        </div>}
+      </>}
+
+      {/* ═══════════ RESEARCH ═══════════ */}
+      {screen==='research'&&<>
+        <BackBar title="Research" icon="📚" back="workshop"/>
+        {/* ── Study (spend energy to discover recipes/enchantments) ── */}
+        <div style={{...S.card,borderColor:TH.cyan+'44'}} className={isWsOpen('ws27')?'':'ws-closed'}>
+          {wsHead('ws27',<>📚 Study</>)}
+          <div style={{fontSize:14,color:TH.textDim,marginBottom:6,lineHeight:1.5}}>
+            Spend energy studying your notes and references to discover new recipes or enchantment techniques. Discovery chance scales with 🌟 Innovation ({getSkMod('innovation')}) and 🔬 Research ({getSkMod('research')}) skill ranks.
+          </div>
+          <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
+            {(()=>{const undiscP=RECIPES.filter(r=>!known.includes(r.id)&&level>=r.unlock&&canCraftAtLocation(r.ingr)&&(!r.faction||getRL(r.faction)>=(r.fReq||0)));
+              const undiscE=ENCHANTMENTS.filter(e=>!knownEnch.includes(e.id)&&(!e.faction||getRL(e.faction)>=(e.fReq||0))&&canCraftAtLocation(e.ingr));
+              const resCost=Math.max(25,getActionEnergyCost('research',50));
+              const freeRes=getFeatureVal('freeResearchPerDay')+upEff('freeResearchPerDay')+getFeatureVal('researchSlotBonus');
+              const freeUsed=dayFlags.filter(f=>f==='free_research_used').length;
+              const hasFree=freeRes>freeUsed;
+              const canAct=hasFree||energy>=resCost;
+              const resDC=Math.max(8,Math.min(18,14-Math.floor(getFeatureVal('discoveryChanceBonus')*10)));
+              const resMod=getMod(eStat(SKILLS.research?.stat||'acu'));
+              const resRank=rankB(skRanks.research||0,pb);
+              const innovMod=getSkMod('innovation');
+              const craftB=getFeatureVal('craftBonus');
+              const totalMod=resMod+resRank+(innovMod>0?innovMod:0)+(craftB||0);
+              return <>
+                <button style={{...S.btn(canAct&&undiscP.length>0?'gold':'dim'),opacity:(canAct&&undiscP.length>0)?1:0.45,cursor:(canAct&&undiscP.length>0)?'pointer':'not-allowed'}}
+                  onClick={()=>doResearch('potion')} disabled={!canAct||undiscP.length===0}
+                  title={undiscP.length===0?'Nothing left to research':!canAct?'Need ⚡'+resCost+' Energy (have ⚡'+energy+')':hasFree?'Free study available':'Cost: ⚡'+resCost}>
+                  ⚗️ Study Potions ({undiscP.length} unknown) — {hasFree?'FREE':'⚡'+resCost}
+                </button>
+                <button style={{...S.btn(canAct&&undiscE.length>0?'gold':'dim'),opacity:(canAct&&undiscE.length>0)?1:0.45,cursor:(canAct&&undiscE.length>0)?'pointer':'not-allowed'}}
+                  onClick={()=>doResearch('enchant')} disabled={!canAct||undiscE.length===0}
+                  title={undiscE.length===0?'Nothing left to research':!canAct?'Need ⚡'+resCost+' Energy (have ⚡'+energy+')':hasFree?'Free study available':'Cost: ⚡'+resCost}>
+                  ✨ Study Enchantments ({undiscE.length} unknown) — {hasFree?'FREE':'⚡'+resCost}
+                </button>
+                <div style={{fontSize:13,color:TH.textDim,width:'100%'}}>
+                  🎲 Research DC {resDC} · Your bonus: +{totalMod} ({STATS[SKILLS.research?.stat]?.icon}+{resMod} 🔬+{resRank}{innovMod>0?' 🌟+'+innovMod:''}{craftB?' ⚗️+'+craftB:''})
+                  {hasFree&&<span style={{marginLeft:6}}>· 📖 Free studies: {freeRes-freeUsed}/{freeRes}</span>}
+                </div>
+              </>;})()}
+          </div>
+          {/* Known recipes summary */}
+          <div style={{marginTop:8,padding:'6px 8px',background:TH.bg,borderRadius:4,border:'1px solid '+TH.border}}>
+            <div style={{fontSize:14,color:TH.gold,marginBottom:3}}>Known Recipes ({known.length}/{RECIPES.length}):</div>
+            <div style={{display:'flex',flexWrap:'wrap',gap:3}}>
+              {RECIPES.filter(r=>known.includes(r.id)).map(r=>
+                <span key={r.id} style={{fontSize:13,color:TH.textDim,padding:'1px 4px',background:TH.panelLight,borderRadius:2}}>{r.icon}{r.name}</span>
+              )}
+            </div>
+            {RECIPES.filter(r=>!known.includes(r.id)&&level>=r.unlock&&(!r.faction||getRL(r.faction)>=(r.fReq||0))).length>0&&
+              <div style={{fontSize:13,color:TH.green,marginTop:4}}>✨ {RECIPES.filter(r=>!known.includes(r.id)&&level>=r.unlock&&(!r.faction||getRL(r.faction)>=(r.fReq||0))).length} recipe{RECIPES.filter(r=>!known.includes(r.id)&&level>=r.unlock&&(!r.faction||getRL(r.faction)>=(r.fReq||0))).length>1?'s':''} available to discover</div>}
+          </div>
+          {/* Known enchantments summary */}
+          {knownEnch.length>0&&<div style={{marginTop:6,padding:'6px 8px',background:TH.bg,borderRadius:4,border:'1px solid '+TH.border}}>
+            <div style={{fontSize:14,color:TH.gold,marginBottom:3}}>Known Enchantments ({knownEnch.length}/{ENCHANTMENTS.length}):</div>
+            <div style={{display:'flex',flexWrap:'wrap',gap:3}}>
+              {['weapon','armor','other'].map(cat=>{
+                const catE=ENCHANTMENTS.filter(e=>e.cat===cat&&knownEnch.includes(e.id));
+                const catInfo=ENCH_CATS[cat];
+                return catE.length>0?<span key={cat} style={{fontSize:13,color:TH.textDim,padding:'2px 4px',background:TH.panelLight,borderRadius:2}}>
+                  {catInfo.icon}{catInfo.name}: {catE.map(e=>e.icon+e.name).join(', ')}
+                </span>:null;
+              })}
+            </div>
+            {ENCHANTMENTS.filter(e=>!knownEnch.includes(e.id)&&(!e.faction||getRL(e.faction)>=(e.fReq||0))).length>0&&
+              <div style={{fontSize:13,color:TH.green,marginTop:4}}>✨ {ENCHANTMENTS.filter(e=>!knownEnch.includes(e.id)&&(!e.faction||getRL(e.faction)>=(e.fReq||0))).length} enchantment{ENCHANTMENTS.filter(e=>!knownEnch.includes(e.id)&&(!e.faction||getRL(e.faction)>=(e.fReq||0))).length>1?'s':''} available to discover</div>}
+            {customPatterns.length>0&&<div style={{marginTop:4}}>
+              <span style={{fontSize:13,color:'#b090e0'}}>✨ Custom Patterns: {customPatterns.map(p=>p.name).join(', ')}</span>
+            </div>}
+          </div>}
+        </div>
+        {/* ── Experiment Bench ── */}
+        <div style={{...S.card,borderColor:TH.purple+'66'}} className={isWsOpen('ws28')?'':'ws-closed'}>
+          {wsHead('ws28',<>🧪 Experiment Bench</>)}
+          <div style={{fontSize:14,color:TH.textDim,marginBottom:6,lineHeight:1.5}}>
+            Combine ingredients and attempt a brew. If the combination matches an undiscovered recipe, you'll learn it! Quest givers often hint at ingredients.
+          </div>
+          {/* Selected ingredients on bench */}
+          <div style={{display:'flex',gap:4,flexWrap:'wrap',minHeight:32,padding:'6px 8px',background:TH.panelAlt,borderRadius:4,border:'1px solid '+TH.purple+'44',marginBottom:6}}>
+            {expBench.length===0&&<span style={{fontSize:15,color:TH.textDim,fontStyle:'italic'}}>Add ingredients below...</span>}
+            {expBench.map((id,i)=><span key={i} title={INGR[id]?.name||id} style={{...S.tag,borderColor:TH.purple+'88',cursor:'pointer',background:TH.panelAlt,color:TH.textBright}} onClick={()=>rmFromExp(i)}>
+              <span title={INGR[id]?.name||id}>{INGR[id]?.icon} {INGR[id]?.name}</span> <span style={{fontSize:13,color:TH.red}}>✕</span>
+            </span>)}
+            {expBench.length>0&&<span style={{fontSize:13,color:TH.textDim,alignSelf:'center'}}>({expBench.length}/4)</span>}
+          </div>
+          {/* Available ingredients to add */}
+          <div style={{display:'flex',gap:3,flexWrap:'wrap',marginBottom:8}}>
+            {Object.entries(inv).filter(([,q])=>q>0).map(([id,qty])=>{
+              const onBench=expBench.filter(x=>x===id).length;const avail=qty-onBench;
+              return avail>0?<button key={id} style={{...S.tag,cursor:'pointer',border:'1px solid '+TH.borderLight,background:TH.panelLight,fontSize:14,color:TH.textBright}} onClick={()=>addToExp(id)}>
+                {INGR[id]?.icon} {INGR[id]?.name} <span style={{color:TH.text}}>×{avail}</span> <span style={{color:TH.green,fontSize:13}}>+</span>
+              </button>:null;})}
+          </div>
+          {/* Experiment button + hints */}
+          {expBench.length>=2&&getFeatureVal('experimentHints')>0&&(()=>{
+            const sorted=[...expBench].sort();
+            const partialMatches=RECIPES.filter(r=>{
+              const rSorted=[...r.ingr].sort();
+              const overlap=sorted.filter(id=>rSorted.includes(id)).length;
+              return overlap>=Math.min(2,rSorted.length)&&!known.includes(r.id);
+            });
+            const exactMatch=RECIPES.find(r=>{const rS=[...r.ingr].sort();return rS.length===sorted.length&&rS.every((v,i)=>v===sorted[i]);});
+            return partialMatches.length>0||exactMatch?(
+              <div style={{fontSize:14,padding:'4px 8px',background:TH.cyan+'10',borderRadius:4,border:'1px solid '+TH.cyan+'33',marginBottom:6,color:TH.cyan}}>
+                📚 {exactMatch?`This matches a ${exactMatch.unlock>level?'high-level ':''}recipe! (DC${exactMatch.dc})`
+                  :`${partialMatches.length} undiscovered recipe${partialMatches.length>1?'s':''} share${partialMatches.length===1?'s':''} some of these ingredients.`}
+              </div>
+            ):null;
+          })()}
+          <div style={S.row}>
+            <button style={{...S.btn(expBench.length>=2&&energy>=25?'gold':'dim'),opacity:(expBench.length>=2&&energy>=25)?1:0.45,cursor:(expBench.length>=2&&energy>=25)?'pointer':'not-allowed'}}
+              disabled={expBench.length<2||energy<25} onClick={doExperiment}
+              title={expBench.length<2?'Add at least 2 ingredients to the bench':energy<25?'Need ⚡25 Energy (have ⚡'+energy+')':'Cost: ⚡25'}>
+              🧪 Experiment (⚡25)
+            </button>
+            {expBench.length>0&&<button style={S.btn('dim')} onClick={()=>setExpBench([])}>Clear</button>}
+          </div>
+        </div>
+        {/* ── Published Papers (Scholar) ── */}
+        {getFeatureVal('publishPapers')>0&&<div style={{...S.card,borderColor:TH.cyan+'44'}} className={isWsOpen('ws29')?'':'ws-closed'}>
+          {wsHead('ws29',<>📝 Research Papers ({pubPapers.length})</>)}
+          <div style={{fontSize:14,color:TH.textDim,marginBottom:6,lineHeight:1.5}}>
+            Publish papers on your discoveries for passive daily coin income. Each discovery can be published once.
+            {getFeatureVal('paperScaling')?' Paper income grows over time.':''}
+            {getFeatureVal('grandPapers')?' Grand theory papers earn premium rates.':''}
+          </div>
+          {pubPapers.length>0&&<div style={{marginBottom:6}}>
+            <div style={{fontSize:14,color:TH.gold,marginBottom:3}}>Published ({pubPapers.length}):</div>
+            <div style={{display:'flex',flexWrap:'wrap',gap:3}}>
+              {pubPapers.map((p,i)=>{
+                const item=p.type==='recipe'?RECIPES.find(r=>r.id===p.id):ENCHANTMENTS.find(e=>e.id===p.id);
+                return <span key={i} style={{fontSize:13,padding:'2px 6px',background:TH.cyan+'10',borderRadius:3,border:'1px solid '+TH.cyan+'22',color:TH.cyan}}>
+                  {item?.icon||'?'}{item?.name||p.id} <span style={{color:TH.textDim}}>Day {p.day}</span>
+                </span>;
+              })}
+            </div>
+          </div>}
+          <div style={{fontSize:14,color:TH.green,marginBottom:4}}>Unpublished discoveries:</div>
+          <div style={{display:'flex',flexWrap:'wrap',gap:3}}>
+            {RECIPES.filter(r=>known.includes(r.id)&&!pubPapers.find(p=>p.id===r.id&&p.type==='recipe')).map(r=>(
+              <button key={r.id} style={{...S.tag,cursor:'pointer',background:TH.panelLight,border:'1px solid '+TH.green+'44'}}
+                onClick={()=>doPublishPaper(r.id,'recipe')}>
+                {r.icon}{r.name} <span style={{color:TH.green,fontSize:13}}>📝</span>
+              </button>
+            ))}
+            {ENCHANTMENTS.filter(e=>knownEnch.includes(e.id)&&!pubPapers.find(p=>p.id===e.id&&p.type==='enchant')).map(e=>(
+              <button key={e.id} style={{...S.tag,cursor:'pointer',background:TH.panelLight,border:'1px solid '+TH.green+'44'}}
+                onClick={()=>doPublishPaper(e.id,'enchant')}>
+                {e.icon}{e.name} <span style={{color:TH.green,fontSize:13}}>📝</span>
+              </button>
+            ))}
+          </div>
+          {energy<25&&<div style={{fontSize:13,color:TH.red,marginTop:3}}>Need 25 Energy to publish</div>}
+        </div>}
+      </>}
+
+      {/* ═══════════ TRANSMUTATION ═══════════ */}
+      {/* Transmutation is a free action — no energy cost is charged anywhere. This is intended design
+          per the Transmuter design lock §1a (free-transmute reality is accepted, not "fixed"; the old
+          `freeTransmute` Lv10 effect is vacated). Lv10 capstone Philosopher's Stone unlocks the
+          Potions mode below, gated by `canPotionTransmute`. */}
+      {screen==='transmute'&&<>
+        <BackBar title="Transmutation" icon="🔄" back="workshop"/>
+        {(()=>{
+          const ratio=getFeatureVal('transmuteRatio')||2;
+          const canFaction=getFeatureVal('factionTransmute');
+          const canPot=!!getFeatureVal('canPotionTransmute');
+          const mode=canPot?txMode:'ing'; // pre-Lv10 always ingredient mode
+          // ─── Ingredient mode targets (existing logic, unchanged) ───
+          const sources=Object.entries(inv).filter(([,q])=>q>=ratio).map(([id])=>id);
+          const targetSet=new Set();
+          RECIPES.filter(r=>known.includes(r.id)).forEach(r=>r.ingr.forEach(id=>targetSet.add(id)));
+          locRegions.filter(r=>level>=r.unlock).forEach(r=>r.ingr.forEach(id=>targetSet.add(id)));
+          if(canFaction)Object.keys(FACTIONS).forEach(fid=>{if(FACTIONS[fid].res)targetSet.add(FACTIONS[fid].res);});
+          const targets=[...targetSet].filter(id=>id!==txSource);
+          // ─── Potion mode source/target (only used in 'pot' mode) ───
+          const potSources=Object.entries(pots).filter(([,q])=>q>=POT_TX_RATIO).map(([id])=>id);
+          const potTargetRecipes=RECIPES.filter(r=>known.includes(r.id));
+          return(
+            <div style={S.card} className={isWsOpen('ws30')?'':'ws-closed'}>
+              {wsHead('ws30',<>🔄 Transmutation Lab</>)}
+              {/* Mode tabs — appear only at Lv10 Transmuter (canPotionTransmute). Pre-Lv10 the screen
+                  shows only the ingredient flow, exactly as before. */}
+              {canPot&&<div style={{display:'flex',gap:4,marginBottom:8}}>
+                {[{id:'ing',label:'🌿 Ingredients'},{id:'pot',label:'🧪 Potions'}].map(t=>{
+                  const active=mode===t.id;
+                  return <button key={t.id} onClick={()=>setTxMode(t.id)}
+                    style={{padding:'5px 12px',fontSize:14,borderRadius:6,cursor:'pointer',fontFamily:'inherit',
+                      background:active?TH.gold+'25':'transparent',
+                      border:'1px solid '+(active?TH.gold:TH.border),
+                      color:active?TH.goldBright:TH.text}}>
+                    {t.label}
+                  </button>;
+                })}
+              </div>}
+              {mode==='ing'?<>
+                <div style={{fontSize:14,color:TH.textDim,marginBottom:8,lineHeight:1.5}}>
+                  Convert {ratio} of one ingredient into 1 of another. Free action — no energy cost.{canFaction?' Faction ingredients available.':''}
+                </div>
+                <div style={{marginBottom:8}}>
+                  <div style={{fontSize:15,color:TH.orange,marginBottom:4}}>Source (consume {ratio}×):</div>
+                  <div style={{display:'flex',gap:3,flexWrap:'wrap'}}>
+                    {sources.length===0&&<span style={{fontSize:14,color:TH.textDim}}>Need at least {ratio} of any ingredient</span>}
+                    {sources.map(id=>(
+                      <button key={id} style={{...S.tag,cursor:'pointer',background:txSource===id?TH.orange+'20':TH.panelLight,
+                        border:`1px solid ${txSource===id?TH.orange:TH.borderLight}`}} onClick={()=>setTxSource(txSource===id?null:id)}>
+                        {INGR[id]?.icon}{INGR[id]?.name} <span style={{color:TH.textDim}}>×{inv[id]||0}</span>
+                      </button>))}
+                  </div>
+                </div>
+                {txSource&&<div style={{marginBottom:8}}>
+                  <div style={{fontSize:15,color:TH.green,marginBottom:4}}>Target (receive 1×):</div>
+                  <div style={{display:'flex',gap:3,flexWrap:'wrap'}}>
+                    {targets.map(id=>(
+                      <button key={id} style={{...S.tag,cursor:'pointer',background:txTarget===id?TH.green+'20':TH.panelLight,
+                        border:`1px solid ${txTarget===id?TH.green:TH.borderLight}`}} onClick={()=>setTxTarget(txTarget===id?null:id)}>
+                        {INGR[id]?.icon}{INGR[id]?.name} <span style={{color:TH.textDim}}>(have {inv[id]||0})</span>
+                      </button>))}
+                  </div>
+                </div>}
+                {txSource&&txTarget&&<div style={S.row}>
+                  {[1,2,5].map(n=>{const srcNeed=ratio*n;const canDo=(inv[txSource]||0)>=srcNeed;
+                    return <button key={n} style={S.btn(canDo?'gold':'dim')} disabled={!canDo}
+                      onClick={()=>doTransmute(txSource,txTarget,n)}>
+                      🔄 ×{n} ({srcNeed}→{n})
+                    </button>;})}
+                  <button style={S.btn('dim')} onClick={()=>{setTxSource(null);setTxTarget(null);}}>Clear</button>
+                </div>}
+              </>:<>
+                {/* ─── Potions mode (Lv10 Transmuter capstone) ─── */}
+                <div style={{fontSize:14,color:TH.textDim,marginBottom:8,lineHeight:1.5}}>
+                  Convert {POT_TX_RATIO} of one potion into 1 of another. Free action — no energy cost. <b style={{color:TH.gold}}>Result drops to standard quality with no infusion or freshness</b> — you convert what the potion IS, not how good it was.
+                </div>
+                <div style={{marginBottom:8}}>
+                  <div style={{fontSize:15,color:TH.orange,marginBottom:4}}>Source potion (consume {POT_TX_RATIO}×):</div>
+                  <div style={{display:'flex',gap:3,flexWrap:'wrap'}}>
+                    {potSources.length===0&&<span style={{fontSize:14,color:TH.textDim}}>Need at least {POT_TX_RATIO} of any potion</span>}
+                    {potSources.map(id=>(
+                      <button key={id} style={{...S.tag,cursor:'pointer',background:txPotSource===id?TH.orange+'20':TH.panelLight,
+                        border:`1px solid ${txPotSource===id?TH.orange:TH.borderLight}`}} onClick={()=>setTxPotSource(txPotSource===id?null:id)}>
+                        {potDisplayName(id)} <span style={{color:TH.textDim}}>×{pots[id]||0}</span>
+                      </button>))}
+                  </div>
+                </div>
+                {txPotSource&&<div style={{marginBottom:8}}>
+                  <div style={{fontSize:15,color:TH.green,marginBottom:4}}>Target potion (receive 1× standard, plain):</div>
+                  <div style={{display:'flex',gap:3,flexWrap:'wrap'}}>
+                    {potTargetRecipes.filter(r=>r.id!==getBaseRecipeId(txPotSource)).map(r=>{
+                      const plainId=qualPotId(r.id,'std');
+                      return <button key={r.id} style={{...S.tag,cursor:'pointer',background:txPotTarget===r.id?TH.green+'20':TH.panelLight,
+                        border:`1px solid ${txPotTarget===r.id?TH.green:TH.borderLight}`}} onClick={()=>setTxPotTarget(txPotTarget===r.id?null:r.id)}>
+                        {r.icon}{r.name} <span style={{color:TH.textDim}}>(have {pots[plainId]||0})</span>
+                      </button>;
+                    })}
+                    {potTargetRecipes.length===0&&<span style={{fontSize:14,color:TH.textDim}}>You don't know any potion recipes yet.</span>}
+                  </div>
+                </div>}
+                {txPotSource&&txPotTarget&&<div style={S.row}>
+                  {[1,2,5].map(n=>{const srcNeed=POT_TX_RATIO*n;const canDo=(pots[txPotSource]||0)>=srcNeed;
+                    return <button key={n} style={S.btn(canDo?'gold':'dim')} disabled={!canDo}
+                      onClick={()=>doPotionTransmute(txPotSource,txPotTarget,n)}>
+                      🔄 ×{n} ({srcNeed}→{n})
+                    </button>;})}
+                  <button style={S.btn('dim')} onClick={()=>{setTxPotSource(null);setTxPotTarget(null);}}>Clear</button>
+                </div>}
+              </>}
+            </div>
+          );
+        })()}
+      </>}
+
+      {/* ═══════════ CUSTOMERS ═══════════ */}
+      {screen==='enchant'&&<>
+        <BackBar title="Customers" icon="🛒" back="workshop"/>
+
+        {/* ── Shop Shelves ── */}
+        <div style={S.card} className={isWsOpen('ws31')?'':'ws-closed'}>
+          {wsHead('ws31',<>🏪 Shop Shelves ({shelfTotal}/{SHELF_MAX})</>)}
+          <div style={{fontSize:14,color:TH.textDim,marginBottom:6}}>Stock potions for townsfolk to browse. Shelved potions sell passively overnight.</div>
+          {Object.entries(shelves).filter(([,q])=>q>0).length>0?
+            <div style={{marginBottom:6}}>{Object.entries(shelves).filter(([,q])=>q>0).map(([id,qty])=>{const baseId=getBaseRecipeId(id);const r=RECIPES.find(x=>x.id===baseId);if(!r)return null;
+              const pq=getPotQuality(id);const sqT=QUALITY[pq]||QUALITY.std;const _isFresh=isFreshPot(id);
+              const _frM=_isFresh?getFreshMult(prestigeLevels.wildcrafter||0):1;
+              const sp=getShelfSalePrice(id); // what tonight's buyers will pay
+              return(<div key={id} style={{display:'flex',alignItems:'center',gap:6,padding:'3px 6px',background:_isFresh?'#60a04010':TH.panelLight,borderRadius:3,marginBottom:2,fontSize:15,border:_isFresh?'1px solid #60a04030':'none'}}>
+                <span style={{flex:1}}>{r.icon} {r.name}{sqT.icon?' '+sqT.icon:''}{_isFresh?' 🌿':''} ×{qty}</span>{_isFresh&&<span style={{fontSize:11,color:'#60a040',fontWeight:'bold'}}>{_frM}×</span>}<span style={{color:TH.gold,fontSize:14}}>{fmtMoney(sp)} ea</span>
+                <button style={{...S.btn('def'),fontSize:13,padding:'1px 5px'}} onClick={()=>unstockShelf(id,1)}>−1</button>
+              </div>);})}</div>:
+            <div style={{fontSize:14,color:TH.textDim,textAlign:'center',padding:4,marginBottom:6}}>Shelves empty — stock potions below.</div>}
+          {Object.entries(pots).filter(([,q])=>q>0).length>0&&<>
+            <div style={{fontSize:14,color:TH.gold,marginBottom:3}}>Stock from inventory:</div>
+            <div style={{display:'flex',flexWrap:'wrap',gap:3}}>{Object.entries(pots).filter(([,q])=>q>0).map(([id,qty])=>{const baseId=getBaseRecipeId(id);const r=RECIPES.find(x=>x.id===baseId);if(!r)return null;
+              const pq=getPotQuality(id);const sqT=QUALITY[pq]||QUALITY.std;const _isFresh=isFreshPot(id);
+              return(<button key={id} style={{...S.btn(shelfTotal<SHELF_MAX?'gold':'dim'),fontSize:14,padding:'2px 6px',borderColor:_isFresh?'#60a040':undefined}} disabled={shelfTotal>=SHELF_MAX||qty<1}
+                onClick={()=>stockShelf(id,1)}>{r.icon}{_isFresh?'🌿':''}{sqT.icon?sqT.icon:''}+1 ({qty})</button>);
+            })}</div>
+          </>}
+        </div>
+
+        {/* ── Potion Orders ── */}
+        {potCustQ.length>0&&<div style={S.card} className={isWsOpen('ws32')?'':'ws-closed'}>
+          {wsHead('ws32',<>🧪 Potion Orders ({potCustQ.length})</>)}
+          {potCustQ.map(cust=>{
+            const have=countAllPots(getBaseRecipeId(cust.potionId))>=cust.qty;
+            return(
+            <div key={cust.id} style={{padding:'8px 10px',background:have?TH.gold+'08':TH.panelLight,borderRadius:6,marginBottom:6,border:'1px solid '+(have?TH.borderGold:TH.border)}}>
+              <div style={{display:'flex',gap:8,marginBottom:6}}>
+                <NpcPortrait npc={{icon:'🧑',name:cust.customer,portrait:CUST_DATA[cust.customer]?.portrait}} size={80}/>
+                <div style={{flex:1}}>
+                  <div style={{fontSize:17,color:TH.goldBright}}>{cust.customer} <span style={{fontSize:14,color:TH.textDim}}>· {cust.title}</span></div>
+                  <div style={{padding:'4px 8px',background:TH.bg,borderRadius:3,border:'1px solid '+TH.border,fontSize:15,fontStyle:'italic',color:TH.text,margin:'4px 0'}}>{cust.line}</div>
+                  <div style={{fontSize:15,color:TH.textBright}}>Wants <b style={{color:TH.gold}}>{cust.qty}× {cust.potionIcon} {cust.potionName}</b></div>
+                  <div style={{fontSize:14,color:TH.textDim}}>Pays {fmtMoney(cust.payPer*cust.qty)} + {cust.xpPer*cust.qty} XP</div>
+                </div>
+              </div>
+              <div style={{display:'flex',gap:6}}>
+                <button style={{...S.btn(have?'gold':'dim'),flex:1,fontSize:15}} onClick={()=>doFillOrder(cust)} disabled={!have}>
+                  {have?'Fill Order ('+cust.qty+'× '+cust.potionIcon+')':'Need '+(cust.qty-countAllPots(getBaseRecipeId(cust.potionId)))+' more'}
+                </button>
+                <button style={{...S.btn('dim'),fontSize:14,padding:'2px 8px'}} onClick={()=>dismissPotCust(cust)} title="Turn away customer">✕</button>
+              </div>
+            </div>);
+          })}
+        </div>}
+
+        {/* ── Enchant Customers ── */}
+        {enchQ.length===0&&potCustQ.length===0&&<div style={S.card}><div style={{color:TH.textDim,textAlign:'center',padding:12}}>
+          <div style={{fontSize:20,marginBottom:4}}>🛒</div>No customers today. Stock your shelves and rest to attract buyers.
+        </div></div>}
+        {enchQ.length>0&&<div style={{...S.card,borderColor:TH.purple+'44'}} className={isWsOpen('ws33')?'':'ws-closed'}>{wsHead('ws33',<>✨ Enchant Requests ({enchQ.length})</>)}
+          <div style={{fontSize:14,color:TH.textDim,marginBottom:6}}>Each customer brings a specific item and requests specific enchantments. Discover new enchantments via Research.</div>
+          {/* Customer cards are CHILDREN of the collapsible card so the `.ws-closed > *:not(:first-child)` rule hides them when toggled closed. Previously rendered as siblings — never collapsed. */}
+        {enchQ.map(cust=>{
+          const cd=CUST_DATA[cust.customer]||{title:'Villager'};
+          const catInfo=ENCH_CATS[cust.cat]||{name:'Item',icon:'❔'};
+          const requested=(cust.reqEnch||[]).map(eid=>{
+            if(eid.startsWith('custom_')){const cp=customPatterns.find(p=>'custom_'+p.id===eid);return cp?{id:eid,name:cp.name,icon:'✨',cat:cp.cat,ingr:[],xp:cp.xp,dc:cp.dc,desc:cp.effectDescs,isCustom:true,customId:cp.id,sellMult:cp.sellMult||1}:null;}
+            return ENCHANTMENTS.find(e=>e.id===eid);
+          }).filter(Boolean);
+          const dismissCust=()=>setEnchQ(p=>p.filter(c=>c!==cust));
+          return(
+          <div key={cust.id} style={{...S.card,borderColor:TH.borderGold}}>
+            <div style={{display:'flex',gap:10,marginBottom:8}}>
+              <NpcPortrait npc={{icon:cust.icon||'🧑',name:cust.customer,portrait:cd.portrait}} size={90}/>
+              <div style={{flex:1}}>
+                <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                  <div><div style={{fontSize:18,color:TH.goldBright}}>{cust.customer}</div>
+                  <div style={{fontSize:14,color:TH.textDim}}>{cust.title||cd.title}</div></div>
+                  <button style={{...S.btn('dim'),fontSize:13,padding:'2px 6px'}} onClick={dismissCust} title="Turn away">✕</button>
+                </div>
+                <div style={{padding:'6px 10px',background:TH.bg,borderRadius:4,border:'1px solid '+TH.border,fontSize:16,lineHeight:1.6,margin:'6px 0',fontStyle:'italic',color:TH.text}}>
+                  {cust.line||'"Can you enchant this for me?"'}
+                </div>
+                <div style={{fontSize:15,color:TH.textBright}}>Brings: <b style={{color:TH.gold}}>{cust.icon} {cust.name}</b> <span style={{fontSize:14,color:TH.textDim}}>({catInfo.icon} {catInfo.name} · T{cust.tier})</span></div>
+                <div style={{fontSize:14,color:TH.cyan,marginTop:2}}>Requests {requested.length} enchantment{requested.length>1?'s':''} — fulfill any to be paid</div>
+              </div>
+            </div>
+            <div style={{fontSize:15,color:TH.gold,marginBottom:6,paddingTop:6,borderTop:'1px solid '+TH.border}}>Requested enchantments:</div>
+            {requested.map(ench=>{
+              const cost={};ench.ingr.forEach(id=>{const lid=li(id);cost[lid]=(cost[lid]||0)+1;});
+              const can=Object.entries(cost).every(([id,q])=>(inv[id]||0)>=q);
+              const adjDC=Math.max(5,ench.dc+upEff('enchDC')+(threatEnchDC||0));
+              const reward=Math.floor((20+ench.dc*3+cust.tier*12+getFeatureVal('enchantGoldFlat')+getFeatureVal('potionSaleBonus'))*threatEnchPayMult);
+              const showHints=getFeatureVal('showCustHints');
+              const hintMod=getSkMod('inscription')+getSkMod('arcane_sense')+getSkMod('focus')+upEff('craftSkillBonus')+getFeatureVal('enchantBonus')+getFeatureVal('enchantSuccessFlat');
+              const hintPct=Math.min(95,Math.max(5,Math.floor((21-(adjDC-hintMod))/20*100)));
+              const fullReward=Math.floor(reward*(1+getFeatureVal('enchantGoldBonus')+getCategoricalBonus('enchant',ench.cat,'enchantGoldBonus')+getFeatureVal('customerPayBonus')));
+              return(
+              <div key={ench.id} style={{padding:'8px 10px',background:can?TH.gold+'08':TH.panel,borderRadius:6,marginBottom:6,border:'1px solid '+(can?TH.borderGold:TH.border),opacity:can?1:0.75}}>
+                {cust.reqQuality&&cust.reqQuality!=='std'&&<div style={{fontSize:12,padding:'2px 8px',background:QUALITY[cust.reqQuality]?.color+'20',border:'1px solid '+QUALITY[cust.reqQuality]?.color+'44',borderRadius:10,display:'inline-block',marginBottom:4,color:QUALITY[cust.reqQuality]?.color}}>
+                  {QUALITY[cust.reqQuality]?.icon} Requests {QUALITY[cust.reqQuality]?.name} quality — {QUALITY[cust.reqQuality]?.sellMult}× pay
+                </div>}
+                <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                  <span style={{fontSize:17,color:can?TH.textBright:TH.textDim,fontWeight:'bold'}}>{ench.icon} {ench.name}</span>
+                  <span style={{fontSize:14,color:TH.gold}}>DC{adjDC} · +{ench.xp}XP · +{fmtMoney(reward)}</span>
+                </div>
+                {showHints>0&&<div style={{fontSize:13,color:hintPct>=60?TH.green:hintPct>=30?TH.gold:TH.red,marginTop:1}}>
+                  📊 {hintPct}% success (Standard) · est. {fmtMoney(fullReward)}
+                </div>}
+                {ench.desc&&<div style={{fontSize:14,color:TH.textDim,fontStyle:'italic',margin:'3px 0'}}>{ench.desc}</div>}
+                <div style={{margin:'6px 0',padding:'6px 8px',background:TH.bg,borderRadius:4,border:'1px solid '+TH.border}}>
+                  {Object.keys(cost).length>0?<>
+                  <div style={{fontSize:14,color:TH.gold,marginBottom:3}}>Ingredients:</div>
+                  {Object.entries(cost).map(([id,q])=>{
+                    const have=(inv[id]||0)>=q;
+                    const regions=locRegions.filter(reg=>reg.ingr.includes(id)&&level>=regUnlock(reg)&&(!reg.faction||getRL(reg.faction)>=(reg.fReq||0)));
+                    const shopItem=SHOP_I.find(s=>s.id===id&&(!s.loc||s.loc===gameLocation));
+                    return(
+                    <div key={id} style={{padding:'3px 0',fontSize:15,display:'flex',alignItems:'center',flexWrap:'wrap',gap:4}}>
+                      <span title={INGR[id]?.name||id} style={{color:have?TH.green:TH.red,cursor:'help'}}>{have?'✅':'❌'} {INGR[id]?.icon}{INGR[id]?.name}</span>
+                      <span style={{fontSize:14,color:have?TH.green:TH.red}}>({inv[id]||0}/{q})</span>
+                      {!have&&<span style={{display:'flex',gap:4,marginLeft:'auto'}}>
+                        {regions.length>0&&<button style={{...S.btn('def'),fontSize:13,padding:'1px 6px'}} onClick={()=>setScreen('worldmap')}>🗺️ Forage</button>}
+                        {shopItem&&<button style={{...S.btn('def'),fontSize:13,padding:'1px 6px'}} onClick={()=>{setScreen('market');setShowShop(true);}}>🛒 Buy</button>}
+                      </span>}
+                    </div>);})}
+                  </>:<div style={{fontSize:14,color:'#b090e0'}}>✨ No materials needed — pure arcane knowledge</div>}
+                </div>
+                {energy<25?<div style={{fontSize:14,color:TH.textDim,textAlign:'center',padding:4}}>⚡25 Energy needed (have ⚡{energy})</div>
+                :!can?<div style={{fontSize:14,color:TH.textDim,textAlign:'center',padding:4}}>Gather Materials First</div>
+                :<div style={{display:'flex',flexDirection:'column',gap:3,marginTop:4}}>
+                  {['std','fine','mw','gm'].map(eq=>{
+                    const eqT=QUALITY[eq];
+                    const eqCost={};ench.ingr.forEach(id=>{const lid=li(id);eqCost[lid]=(eqCost[lid]||0)+1;});
+                    if(eqT.extraIngr>=1&&ench.ingr.length>0){const lid0=li(ench.ingr[0]);eqCost[lid0]=(eqCost[lid0]||0)+1;}
+                    if(eqT.extraIngr>=2&&ench.ingr.length>1){const lid1=li(ench.ingr[1]);eqCost[lid1]=(eqCost[lid1]||0)+1;}
+                    if(eqT.extraIngr>=3&&ench.ingr.length>0){const lid2=li(ench.ingr[Math.min(2,ench.ingr.length-1)]);eqCost[lid2]=(eqCost[lid2]||0)+1;}
+                    const canQ=Object.entries(eqCost).every(([id,qq])=>(inv[id]||0)>=qq)||Object.keys(eqCost).length===0;
+                    const missingMats=Object.entries(eqCost).filter(([id,qq])=>(inv[id]||0)<qq).map(([id,qq])=>(INGR[id]?.icon||'')+INGR[id]?.name+' ('+(inv[id]||0)+'/'+qq+')');
+                    const eqDC=Math.max(5,ench.dc+qualDCMod(eq,'ench'));
+                    const eqPct=Math.min(95,Math.max(5,Math.floor((21-(eqDC-hintMod))/20*100)));
+                    const meetsReq=!cust.reqQuality||cust.reqQuality==='std'||['std','fine','mw','gm'].indexOf(eq)>=(['std','fine','mw','gm'].indexOf(cust.reqQuality));
+                    return <div key={eq} style={{display:'flex',alignItems:'center',gap:4}}>
+                      <button style={{flex:1,fontSize:13,padding:'5px 8px',textAlign:'left',borderRadius:4,cursor:canQ?'pointer':'default',fontFamily:"'Almendra',serif",
+                        background:canQ?TH.panel:TH.border,opacity:canQ?1:0.5,
+                        border:'2px solid '+(canQ?eq==='gm'?'#c050e0':eq==='mw'?TH.gold:eq==='fine'?TH.green:TH.borderLight:TH.border),
+                        color:canQ?TH.textBright:TH.textDim}}
+                        onClick={()=>canQ&&doEnchant(ench.id,cust,eq)} disabled={!canQ}>
+                        <span style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                          <span style={{fontWeight:'bold',color:canQ?eq==='gm'?'#c050e0':eq==='mw'?TH.gold:eq==='fine'?TH.green:TH.textBright:TH.textDim}}>{eq==='std'?'✨':''+eqT.icon} {eqT.name} <span style={{fontSize:10,color:TH.textDim,fontWeight:'normal'}}>(⚡25)</span></span>
+                          <span style={{fontSize:11,color:canQ?(eqPct>=60?'#80d080':eqPct>=30?'#d0b060':'#d06060'):TH.textDim}}>DC{eqDC} {eqPct}% · {eqT.sellMult}× pay</span>
+                        </span>
+                        {!canQ&&missingMats.length>0&&<span style={{display:'block',fontSize:10,color:'#c06040',marginTop:1}}>Need: {missingMats.join(', ')}</span>}
+                        {!meetsReq&&<span style={{display:'block',fontSize:10,color:TH.red}}>Below customer request</span>}
+                      </button>
+                    </div>;
+                  })}
+                </div>}
+              </div>);})}
+            {requested.length===0&&<div style={{fontSize:15,color:TH.textDim}}>No known enchantments match this item. Research new inscriptions!</div>}
+          </div>);})}
+        </div>}
+      </>}
+
+      {/* ═══════════ WORKSHOP — INTEGRATED ROOM HERO + SCOPED UPGRADE LIST ═══════════ */}
+      {/* One stacked screen: large room hero on top, room picker below it,
+          selected room's upgrade list below that. Art and list are always
+          matched — the picker swaps both together. Pure additive of the
+          showcase machinery (hero / picker / getRoomTier / roomImg / hint)
+          over the existing buyUpgrade purchase flow. No overlay-on-art —
+          art and list are stacked regions, never layered. Tier is derived
+          from owned upgrades; no persisted save state. ← / → keys step
+          rooms while on this screen (registered/torn-down by the keyboard-nav useEffect). */}
+      {screen==='upgrades'&&typeof ROOM_DEFS!=='undefined'&&<>
+        <BackBar title="Workshop" icon="🏗️" back="workshop"/>
+        {(()=>{
+          const roomCount=ROOM_DEFS.length;
+          const idx=Math.max(0,Math.min(workshopRoomIdx,roomCount-1));
+          const room=ROOM_DEFS[idx];if(!room)return null;
+          const ownedCt=room.upgrades.filter(uid=>upgrades.includes(uid)).length;
+          const totalCt=room.upgrades.length;
+          const tier=getRoomTier(ownedCt,room);
+          const tierLabel=(typeof ROOM_TIER_LABELS!=='undefined'?ROOM_TIER_LABELS[tier]:'')||'';
+          const roomImg=(typeof ROOM_IMGS!=='undefined'&&(ROOM_IMGS['room_'+room.id+'_t'+tier]||ROOM_IMGS['room_'+room.id]))||null;
+          const nextThresh=tier===1?room.t2:tier===2?room.t3:null;
+          const nextLabel=tier===1?'Established':tier===2?'Grand':null;
+          const hint=tier===3
+            ?'Grand · '+totalCt+'/'+totalCt+' upgrades — fully developed.'
+            :tierLabel+' · '+ownedCt+'/'+totalCt+' upgrades — own '+nextThresh+' for '+nextLabel+'.';
+          const tierColor=tier===3?TH.goldBright:tier===2?TH.gold:TH.text;
+          const prevRoom=()=>setWorkshopRoomIdx((idx-1+roomCount)%roomCount);
+          const nextRoom=()=>setWorkshopRoomIdx((idx+1)%roomCount);
+          return(<>
+            {/* ─── LARGE ROOM HERO (page anchor — materially bigger than the old 28vh modal band) ─── */}
+            <div style={{position:'relative',width:'100%',height:'48vh',minHeight:280,maxHeight:520,borderRadius:10,overflow:'hidden',border:'2px solid '+TH.borderGold,marginBottom:10,backgroundImage:roomImg?'url('+roomImg+')':'linear-gradient(135deg,'+TH.panelLight+','+TH.bg+')',backgroundSize:'cover',backgroundPosition:'center'}}>
+              {!roomImg&&<div style={{position:'absolute',top:'50%',left:'50%',transform:'translate(-50%,-50%)',fontSize:160,opacity:0.18,pointerEvents:'none'}}>{room.icon}</div>}
+              {/* Top header overlay — room name + tier chip + room counter */}
+              <div style={{position:'absolute',top:0,left:0,right:0,padding:'10px 16px',background:'linear-gradient(180deg,rgba(0,0,0,0.85) 0%,rgba(0,0,0,0.55) 60%,transparent 100%)',display:'flex',alignItems:'center',gap:12,flexWrap:'wrap'}}>
+                <span style={{fontSize:24,color:TH.goldBright,fontWeight:'bold',textShadow:'0 2px 4px #000'}}>{room.icon} {room.displayName}</span>
+                <span style={{fontSize:15,color:tierColor,background:'rgba(0,0,0,0.55)',padding:'3px 12px',borderRadius:14,textShadow:'0 1px 2px #000',fontWeight:'bold'}}>{tierLabel}</span>
+                <div style={{flex:1}}/>
+                <span style={{fontSize:13,color:TH.textDim,textShadow:'0 1px 2px #000'}}>{idx+1} / {roomCount}</span>
+              </div>
+              {/* Prev / Next arrows on the hero */}
+              <button onClick={prevRoom} title="Previous room (←)" style={{position:'absolute',left:10,top:'50%',transform:'translateY(-50%)',background:'rgba(0,0,0,0.6)',border:'1px solid '+TH.border,color:TH.gold,borderRadius:8,padding:'10px 16px',fontSize:22,cursor:'pointer',fontFamily:'inherit'}}>◀</button>
+              <button onClick={nextRoom} title="Next room (→)" style={{position:'absolute',right:10,top:'50%',transform:'translateY(-50%)',background:'rgba(0,0,0,0.6)',border:'1px solid '+TH.border,color:TH.gold,borderRadius:8,padding:'10px 16px',fontSize:22,cursor:'pointer',fontFamily:'inherit'}}>▶</button>
+              {/* Bottom progression hint band */}
+              <div style={{position:'absolute',left:0,right:0,bottom:0,background:'linear-gradient(0deg,rgba(0,0,0,0.85) 0%,rgba(0,0,0,0.40) 60%,transparent 100%)',padding:'30px 16px 12px',fontSize:16,color:TH.text,textShadow:'0 1px 3px #000'}}>{hint}</div>
+            </div>
+            {/* ─── ROOM PICKER (8 rooms in tour order; current chip gold; each chip shows its current tier) ─── */}
+            <div style={{display:'flex',gap:5,flexWrap:'wrap',padding:'2px 0 10px',marginBottom:8,borderBottom:'1px solid '+TH.border}}>
+              {ROOM_DEFS.map((r,i)=>{
+                const rOwn=r.upgrades.filter(uid=>upgrades.includes(uid)).length;
+                const rT=getRoomTier(rOwn,r);
+                const active=i===idx;
+                const tColor=rT===3?TH.goldBright:rT===2?TH.gold:TH.textDim;
+                return <button key={r.id} onClick={()=>setWorkshopRoomIdx(i)} style={{padding:'5px 11px',fontSize:13,borderRadius:14,background:active?TH.gold+'30':'transparent',border:'1px solid '+(active?TH.gold:TH.border),color:active?TH.goldBright:TH.text,cursor:'pointer',fontFamily:'inherit'}}>
+                  {r.icon} {r.displayName} <span style={{color:tColor,fontSize:11,marginLeft:2}}>· T{rT}</span>
+                </button>;
+              })}
+            </div>
+            {/* ─── SELECTED ROOM'S UPGRADE LIST (separate stacked region — never overlaid on art) ─── */}
+            {/* Reuses the existing purchase flow: cost calc, requirement check, prepped/discount handling, buyUpgrade(uid). */}
+            <div style={{display:'flex',flexDirection:'column',gap:6}}>
+              {room.upgrades.map(uid=>{
+                const u=UPGRADES[uid];if(!u)return null;
+                const owned=hasUp(uid);
+                const reqMet=!u.req||hasUp(u.req);
+                const prepped=(constructProgress[uid]||0)>=100;const cProg=constructProgress[uid]||0;
+                const upgDisc=getFeatureVal('upgradeCostReduction')+(prepped?0.40:0);
+                const gc=Math.max(1,Math.floor((u.cost.gold||0)*(1-Math.min(upgDisc,0.9))));
+                const matEntries=Object.entries(u.cost).filter(([id])=>id!=='gold').map(([id,q])=>[li(id),q]);
+                let waivedMat=null;
+                if(prepped&&matEntries.length>0){const sorted=[...matEntries].sort((a,b)=>(INGR[a[0]]?.val||0)-(INGR[b[0]]?.val||0));waivedMat=sorted[0][0];}
+                const adjMats=matEntries.filter(([id])=>id!==waivedMat);
+                const canBuy=reqMet&&!owned&&gold>=gc&&adjMats.every(([id,q])=>(inv[id]||0)>=q);
+                return(<div key={uid} style={{padding:'9px 11px',background:owned?TH.green+'10':prepped?TH.gold+'08':TH.panelLight,borderRadius:6,border:'1px solid '+(owned?TH.green:prepped?TH.gold:canBuy?TH.borderGold:TH.border),opacity:reqMet||owned?1:0.55}}>
+                  <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',gap:10,flexWrap:'wrap'}}>
+                    <div style={{flex:'1 1 240px',minWidth:0}}>
+                      <div style={{fontSize:16,color:owned?TH.green:TH.textBright,fontWeight:'bold'}}>{u.icon} {u.name}{owned?' ✓':''}{prepped&&!owned?' 🔨 Ready!':''}</div>
+                      <div style={{fontSize:13,color:TH.textDim,marginTop:2}}>{u.desc}</div>
+                      {u.req&&!hasUp(u.req)&&<div style={{fontSize:13,color:TH.red,marginTop:3}}>🔒 Requires: {UPGRADES[u.req]?.icon} {UPGRADES[u.req]?.name}</div>}
+                      {!owned&&cProg>0&&cProg<100&&<div style={{marginTop:4}}><div style={{height:5,background:TH.panel,borderRadius:2,overflow:'hidden'}}><div style={{height:'100%',width:cProg+'%',background:TH.gold,borderRadius:2}}/></div><div style={{fontSize:12,color:TH.gold,marginTop:1}}>🔨 Construction prep: {cProg}%</div></div>}
+                      {!owned&&prepped&&<div style={{fontSize:13,color:TH.gold,marginTop:3}}>🔨 Prepped: coin cost -40%{waivedMat?', '+(INGR[waivedMat]?.icon||'')+(INGR[waivedMat]?.name||waivedMat)+' waived':''}</div>}
+                    </div>
+                    {!owned&&<div style={{display:'flex',gap:5,alignItems:'center',flexWrap:'wrap'}}>
+                      <span style={{fontSize:15,color:TH.gold,fontWeight:'bold'}}>{fmtMoney(gc)}{prepped?' ✦':''}</span>
+                      {adjMats.map(([id,q])=><span key={id} title={INGR[id]?.name||id} style={{...S.tag,fontSize:13,borderColor:(inv[id]||0)>=q?TH.green:TH.red,cursor:'help'}}>{INGR[id]?.icon||id} {inv[id]||0}/{q}</span>)}
+                      {waivedMat&&<span title={INGR[waivedMat]?.name||waivedMat} style={{...S.tag,fontSize:13,borderColor:TH.gold,textDecoration:'line-through',opacity:0.5,cursor:'help'}}>{INGR[waivedMat]?.icon||''}{INGR[waivedMat]?.name||waivedMat}</span>}
+                      <button style={{...S.btn(canBuy?'gold':'dim'),fontSize:14,padding:'5px 14px'}} onClick={()=>{if(canBuy)buyUpgrade(uid);}}>{!reqMet?'🔒 Locked':'Build'}</button>
+                    </div>}
+                    {owned&&<div style={{fontSize:13,color:TH.green,whiteSpace:'nowrap'}}>✓ Installed</div>}
+                  </div>
+                </div>);
+              })}
+            </div>
+          </>);
+        })()}
+      </>}
+
+      {/* ═══════════ STAFF ═══════════ */}
+      {screen==='staff'&&<>
+        <BackBar title="Staff Hall" icon="👥"/>
+        {/* Task descriptions */}
+        <div style={S.card}>
+          <div style={{...S.cT,cursor:'pointer',display:'flex',justifyContent:'space-between',alignItems:'center'}} onClick={()=>setShowTaskGuide(p=>!p)}>
+            <span>📋 Task Guide</span><span style={{fontSize:13,color:TH.textDim}}>{showTaskGuide?'▲ hide':'▼ show'}</span>
+          </div>
+          {showTaskGuide&&<div style={{fontSize:14,lineHeight:1.5,color:TH.textDim}}>
+            <div style={{marginBottom:3}}><b style={{color:TH.text}}>⛏️ Forage</b> — Staff mount a full-day expedition to gather ingredients. They allocate their day-budget across travel and gathering (regions cost more travel the further they are). Yield scales with <b style={{color:STATS.tec.color}}>Technique</b> and experience. Frees you to craft, enchant, and tend the shop.</div>
+            <div style={{marginBottom:3}}><b style={{color:TH.text}}>⚗️ Brew</b> — Attempts to brew a known recipe overnight using your ingredients. ~50% base success rate, scaling with <b style={{color:STATS.tec.color}}>Technique</b>. Failed brews have a 50% chance to lose ingredients.</div>
+            <div style={{marginBottom:3}}><b style={{color:TH.text}}>🏪 Shop</b> — Tends the storefront, earning passive coin each day. Income scales with your level, staff experience, and their <b style={{color:STATS.inu.color}}>Intuition</b> stat. Reliable daily income with no resource cost.</div>
+            <div><b style={{color:TH.text}}>📚 Research</b> — Studies texts overnight with a chance to discover new recipes or enchantment inscriptions. Discovery chance scales with <b style={{color:STATS.acu.color}}>Acumen</b>. Great for unlocking formulas while you sleep.</div>
+            <div><b style={{color:TH.text}}>🔨 Construct</b> — Prepares a workshop upgrade overnight. Progress scales with <b style={{color:STATS.dis.color}}>Discipline</b>. When prep reaches 100%, the upgrade's coin cost drops 40% and one material requirement is waived.</div>
+          </div>}
+        </div>
+        <div style={S.card} className={isWsOpen('ws35')?'':'ws-closed'}>{wsHead('ws35',<>👥 Employees ({hiredAppr.length}/{maxAppr})</>)}
+          {hiredAppr.length===0&&<div style={{color:TH.textDim,fontSize:15,padding:4}}>Your workshop is quiet. Hire apprentices to help with foraging, brewing, and running the shop while you focus on what matters.</div>}
+          {hiredAppr.map(ap=>{const task=apprTasks[ap.id];const aLvl=getApprLvl(ap.id);
+            // Skill fit calculation for each task type
+            const fitFor=type=>{const stat=TASK_TYPES[type]?.stat;const sv=ap.baseStat[stat]||10;const mod=getMod(sv);
+              if(mod>=3)return{label:'★★★',color:TH.green,tip:'Excellent fit'};
+              if(mod>=1)return{label:'★★',color:TH.gold,tip:'Good fit'};
+              if(mod>=0)return{label:'★',color:TH.textDim,tip:'Average'};
+              return{label:'—',color:TH.red,tip:'Poor fit'};};
+            return(
+            <div key={ap.id} style={{padding:'8px',background:TH.panelLight,borderRadius:4,marginBottom:5,border:'1px solid '+TH.border}}>
+              <div style={{display:'flex',justifyContent:'space-between'}}><span style={{fontSize:16,color:TH.textBright}}>{ap.icon}{ap.name} <span style={{color:TH.gold}} title={'Level '+aLvl+' — Each level gives +10% task efficiency.\nXP: '+(apprXP[ap.id]||0)+'/'+((aLvl+1)*100)+(aLvl>=5?' (MAX)':'')}>{'★'.repeat(aLvl)||'☆'} Lv{aLvl}</span></span>
+                <span style={{fontSize:14}}>
+                  <span style={{color:TH.gold,cursor:'help'}} title={'Daily salary paid each morning. Signing fee: '+fmtMoney(ap.salary*5)}>{fmtMoney(ap.salary)}/d</span>
+                  {' '}<span style={{color:ap.morale>=70?TH.green:ap.morale>=40?TH.orange:TH.red}}>♥{ap.morale}%</span>
+                  {staffInjuries[ap.id]&&staffInjuries[ap.id].daysLeft>0&&<span style={{color:'#c06040',marginLeft:4}}>🩹{staffInjuries[ap.id].daysLeft}d</span>}
+                  <span style={{fontSize:12,color:ap.morale>=80?TH.green:ap.morale>=50?TH.textDim:ap.morale>=30?TH.orange:TH.red,marginLeft:2}}>({ap.morale>=80?'+10% eff':ap.morale>=50?'normal':ap.morale>=30?'-20% eff':'-40% eff'})</span>
+                </span></div>
+              {/* XP Progress bar */}
+              {aLvl<5&&(()=>{const xp=apprXP[ap.id]||0;const curLvXp=aLvl*100;const nextLvXp=(aLvl+1)*100;const prog=xp-curLvXp;const needed=nextLvXp-curLvXp;const pct=Math.min(100,Math.round(prog/needed*100));
+                return <div style={{display:'flex',alignItems:'center',gap:4,margin:'2px 0'}}>
+                  <span style={{fontSize:11,color:TH.textDim,minWidth:55}}>XP {prog}/{needed}</span>
+                  <div style={{flex:1,height:4,background:TH.panel,borderRadius:2}}><div style={{height:'100%',width:pct+'%',background:TH.gold,borderRadius:2,transition:'width 0.3s'}}/></div>
+                  <span style={{fontSize:11,color:TH.gold}}>→ Lv{aLvl+1}</span>
+                </div>;})()}
+              <div style={{width:'100%',height:3,background:TH.panel,borderRadius:2,margin:'2px 0'}} title={'Morale '+ap.morale+'%: '+(ap.morale>=80?'+10% efficiency':ap.morale>=50?'Normal':ap.morale>=30?'-20% efficiency':'-40% efficiency')}><div style={{height:'100%',width:ap.morale+'%',background:ap.morale>=70?TH.green:ap.morale>=40?TH.orange:TH.red,borderRadius:2}}/></div>
+              <div style={{fontSize:13,color:TH.textDim,margin:'3px 0',display:'flex',flexWrap:'wrap',gap:4,alignItems:'center'}}>
+                {ap.specialty&&<span style={{padding:'1px 5px',background:TH.gold+'15',borderRadius:3,border:'1px solid '+TH.gold+'33',fontSize:12,color:TH.gold}}>⭐ {ap.specialty}{task&&SPEC_MATCH[task.type]===ap.specialty?' ✦+15%':''}</span>}
+                {(ap.traits||[]).map(t=>{const fx=TRAIT_FX[t];const isGood=(fx?.effMult>0||fx?.xpMult>0||fx?.forageEff>0||fx?.brewEff>0||fx?.shopEff>0||fx?.researchEff>0||fx?.enchantEff>0);const isBad=(fx?.effMult<0||fx?.moraleDelta<=-2||fx?.forageEff<0||fx?.brewEff<0||fx?.shopEff<0||fx?.researchEff<0);return <span key={t} style={{padding:'1px 5px',fontSize:12,borderRadius:3,background:isGood?TH.green+'12':(isBad?TH.red+'12':TH.bg),border:'1px solid '+(isGood?TH.green+'33':isBad?TH.red+'33':TH.border),color:isGood?TH.green:isBad?TH.red:TH.textDim}}>{t}{fx?.desc?' — '+fx.desc:''}</span>;})}
+              </div>
+              <div style={{fontSize:14,color:TH.textDim,margin:'3px 0'}}>
+                Stats: {Object.entries(ap.baseStat).map(([s,v])=>{const _tip=STATS[s]?.name+' '+v+' (mod '+(getMod(v)>=0?'+':'')+getMod(v)+'). '+(()=>{const t=Object.values(TASK_TYPES).filter(t=>t.stat===s).map(t=>t.name);return t.length?'Staff tasks: '+t.join(', '):'Not used by staff tasks';})();const _k='st_'+ap.id+'_'+s;return <span key={s} style={{marginRight:5,color:STATS[s]?.color||TH.text,cursor:'pointer'}} title={_tip} onClick={tapToggle(_k)}>{STATS[s]?.icon||s} {v}{tapText(_k,_tip)}</span>;})}
+              </div>
+              <div style={{fontSize:14,color:TH.text,marginBottom:3}}>Task: <b style={{color:task?TH.gold:TH.textDim}}>{task?TASK_TYPES[task.type]?.icon+' '+TASK_TYPES[task.type]?.name+(task.target?' ('+(task.type==='forage'?(locRegions.find(r=>r.id===task.target)?.name||task.target):task.type==='brew'?(RECIPES.find(r=>r.id===task.target)?.name||task.target):task.type==='construct'?(UPGRADES[task.target]?.name||task.target):task.type==='patrol'?(THREAT_FACTIONS[task.target]?.name||task.target):task.target)+')':''):'None — assign below'}</b>
+                {task&&<span style={{fontSize:13,color:TH.textDim}}> — {TASK_TYPES[task.type]?.desc}</span>}
+              </div>
+              <div style={{display:'flex',flexWrap:'wrap',gap:3,fontSize:14,marginBottom:4}}>
+                {Object.entries(TASK_TYPES).map(([type,td])=>{const fit=fitFor(type);
+                  const _tip=td.desc+' (Key stat: '+STATS[td.stat]?.name+') — '+fit.tip;const _k='fit_'+ap.id+'_'+type;
+                  return <span key={type} style={{fontSize:13,color:fit.color,padding:'1px 4px',background:TH.bg,borderRadius:2,border:'1px solid '+TH.border,cursor:'pointer'}} title={_tip} onClick={tapToggle(_k)}>{td.icon} {fit.label}{tapText(_k,_tip)}</span>;})}
+              </div>
+              <div style={{...S.row,fontSize:14,flexWrap:'wrap'}}>
+                <select onChange={e=>{if(e.target.value)assignTask(ap.id,'forage',e.target.value);}} value={task?.type==='forage'?task.target:''} title={TASK_TYPES.forage.desc} style={{padding:'2px 4px',background:TH.panelLight,color:TH.text,border:'1px solid '+TH.border,borderRadius:3,fontFamily:'inherit',fontSize:14}}>
+                  <option value="">⛏️...</option>{locRegions.filter(r=>level>=regUnlock(r)&&(!r.faction||getRL(r.faction)>=(r.fReq||0))).map(r=>{
+                    const rounds=staffForageRounds(r);const est=rounds*3;
+                    return <option key={r.id} value={r.id}>{r.name} (~{est} items, {rounds} gather round{rounds>1?'s':''})</option>;})}</select>
+                <select onChange={e=>{if(e.target.value)assignTask(ap.id,'brew',e.target.value);}} value={task?.type==='brew'?task.target:''} title={TASK_TYPES.brew.desc} style={{padding:'2px 4px',background:TH.panelLight,color:TH.text,border:'1px solid '+TH.border,borderRadius:3,fontFamily:'inherit',fontSize:14}}>
+                  <option value="">⚗️...</option>{RECIPES.filter(r=>known.includes(r.id)).map(r=><option key={r.id} value={r.id}>{r.name}</option>)}</select>
+                <button style={{...S.btn(task?.type==='shopkeep'?'gold':'def'),fontSize:14,padding:'2px 6px'}} onClick={()=>assignTask(ap.id,'shopkeep',null)} title={TASK_TYPES.shopkeep.desc}>🏪 Shop</button>
+                <button style={{...S.btn(task?.type==='research_task'?'gold':'def'),fontSize:14,padding:'2px 6px'}} onClick={()=>assignTask(ap.id,'research_task',null)} title={TASK_TYPES.research_task.desc}>📚 Research</button>
+                <select onChange={e=>{if(e.target.value)assignTask(ap.id,'construct',e.target.value);}} value={task?.type==='construct'?task.target:''} title={TASK_TYPES.construct.desc} style={{padding:'2px 4px',background:TH.panelLight,color:TH.text,border:'1px solid '+TH.border,borderRadius:3,fontFamily:'inherit',fontSize:14}}>
+                  <option value="">🔨...</option>{Object.values(UPGRADES).filter(u=>!upgrades.includes(u.id)&&(!u.req||upgrades.includes(u.req))).map(u=><option key={u.id} value={u.id}>{u.icon}{u.name}{(constructProgress[u.id]||0)>0?` (${constructProgress[u.id]}%)`:''}</option>)}</select>
+                <select onChange={e=>{if(e.target.value)assignTask(ap.id,'patrol',e.target.value);}} value={task?.type==='patrol'?task.target:''} title={TASK_TYPES.patrol?.desc||'Patrol against threats'} style={{padding:'2px 4px',background:TH.panelLight,color:TH.text,border:'1px solid '+TH.border,borderRadius:3,fontFamily:'inherit',fontSize:14}}>
+                  <option value="">🛡️...</option>{locThreatIds.map(tid=><option key={tid} value={tid}>{THREAT_FACTIONS[tid]?.icon} {THREAT_FACTIONS[tid]?.name} ({threats[tid]||0}/100)</option>)}</select>
+                <button style={{...S.btn(!task||task.type==='idle'?'gold':'def'),fontSize:14,padding:'2px 6px'}} onClick={()=>setApprTasks(p=>{const n={...p};delete n[ap.id];return n;})} title="Unassign — staff rests and is available for March deployment">💤 Idle</button>
+                <button style={{...S.btn('red'),fontSize:14,padding:'2px 6px'}} onClick={()=>setConfirmFire(confirmFire===ap.id?null:ap.id)} title="Dismiss this employee">{confirmFire===ap.id?'Cancel':'🔥 Dismiss'}</button>
+              </div>
+              {confirmFire===ap.id&&<div style={{marginTop:4,padding:'6px 8px',background:TH.red+'15',border:'1px solid '+TH.red+'44',borderRadius:4,display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+                <span style={{fontSize:14,color:TH.red}}>Dismiss {ap.name}? This cannot be undone.</span>
+                <button style={{...S.btn('red'),fontSize:14,padding:'2px 8px'}} onClick={()=>{fireAppr(ap.id);setConfirmFire(null);}}>Yes, dismiss</button>
+              </div>}
+              {task?.type==='forage'&&task.target&&(()=>{const reg=locRegions.find(r=>r.id===task.target);if(!reg)return null;
+                const empH=staffForageRounds(reg);const empEff=Math.max(0.3,0.5+getMod(ap.baseStat.tec||10)*0.05+aLvl*0.1+upEff('apprenticeEff'));
+                const estPerHr=Math.floor(3*empEff*threatStaffYieldMult); // avg 3 items/round at full efficiency
+                return <div style={{fontSize:13,color:TH.textDim,marginTop:3,padding:'3px 6px',background:TH.bg,borderRadius:3}}>
+                  📊 Est: {empH} round{empH>1?'s':''} at {reg.icon}{reg.name} · ~{estPerHr}/round = ~{estPerHr*empH} items{threatStaffYieldMult<1?' (threat penalty)':''}
+                </div>;})()}
+              {(()=>{const rpt=dailyReport.find(r=>r.n===ap.name);return rpt?
+                <div style={{fontSize:14,marginTop:4,padding:'4px 8px',background:rpt.t==='ok'?TH.green+'12':rpt.t==='fail'?TH.red+'12':TH.bg,borderRadius:3,border:'1px solid '+(rpt.t==='ok'?TH.green+'44':rpt.t==='fail'?TH.red+'44':TH.border),color:rpt.t==='ok'?TH.green:rpt.t==='fail'?TH.red:TH.textDim}}>
+                  📋 Yesterday: {rpt.r}
+                </div>:
+                <div style={{fontSize:14,marginTop:4,padding:'4px 8px',background:TH.bg,borderRadius:3,border:'1px solid '+TH.border,color:TH.textDim}}>
+                  📋 Yesterday: No report yet — assign a task and rest.
+                </div>;})()}
+            </div>);})}
+        </div>
+        {hiredAppr.length<maxAppr&&availPool.length>0&&<div style={S.card} className={isWsOpen('ws36')?'':'ws-closed'}>{wsHead('ws36',<>📋 Available for Hire</>)}
+          {availPool.map(ap=>{
+            const taskRanks=Object.entries(TASK_TYPES).map(([type,td])=>{
+              const sv=ap.baseStat[td.stat]||10;const mod=getMod(sv);
+              return{type,td,sv,mod};
+            });
+            const best=taskRanks.reduce((b,t)=>t.sv>b.sv?t:b,taskRanks[0]);
+            return(
+            <div key={ap.id} style={{padding:'6px 8px',background:TH.panelLight,borderRadius:4,marginBottom:4,border:'1px solid '+TH.border}}>
+              <div style={{display:'flex',justifyContent:'space-between'}}><span style={{fontSize:16,color:TH.textBright}}>{ap.icon}{ap.name}</span><span style={{fontSize:14,color:TH.gold}}>{fmtMoney(ap.salary)}/d (sign:{fmtMoney(ap.salary*5)})</span></div>
+              <div style={{fontSize:14,color:TH.textDim}}>{ap.personality} · {ap.traits.join(', ')}</div>
+              <div style={{fontSize:14,color:TH.text,margin:'4px 0'}}>
+                Stats: {Object.entries(ap.baseStat).map(([s,v])=><span key={s} style={{marginRight:6,color:STATS[s]?.color||TH.text}}>{STATS[s]?.icon||s}<b>{v}</b></span>)}
+              </div>
+              <div style={{display:'flex',gap:3,flexWrap:'wrap',margin:'4px 0'}}>
+                {taskRanks.map(t=>{const isBest=t===best;const clr=t.mod>=3?TH.green:t.mod>=1?TH.gold:t.mod>=0?TH.textDim:TH.red;
+                  const stars=t.mod>=3?'★★★':t.mod>=1?'★★':t.mod>=0?'★':'—';
+                  return <div key={t.type} style={{fontSize:14,padding:'3px 6px',borderRadius:3,background:isBest?`${clr}20`:TH.bg,border:`1px solid ${isBest?clr:TH.border}`,display:'inline-flex',gap:4,alignItems:'center'}}>
+                    <span style={{color:TH.text}}>{t.td.icon}</span>
+                    <span style={{color:clr,fontWeight:isBest?'bold':'normal'}}>{t.td.name}</span>
+                    <span style={{color:clr,fontWeight:'bold'}}>{stars}</span>
+                    <span style={{color:STATS[t.td.stat]?.color,fontSize:13}}>{STATS[t.td.stat]?.icon}{t.sv}</span>
+                    {isBest&&<span style={{fontSize:12,color:clr}}>best</span>}
+                  </div>;})}
+              </div>
+              <button style={S.btn(gold>=ap.salary*5?'gold':'dim')} onClick={()=>hireAppr(ap)} disabled={gold<ap.salary*5}>Hire</button>
+            </div>);})}
+        </div>}
+      </>}
+
+      {/* ═══════════ QUESTS ═══════════ */}
+      {screen==='quests'&&<>
+        <BackBar title="Quest Board" icon="📜"/>
+        {aQ.length>0&&<div style={S.card} className={isWsOpen('ws37')?'':'ws-closed'}>{wsHead('ws37',<>📜 Active Quests ({aQ.length})</>)}
+          {aQ.map(q=>{const p=qP(q);const ok=p.c>=p.n;const steps=qSteps(q);return(
+            <div key={q.id} style={{padding:'8px 10px',background:TH.panelLight,borderRadius:4,marginBottom:6,border:`1px solid ${ok?TH.green:TH.borderGold}`}}>
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                <span style={{fontSize:17,color:TH.textBright,fontWeight:'bold'}}>{q.name}</span>
+                <span style={{fontSize:14,color:ok?TH.green:TH.gold}}>{ok?'✓ Ready':`${p.c}/${p.n}`}</span>
+              </div>
+              <div style={{fontSize:15,color:TH.textDim,margin:'3px 0',fontStyle:'italic'}}>{q.desc||''}</div>
+              <div style={{fontSize:15,color:TH.cyan,margin:'2px 0'}}>📌 {qObj(q)}</div>
+              <div style={{margin:'6px 0 4px',padding:'6px 8px',background:TH.bg,borderRadius:4,border:`1px solid ${TH.border}`}}>
+                <div style={{fontSize:14,color:TH.gold,marginBottom:3}}>Steps:</div>
+                {steps.map((s,i)=><div key={i} style={{fontSize:15,color:s.done?TH.green:TH.text,padding:'2px 0',display:'flex',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',gap:4}}>
+                  <span>{s.done?'✅':'➡️'} {s.text}</span>
+                  {s.nav&&!s.done&&<GoBtn to={s.nav.to} label={s.nav.label} npc={s.nav.npc}/>}
+                </div>)}
+              </div>
+              <div style={{display:'flex',gap:8,fontSize:14,color:TH.textDim,marginTop:4,flexWrap:'wrap'}}>
+                <span style={{color:TH.gold}}>+{q.xp}XP +{fmtMoney(q.gold)}</span>
+                {q.items?.length>0&&<span>Items: {q.items.map((id,i)=><span key={i}>{INGR[id]?.icon||''}{INGR[id]?.name||id} </span>)}</span>}
+                {q.faction&&<span style={{color:FACTIONS[q.faction]?.color}}>{FACTIONS[q.faction]?.icon}+{q.fRep} rep</span>}
+              </div>
+              {ok&&<div style={{marginTop:6,padding:'5px 8px',background:`${TH.green}15`,borderRadius:4,border:`1px solid ${TH.green}44`,display:'flex',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',gap:4}}>
+                <span style={{fontSize:16,color:TH.green,fontWeight:'bold'}}>✅ Ready to turn in!</span>
+                <GoBtn to={q.loc==='market'?'market':'tavern'} label={q.loc==='market'?`🛒 Go to ${q.giver}`:`🍺 Go to ${q.giver}`} npc={q.giver.toLowerCase().replace(/ /g,'_')}/>
+              </div>}
+            </div>);})}
+        </div>}
+        {aQ.length===0&&activeBQ.length===0&&boardQ.length===0&&<div style={S.card}><div style={{color:TH.textDim,textAlign:'center',padding:8}}>
+          <div style={{fontSize:16,marginBottom:4}}>The quest board is bare. The people of {locName} have needs — seek them out.</div>
+          <div style={{marginTop:6,display:'flex',gap:6,justifyContent:'center'}}>
+            <GoBtn to="market" label="🛒 Visit Market" npc={zui.starter.npc}/>
+            <GoBtn to="tavern" label="🍺 Visit Tavern"/>
+          </div>
+        </div></div>}
+        {availQ.length>0&&<div style={S.card} className={isWsOpen('ws38')?'':'ws-closed'}>{wsHead('ws38',<>📋 Available Quests</>)}
+          <div style={{fontSize:14,color:TH.textDim,marginBottom:6}}>Visit the quest giver to hear their story and accept.</div>
+          {availQ.map(q=>{
+            const goLabel=q.loc==='market'?`🛒 Talk to ${q.giver}`:`🍺 Talk to ${q.giver}`;
+            let brief='';
+            if(q.type==='deliver'){const r=RECIPES.find(r=>r.id===q.target);brief=r?'Needs: '+q.count+'x '+r.icon+r.name:'Needs: '+q.target;}
+            else if(q.type==='gather'){const ig=INGR[q.target];brief='Gather: '+q.count+'x '+(ig?ig.icon+ig.name:q.target);}
+            else if(q.type==='multi'){brief='Needs: '+q.targets.map(t=>{const r=RECIPES.find(r=>r.id===t);return r?r.icon+r.name:t;}).join(' + ');}
+            return(
+            <div key={q.id} style={{padding:'8px 10px',background:TH.panelLight,borderRadius:6,marginBottom:6,border:`1px solid ${TH.border}`}}>
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                <span style={{fontSize:17,color:TH.textBright,fontWeight:'bold'}}>{q.chain&&<span style={{fontSize:12,padding:'1px 5px',background:FACTIONS[q.chain]?.color+'22',color:FACTIONS[q.chain]?.color,borderRadius:3,marginRight:5,border:'1px solid '+FACTIONS[q.chain]?.color+'44'}}>{FACTIONS[q.chain]?.icon} Chain</span>}{q.name}</span>
+                <span style={{fontSize:14,color:TH.textDim}}>from {q.giver}</span>
+              </div>
+              <div style={{fontSize:15,color:TH.textDim,margin:'3px 0',fontStyle:'italic'}}>{q.desc||''}</div>
+              {brief&&<div style={{fontSize:14,color:TH.cyan,margin:'2px 0'}}>📌 {brief}</div>}
+              <div style={{display:'flex',gap:8,fontSize:14,color:TH.textDim,marginTop:4,flexWrap:'wrap'}}>
+                <span style={{color:TH.gold}}>+{q.xp}XP +{fmtMoney(q.gold)}</span>
+                {q.faction&&<span style={{color:FACTIONS[q.faction]?.color}}>{FACTIONS[q.faction]?.icon}+{q.fRep} rep</span>}
+              </div>
+              {/* Direct accept (no relocation) + optional NPC dialog visit for flavor / q.onAccept lines.
+                  The Talk button calls openNpc() directly (no setScreen) so the dialog overlays the
+                  quests view rather than dumping the player at the tavern after the dialog closes.
+                  An NpcDlg render below (inside this screen block) renders the dialog over the quests
+                  view when dlgNpc is set. */}
+              <div style={{display:'flex',gap:6,marginTop:4,flexWrap:'wrap',alignItems:'center'}}>
+                <button style={{...S.btn('gold'),fontSize:14,padding:'4px 12px'}} onClick={()=>acceptQ(q)} title="Accept the quest now without traveling to the giver">📜 Accept Quest</button>
+                <button style={{...S.btn('def'),fontSize:14,padding:'4px 12px'}} onClick={()=>openNpc(q.giver.toLowerCase().replace(/ /g,'_'))} title={`Hear ${q.giver}'s offer — dialog opens here, no travel`}>{goLabel}</button>
+              </div>
+            </div>);})}
+        </div>}
+        {/* ── Defense Quests (External Threats) ── */}
+        {defenseQuests.length>0&&<div style={{...S.card,borderColor:'#cc444433'}} className={isWsOpen('ws39')?'':'ws-closed'}>
+          {wsHead('ws39',<>🛡️ Defense Requests</>)}
+          <div style={{fontSize:13,color:TH.textDim,marginBottom:4}}>Supply materials to defend {locName} against external threats. Reduces threat levels.</div>
+          {defenseQuests.map(dq=>{
+            const {tf,have,canFill,target}=dqStatus(dq);
+            return <div key={dq.id} style={{padding:'5px 8px',background:canFill?TH.greenDim:TH.panelLight,borderRadius:4,marginBottom:3,border:'1px solid '+(canFill?TH.green:tf.color+'44'),display:'flex',justifyContent:'space-between',alignItems:'center',flexWrap:'wrap',gap:4}}>
+              <div>
+                <span style={{fontSize:14,color:tf.color}}>{tf.icon}</span>
+                <span style={{fontSize:14,color:TH.text}}> {dq.type==='deliver'?'Deliver':'Donate'} {dq.qty}× {target?.icon||''}{target?.name||dq.target}</span>
+                <span style={{fontSize:12,color:TH.textDim}}> ({have}/{dq.qty})</span>
+                <span style={{fontSize:12,color:TH.gold}}> → {tf.icon} -{dq.reward} threat, +{dq.reward*3} XP</span>
+              </div>
+              <button style={{...S.btn(canFill?'gold':'dim'),fontSize:12,padding:'2px 6px'}} disabled={!canFill} onClick={()=>completeDefenseQuest(dq.id)}>Fulfill</button>
+            </div>;})}
+        </div>}
+
+        {/* ── Notice Board (Repeatable Quests) ── */}
+        <div style={{...S.card,borderColor:TH.borderGold}} className={isWsOpen('ws40')?'':'ws-closed'}>
+          {wsHead('ws40',<>📌 Village Notice Board <span style={{fontSize:14,color:TH.textDim,fontWeight:'normal'}}>— daily requests ({doneBQCount} fulfilled)</span></>)}
+
+          {/* Active board quests */}
+          {activeBQ.length>0&&<>
+            <div style={{fontSize:15,color:TH.orange,marginBottom:4,fontWeight:'bold'}}>Active Requests ({activeBQ.length}/3)</div>
+            {activeBQ.map(bq=>{const p=bqProgress(bq);const ok=p.c>=p.n;const isPotion=bq.type==='deliver';
+              return(
+              <div key={bq.id} style={{padding:'6px 8px',background:ok?`${TH.green}10`:TH.panelLight,borderRadius:4,marginBottom:4,border:`1px solid ${ok?TH.green:TH.border}`}}>
+                <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                  <span style={{fontSize:16,color:TH.textBright}}>{bq.itemIcon} {bq.name}</span>
+                  <span style={{fontSize:14,color:ok?TH.green:TH.gold}}>{p.c}/{p.n}</span>
+                </div>
+                <div style={{fontSize:14,color:TH.textDim,fontStyle:'italic',margin:'2px 0'}}>{bq.desc}</div>
+                <div style={{display:'flex',gap:6,fontSize:14,color:TH.textDim,marginTop:2}}>
+                  <span style={{color:TH.gold}}>+{fmtMoney(bq.gold)} +{bq.xp}XP</span>
+                  {bq.faction&&<span style={{color:FACTIONS[bq.faction]?.color}}>{FACTIONS[bq.faction]?.icon}+{bq.fRep}</span>}
+                </div>
+                <div style={{display:'flex',gap:4,marginTop:4}}>
+                  {ok&&<button style={S.btn('gold')} onClick={()=>completeBQ(bq)}>✅ Turn In</button>}
+                  {!ok&&isPotion&&<GoBtn to="workshop" label="⚗️ Brew"/>}
+                  {!ok&&!isPotion&&<GoBtn to="worldmap" label="🗺️ Forage"/>}
+                  <button style={{...S.btn('dim'),fontSize:14}} onClick={()=>abandonBQ(bq)}>✕ Drop</button>
+                </div>
+              </div>);})}
+          </>}
+
+          {/* Available board quests */}
+          {boardQ.length>0&&<>
+            <div style={{fontSize:15,color:TH.cyan,marginBottom:4,marginTop:activeBQ.length>0?8:0,fontWeight:'bold'}}>Today's Requests</div>
+            {boardQ.map(bq=>{const isPotion=bq.type==='deliver';const canAccept=activeBQ.length<3;
+              return(
+              <div key={bq.id} style={{padding:'6px 8px',background:TH.bg,borderRadius:4,marginBottom:4,border:`1px solid ${TH.border}`}}>
+                <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                  <span style={{fontSize:16,color:TH.textBright}}>{bq.itemIcon} {bq.name}</span>
+                  <span style={{fontSize:14,color:TH.textDim}}>T{bq.tier}</span>
+                </div>
+                <div style={{fontSize:14,color:TH.textDim,fontStyle:'italic',margin:'2px 0'}}>{bq.desc}</div>
+                <div style={{display:'flex',gap:6,fontSize:14,color:TH.textDim,marginTop:2,alignItems:'center'}}>
+                  <span style={{color:TH.gold}}>+{fmtMoney(bq.gold)} +{bq.xp}XP</span>
+                  {bq.faction&&<span style={{color:FACTIONS[bq.faction]?.color}}>{FACTIONS[bq.faction]?.icon}+{bq.fRep}</span>}
+                  <span style={{fontSize:13,color:isPotion?TH.purple:TH.green}}>{isPotion?'⚗️ Brew & deliver':'⛏️ Gather & deliver'}</span>
+                  <button style={{...S.btn(canAccept?'gold':'dim'),marginLeft:'auto',fontSize:14}} onClick={()=>canAccept&&acceptBQ(bq)} disabled={!canAccept}>
+                    {canAccept?'Accept':'Full (3/3)'}
+                  </button>
+                </div>
+              </div>);})}
+            <div style={{fontSize:13,color:TH.textDim,marginTop:4}}>New requests posted each morning. Unfulfilled requests expire overnight.</div>
+          </>}
+
+          {boardQ.length===0&&activeBQ.length===0&&<div style={{fontSize:15,color:TH.textDim,textAlign:'center',padding:8}}>
+            The notice board is empty. New requests will appear tomorrow morning.
+          </div>}
+        </div>
+
+        {doneQ.length>0&&<div style={S.card}><div style={{...S.cT,cursor:'pointer',display:'flex',justifyContent:'space-between',alignItems:'center'}} onClick={()=>setShowDoneQ(p=>!p)}>
+          <span>✅ Completed Quests ({doneQ.length})</span><span style={{fontSize:13,color:TH.textDim}}>{showDoneQ?'▲ hide':'▼ show'}</span></div>
+          {showDoneQ&&doneQ.map(qid=>{const q=QUESTS.find(q=>q.id===qid);return q?(<div key={qid} style={{fontSize:14,color:TH.textDim,padding:'3px 6px',opacity:.7,borderBottom:'1px solid '+TH.border+'33'}}>✓ {q.name} <span style={{fontSize:13}}>— {q.giver}</span></div>):null;})}
+        </div>}
+        {/* NPC dialog renders on this screen too so the quest-card "Talk to {giver}" button can
+            open the dialog WITHOUT relocating the player. Mirrors the gating used by the market
+            and tavern renders — same NpcDlg component, same props. */}
+        {dlgNpc&&NPCS[dlgNpc]&&<NpcDlg npc={{...NPCS[dlgNpc],id:dlgNpc}} {...{dlgLine,setDlgLine,setDlgNpc,availQ,aQ,acceptQ,compQ,qP,qObj,S,questDlg,setQuestDlg,openNpc}}/>}
+      </>}
+
+      {/* ═══════════ FACTIONS ═══════════ */}
+      {screen==='factions'&&<>
+        <BackBar title="Faction Hall" icon="🛡️"/>
+        {/* Faction Summary */}
+        <div style={{...S.card,padding:'8px 12px'}}>
+          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',flexWrap:'wrap',gap:6}}>
+            {factionAlign?(()=>{const f=FACTIONS[factionAlign];return(
+              <div style={{display:'flex',alignItems:'center',gap:6}}>
+                <span style={{fontSize:22}}>{f.icon}</span>
+                <div><div style={{fontSize:15,fontWeight:'bold',color:f.color}}>⚔️ {f.alignBonus.name}</div>
+                <div style={{fontSize:12,color:TH.textDim}}>Aligned with {f.name}</div></div>
+              </div>);})():(
+              <div style={{fontSize:14,color:TH.textDim}}>🏛️ No faction alignment yet</div>)}
+            <div style={{display:'flex',gap:10}}>
+              {Object.entries(locFactions).map(([fid,f])=>{const rl=getRepLvl(fRep[fid]||0);return(
+                <div key={fid} style={{textAlign:'center'}}>
+                  <div style={{fontSize:16}}>{f.icon}</div>
+                  <div style={{fontSize:11,color:rl>=5?f.color:rl>=3?TH.textBright:TH.textDim,fontWeight:rl>=5?'bold':'normal'}}>{REP_LVS[rl]?.slice(0,4)}</div>
+                </div>);})}
+            </div>
+          </div>
+        </div>
+        <div style={S.card} className={isWsOpen('ws41')?'':'ws-closed'}>{wsHead('ws41',<>🛡️ Factions</>)}
+        {Object.entries(locFactions).map(([fid,f])=>{const rep=fRep[fid]||0;const rl=getRepLvl(rep);const nxt=rl<REP_TH.length-1?REP_TH[rl+1]:null;const isAligned=factionAlign===fid;
+          const activeBonuses=f.tierBonuses.filter((_,i)=>i<rl&&Object.keys(f.tierBonuses[i].effects).length>0).length+(isAligned?1:0);
+          return(
+          <div key={fid} style={{padding:'8px 10px',background:isAligned?f.color+'12':TH.panelLight,borderRadius:6,marginBottom:8,border:isAligned?`2px solid ${f.color}`:`1px solid ${TH.border}`}}>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+              <span style={{color:f.color,fontWeight:'bold',fontSize:16}}>{f.icon} {f.name}{isAligned?' ⚔️':''}</span>
+              <div style={{display:'flex',alignItems:'center',gap:8}}>
+                {activeBonuses>0&&<span style={{fontSize:12,padding:'1px 6px',background:TH.green+'22',color:TH.green,borderRadius:8,border:'1px solid '+TH.green+'44'}}>✨ {activeBonuses} active</span>}
+                <span style={{fontSize:14,color:TH.textDim,fontWeight:rl>=5?'bold':'normal'}}>{REP_LVS[rl]}</span>
+              </div>
+            </div>
+            {/* Segmented tier progress bar */}
+            <div style={{display:'flex',gap:2,margin:'6px 0 4px',height:6}}>
+              {REP_TH.slice(1).map((th,i)=>{const prev=REP_TH[i];const filled=rep>=th;const partial=!filled&&rep>prev;const pct=partial?((rep-prev)/(th-prev))*100:filled?100:0;
+                return(<div key={i} style={{flex:1,background:TH.panel,borderRadius:3,overflow:'hidden',position:'relative'}}>
+                  <div style={{height:'100%',width:pct+'%',background:f.color,borderRadius:3,transition:'width .3s'}}/>
+                </div>);})}
+            </div>
+            <div style={{display:'flex',justifyContent:'space-between',fontSize:11,color:TH.textDim,marginBottom:4}}>
+              <span>{rep} rep</span>
+              <span>{nxt?`Next: ${REP_LVS[rl+1]} at ${nxt}`:'Max rank!'}</span>
+            </div>
+            {f.tierBonuses.map((tb,i)=>{const unlocked=i<rl;const hasEffects=Object.keys(tb.effects).length>0;const isCurrent=i===rl;return(
+              <div key={i} style={{fontSize:14,padding:'3px 0',color:unlocked?f.color:TH.textDim,opacity:unlocked?1:isCurrent?.65:.35,borderBottom:i<f.tierBonuses.length-1?'1px solid '+TH.border+'22':'none'}}>
+                <div style={{display:'flex',alignItems:'center',gap:4}}>
+                  <span style={{fontSize:13}}>{unlocked?'✅':isCurrent?'🔸':'🔒'}</span>
+                  <b>{tb.name}</b>
+                  <span style={{fontSize:11,color:TH.textDim,fontStyle:'italic'}}>({REP_LVS[i+1]})</span>
+                  {unlocked&&hasEffects&&<span style={{fontSize:11,padding:'0 4px',background:TH.green+'22',color:TH.green,borderRadius:4}}>Active</span>}
+                </div>
+                {(unlocked||isCurrent)&&<div style={{fontSize:12,color:unlocked?(hasEffects?TH.green:TH.textDim):TH.textDim,paddingLeft:22,marginTop:1}}>{tb.desc}</div>}
+              </div>);})}
+              </div>);})}
+        </div>
+        {/* Faction Quest Chains */}
+        <div style={S.card} className={isWsOpen('ws42')?'':'ws-closed'}>{wsHead('ws42',<>⛓️ Faction Quest Chains</>)}
+        {Object.entries(locFactions).map(([fid,f])=>{
+          const chainQs=QUESTS.filter(q=>q.chain===fid);
+          if(!chainQs.length)return null;
+          const rl=getRepLvl(fRep[fid]||0);
+          const doneCount=chainQs.filter(q=>doneQ.includes(q.id)).length;
+          const allDone=doneCount===chainQs.length;
+          return(
+          <div key={fid+'_chain'} style={{padding:'8px 10px',background:allDone?f.color+'08':TH.panelLight,borderRadius:6,marginBottom:6,border:allDone?'2px solid '+f.color+'44':'1px solid '+TH.border}}>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:4}}>
+              <span style={{color:f.color,fontWeight:'bold',fontSize:15}}>{f.icon} {f.name} Chain</span>
+              <span style={{fontSize:12,padding:'1px 6px',background:allDone?TH.green+'22':TH.panel,color:allDone?TH.green:TH.textDim,borderRadius:8}}>{doneCount}/{chainQs.length}{allDone?' ✓':''}</span>
+            </div>
+            {/* Chain progress bar */}
+            <div style={{display:'flex',gap:3,marginBottom:6,height:4}}>
+              {chainQs.map((q,i)=>{const done=doneQ.includes(q.id);const active=!!aQ.find(a=>a.id===q.id);return(
+                <div key={i} style={{flex:1,background:done?f.color:active?TH.gold:TH.panel,borderRadius:2,transition:'background .3s'}}/>);})}
+            </div>
+            {chainQs.map((q,i)=>{
+              const done=doneQ.includes(q.id);
+              const active=aQ.find(a=>a.id===q.id);
+              const available=!done&&!active&&level>=q.unlock&&(!q.fReq||rl>=q.fReq)&&(!q.reqQuest||doneQ.includes(q.reqQuest));
+              const locked=!done&&!active&&!available;
+              return(
+              <div key={q.id} style={{fontSize:14,padding:'3px 0',display:'flex',alignItems:'center',gap:6,opacity:locked?.4:1,borderBottom:i<chainQs.length-1?'1px solid '+TH.border+'22':'none'}}>
+                <span style={{fontSize:16,minWidth:20,textAlign:'center'}}>{done?'✅':active?'🔄':available?'⭐':'🔒'}</span>
+                <div style={{flex:1}}>
+                  <span style={{color:done?TH.green:active?TH.gold:available?f.color:TH.textDim,fontWeight:available?'bold':'normal'}}>{q.name}</span>
+                  <span style={{fontSize:12,color:TH.textDim,marginLeft:6}}>
+                    {done?'Complete':active?'In Progress':available?'Available!':q.fReq?'Req: '+REP_LVS[q.fReq]+(q.reqQuest?' + prev.':''):''}
+                  </span>
+                </div>
+                {done&&<span style={{fontSize:12,color:TH.textDim}}>+{q.fRep} rep</span>}
+              </div>);})}
+          </div>);})}</div>
+        {/* Faction Alignment */}
+        <div style={S.card}><div style={S.cT}>⚔️ Faction Alignment</div>
+        {factionAlign?(()=>{const f=FACTIONS[factionAlign];return(
+          <div style={{padding:'10px 12px',background:f.color+'15',borderRadius:8,border:'2px solid '+f.color}}>
+            <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:6}}>
+              <span style={{fontSize:28}}>{f.icon}</span>
+              <div>
+                <div style={{fontSize:17,fontWeight:'bold',color:f.color}}>⚔️ {f.alignBonus.name}</div>
+                <div style={{fontSize:13,color:TH.textDim}}>Sworn to the {f.name}</div>
+              </div>
+            </div>
+            <div style={{fontSize:14,color:TH.textBright,marginBottom:6,padding:'4px 8px',background:TH.panel,borderRadius:4}}>{f.alignBonus.desc}</div>
+            <div style={{fontSize:12,color:TH.green,fontStyle:'italic'}}>✅ Exclusive bonus — all other faction rewards remain active</div>
+          </div>);})():(
+          <div>
+            <div style={{fontSize:14,color:TH.textDim,marginBottom:10,lineHeight:1.5}}>
+              Swear allegiance to a faction for <b style={{color:TH.gold}}>a powerful exclusive bonus</b> on top of all existing rewards. 
+              No reputation is lost — this is a pure upgrade. Choose wisely though — alignment is permanent!
+            </div>
+            {Object.entries(locFactions).map(([fid,f])=>{
+              const rep=fRep[fid]||0;const rl=getRepLvl(rep);
+              const chainQs=QUESTS.filter(q=>q.chain===fid);
+              const chainDone=chainQs.length>0&&chainQs.every(q=>doneQ.includes(q.id));
+              const canAlign=rl>=5&&chainDone;
+              const reqRevered=rl<5;const reqChain=rl>=5&&!chainDone;
+              return(
+              <div key={fid+'_align'} style={{padding:'8px 10px',background:canAlign?f.color+'08':TH.panelLight,borderRadius:6,marginBottom:6,border:canAlign?'1px solid '+f.color+'44':'1px solid '+TH.border}}>
+                <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:8}}>
+                  <div style={{flex:1}}>
+                    <div style={{display:'flex',alignItems:'center',gap:6,marginBottom:2}}>
+                      <span style={{fontSize:18}}>{f.icon}</span>
+                      <span style={{color:canAlign?f.color:TH.textDim,fontWeight:'bold',fontSize:15}}>{f.alignBonus.name}</span>
+                    </div>
+                    <div style={{fontSize:13,color:TH.textDim,paddingLeft:30}}>{f.alignBonus.desc}</div>
+                    {!canAlign&&<div style={{fontSize:12,paddingLeft:30,marginTop:3,display:'flex',gap:8}}>
+                      <span style={{color:reqRevered?TH.red:TH.green}}>{reqRevered?'✗':'✓'} Revered</span>
+                      <span style={{color:reqChain||reqRevered?TH.red:TH.green}}>{chainDone?'✓':'✗'} Chain done</span>
+                    </div>}
+                  </div>
+                  {canAlign&&<button style={{...S.btn('gold'),fontSize:14,padding:'6px 16px',whiteSpace:'nowrap'}} onClick={()=>setConfirmAlign(fid)}>⚔️ Align</button>}
+                </div>
+              </div>);})}
+          </div>)}
+        </div>
+        {/* Alignment Confirmation Dialog */}
+        {confirmAlign&&(()=>{const f=FACTIONS[confirmAlign];return(
+          <div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'rgba(0,0,0,.7)',zIndex:9999,display:'flex',alignItems:'center',justifyContent:'center'}}>
+            <div style={{background:TH.panel,border:'2px solid '+f.color,borderRadius:10,padding:20,maxWidth:360,margin:16}}>
+              <div style={{fontSize:18,fontWeight:'bold',color:f.color,marginBottom:8}}>{f.icon} Align with {f.name}?</div>
+              <div style={{fontSize:14,color:TH.textBright,marginBottom:8}}>
+                <b>You will gain:</b><br/>{f.alignBonus.desc}
+              </div>
+              <div style={{fontSize:14,color:'#c0a060',marginBottom:12}}>
+                <b>ℹ️ Note:</b><br/>Alignment is permanent for this character. You gain a powerful exclusive bonus on top of all existing faction rewards — no reputation is lost.
+              </div>
+              <div style={{display:'flex',gap:8}}>
+                <button style={{...S.btn('gold'),flex:1}} onClick={()=>{
+                  setFactionAlign(confirmAlign);
+                  addLog(`⚔️ You have aligned with the ${f.name}! ${f.alignBonus.name} activated.`,'story');
+                  setConfirmAlign(null);
+                  earnMilestone('faction_aligned');
+                }}>⚔️ Confirm Alignment</button>
+                <button style={{...S.btn('def'),flex:1}} onClick={()=>setConfirmAlign(null)}>Cancel</button>
+              </div>
+            </div>
+          </div>);})()}
+      </>}
+
+      {/* ═══════════ THREATS ═══════════ */}
+      {screen==='threats'&&<>
+        <BackBar title="Rival Factions & Threats" icon="⚔️"/>
+        {/* Overview */}
+        <div style={{...S.card,padding:'10px 14px'}}>
+          <div style={{fontSize:14,color:TH.textDim,lineHeight:1.5}}>
+            Three rival forces threaten {locName}. As threats grow, they impose escalating penalties on your operations. Assign staff to <b style={{color:TH.gold}}>🛡️ Patrol</b>, fulfill <b style={{color:TH.gold}}>defense requests</b>, build <b style={{color:TH.gold}}>outposts</b>, and raise <b style={{color:TH.gold}}>faction reputation</b> to push them back.
+          </div>
+        </div>
+        {/* Per-threat cards */}
+        {locThreatIds.map(tid=>{
+          const val=threats[tid]||0;const tf=THREAT_FACTIONS[tid];const tier=getThreatTier(val);
+          const tierColor=getThreatColor(val);const tierLabel=getThreatLabel(val);
+          const penalties=tf.penalties||{};
+          const curPenalties=tier!=='calm'?penalties[tier]:null;
+          // Find staff patrolling this threat
+          const patrollers=hiredAppr.filter(ap=>{const t=apprTasks[ap.id];return t&&t.type==='patrol'&&t.target===tid;});
+          // Find outposts suppressing this threat
+          const suppressingOPs=outposts.filter(op=>{
+            if(!op.built)return false;const reg=REGIONS.find(r=>r.id===op.regionId);if(!reg)return false;
+            return reg.diff>=5||(locThreatIds.indexOf(tid)===1&&reg.diff>=3)||(locThreatIds.indexOf(tid)===0&&reg.diff<3);
+          });
+          // Faction mitigation
+          const helpingFactions=(THREAT_FACTIONS[tid]?.mitigatedBy||[]).filter(fid=>getRepLvl(fRep[fid]||0)>=3);
+          // Class mitigation
+          const classMit={};classMit[locThreatIds[1]]=eCL('warden')>=4;classMit[locThreatIds[2]]=false;
+          // Defense quests for this threat
+          const myDQ=defenseQuests.filter(dq=>dq.threatId===tid);
+          // Daily growth info
+          const tidIdx=locThreatIds.indexOf(tid);
+          const growthInfo=tidIdx===0?(day>3?'Grows +3/day'+(gold>200?' (+1 wealth tax)':''):'Starts after Day 3')
+            :tidIdx===1?(day>5?'Grows +2/day + extra from dangerous foraging':'Starts after Day 5')
+            :(day>10?'Grows +3/day':'Starts after Day 10');
+          return <div key={tid} style={{...S.card,borderColor:tierColor+'66',borderWidth:tier==='critical'?2:1,boxShadow:tier!=='calm'?'0 0 15px '+tierColor+'20':'none'}}>
+            {/* Header */}
+            <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:8}}>
+              <span style={{fontSize:32}}>{tf.icon}</span>
+              <div style={{flex:1}}>
+                <div style={{fontSize:18,fontWeight:'bold',color:tierColor}}>{tf.name}</div>
+                <div style={{fontSize:13,color:TH.textDim}}>{tf.desc}</div>
+              </div>
+              <div style={{textAlign:'right'}}>
+                <div style={{fontSize:22,fontWeight:'bold',color:tierColor}}>{val}</div>
+                <div style={{fontSize:12,color:tierColor}}>{tierLabel}</div>
+              </div>
+            </div>
+            {/* Threat bar */}
+            <div style={{height:12,background:TH.bg,borderRadius:6,border:'1px solid '+TH.border,overflow:'hidden',marginBottom:8}}>
+              <div style={{height:'100%',width:val+'%',background:`linear-gradient(90deg,${tierColor}88,${tierColor})`,borderRadius:6,transition:'width 0.3s'}}/>
+            </div>
+            {/* Tier thresholds */}
+            <div style={{display:'flex',justifyContent:'space-between',fontSize:11,color:TH.textDim,marginBottom:10,padding:'0 2px'}}>
+              <span style={{color:val<25?TH.green:TH.textDim,fontWeight:tier==='calm'?'bold':'normal'}}>Calm (0-24)</span>
+              <span style={{color:tier==='rising'?'#c0c020':TH.textDim,fontWeight:tier==='rising'?'bold':'normal'}}>Rising (25-49)</span>
+              <span style={{color:tier==='dangerous'?'#d08020':TH.textDim,fontWeight:tier==='dangerous'?'bold':'normal'}}>Dangerous (50-74)</span>
+              <span style={{color:tier==='critical'?'#cc2020':TH.textDim,fontWeight:tier==='critical'?'bold':'normal'}}>Critical (75+)</span>
+            </div>
+            {/* Growth rate */}
+            <div style={{fontSize:13,color:TH.textDim,marginBottom:8,padding:'4px 8px',background:TH.bg,borderRadius:4}}>
+              📈 <b>Growth:</b> {growthInfo} · <b>Natural decay:</b> -1/day (above 10)
+            </div>
+            {/* Current penalties */}
+            <div style={{marginBottom:8,padding:'8px 10px',background:tier==='calm'?TH.green+'08':tierColor+'10',borderRadius:6,border:'1px solid '+(tier==='calm'?TH.green+'33':tierColor+'33')}}>
+              <div style={{fontSize:14,fontWeight:'bold',color:tier==='calm'?TH.green:tierColor,marginBottom:4}}>
+                {tier==='calm'?'✅ No Active Penalties':'⚠️ Active Penalties — '+tierLabel}
+              </div>
+              {tier==='calm'&&<div style={{fontSize:13,color:TH.green}}>This threat is under control. Keep it below 25 to avoid penalties.</div>}
+              {tidIdx===0&&tier!=='calm'&&<div style={{fontSize:13,color:TH.text,lineHeight:1.6}}>
+                {curPenalties?.expDangerMult>1&&<div>⚔️ Expedition danger increased by <b style={{color:tierColor}}>+{Math.round((curPenalties.expDangerMult-1)*100)}%</b></div>}
+                {curPenalties?.staffYieldMult<1&&<div>📦 Staff foraging yield reduced by <b style={{color:tierColor}}>{Math.round((1-curPenalties.staffYieldMult)*100)}%</b></div>}
+                {curPenalties?.shelfTheftChance>0&&<div>🏴 <b style={{color:tierColor}}>{Math.round(curPenalties.shelfTheftChance*100)}%</b> chance of overnight shelf theft</div>}
+              </div>}
+              {tidIdx===1&&tier!=='calm'&&<div style={{fontSize:13,color:TH.text,lineHeight:1.6}}>
+                {curPenalties?.spoilMult>1&&<div>🧪 Ingredient spoilage rate increased by <b style={{color:tierColor}}>×{curPenalties.spoilMult}</b></div>}
+                {curPenalties?.contaminateChance>0&&<div>🦠 <b style={{color:tierColor}}>{Math.round(curPenalties.contaminateChance*100)}%</b> chance that quality brews get contaminated to Standard</div>}
+                {curPenalties?.ingrLossChance>0&&<div>💀 <b style={{color:tierColor}}>{Math.round(curPenalties.ingrLossChance*100)}%</b> chance of overnight ingredient corruption</div>}
+              </div>}
+              {tidIdx===2&&tier!=='calm'&&<div style={{fontSize:13,color:TH.text,lineHeight:1.6}}>
+                {curPenalties?.enchDCBonus>0&&<div>✨ Enchanting DC increased by <b style={{color:tierColor}}>+{curPenalties.enchDCBonus}</b></div>}
+                {curPenalties?.discoveryMult<1&&<div>📚 Research discovery chance reduced by <b style={{color:tierColor}}>{Math.round((1-curPenalties.discoveryMult)*100)}%</b></div>}
+                {curPenalties?.enchPayMult<1&&<div>💰 Enchantment customer pay reduced by <b style={{color:tierColor}}>{Math.round((1-curPenalties.enchPayMult)*100)}%</b></div>}
+                {curPenalties?.custDropChance>0&&<div>👤 <b style={{color:tierColor}}>{Math.round(curPenalties.custDropChance*100)}%</b> chance customers don't show up</div>}
+              </div>}
+            </div>
+            {/* Your Defenses */}
+            <div style={{marginBottom:8,padding:'8px 10px',background:TH.panel,borderRadius:6,border:'1px solid '+TH.border}}>
+              <div style={{fontSize:14,fontWeight:'bold',color:TH.gold,marginBottom:6}}>🛡️ Your Defenses</div>
+              <div style={{fontSize:13,color:TH.text,lineHeight:1.8}}>
+                {patrollers.length>0?<div>👥 <b>Patrol Staff:</b> {patrollers.map(ap=>ap.icon+' '+ap.name).join(', ')} <span style={{color:TH.green}}>(-{patrollers.length*5}~{patrollers.length*8}/day est.)</span></div>
+                  :<div style={{color:TH.textDim}}>👥 No staff assigned to patrol this threat. <span style={{color:TH.gold,cursor:'pointer',textDecoration:'underline'}} onClick={()=>setScreen('staff')}>Go to Staff Hall →</span></div>}
+                {suppressingOPs.length>0&&<div>🏗️ <b>Outposts:</b> {suppressingOPs.length} outpost{suppressingOPs.length>1?'s':''} suppressing <span style={{color:TH.green}}>(-{suppressingOPs.length*outpostSuppressAmt}/day)</span></div>}
+                {helpingFactions.length>0&&<div>🏛️ <b>Faction Aid:</b> {helpingFactions.map(fid=>FACTIONS[fid]?.icon+' '+FACTIONS[fid]?.name+' (Trusted)').join(', ')} <span style={{color:TH.green}}>(-1/day each)</span></div>}
+                {classMit[tid]&&<div>📋 <b>Class Ability:</b> Warden Lv4 <span style={{color:TH.green}}>(-1/day)</span></div>}
+                {patrollers.length===0&&suppressingOPs.length===0&&helpingFactions.length===0&&!classMit[tid]&&<div style={{color:'#c06040',fontStyle:'italic'}}>No active defenses — this threat will grow unchecked!</div>}
+              </div>
+            </div>
+            {/* Defense Quests */}
+            {myDQ.length>0&&<div style={{padding:'8px 10px',background:tierColor+'08',borderRadius:6,border:'1px solid '+tierColor+'33'}}>
+              <div style={{fontSize:14,fontWeight:'bold',color:TH.gold,marginBottom:4}}>📋 Defense Requests</div>
+              {myDQ.map(dq=>{
+                const {have,canFill}=dqStatus(dq);
+                return <div key={dq.id} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'6px 8px',marginBottom:4,background:canFill?TH.green+'10':TH.panel,borderRadius:4,border:'1px solid '+(canFill?TH.green+'44':TH.border)}}>
+                  <div>
+                    <div style={{fontSize:14,color:TH.textBright}}>{dq.desc}</div>
+                    <div style={{fontSize:12,color:TH.textDim}}>{have}/{dq.qty} ready · Reward: {tf.icon} -{dq.reward} threat, +{dq.reward*3} XP</div>
+                  </div>
+                  <button style={{...S.btn(canFill?'gold':'dim'),fontSize:13,padding:'4px 10px'}} disabled={!canFill} onClick={()=>completeDefenseQuest(dq.id)}>Fulfill</button>
+                </div>;})}
+            </div>}
+            {myDQ.length===0&&val>0&&<div style={{fontSize:13,color:TH.textDim,fontStyle:'italic',padding:'4px 8px'}}>No defense requests available for this threat right now. New ones appear each morning when threats are active.</div>}
+          </div>;})}
+
+        {/* ═══ HOLLOW MARCH SECTION ═══ */}
+        {hollowMarch?.active&&<div style={{...S.card,borderColor:'#a040c044',borderWidth:2,background:'linear-gradient(180deg,#14110c 0%,#1a0e1a 100%)',boxShadow:'0 0 20px #a040c010'}}>
+          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:10}}>
+            <div>
+              <div style={{fontSize:22,fontWeight:'bold',color:'#c060e0'}}>💀 The Hollow March</div>
+              <div style={{fontSize:13,color:TH.textDim}}>
+                {hollowMarch.finalStandComplete?'The March is broken. '+locName+' is safe.'
+                  :`Wave ${hollowMarch.wave} · ${marchWavesCleared}/${HOLLOW_MARCH.wavesForTorch} waves cleared for torch`}
+              </div>
+            </div>
+            {!hollowMarch.finalStandComplete&&<div style={{textAlign:'right'}}>
+              <div style={{fontSize:18,fontWeight:'bold',color:hollowMarch.nextWaveDay-day<=2?'#cc2020':'#c060e0'}}>
+                {hollowMarch.nextWaveDay>day?`${hollowMarch.nextWaveDay-day}d`:'NOW'}
+              </div>
+              <div style={{fontSize:11,color:TH.textDim}}>until next wave</div>
+            </div>}
+          </div>
+
+          {/* Progress bar */}
+          {!hollowMarch.finalStandComplete&&<div style={{marginBottom:12}}>
+            <div style={{display:'flex',justifyContent:'space-between',fontSize:12,color:TH.textDim,marginBottom:3}}>
+              <span>Waves Cleared</span>
+              <span>{marchWavesCleared} / {HOLLOW_MARCH.wavesForTorch} (torch) · {HOLLOW_MARCH.finalStandWave} (final stand)</span>
+            </div>
+            <div style={{height:10,background:TH.bg,borderRadius:5,border:'1px solid #a040c044',overflow:'hidden'}}>
+              <div style={{height:'100%',width:Math.min(100,marchWavesCleared/HOLLOW_MARCH.finalStandWave*100)+'%',background:'linear-gradient(90deg,#6020a0,#c060e0)',borderRadius:5,transition:'width 0.3s'}}/>
+            </div>
+          </div>}
+
+          {/* Preparing state — march active but no crises yet */}
+          {hollowMarch.demands.length===0&&!hollowMarch.finalStandComplete&&hollowMarch.wave===0&&<div style={{padding:'16px',background:'#a040c008',borderRadius:8,border:'1px dashed #a040c044',textAlign:'center'}}>
+            <div style={{fontSize:18,color:'#c060e0',fontWeight:'bold',marginBottom:6}}>⏳ The March Approaches</div>
+            <div style={{fontSize:14,color:TH.textDim}}>The first wave arrives on <b style={{color:'#c060e0'}}>Day {hollowMarch.nextWaveDay}</b>.</div>
+            <div style={{fontSize:13,color:TH.textDim,marginTop:6}}>Stockpile potions, gather ingredients, and prepare your defenses. Each wave brings {HOLLOW_MARCH.crisisCount(1)} crises that demand your alchemical skills.</div>
+          </div>}
+          {/* Current crises */}
+          {hollowMarch.demands.length>0&&!hollowMarch.finalStandComplete&&<>
+            <div style={{fontSize:15,fontWeight:'bold',color:TH.gold,marginBottom:6}}>{hollowMarch.finalStandInProgress?'👑 The Final Stand — Choose Your Approach':'⚔️ Wave '+hollowMarch.wave+' Crises — Choose Your Approach'}</div>
+            {hollowMarch.demands.map(crisis=>{
+              const resolved=crisis.resolved;
+              const succeeded=resolved&&crisis.result?.success;
+              const failed=resolved&&!crisis.result?.success;
+              const mastery=succeeded&&crisis.result?.mastery;
+              return <div key={crisis.id} style={{padding:'12px 14px',marginBottom:10,background:succeeded?TH.green+'08':failed?TH.red+'08':TH.panel,
+                borderRadius:8,border:'2px solid '+(succeeded?TH.green+'66':failed?TH.red+'66':'#a040c044')}}>
+                {/* Crisis header */}
+                <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:6}}>
+                  <span style={{fontSize:28}}>{crisis.icon}</span>
+                  <div style={{flex:1}}>
+                    <div style={{fontSize:16,fontWeight:'bold',color:succeeded?TH.green:failed?TH.red:'#c060e0'}}>{crisis.name}
+                      {mastery&&<span style={{fontSize:12,color:TH.gold,marginLeft:6}}>★ MASTERY</span>}
+                      {succeeded&&!mastery&&<span style={{fontSize:12,color:TH.green,marginLeft:6}}>✅ Resolved</span>}
+                      {failed&&<span style={{fontSize:12,color:TH.red,marginLeft:6}}>❌ Failed</span>}
+                    </div>
+                    <div style={{fontSize:13,color:TH.textDim,fontStyle:'italic',lineHeight:1.3}}>{crisis.narrative}</div>
+                  </div>
+                </div>
+                {/* Resolved result */}
+                {resolved&&crisis.result?.roll&&<div style={{fontSize:13,padding:'4px 8px',background:TH.bg,borderRadius:4,marginBottom:6,color:succeeded?TH.green:TH.red}}>
+                  Roll: {crisis.result.roll.total} vs DC{crisis.result.roll.dc} ({crisis.result.roll.skill}) — {succeeded?'Success':'Failure'}{mastery?' ★ Mastery bonus!':''}
+                </div>}
+                {/* Solution options (only if not resolved) */}
+                {!resolved&&<div style={{display:'flex',flexDirection:'column',gap:6}}>
+                  {crisis.solutions.map(sol=>{
+                    const cost=sol.cost;
+                    let have=0,canDo=false,costDesc='';
+                    if(cost.type==='potion'){
+                      have=countAllPots(cost.target);
+                      canDo=have>=cost.qty;costDesc=`${have}/${cost.qty} ${cost.targetIcon||'⚗️'}${cost.targetName||cost.target}`;
+                    } else if(cost.type==='ingredients'){
+                      have=inv[cost.target]||0;canDo=have>=cost.qty;
+                      costDesc=`${have}/${cost.qty} ${cost.targetIcon||'🌿'}${cost.targetName||cost.target}`;
+                    } else if(cost.type==='gold'){
+                      have=gold;canDo=have>=cost.qty;costDesc=`${fmtMoney(cost.qty)} (have ${fmtMoney(gold)})`;
+                    } else if(cost.type==='staff'){
+                      have=hiredAppr.filter(ap=>!apprTasks[ap.id]||apprTasks[ap.id].type==='idle').length;
+                      canDo=have>=cost.qty;costDesc=`${have}/${cost.qty} idle staff`;
+                    } else if(cost.type==='enchant'||cost.type==='combat'){
+                      have=energy;canDo=have>=cost.qty;costDesc=`${cost.qty} Energy (have ${energy})`;
+                    }
+                    const successPct=sol.dc>0&&sol.skill?Math.min(95,Math.max(5,Math.floor((21-(sol.dc-(getSkMod(sol.skill)+getFeatureVal('craftBonus')+upEff('craftSkillBonus'))))/20*100))):100;
+                    return <div key={sol.id} style={{display:'flex',alignItems:'center',gap:8,padding:'8px 10px',background:canDo?sol.dc===0?TH.gold+'08':'#c060e008':TH.bg,
+                      borderRadius:6,border:'1px solid '+(canDo?sol.dc===0?TH.gold+'44':'#c060e033':TH.border+'44')}}>
+                      <span style={{fontSize:22}}>{sol.icon}</span>
+                      <div style={{flex:1}}>
+                        <div style={{fontSize:14,fontWeight:'bold',color:canDo?TH.textBright:TH.textDim}}>{sol.label}
+                          {sol.dc>0&&<span style={{fontSize:12,fontWeight:'normal',marginLeft:6,color:successPct>=60?TH.green:successPct>=35?TH.gold:TH.red}}>DC{sol.dc} · {successPct}%</span>}
+                          {sol.dc===0&&<span style={{fontSize:12,fontWeight:'normal',marginLeft:6,color:TH.green}}>Auto-success</span>}
+                        </div>
+                        <div style={{fontSize:12,color:TH.textDim}}>{sol.desc}</div>
+                        <div style={{fontSize:12,color:canDo?TH.gold:TH.red,marginTop:2}}>Cost: {costDesc}</div>
+                      </div>
+                      <button style={{...S.btn(canDo?'gold':'dim'),fontSize:13,padding:'6px 14px',minWidth:70}} disabled={!canDo}
+                        onClick={()=>fulfillMarchDemand(crisis.id,sol.id)}>
+                        {canDo?'Go':'Need More'}
+                      </button>
+                    </div>;
+                  })}
+                </div>}
+                {/* Chosen solution display when resolved */}
+                {resolved&&<div style={{fontSize:13,color:TH.textDim,marginTop:4}}>
+                  Solution: {crisis.solutions.find(s=>s.id===crisis.chosenSolution)?.icon} {crisis.solutions.find(s=>s.id===crisis.chosenSolution)?.label}
+                </div>}
+              </div>;
+            })}
+            <div style={{fontSize:12,color:TH.textDim,marginTop:6,fontStyle:'italic',padding:'6px 10px',background:'#c0202010',borderRadius:4,border:'1px solid #c0202033'}}>
+              ⚠️ Unresolved crises at wave deadline cause: threat spikes (+{12+hollowMarch.wave*2} per crisis), guaranteed staff injuries, rare ingredient loss, coin looting{hollowMarch.wave>=6?', and upgrade damage':''}. Failed skill checks also count as unresolved.
+            </div>
+          </>}
+
+          {/* Reinforce Wards action */}
+          {!hollowMarch.finalStandComplete&&<div style={{marginTop:10,padding:'8px 10px',background:TH.panel,borderRadius:6,border:'1px solid '+TH.border}}>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+              <div>
+                <div style={{fontSize:14,fontWeight:'bold',color:TH.gold}}>🛡️ Reinforce Wards</div>
+                <div style={{fontSize:12,color:TH.textDim}}>⚡50 Energy · Skill check (Inscription/Precision/Discipline) vs DC {10+Math.floor((hollowMarch.wave||1)*0.8)} · Reduces all threats</div>
+              </div>
+              <button style={{...S.btn(energy>=50?'gold':'dim'),fontSize:13,padding:'6px 12px',opacity:energy>=50?1:0.45,cursor:energy>=50?'pointer':'not-allowed'}} disabled={energy<50}
+                onClick={reinforceWards}
+                title={energy>=50?'Cost: ⚡50':'Need ⚡50 Energy (have ⚡'+energy+')'}>⚡50 Reinforce</button>
+            </div>
+          </div>}
+
+          {/* Final Stand button */}
+          {hollowMarch.finalStandAvailable&&!hollowMarch.finalStandComplete&&!hollowMarch.finalStandInProgress&&<div style={{marginTop:10,padding:'12px 14px',background:'linear-gradient(135deg,#2a1a0a,#1a0a2a)',borderRadius:8,border:'2px solid #ffd70066',boxShadow:'0 0 20px #ffd70020'}}>
+            <div style={{fontSize:18,fontWeight:'bold',color:'#ffd700',marginBottom:4}}>👑 The Final Stand</div>
+            <div style={{fontSize:13,color:TH.text,marginBottom:8,lineHeight:1.5}}>
+              Face {HOLLOW_MARCH.finalStandCrises||6} crises at elevated DC ({HOLLOW_MARCH.baseDC(hollowMarch.wave)+(HOLLOW_MARCH.finalStandDCBonus||4)}).
+              Need {Math.ceil((HOLLOW_MARCH.finalStandCrises||6)*0.67)}/{HOLLOW_MARCH.finalStandCrises||6} successes.
+              You can freely brew, forage, and manage staff between crises.
+            </div>
+            <button style={{...S.btn('gold'),fontSize:16,padding:'8px 20px',width:'100%',background:'linear-gradient(90deg,#8a6a00,#d4a420)',boxShadow:'0 0 10px #d4a42040'}}
+              onClick={startFinalStand}>👑 Begin the Final Stand</button>
+          </div>}
+          {/* Final Stand in progress banner */}
+          {hollowMarch.finalStandInProgress&&<div style={{marginTop:10,padding:'10px 14px',background:'linear-gradient(135deg,#2a1a0a,#1a0a2a)',borderRadius:8,border:'2px solid #ffd70066'}}>
+            <div style={{fontSize:16,fontWeight:'bold',color:'#ffd700'}}>👑 The Final Stand — In Progress</div>
+            <div style={{fontSize:13,color:TH.textDim}}>
+              {hollowMarch.demands.filter(d=>d.resolved&&d.result?.success).length} succeeded · {hollowMarch.demands.filter(d=>d.resolved&&!d.result?.success).length} failed · {hollowMarch.demands.filter(d=>!d.resolved).length} remaining · Need {Math.ceil(hollowMarch.demands.length*0.67)}/{hollowMarch.demands.length}
+            </div>
+            <div style={{fontSize:12,color:TH.textDim,marginTop:4}}>Resolve the crises above. You can leave this screen to brew, forage, or manage staff, then return.</div>
+          </div>}
+
+          {/* Final Stand complete */}
+          {hollowMarch.finalStandComplete&&<div style={{marginTop:8,padding:'12px 14px',background:TH.green+'10',borderRadius:8,border:'2px solid '+TH.green+'44'}}>
+            <div style={{fontSize:18,fontWeight:'bold',color:TH.gold,marginBottom:4}}>👑 Defender of {locName}</div>
+            <div style={{fontSize:14,color:TH.text,lineHeight:1.5}}>
+              The Hollow March is broken. All threats are permanently capped at {HOLLOW_MARCH.finalStandRewards.threatCap}. {charName}'s legend will echo through the ages.
+            </div>
+          </div>}
+
+          {/* Wave History */}
+          {(hollowMarch.history||[]).length>0&&<div style={{marginTop:10}}>
+            <div style={{fontSize:13,fontWeight:'bold',color:TH.textDim,marginBottom:4}}>📜 Wave History</div>
+            <div style={{fontSize:12,color:TH.textDim,lineHeight:1.6}}>
+              {hollowMarch.history.map((h,i)=>
+                <div key={i} style={{color:h.met===h.total?TH.green:'#c06040'}}>
+                  Wave {h.wave}: {h.met}/{h.total} demands met (Day {h.day}) {h.met===h.total?'✅':'❌'}
+                </div>
+              )}
+            </div>
+          </div>}
+        </div>}
+
+        {/* March not yet active hint */}
+        {!hollowMarch?.active&&displayLevel>=8&&<div style={{...S.card,borderColor:'#a040c022'}}>
+          <div style={{fontSize:14,color:'#a040c0'}}>💀 Whispers of the Hollow March</div>
+          <div style={{fontSize:13,color:TH.textDim,lineHeight:1.5}}>
+            Travelers speak of a gathering force beyond the Veil — an organized threat unlike anything {locName} has faced. Reach Level {HOLLOW_MARCH.triggerLevel+1} to trigger the endgame invasion.
+          </div>
+        </div>}
+      </>}
+
+      {/* ═══════════ CHARACTER (Stats + Skills + Pack) ═══════════ */}
+      {screen==='character'&&<>
+        <BackBar title="Your Quarters" icon="📊"/>
+        {/* Portrait + Class Summary */}
+        <div style={S.card}>
+          <div style={{display:'flex',gap:12,alignItems:'flex-start'}}>
+            <Portrait cls={startingClass||'alchemist'} race={charRace} gender={charGender} size={100}/>
+            <div style={{flex:1}}>
+              <div style={S.cT}>📊 {charName}</div>
+              <div style={{fontSize:14,color:TH.textDim,marginBottom:4}}>{RACES[charRace]?.icon} {RACES[charRace]?.name} · {GENDERS.find(g=>g.id===charGender)?.icon}{GENDERS.find(g=>g.id===charGender)?.name}</div>
+              <div style={{display:'flex',flexWrap:'wrap',gap:6,marginBottom:6}}>
+                {Object.entries(classLevels).filter(([cid])=>CLASSES[cid]).map(([cid,lv])=>{const c=CLASSES[cid];return(
+                  <div key={cid} style={{padding:'3px 8px',background:c.color+'15',border:'1px solid '+c.color+'44',borderRadius:4,fontSize:15,color:c.color,fontWeight:'bold'}}>
+                    {c.icon} {c.name} {lv}{specs[cid]?' · '+c.specs[specs[cid]]?.icon+c.specs[specs[cid]]?.name:''}
+                  </div>);})}
+                {Object.entries(prestigeLevels).filter(([,lv])=>lv>0).map(([pid,lv])=>{const pc=PRESTIGE_CLASSES[pid];return pc?(
+                  <div key={pid} style={{padding:'3px 8px',background:pc.color+'15',border:'1px solid '+pc.color+'44',borderRadius:4,fontSize:15,color:pc.color,fontWeight:'bold'}}>
+                    {pc.icon} {pc.name} {lv}
+                  </div>):null;})}
+              </div>
+              <div style={{fontSize:14,color:TH.textDim}}>Character Level {displayLevel} · Proficiency +{pb}</div>
+            </div>
+          </div>
+          <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:3,marginTop:6}}>
+            {STAT_IDS.map(sid=>{const st=STATS[sid];const v=eStat(sid);const base=stats[sid]||10;const mod=getMod(v);
+              const asiTotal=asiSpent.reduce((s,a)=>s+(a.choices[sid]||0),0);
+              const specBonus=Object.entries(specs).reduce((s,[cid,specId])=>{const sp=CLASSES[cid]?.specs?.[specId];return s+(sp?.bStat===sid?2:0);},0);
+              const featBonus=getFeatureVal(sid+'Bonus');
+              return(
+              <div key={sid} style={{padding:4,background:TH.panelLight,borderRadius:4,border:`1px solid ${st.color}44`,textAlign:'center'}}>
+                <div style={{fontSize:14,color:st.color}}>{st.icon}{st.name}</div>
+                <div style={{fontSize:20,color:TH.textBright}}>{v} <span style={{fontSize:14,color:mod>=0?TH.green:TH.red}}>({mod>=0?'+':''}{mod})</span></div>
+                {(asiTotal>0||specBonus>0||featBonus>0)&&<div style={{fontSize:12,color:TH.textDim}}>base {base}{asiTotal>0?` +${asiTotal} ASI`:''}{specBonus>0?` +${specBonus} spec`:''}{featBonus>0?` +${featBonus} feat`:''}</div>}
+              </div>);})}
+          </div>
+        </div>
+        {/* Skills */}
+        <div style={S.card}><div style={S.cT}>🎓 Skills ({skPts}pts){skPts>0&&<span style={{color:TH.goldBright,fontSize:15}}> — spend below!</span>}</div>
+          <div style={{fontSize:14,color:TH.textDim,marginBottom:6}}>Cost: 1pt for Untrained→Trained, 2pt for Trained→Expert, 3pt for Expert→Master. Class skills start Trained.</div>
+          {STAT_IDS.map(sid=><div key={sid} style={{marginBottom:4}}>
+            <div style={{fontSize:14,color:STATS[sid].color}}>{STATS[sid].icon} {STATS[sid].name}</div>
+            {SK_IDS.filter(sk=>SKILLS[sk].stat===sid).map(skId=>{const sk=SKILLS[skId];const rank=skRanks[skId]||0;const total=getSkMod(skId);const cost=rank+1;
+              const prog=skProgress[skId]||0;
+              const isProf=Object.keys(classLevels).some(cid=>classLevels[cid]>0&&CLASSES[cid]?.profSkills?.includes(skId))
+                ||Object.entries(specs).some(([cid,specId])=>CLASSES[cid]?.specs?.[specId]?.bSkills?.includes(skId));
+              const investPt=()=>{
+                const rp=computeRankProg(rank,prog,1);
+                setSkRanks(p=>({...p,[skId]:rp.rank}));
+                setSkProgress(p=>{const n={...p};if(rp.prog>0)n[skId]=rp.prog;else delete n[skId];return n;});
+                setSkPts(p=>p-1);
+              };
+              return(<div key={skId} style={{padding:'3px 5px',borderRadius:3,marginBottom:2,background:rank>0?STATS[sid].color+'10':TH.panel,border:'1px solid '+(rank>0?STATS[sid].color+'33':TH.border)}}>
+                <div style={{display:'flex',alignItems:'center',gap:3}}>
+                  <span style={{fontSize:15}}>{sk.icon}</span>
+                  <span style={{flex:1,fontSize:14,color:rank>0?STATS[sid].color:TH.text}}>{sk.name} <span style={{fontSize:12,color:TH.textDim}}>({RANKS[rank]}){isProf&&rank>0?' ·class':''}</span>{getRaceSkBonus(skId)>0&&<span style={{fontSize:12,color:TH.green,marginLeft:2}}>+{getRaceSkBonus(skId)}{RACES[charRace]?.icon}</span>}</span>
+                  <span style={{fontSize:13,color:TH.cyan,cursor:'pointer',padding:'0 3px',border:'1px solid '+TH.cyan+'44',borderRadius:8,lineHeight:'14px'}} onClick={()=>setSkillTip(skillTip===skId?null:skId)} title="Show details">ⓘ</span>
+                  <span style={{fontSize:15,color:total>=0?TH.green:TH.red,fontWeight:'bold'}}>{total>=0?'+':''}{total}</span>
+                  {skPts>=1&&rank<3&&<button style={{...S.btn('gold'),fontSize:13,padding:'1px 6px'}} onClick={investPt} title={`Invest 1pt toward ${RANKS[rank+1]} (${prog+1}/${cost})`}>↑ +1</button>}
+                </div>
+                {prog>0&&rank<3&&<div style={{marginTop:3,paddingLeft:16}}>
+                  <div style={{fontSize:12,color:TH.gold,marginBottom:2}}>Training toward {RANKS[rank+1]}: {prog}/{cost}</div>
+                  <div style={{height:6,background:TH.bg,borderRadius:3,overflow:'hidden',border:'1px solid '+TH.border}}>
+                    <div style={{height:'100%',width:`${(prog/cost)*100}%`,background:`linear-gradient(90deg,${TH.gold},${TH.ember})`,borderRadius:3,transition:'width .3s'}}/>
+                  </div>
+                </div>}
+                {sk.uses&&<div style={{fontSize:13,color:TH.textDim,marginTop:1,paddingLeft:16,lineHeight:1.3}}>{sk.uses}</div>}
+                {skillTip===skId&&<div style={{fontSize:13,color:TH.text,marginTop:4,padding:'6px 8px',background:TH.bg,borderRadius:4,border:'1px solid '+TH.cyan+'44',lineHeight:1.5}}>
+                  <div style={{color:TH.cyan,fontWeight:'bold',marginBottom:2}}>📊 Mechanical Details</div>
+                  <div>{sk.mech}</div>
+                  <div style={{color:TH.textDim,marginTop:3}}>Current modifier: <b style={{color:total>=0?TH.green:TH.red}}>{total>=0?'+':''}{total}</b> (stat {getMod(eStat(sk.stat))>=0?'+':''}{getMod(eStat(sk.stat))} + rank {rankB(rank,pb)}{getRaceSkBonus(skId)>0?` + ${RACES[charRace]?.icon}race +${getRaceSkBonus(skId)}`:''})</div>
+                </div>}
+              </div>);})}
+          </div>)}
+        </div>
+        {/* Class Features — one section per class */}
+        <div style={S.card}><div style={S.cT}>📋 Class Features</div>
+          {Object.entries(classLevels).filter(([cid])=>CLASSES[cid]).map(([cid,lv])=>{const c=CLASSES[cid];const specId=specs[cid];const sp=specId?c.specs?.[specId]:null;return(
+            <div key={cid} style={{marginBottom:8,padding:'6px 8px',background:c.color+'08',borderRadius:6,border:'1px solid '+c.color+'33'}}>
+              <div style={{fontSize:16,color:c.color,fontWeight:'bold',marginBottom:3}}>{c.icon} {c.name} — Level {lv}</div>
+              {c.features.filter(f=>f.classLv<=10).map(f=>(
+                <div key={f.name} style={{fontSize:14,color:f.classLv<=lv?c.color:TH.textDim,opacity:f.classLv<=lv?1:.35,marginBottom:1}}>
+                  {f.classLv<=lv?'✓':'○'} Lv{f.classLv}: <b>{f.name}</b> — {f.desc}
+                </div>
+              ))}
+              {sp&&<div style={{marginTop:4,padding:'4px 6px',background:sp.color+'10',borderRadius:4,border:'1px solid '+sp.color+'33'}}>
+                <div style={{fontSize:15,color:sp.color,fontWeight:'bold',marginBottom:2}}>{sp.icon} {sp.name} <span style={{fontSize:13,color:TH.textDim}}>+2 {STATS[sp.bStat]?.name}</span></div>
+                {sp.features.map(f=>(
+                  <div key={f.name} style={{fontSize:14,color:f.classLv<=lv?sp.color:TH.textDim,opacity:f.classLv<=lv?1:.35}}>
+                    {f.classLv<=lv?'✓':'○'} Lv{f.classLv}: <b>{f.name}</b> — {f.desc}
+                  </div>
+                ))}
+              </div>}
+            </div>
+          );})}
+        </div>
+        {/* Prestige Class Features */}
+        {Object.entries(prestigeLevels).filter(([,lv])=>lv>0).length>0&&<div style={S.card}><div style={S.cT}>✨ Prestige Classes</div>
+          {Object.entries(prestigeLevels).filter(([,lv])=>lv>0).map(([pid,lv])=>{const pc=PRESTIGE_CLASSES[pid];if(!pc)return null;
+            const reqText=formatPrestigeReq(pc.req);
+            return(
+            <div key={pid} style={{marginBottom:8,padding:'6px 8px',background:pc.color+'08',borderRadius:6,border:'1px solid '+pc.color+'33'}}>
+              <div style={{fontSize:16,color:pc.color,fontWeight:'bold',marginBottom:2}}>{pc.icon} {pc.name} — Level {lv}/5</div>
+              <div style={{fontSize:13,color:TH.textDim,marginBottom:4}}>Requires: {reqText}</div>
+              <div style={{fontSize:13,color:TH.textDim,fontStyle:'italic',marginBottom:4}}>{pc.desc}</div>
+              {pc.features.map(f=>(
+                <div key={f.lv} style={{fontSize:14,color:f.lv<=lv?pc.color:TH.textDim,opacity:f.lv<=lv?1:.35,marginBottom:1}}>
+                  {f.lv<=lv?'✓':'○'} Lv{f.lv}: <b>{f.name}</b> — {f.desc}
+                </div>
+              ))}
+            </div>
+          );})}</div>}
+        {/* Feats */}
+        {playerFeats.length>0&&<div style={S.card}><div style={S.cT}>🌟 Feats</div>
+          {playerFeats.map(fid=>{const f=FEATS[fid];if(!f)return null;const cat=FEAT_CATEGORIES[f.cat];return(
+            <div key={fid} style={{fontSize:14,marginBottom:3,padding:'3px 6px',background:cat?.color+'10',borderRadius:3,border:'1px solid '+cat?.color+'22'}}>
+              <span style={{color:cat?.color}}>{f.icon}</span> <b>{f.name}</b> — {f.desc}
+            </div>
+          );})}
+        </div>}
+        {/* Wild Ally Display (Wildcrafter temporary companion) */}
+        {wildAlly&&(()=>{
+          const waComp=RANGER_COMPANIONS.find(c=>c.id===wildAlly.compId);
+          return <div style={{...S.card,borderColor:'#40a06044',background:'#40a06008'}}>
+            <div style={S.cT}>🐾 Wild Ally <span style={{fontSize:12,fontWeight:'normal',color:TH.textDim}}>(temporary)</span></div>
+            <div style={{display:'flex',alignItems:'center',gap:10,padding:'4px 8px'}}>
+              {waComp?.img?<img src={waComp.img} style={{width:48,height:48,borderRadius:6,objectFit:'cover',border:'2px solid #40a060'}} alt={wildAlly.name}/>:<span style={{fontSize:32}}>{wildAlly.icon}</span>}
+              <div>
+                <div style={{fontSize:14,color:'#40a060',fontWeight:'bold'}}>{wildAlly.icon} {wildAlly.name}</div>
+                <div style={{fontSize:12,color:TH.textDim}}>{wildAlly.role} — {COMPANION_ROLE_DESC[wildAlly.role]||wildAlly.role}</div>
+                <div style={{fontSize:12,color:'#40a060'}}>{wildAlly.daysLeft} day{wildAlly.daysLeft>1?'s':''} remaining</div>
+              </div>
+            </div>
+            {Object.entries(wildAlly.passive||{}).filter(([,v])=>v).length>0&&<div style={{fontSize:12,color:TH.textDim,padding:'2px 8px',marginTop:2}}>Passive bonuses: {Object.entries(wildAlly.passive).filter(([,v])=>v).map(([k,v])=>{const label=k.replace(/([A-Z])/g,' $1').toLowerCase().trim();return label+(typeof v==='number'?' +'+v:'');}).join(', ')}</div>}
+          </div>;
+        })()}
+        {/* Legacy Feature (inherited via Pass the Torch) — the side panel that also shows it is hidden on phones */}
+        {legacyFeature&&<div style={{...S.card,borderColor:'#c050e044',background:'#c050e008'}}>
+          <div style={{...S.cT,color:'#c050e0'}}>📜 Mentor's Legacy</div>
+          <div style={{fontSize:15,color:'#c050e0',fontWeight:'bold'}}>{legacyFeature.icon} {legacyFeature.name}</div>
+          <div style={{fontSize:13,color:TH.textDim,marginTop:2}}>{legacyFeature.source} — {legacyFeature.desc}</div>
+        </div>}
+        {/* Active Effects Summary */}
+        {Object.keys(classLevels).length>0&&<div style={S.card}><div style={S.cT}>⚡ Active Bonuses</div>
+          {factionAlign&&<div style={{fontSize:14,padding:'4px 8px',marginBottom:6,background:FACTIONS[factionAlign].color+'15',border:'1px solid '+FACTIONS[factionAlign].color+'44',borderRadius:4,color:FACTIONS[factionAlign].color}}>⚔️ <b>Aligned:</b> {FACTIONS[factionAlign].icon} {FACTIONS[factionAlign].alignBonus.name}</div>}
+          <div style={{display:'grid',gridTemplateColumns:'repeat(2,1fr)',gap:3,fontSize:14}}>
+            {[
+              ['craftBonus','⚗️ Craft','+',' to brew checks'],
+              ['enchantBonus','✨ Enchant','+',' inscribe bonus'],
+              ['enchantSuccessFlat','✨ Inscribe','+',' flat bonus'],
+              ['extractionBonus','🌿 Forage','+',' extraction bonus'],
+              ['doubleBatchChance','📦 Double Batch','','% chance'],
+              ['salvagePercent','🔧 Salvage','','% on fail'],
+              ['xpMultiplier','📚 XP Bonus','×',' multiplier'],
+              ['sellBonus','💰 Sell Bonus','+',' price multi'],
+              ['potionValueBonus','🧪 Potion Value','+','% value'],
+              ['buyDiscount','🏷️ Buy Discount','','% off'],
+              ['shelfSaleBonus','🏪 Shelf Sale','+',' chance'],
+              ['bonusEnergyPerDay','⚡ Energy','+','/day'],
+              ['questGoldBonus','📜 Quest Gold','+','% bonus'],
+              ['repGainBonus','🤝 Rep Bonus','×',' multi'],
+              ['craftFloor','🎯 Min Roll','','+ on d20'],
+              ['yieldMultiplier','🌾 Yield','+',' forage multi'],
+              ['upgradeCostReduction','🏗️ Build Disc.','','% off'],
+              ['ingredientEfficiency','♻️ Ing. Save','','% chance'],
+              ['failStreakBonus','🔥 Fail Streak','+','/fail'],
+              ['discoveryChanceBonus','🔍 Discovery','+','% chance'],
+              ['negativeEventReduction','🏰 Event Shield','','% blocked'],
+              ['freeResearchPerDay','📖 Free Research','','/day'],
+              ['forageYieldBonus','🌿 Forage Yield','+','extra items'],
+              ['rareForageBonus','💎 Rare Finds','+','% chance'],
+            ].map(([key,label,pre,suf])=>{const v=getFeatureVal(key);if(!v)return null;
+              const display=(key.includes('Chance')||key.includes('Percent')||(key.includes('Reduction'))||key.includes('Discount')||key==='sellBonus'||key==='shelfSaleBonus'||key==='questGoldBonus'||key==='potionValueBonus'||key==='ingredientEfficiency'||key==='rareForageBonus')
+                ?Math.round(v*100):key==='xpMultiplier'||key==='repGainBonus'||key==='yieldMultiplier'?+(1+v).toFixed(1):v;
+              return(
+                <div key={key} style={{padding:'2px 6px',background:TH.gold+'08',borderRadius:3,border:'1px solid '+TH.gold+'22'}}>
+                  <span style={{color:TH.textDim}}>{label}:</span> <b style={{color:TH.gold}}>{pre}{display}{suf}</b>
+                </div>);}).filter(Boolean)}
+          </div>
+          {[...new Set([
+            ...Object.entries(classLevels).filter(([cid])=>CLASSES[cid]).flatMap(([cid,lv])=>CLASSES[cid]?.features?.filter(f=>f.classLv<=lv).map(f=>f.name)||[]),
+            ...Object.entries(specs).filter(([cid])=>CLASSES[cid]).flatMap(([cid,specId])=>CLASSES[cid]?.specs?.[specId]?.features?.filter(f=>f.classLv<=classLevels[cid]).map(f=>f.name)||[]),
+          ])].length===0&&<div style={{fontSize:14,color:TH.textDim,textAlign:'center',padding:6}}>Choose a class to unlock bonuses!</div>}
+          {/* Active Elixir Buffs */}
+          {Object.entries(activeBuffs).filter(([,b])=>b.daysLeft>0).length>0&&<div style={{marginTop:8,borderTop:'1px solid '+TH.border,paddingTop:6}}>
+            <div style={{fontSize:14,color:'#50c070',fontWeight:'bold',marginBottom:4}}>🧪 Active Elixirs</div>
+            <div style={{display:'flex',flexDirection:'column',gap:3,fontSize:13}}>
+              {Object.entries(activeBuffs).filter(([,b])=>b.daysLeft>0).map(([buffId,buff])=>{
+                const eb=ELIXIR_BUFFS[buffId];if(!eb)return null;
+                return <div key={buffId} style={{padding:'3px 8px',background:'#50c07010',borderRadius:4,border:'1px solid #50c07033'}}>
+                  <div style={{color:'#50c070'}}>{eb.icon} {eb.name} — {buff.daysLeft} day{buff.daysLeft>1?'s':''} left</div>
+                  <div style={{fontSize:11,color:TH.textDim}}>{eb.buffDesc}</div>
+                </div>;
+              })}
+            </div>
+          </div>}
+          {/* Equipped Gadgets */}
+          {gadgets.filter(g=>g.equipped).length>0&&<div style={{marginTop:8,borderTop:'1px solid '+TH.border,paddingTop:6}}>
+            <div style={{fontSize:14,color:'#c0a040',fontWeight:'bold',marginBottom:4}}>⚙️ Equipped Gadgets</div>
+            <div style={{display:'grid',gridTemplateColumns:'repeat(2,1fr)',gap:3,fontSize:13}}>
+              {gadgets.filter(g=>g.equipped).map(g=>{
+                const bp=GADGET_BLUEPRINTS.find(b=>b.id===g.blueprintId);if(!bp)return null;
+                return <div key={g.id} style={{padding:'2px 6px',background:'#c0a04010',borderRadius:3,border:'1px solid #c0a04033'}}>
+                  <span style={{color:'#c0a040'}}>{bp.icon} {bp.name} Mk{['I','II','III'][g.mk-1]}</span>
+                  <div style={{fontSize:11,color:TH.textDim}}>{bp.effectDesc[g.mk-1]}</div>
+                </div>;
+              })}
+            </div>
+          </div>}
+          {/* Active Companions */}
+          {companions.filter(c=>c.active).length>0&&<div style={{marginTop:8,borderTop:'1px solid '+TH.border,paddingTop:6}}>
+            <div style={{fontSize:14,color:'#40a060',fontWeight:'bold',marginBottom:4}}>🦊 Active Companions</div>
+            <div style={{display:'grid',gridTemplateColumns:'repeat(2,1fr)',gap:3,fontSize:13}}>
+              {companions.filter(c=>c.active).map(c=>{
+                const comp=RANGER_COMPANIONS.find(r=>r.id===c.compId);if(!comp)return null;
+                return <div key={c.compId} style={{padding:'2px 6px',background:comp.color+'10',borderRadius:3,border:'1px solid '+comp.color+'33'}}>
+                  <span style={{color:comp.color}}>{comp.icon} {comp.name} {'★'.repeat(c.loyalty)}</span>
+                  <div style={{fontSize:11,color:TH.textDim}}>{comp.role}</div>
+                </div>;
+              })}
+            </div>
+          </div>}
+          {/* Completed Blueprints */}
+          {blueprints.filter(b=>b.complete).length>0&&<div style={{marginTop:8,borderTop:'1px solid '+TH.border,paddingTop:6}}>
+            <div style={{fontSize:14,color:'#8090a0',fontWeight:'bold',marginBottom:4}}>🏗️ Active Structures</div>
+            <div style={{display:'grid',gridTemplateColumns:'repeat(2,1fr)',gap:3,fontSize:13}}>
+              {blueprints.filter(b=>b.complete).map(b=>{
+                const bp=CONSTRUCTOR_BPS.find(x=>x.id===b.bpId);if(!bp)return null;
+                return <div key={b.id} style={{padding:'2px 6px',background:'#8090a010',borderRadius:3,border:'1px solid #8090a033'}}>
+                  <span style={{color:'#8090a0'}}>{bp.icon} {bp.name}</span>
+                  <div style={{fontSize:11,color:TH.textDim}}>{bp.effectDesc}</div>
+                </div>;
+              })}
+            </div>
+          </div>}
+          {/* Supply Chains */}
+          {supplyChains.length>0&&<div style={{marginTop:8,borderTop:'1px solid '+TH.border,paddingTop:6}}>
+            <div style={{fontSize:14,color:'#6080a0',fontWeight:'bold',marginBottom:4}}>🚚 Supply Chains</div>
+            <div style={{display:'grid',gridTemplateColumns:'repeat(2,1fr)',gap:3,fontSize:13}}>
+              {supplyChains.map(sc=>{
+                const partner=SUPPLY_PARTNERS.find(p=>p.id===sc.partnerId);if(!partner)return null;
+                return <div key={sc.partnerId} style={{padding:'2px 6px',background:partner.color+'10',borderRadius:3,border:'1px solid '+partner.color+'33'}}>
+                  <span style={{color:partner.color}}>{partner.icon} {partner.name} T{sc.tier}</span>
+                  <div style={{fontSize:11,color:TH.textDim}}>{fmtMoney(partner.maint)}/day</div>
+                </div>;
+              })}
+            </div>
+          </div>}
+          {/* Faction Harmony */}
+          {FACTION_PAIRS.some(fp=>(!fp.loc||fp.loc===gameLocation)&&(factionHarmony[fp.id]||0)>0)&&<div style={{marginTop:8,borderTop:'1px solid '+TH.border,paddingTop:6}}>
+            <div style={{fontSize:14,color:'#4090c0',fontWeight:'bold',marginBottom:4}}>🤝 Faction Harmony</div>
+            <div style={{display:'grid',gridTemplateColumns:'repeat(2,1fr)',gap:3,fontSize:13}}>
+              {FACTION_PAIRS.filter(fp=>(!fp.loc||fp.loc===gameLocation)&&(factionHarmony[fp.id]||0)>0).map(fp=>{
+                const h=factionHarmony[fp.id];
+                return <div key={fp.id} style={{padding:'2px 6px',background:'#4090c010',borderRadius:3,border:'1px solid #4090c033'}}>
+                  <span style={{color:'#4090c0'}}>{fp.icon} {'★'.repeat(h)}</span>
+                  <div style={{fontSize:11,color:TH.textDim}}>{fp.rewards[h-1]?.split(',')[0]}</div>
+                </div>;
+              })}
+            </div>
+          </div>}
+          {/* Prestige Classes */}
+          {Object.values(prestigeLevels).some(v=>v>0)&&<div style={{marginTop:8,borderTop:'1px solid '+TH.border,paddingTop:6}}>
+            <div style={{fontSize:14,color:TH.purple,fontWeight:'bold',marginBottom:4}}>✨ Prestige Classes</div>
+              {Object.entries(prestigeLevels).filter(([,lv])=>lv>0).map(([pid,lv])=>{
+                const pc=PRESTIGE_CLASSES[pid];if(!pc)return null;
+                const earned=pc.features.filter(f=>f.lv<=lv);
+                return <div key={pid} style={{padding:'4px 8px',background:pc.color+'10',borderRadius:4,border:'1px solid '+pc.color+'33',marginBottom:4}}>
+                  <div style={{fontSize:14,color:pc.color,fontWeight:'bold'}}>{pc.icon} {pc.name} Lv{lv}/5</div>
+                  {earned.map(f=><div key={f.lv} style={{fontSize:12,color:TH.text,marginTop:1}}>✓ <b>{f.name}</b> — {f.desc}</div>)}
+                  {lv<5&&(()=>{const next=pc.features.find(f=>f.lv===lv+1);return next?<div style={{fontSize:11,color:TH.textDim,marginTop:2}}>Next (Lv{lv+1}): {next.name}</div>:null;})()}
+                </div>;
+              })}
+          </div>}
+        </div>}
+        {/* Pack inline */}
+        <div style={S.card}><div style={S.cT}>🎒 Pack</div>
+          <div style={{fontSize:15,color:TH.gold,marginBottom:4}}>Ingredients</div>
+          <div style={{display:'flex',flexWrap:'wrap',gap:3}}>
+            {Object.entries(inv).filter(([,q])=>q>0).map(([id,qty])=>{const srcs=getIngrSource(id);const _ck='cs_'+id;const _co=tapInfo===_ck;return <span key={id} style={{...S.tag,padding:'3px 6px',cursor:'pointer',background:_co?TH.panel:'transparent'}} onClick={()=>setTapInfo(_co?null:_ck)}>{INGR[id]?.icon||'?'}{INGR[id]?.name||id} <b style={{color:TH.gold}}>×{qty}</b>{_co&&<div style={{fontSize:11,color:TH.textDim,marginTop:2}} onClick={e=>e.stopPropagation()}>{srcs.length>0?srcs.map((s,i)=><div key={i}>{s.text}</div>):'Source unknown'}</div>}</span>;})}
+            {Object.keys(inv).filter(id=>inv[id]>0).length===0&&<span style={{color:TH.textDim}}>Empty</span>}
+          </div>
+          {Object.entries(pots).filter(([,q])=>q>0).length>0&&<><div style={{fontSize:15,color:TH.gold,marginTop:6,marginBottom:4}}>Potions</div>
+          <div style={{display:'flex',flexWrap:'wrap',gap:3}}>
+            {Object.entries(pots).filter(([,q])=>q>0).map(([id,qty])=>{const baseId=getBaseRecipeId(id);const r=RECIPES.find(r=>r.id===baseId);if(!r)return null;const _inf=getInfusion(id);const pq=getPotQuality(id);const qI=(QUALITY[pq]||QUALITY.std).icon;const _isFresh=isFreshPot(id);return <span key={id} style={{...S.tag,borderColor:_isFresh?'#60a040':_inf?INFUSIONS[_inf]?.color||TH.borderGold:TH.borderGold}}>{r.icon}{_inf?INFUSIONS[_inf]?.icon:''}{_isFresh?'🌿':''}{r.name}{qI?' '+qI:''} <b style={{color:TH.goldBright}}>×{qty}</b></span>;})}
+          </div></>}
+        </div>
+      </>}
+
+      {/* ═══ PHASE 3: IMMERSIVE EXPEDITION VIEW ═══ */}
+      {/* Renders an 85vw/85vh overlay covering home view (z-50). ExpeditionHourPopup (z-100) and
+          summary modal (z-9999) sit on top during animations / post-trip. The view stays visible
+          across rolls — the popup is brief, then closes back to this panel. */}
+      {expedition.active&&(()=>{
+        const reg=locRegions.find(r=>r.id===expedition.regionId);if(!reg)return null;
+        // ZONE_IMGS is keyed by region id (location-images.js has no per-region-per-season
+        // composites — investigated and confirmed). Seasonal presentation comes through the header strip's season
+        // chip (icon + name + color) rather than a swapped hero image. If a future seasonal variant convention
+        // emerges (e.g. ZONE_IMGS['ashfields_winter']), this lookup line picks it up automatically.
+        const curSeason=getSeason(day,gameLocation);
+        const heroImg=(typeof ZONE_IMGS!=='undefined'&&(ZONE_IMGS[reg.id+'_'+curSeason.id]||ZONE_IMGS[reg.id]))||curSeason.img||null;
+        const earlyR=getFeatureVal('firstActionFree')&&!dayFlags.includes('first_action_used');
+        const canForage=energy>=10||earlyR;
+        const nextDC=reg.dc+expedition.rollCount;
+        const activeCompanions=(companions||[]).filter(c=>c.active);
+        const lr=expedition.lastRoll;
+        const cumEntries=Object.entries(expedition.cumG||{}).filter(([,q])=>q>0);
+        const failureText=lr&&!lr.success?((typeof FORAGE_FAILURES!=='undefined'?FORAGE_FAILURES:[])[lr.flavorIdx]||'You found nothing.'):'';
+        return(
+        <div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'rgba(0,0,0,0.78)',zIndex:50,display:'flex',alignItems:'center',justifyContent:'center',padding:'2vh 2vw'}}>
+          <div style={{background:TH.panel,border:'2px solid '+TH.borderGold,borderRadius:12,width:'min(900px,96vw)',maxWidth:'96vw',maxHeight:'92vh',display:'flex',flexDirection:'column',boxShadow:'0 6px 40px rgba(0,0,0,0.7)',overflow:'hidden'}}>
+            {/* ─── Region art hero (~28vh) with overlaid header strip ─── */}
+            <div style={{position:'relative',width:'100%',height:'28vh',minHeight:140,maxHeight:280,
+              backgroundImage:heroImg?`url(${heroImg})`:`linear-gradient(135deg,${TH.panelLight},${TH.bg})`,
+              backgroundSize:'cover',backgroundPosition:'center',flexShrink:0}}>
+              {/* Header strip overlay (top) */}
+              <div style={{position:'absolute',top:0,left:0,right:0,padding:'8px 12px',
+                background:'linear-gradient(180deg,rgba(0,0,0,0.85) 0%,rgba(0,0,0,0.55) 60%,transparent 100%)',
+                display:'flex',alignItems:'center',gap:10,flexWrap:'wrap'}}>
+                <span style={{fontSize:18,color:TH.goldBright,fontWeight:'bold',textShadow:'0 2px 4px #000'}}>{reg.icon} {reg.name}</span>
+                <span style={{fontSize:14,color:curSeason.color,background:'rgba(0,0,0,0.45)',padding:'2px 8px',borderRadius:12,textShadow:'0 1px 2px #000'}}>{curSeason.icon} {curSeason.name}</span>
+                <div style={{flex:1}}/>
+                <span style={{fontSize:15,color:TH.gold,background:'rgba(0,0,0,0.55)',padding:'3px 10px',borderRadius:12,fontWeight:'bold',textShadow:'0 1px 2px #000'}}>⚡ {energy}/{maxEnergy}</span>
+              </div>
+              {/* Companion badge (top-right, below header strip) */}
+              {activeCompanions.length>0&&<div style={{position:'absolute',right:10,bottom:10,
+                background:'rgba(20,16,12,0.85)',border:'1px solid '+TH.borderGold,borderRadius:8,padding:'5px 9px',
+                display:'flex',alignItems:'center',gap:6,maxWidth:'min(60%,260px)'}}>
+                {activeCompanions.slice(0,2).map(c=>{const cd=RANGER_COMPANIONS.find(r=>r.id===c.compId);if(!cd)return null;
+                  // Active forage bonus surfaced for the player: gather/yield/danger-reduce/etc per companion role.
+                  let bonusLabel='';
+                  if(cd.primary?.type==='gather'){const yld=cd.primary.baseYield?.[Math.min((c.loyalty||1)-1,4)]||0;if(yld)bonusLabel='+'+yld+' yield';}
+                  else if(cd.primary?.type==='danger_reduce'){const v=cd.primary.values?.[Math.min((c.loyalty||1)-1,4)]||0;if(v)bonusLabel='-'+Math.round(v*100)+'% danger';}
+                  else if(cd.passive?.forageYieldBonus){bonusLabel='+'+Math.round(cd.passive.forageYieldBonus*100)+'% yield';}
+                  return(<div key={c.compId} style={{display:'flex',alignItems:'center',gap:4}}>
+                    <span style={{fontSize:22}}>{cd.icon}</span>
+                    <div style={{fontSize:11,lineHeight:1.2}}>
+                      <div style={{color:TH.gold,fontWeight:'bold'}}>{cd.name}</div>
+                      {bonusLabel&&<div style={{color:TH.green}}>{bonusLabel}</div>}
+                    </div>
+                  </div>);
+                })}
+              </div>}
+              {/* Roll-count chip (bottom-left) */}
+              <div style={{position:'absolute',left:10,bottom:10,
+                background:'rgba(20,16,12,0.85)',border:'1px solid '+TH.borderGold,borderRadius:8,padding:'4px 9px',
+                fontSize:13,color:TH.textBright}}>
+                Rolls: <b style={{color:TH.gold}}>{expedition.rollCount}</b>
+                {expedition.rollCount>0&&<span style={{color:TH.textDim,marginLeft:8}}>· Max DC met: <b style={{color:TH.gold}}>{expedition.maxDCMet||'—'}</b></span>}
+              </div>
+            </div>
+            {/* ─── Scrollable body: last roll + cumulative inventory ─── */}
+            <div style={{flex:1,overflowY:'auto',padding:'10px 14px'}}>
+              {/* Last roll outcome */}
+              {lr?(
+                <div style={{background:lr.success?'rgba(96,160,80,0.10)':'rgba(160,80,80,0.10)',
+                  border:'1px solid '+(lr.success?'#60a050':'#a06060'),borderRadius:8,padding:'8px 12px',marginBottom:10}}>
+                  <div style={{display:'flex',alignItems:'baseline',gap:8,flexWrap:'wrap'}}>
+                    <span style={{fontSize:14,color:TH.textDim}}>Last roll:</span>
+                    <span style={{fontSize:18,fontWeight:'bold',color:lr.roll===20?TH.goldBright:lr.roll===1?TH.red:TH.textBright}}>d20 {lr.roll}</span>
+                    <span style={{fontSize:14,color:TH.textDim}}>→ total {lr.total} vs DC {lr.dc}</span>
+                    <span style={{fontSize:15,fontWeight:'bold',color:lr.success?TH.green:TH.red,marginLeft:'auto'}}>{lr.success?'✓ Success':'✗ Failed'}</span>
+                  </div>
+                  {lr.success?(
+                    Object.entries(lr.ingredients||{}).filter(([,q])=>q>0).length>0?
+                    <div style={{marginTop:5,fontSize:14,color:TH.textBright}}>
+                      Gathered: {Object.entries(lr.ingredients).filter(([,q])=>q>0).map(([id,q])=>(INGR[id]?.icon||'')+(INGR[id]?.name||id)+' ×'+q).join(', ')}
+                      {lr.xp>0&&<span style={{color:TH.gold,marginLeft:8}}>(+{lr.xp} XP)</span>}
+                    </div>
+                    :<div style={{marginTop:5,fontSize:14,color:TH.textDim,fontStyle:'italic'}}>The check passed but nothing usable came up.{lr.xp>0?' (+'+lr.xp+' XP)':''}</div>
+                  ):(
+                    <div style={{marginTop:5,fontSize:14,color:TH.textDim,fontStyle:'italic'}}>{failureText}{lr.xp>0?' (+'+lr.xp+' XP)':''}</div>
+                  )}
+                  {lr.eventText&&<div style={{marginTop:5,fontSize:13,color:TH.orange}}>⚠ {lr.eventText}</div>}
+                  {lr.discovery&&<div style={{marginTop:5,fontSize:13,color:lr.discovery.documented?TH.green:TH.textDim}}>
+                    🌿 {lr.discovery.documented?'Documented':'Noticed'}: {lr.discovery.icon} {lr.discovery.name}
+                  </div>}
+                  {lr.companionEnc&&<div style={{marginTop:5,fontSize:13,color:lr.companionEnc.approachable?TH.green:TH.textDim}}>
+                    🦊 {lr.companionEnc.approachable?'Approached':'Spotted'}: {lr.companionEnc.icon} {lr.companionEnc.name}
+                  </div>}
+                  {lr.hiddenDisc&&<div style={{marginTop:5,fontSize:13,color:lr.hiddenDisc.mapped?TH.gold:TH.textDim}}>
+                    🗺️ {lr.hiddenDisc.mapped?'Mapped':'Glimpsed'}: {lr.hiddenDisc.icon} {lr.hiddenDisc.name}
+                  </div>}
+                </div>
+              ):(
+                <div style={{background:TH.panelLight,border:'1px dashed '+TH.border,borderRadius:8,padding:'10px 14px',marginBottom:10,textAlign:'center',color:TH.textDim,fontStyle:'italic',fontSize:14}}>
+                  You've arrived at {reg.icon}{reg.name}. The next forage check will be DC {nextDC}.
+                </div>
+              )}
+              {/* Cumulative inventory grid */}
+              <div style={{background:TH.bg,border:'1px solid '+TH.border,borderRadius:8,padding:'8px 12px'}}>
+                <div style={{fontSize:14,color:TH.gold,marginBottom:5,fontWeight:'bold'}}>🎒 This Expedition's Haul</div>
+                {cumEntries.length===0?
+                  <div style={{fontSize:13,color:TH.textDim,fontStyle:'italic'}}>No ingredients yet.</div>
+                  :<div style={{display:'flex',flexWrap:'wrap',gap:4}}>
+                    {cumEntries.map(([id,q])=><span key={id} style={{...S.tag,padding:'3px 6px',fontSize:13}}>{INGR[id]?.icon||''}{INGR[id]?.name||id} <b style={{color:TH.gold}}>×{q}</b></span>)}
+                  </div>}
+                {expedition.cumXp>0&&<div style={{fontSize:13,color:TH.gold,marginTop:5}}>Total XP this trip: +{expedition.cumXp}</div>}
+              </div>
+            </div>
+            {/* ─── Action bar (Forage Again / Return to Town) ─── */}
+            <div style={{padding:'10px 14px',borderTop:'1px solid '+TH.border,background:TH.bg,display:'flex',gap:8,flexWrap:'wrap'}}>
+              <button style={{...S.btn(canForage?'gold':'dim'),flex:'1 1 240px',fontSize:15,padding:'8px 12px',opacity:canForage?1:0.55,cursor:canForage?'pointer':'not-allowed'}}
+                disabled={!canForage} onClick={canForage?_forageAgain:undefined}
+                title={canForage?('Next check: DC '+nextDC):'Need 10⚡ to forage (or wait for Early Riser)'}>
+                🌿 Forage Again <span style={{fontSize:12,opacity:0.85}}>(10⚡{earlyR?' — Early Riser free':''}, next DC {nextDC})</span>
+              </button>
+              <button style={{...S.btn('def'),flex:'1 1 160px',fontSize:15,padding:'8px 12px'}} onClick={_returnToTown}>
+                🏠 Return to Town
+              </button>
+            </div>
+          </div>
+        </div>);
+      })()}
+
+      {/* ═══ PHASE 3: END-OF-EXPEDITION SUMMARY ═══ */}
+      {expSummary&&<div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'rgba(0,0,0,0.75)',zIndex:9999,display:'flex',alignItems:'center',justifyContent:'center',padding:12}}>
+        <div style={{background:TH.panel,border:'2px solid '+TH.borderGold,borderRadius:12,padding:'14px 18px',maxWidth:480,width:'100%',maxHeight:'85vh',overflowY:'auto'}}>
+          <div style={{fontSize:20,color:TH.gold,textAlign:'center',marginBottom:8,fontWeight:'bold'}}>
+            {expSummary.regionIcon} {expSummary.regionName} — Expedition Complete
+          </div>
+          {/* Haul */}
+          <div style={{background:TH.bg,borderRadius:6,padding:'8px 12px',marginBottom:8,border:'1px solid '+TH.border}}>
+            <div style={{fontSize:14,color:TH.gold,marginBottom:4,fontWeight:'bold'}}>Total Haul</div>
+            {Object.entries(expSummary.cumG||{}).filter(([,q])=>q>0).length===0?
+              <div style={{fontSize:13,color:TH.textDim,fontStyle:'italic'}}>Nothing usable.</div>
+              :<div style={{display:'flex',flexWrap:'wrap',gap:4}}>
+                {Object.entries(expSummary.cumG).filter(([,q])=>q>0).map(([id,q])=><span key={id} style={{...S.tag,padding:'3px 6px',fontSize:13}}>{INGR[id]?.icon||''}{INGR[id]?.name||id} <b style={{color:TH.gold}}>×{q}</b></span>)}
+              </div>}
+          </div>
+          {/* Energy breakdown */}
+          <div style={{background:TH.bg,borderRadius:6,padding:'8px 12px',marginBottom:8,border:'1px solid '+TH.border}}>
+            <div style={{fontSize:14,color:TH.gold,marginBottom:4,fontWeight:'bold'}}>Energy Spent</div>
+            <div style={{fontSize:13,color:TH.text,lineHeight:1.5}}>
+              Travel: <b>⚡{expSummary.travelCost}</b><br/>
+              Foraging: <b>⚡{expSummary.forageCost}</b> ({expSummary.rollCount} × 10)<br/>
+              <span style={{color:TH.gold}}>Total: ⚡{expSummary.totalCost}</span>
+            </div>
+          </div>
+          {/* Stats */}
+          <div style={{background:TH.bg,borderRadius:6,padding:'8px 12px',marginBottom:10,border:'1px solid '+TH.border}}>
+            <div style={{fontSize:14,color:TH.gold,marginBottom:4,fontWeight:'bold'}}>Trip Stats</div>
+            <div style={{fontSize:13,color:TH.text,lineHeight:1.5}}>
+              Rolls attempted: <b>{expSummary.rollCount}</b><br/>
+              Highest DC met: <b style={{color:TH.green}}>{expSummary.maxDCMet||'—'}</b><br/>
+              XP gained: <b style={{color:TH.gold}}>+{expSummary.cumXp}</b>
+            </div>
+          </div>
+          <button style={{...S.btn('gold'),width:'100%',fontSize:15,padding:'8px 12px'}} onClick={()=>{setExpSummary(null);setScreen('workshop');}}>
+            🏠 Back to Workshop
+          </button>
+        </div>
+      </div>}
+
+      {/* ═══ RESULT POPUP with animated dice ═══ */}
+      {resultPopup&&!expQ.length&&<DicePopup key={resultPopup.t} popup={resultPopup} LC={LC} TH={TH} S={S} onClose={()=>{setResultPopup(null);if(deferredNewDay){setDeferredNewDay(false);newDay();}}} playSfx={playSfx}/>}
+
+      {/* ═══ EXPEDITION HOUR POPUP ═══ */}
+      {expQ.length>0&&<ExpeditionHourPopup hr={expQ[0]} TH={TH} S={S} LC={LC} INGR={INGR} FACTIONS={FACTIONS} onOk={advanceExpedition} onSkipAll={skipAllExpedition} remaining={expQ.length} playSfx={playSfx}/>}
+
+      {/* Field Brew Phase (Wildcrafter) */}
+      {fieldBrewPhase&&expQ.length===0&&<div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'#000000dd',display:'flex',alignItems:'center',justifyContent:'center',zIndex:9998,padding:12}}>
+        <div style={{background:TH.bg,border:'2px solid #60a040',borderRadius:12,padding:16,maxWidth:480,width:'100%',maxHeight:'85vh',overflow:'auto'}}>
+          <div style={{fontSize:20,color:'#60a040',textAlign:'center',marginBottom:8}}>🌿 Field Brewing</div>
+          <div style={{fontSize:14,color:TH.textDim,textAlign:'center',marginBottom:8}}>
+            Brew from your fresh haul before heading home. {fieldBrewPhase.brewsLeft} brew{fieldBrewPhase.brewsLeft!==1?'s':''} remaining.
+          </div>
+          <div style={{fontSize:13,color:TH.textDim,marginBottom:8,padding:'4px 8px',background:TH.panel,borderRadius:4}}>
+            <b style={{color:'#60a040'}}>Haul:</b> {Object.entries(fieldBrewPhase.haul).filter(([,q])=>q>0).map(([id,q])=>
+              <span key={id} style={{marginRight:6}}>{INGR[id]?.icon||''}{INGR[id]?.name||id} ×{q}</span>
+            )}
+            {Object.entries(fieldBrewPhase.haul).filter(([,q])=>q>0).length===0&&<span>Empty</span>}
+          </div>
+          {fieldBrewPhase.brewsLeft>0?<div>
+            {/* Normal recipes brewable from haul */}
+            {RECIPES.filter(r=>known.includes(r.id)&&!r.fieldOnly).filter(r=>{
+              const cost={};r.ingr.forEach(id=>{const lid=li(id);cost[lid]=(cost[lid]||0)+1;});
+              return Object.entries(cost).every(([id,q])=>(fieldBrewPhase.haul[id]||0)>=q);
+            }).map(r=>{
+              const masteryD=getMasteryDiscount(brewCounts,r.id,getFeatureVal('masteryDiscountBonus'));const adjDC=Math.max(5,r.dc-masteryD);
+              const _hasBuff=r.buff&&ELIXIR_BUFFS[r.buff];
+              return <button key={r.id} style={{display:'block',width:'100%',textAlign:'left',padding:'6px 10px',marginBottom:3,background:TH.panelLight,border:'1px solid '+TH.borderGold,borderRadius:4,color:TH.text,cursor:'pointer',fontFamily:'inherit',fontSize:14}}
+                onClick={()=>doFieldBrew(r.id,fieldBrewPhase.haul)}>
+                {r.icon} {r.name} <span style={{fontSize:12,color:TH.textDim}}>DC{adjDC}</span>
+                <span style={{fontSize:12,color:'#60a040',marginLeft:6}}>🌿 Fresh</span>
+                {r.desc&&<div style={{fontSize:11,color:TH.textDim,marginTop:2}}>{_hasBuff?ELIXIR_BUFFS[r.buff].buffDesc:r.desc}</div>}
+              </button>;
+            })}
+            {/* Field-only recipes (Lv3+) */}
+            {(prestigeLevels.wildcrafter||0)>=3&&<>
+              <div style={{fontSize:13,color:'#60a040',fontWeight:'bold',marginTop:6,marginBottom:3}}>🌿 Field-Only Recipes</div>
+              {RECIPES.filter(r=>r.fieldOnly&&(!r.fieldLegendary||(prestigeLevels.wildcrafter||0)>=5)).map(r=>{
+                const haulKeys=Object.keys(fieldBrewPhase.haul).filter(k=>fieldBrewPhase.haul[k]>0);
+                const canBrew=haulKeys.length>=r.ingr.length;
+                const needsDiff4=r.fieldLegendary&&(fieldBrewPhase.regDiff||0)<4;
+                const _fBuff=r.buff&&ELIXIR_BUFFS[r.buff];
+                return <button key={r.id} style={{display:'block',width:'100%',textAlign:'left',padding:'6px 10px',marginBottom:3,background:canBrew&&!needsDiff4?'#60a04015':TH.panel,border:'1px solid '+(canBrew&&!needsDiff4?'#60a040':TH.border),borderRadius:4,color:canBrew&&!needsDiff4?TH.text:TH.textDim,cursor:canBrew&&!needsDiff4?'pointer':'not-allowed',fontFamily:'inherit',fontSize:14,opacity:canBrew&&!needsDiff4?1:.5}}
+                  onClick={()=>canBrew&&!needsDiff4&&doFieldBrew(r.id,fieldBrewPhase.haul)} disabled={!canBrew||needsDiff4}>
+                  {r.icon} {r.name} <span style={{fontSize:12,color:TH.textDim}}>DC{r.dc} · {r.ingr.length} unique ingr.</span>
+                  {r.fieldLegendary&&<span style={{fontSize:11,color:TH.gold}}> ★ Legendary</span>}
+                  {needsDiff4&&<span style={{fontSize:11,color:TH.red}}> (needs diff 4+ region)</span>}
+                  {!canBrew&&!needsDiff4&&<span style={{fontSize:11,color:TH.textDim}}> (need {r.ingr.length} unique, have {haulKeys.length})</span>}
+                  {r.desc&&<div style={{fontSize:11,color:canBrew?'#60a040':TH.textDim,marginTop:2}}>{_fBuff?'🧪 '+_fBuff.buffDesc:r.desc}</div>}
+                </button>;
+              })}
+            </>}
+            {RECIPES.filter(r=>known.includes(r.id)&&!r.fieldOnly).filter(r=>{
+              const cost={};r.ingr.forEach(id=>{const lid=li(id);cost[lid]=(cost[lid]||0)+1;});
+              return Object.entries(cost).every(([id,q])=>(fieldBrewPhase.haul[id]||0)>=q);
+            }).length===0&&(prestigeLevels.wildcrafter||0)<3&&
+              <div style={{fontSize:14,color:TH.textDim,textAlign:'center',padding:8}}>No recipes brewable from your haul.</div>}
+          </div>
+          :<div style={{fontSize:14,color:TH.textDim,textAlign:'center',padding:8}}>All field brews used!</div>}
+          <button style={{...S.btn('def'),width:'100%',marginTop:8,fontSize:15}} onClick={()=>setFieldBrewPhase(null)}>
+            🏠 Head Home{fieldBrewPhase.brewsLeft>0?' (skip remaining brews)':''}
+          </button>
+        </div>
+      </div>}
+
+      {pendingCompDec.length>0&&expQ.length===0&&<CompanionDecisionPopup
+        comps={pendingCompDec}
+        companions={companions}
+        maxSlots={eCL('warden')>=10?3:eCL('warden')>=6?2:1}
+        RANGER_COMPANIONS={RANGER_COMPANIONS}
+        TH={TH} S={S}
+        onDecide={(comp,accept,replaceIdx)=>{
+          if(accept){
+            if(replaceIdx!=null){
+              setCompanions(prev=>{const n=[...prev];n.splice(replaceIdx,1);return[...n,{compId:comp.id,loyalty:1,active:true,tamedDay:day}];});
+              addLog('🦊 Released '+RANGER_COMPANIONS.find(r=>r.id===companions[replaceIdx]?.compId)?.name+' and tamed '+comp.icon+' '+comp.name+'!','quest');
+            } else {
+              setCompanions(prev=>[...prev,{compId:comp.id,loyalty:1,active:true,tamedDay:day}]);
+              addLog('🦊 Tamed '+comp.icon+' '+comp.name+'!','quest');
+            }
+          } else {
+            addLog('🦊 Let '+comp.icon+' '+comp.name+' go free.','info');
+          }
+          setPendingCompDec(prev=>{const n=[...prev];n.shift();return n;});
+        }}
+      />}
+
+      {/* Journal fallback for narrow screens */}
+      <div className="cv-journal-mobile" style={{display:'none'}}>
+      {screen!=='map'&&<div style={{...S.card,padding:showJournal?'12px 14px':'6px 14px',cursor:'pointer',overflowAnchor:'none'}} onClick={()=>setShowJournal(p=>!p)}>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+          <span style={{fontSize:16,color:TH.gold}}>📜 Journal ({log.length})</span>
+          <span style={{fontSize:14,color:TH.textDim}}>{showJournal?'▼ collapse':'▶ expand'}</span>
+        </div>
+        {showJournal&&<div style={{...S.logBox,marginTop:6,overflowAnchor:'none'}} onClick={e=>e.stopPropagation()}>{log.slice(-20).map((e,i)=><div key={i} style={{color:LC[e.type]||TH.text}}>{e.text}</div>)}</div>}
+      </div>}
+      </div>
+
+      </div>{/* end center column */}
+
+      {/* RIGHT SIDEBAR — Contextual Info */}
+      <div className="cv-sidebar-right" style={{...S.sidebar,display:'none',position:'relative'}}>
+
+        {/* MAP screen — overview */}
+        {screen==='map'&&<>
+          <div style={S.sideSec}>
+            <div style={S.sideHd}>📊 Status</div>
+            <div style={{textAlign:'center',marginBottom:6}}>
+              <Portrait cls={startingClass||'alchemist'} race={charRace} gender={charGender} size={60}/>
+              <div style={{fontSize:14,color:TH.textBright,marginTop:3}}>{charName}</div>
+              <div style={{fontSize:13,color:TH.textDim}}>{RACES[charRace]?.icon} {RACES[charRace]?.name} · Lv{displayLevel}</div>
+            </div>
+            {STAT_IDS.map(sid=><div key={sid} style={{display:'flex',justifyContent:'space-between',fontSize:13,padding:'1px 2px'}}>
+              <span style={{color:STATS[sid].color}}>{STATS[sid].icon} {STATS[sid].name}</span>
+              <span style={{color:TH.textBright}}>{eStat(sid)} ({getMod(eStat(sid))>=0?'+':''}{getMod(eStat(sid))})</span>
+            </div>)}
+          </div>
+          {aQ.length>0&&<div style={S.sideSec}>
+            <div style={S.sideHd}>📌 Active Quests</div>
+            {aQ.map(q=><div key={q.id} style={{fontSize:13,color:TH.cyan,marginBottom:3}}>{q.icon||'📜'} {q.name}{q.progress?' ('+Math.round(q.progress*100)+'%)':''}</div>)}
+          </div>}
+          {hiredAppr.length>0&&<div style={S.sideSec}>
+            <div style={S.sideHd}>👥 Staff ({hiredAppr.length})</div>
+            {hiredAppr.map(ap=>{const t=apprTasks[ap.id];return <div key={ap.id} style={{fontSize:13,color:TH.text,marginBottom:2}}>{ap.icon} {ap.name} — <span style={{color:TH.textDim}}>{t?(TASK_TYPES[t.type]?.icon||'')+' '+(TASK_TYPES[t.type]?.name||t.type)+(t.target?' · '+(t.type==='forage'?(locRegions.find(r=>r.id===t.target)?.name||t.target):t.type==='brew'?(RECIPES.find(r=>r.id===t.target)?.name||t.target):t.type==='construct'?(UPGRADES[t.target]?.name||t.target):t.target):''):'Idle'}</span></div>;})}
+          </div>}
+        </>}
+
+        {/* WORKSHOP — ingredients & potions */}
+        {screen==='workshop'&&<>
+          <div style={S.sideSec}>
+            <div style={S.sideHd}>🌿 Ingredients</div>
+            {Object.entries(inv).filter(([,q])=>q>0).sort((a,b)=>b[1]-a[1]).map(([id,q])=>{
+              const spThresh=getSpoilThreshold(id);
+              const spColor=q>spThresh+8?'#c04040':q>spThresh+4?'#d08030':q>spThresh?'#c0a040':'';
+              return <div key={id} style={{display:'flex',justifyContent:'space-between',fontSize:13,padding:'1px 0'}}>
+              <span title={INGR[id]?.name||id} style={{color:spColor||TH.text,cursor:'help'}}>{INGR[id]?.icon} {INGR[id]?.name||id}</span>
+              <span style={{color:spColor||TH.textBright}}>×{q}{spColor?'⚠️':''}</span>
+            </div>;})}
+            {Object.entries(inv).filter(([,q])=>q>0).length===0&&<div style={{fontSize:13,color:TH.textDim}}>No ingredients</div>}
+          </div>
+          <div style={S.sideSec}>
+            <div style={S.sideHd}>🧪 Potions</div>
+            {Object.entries(pots).filter(([,q])=>q>0).map(([id,q])=>{const baseId=getBaseRecipeId(id);const r=RECIPES.find(x=>x.id===baseId);const pq=getPotQuality(id);const qT=QUALITY[pq]||QUALITY.std;return<div key={id} style={{display:'flex',justifyContent:'space-between',fontSize:13,padding:'1px 0'}}>
+              <span style={{color:qT.color||TH.text}}>{r?.icon} {r?.name||id}{qT.icon?' '+qT.icon:''}</span>
+              <span style={{color:TH.textBright}}>×{q}</span>
+            </div>;})}
+            {Object.entries(pots).filter(([,q])=>q>0).length===0&&<div style={{fontSize:13,color:TH.textDim}}>No potions</div>}
+          </div>
+        </>}
+
+        {/* ENCHANT — customer queue */}
+        {screen==='enchant'&&<>
+          <div style={S.sideSec}>
+            <div style={S.sideHd}>✍️ Enchanting</div>
+            <div style={{fontSize:13,color:TH.textDim,marginBottom:4}}>Inscription: +{getSkMod('inscription')}</div>
+            <div style={{fontSize:13,color:TH.textDim}}>Arcane Sense: +{getSkMod('arcane_sense')}</div>
+            <div style={{fontSize:13,color:TH.textDim}}>Focus: +{getSkMod('focus')}</div>
+          </div>
+          <div style={S.sideSec}>
+            <div style={S.sideHd}>🧪 Potion Stock</div>
+            {Object.entries(pots).filter(([,q])=>q>0).map(([id,q])=>{return<div key={id} style={{display:'flex',justifyContent:'space-between',fontSize:13,padding:'1px 0'}}>
+              <span style={{color:TH.text}}>{potDisplayName(id)}</span>
+              <span style={{color:TH.textBright}}>×{q}</span>
+            </div>;})}
+          </div>
+        </>}
+
+        {/* MARKET — gold & inventory */}
+        {screen==='market'&&<>
+          <div style={S.sideSec}>
+            <div style={S.sideHd}>💰 Economy</div>
+            <div style={{fontSize:13,color:TH.gold,marginBottom:3}}>Coin: {fmtMoney(gold)}</div>
+            <div style={{fontSize:13,color:TH.textDim}}>Sell Bonus: +{Math.round(getFeatureVal('sellBonus')*100)}%</div>
+            <div style={{fontSize:13,color:TH.textDim}}>Buy Discount: -{Math.round(getFeatureVal('buyDiscount')*100)}%</div>
+          </div>
+          <div style={S.sideSec}>
+            <div style={S.sideHd}>🌿 Inventory</div>
+            {Object.entries(inv).filter(([,q])=>q>0).sort((a,b)=>b[1]-a[1]).map(([id,q])=><div key={id} style={{display:'flex',justifyContent:'space-between',fontSize:13,padding:'1px 0'}}>
+              <span title={INGR[id]?.name||id} style={{color:TH.text,cursor:'help'}}>{INGR[id]?.icon} {INGR[id]?.name||id}</span>
+              <span style={{color:TH.textBright}}>×{q}</span>
+            </div>)}
+          </div>
+        </>}
+
+        {/* WORLDMAP — foraging info */}
+        {screen==='worldmap'&&<>
+          <div style={S.sideSec}>
+            <div style={S.sideHd}>🗺️ Exploration</div>
+            <div style={{fontSize:13,color:TH.textDim,marginBottom:2}}>Extraction: +{getSkMod('extraction')}</div>
+            <div style={{fontSize:13,color:TH.textDim,marginBottom:2}}>Danger Sense: +{getSkMod('danger_sense')}</div>
+            <div style={{fontSize:13,color:TH.textDim,marginBottom:2}}>Divination: +{getSkMod('divination')}</div>
+            {(()=>{const sampleCost=50;const reduced=getActionEnergyCost('travel',sampleCost);const pct=Math.round((1-reduced/sampleCost)*100);return pct>0?<div style={{fontSize:13,color:TH.textDim}}>Travel Energy: -{pct}%</div>:null;})()}
+          </div>
+          <div style={S.sideSec}>
+            <div style={S.sideHd}>🌿 Carrying</div>
+            {Object.entries(inv).filter(([,q])=>q>0).sort((a,b)=>b[1]-a[1]).slice(0,10).map(([id,q])=><div key={id} style={{display:'flex',justifyContent:'space-between',fontSize:13,padding:'1px 0'}}>
+              <span title={INGR[id]?.name||id} style={{color:TH.text,cursor:'help'}}>{INGR[id]?.icon} {INGR[id]?.name||id}</span>
+              <span style={{color:TH.textBright}}>×{q}</span>
+            </div>)}
+          </div>
+        </>}
+
+        {/* QUESTS — active + faction standings */}
+        {screen==='quests'&&<>
+          <div style={S.sideSec}>
+            <div style={S.sideHd}>📌 Active ({aQ.length})</div>
+            {aQ.length>0?aQ.map(q=><div key={q.id} style={{fontSize:13,color:TH.cyan,marginBottom:3,lineHeight:1.3}}>{q.icon||'📜'} <b>{q.name}</b><br/><span style={{color:TH.textDim}}>{q.desc?.slice(0,60)}...</span></div>):
+            <div style={{fontSize:13,color:TH.textDim}}>No active quests</div>}
+          </div>
+          <div style={S.sideSec}>
+            <div style={S.sideHd}>🏛️ Factions</div>
+            {Object.entries(fRep).map(([fid,rep])=>{const fl=FACTIONS[fid];return fl?<div key={fid} style={{fontSize:13,marginBottom:2}}>
+              <span style={{color:fl.color}}>{fl.icon} {fl.name}</span>
+              <span style={{color:TH.textDim,marginLeft:4}}>Lv{getRepLvl(rep)} ({rep})</span>
+            </div>:null;})}
+          </div>
+        </>}
+
+        {/* RESEARCH — progress */}
+        {screen==='research'&&<>
+          <div style={S.sideSec}>
+            <div style={S.sideHd}>📚 Research</div>
+            <div style={{fontSize:13,color:TH.textDim,marginBottom:2}}>Research skill: +{getSkMod('research')}</div>
+            <div style={{fontSize:13,color:TH.textDim,marginBottom:2}}>Innovation: +{getSkMod('innovation')}</div>
+            <div style={{fontSize:13,color:TH.green,marginBottom:2}}>Recipes known: {known.length}/{RECIPES.length}</div>
+            <div style={{fontSize:13,color:TH.purple}}>Enchants known: {knownEnch.length}/{ENCHANTMENTS.length}</div>
+          </div>
+        </>}
+
+        {/* CHARACTER — class summary */}
+        {screen==='character'&&<>
+          <div style={S.sideSec}>
+            <div style={S.sideHd}>📋 Class</div>
+            {Object.entries(classLevels).filter(([cid])=>CLASSES[cid]).map(([cid,lv])=>{const c=CLASSES[cid];return<div key={cid} style={{fontSize:13,color:c.color,marginBottom:2}}>{c.icon} {c.name} Lv{lv}</div>;})}
+            <div style={{fontSize:13,color:TH.textDim,marginTop:4}}>Character Level: {displayLevel}</div>
+            <div style={{fontSize:13,color:TH.textDim}}>XP: {xp}{nextXp?' / '+nextXp:''}</div>
+            {legacyFeature&&<div style={{marginTop:4,padding:'4px 6px',background:'#c050e010',borderRadius:4,border:'1px solid #c050e022'}}>
+              <div style={{fontSize:12,color:'#c050e0',fontWeight:'bold'}}>{legacyFeature.icon} {legacyFeature.name}</div>
+              <div style={{fontSize:11,color:TH.textDim}}>Mentor's Legacy</div>
+            </div>}
+            {displayLevel>=10&&hiredAppr.length>0&&canPassTorch&&<button style={{...S.btn('gold'),fontSize:12,padding:'3px 8px',marginTop:6,width:'100%'}} onClick={()=>setShowSaveMenu(true)}>🔥 Pass the Torch</button>}
+            {displayLevel>=10&&hiredAppr.length>0&&!canPassTorch&&<div style={{fontSize:11,color:'#a040c0',marginTop:4}}>{hollowMarch?.active?'💀 Clear '+(HOLLOW_MARCH.wavesForTorch-marchWavesCleared)+' more March wave'+(HOLLOW_MARCH.wavesForTorch-marchWavesCleared!==1?'s':'')+' to unlock torch':'💀 The Hollow March must begin before passing the torch'}</div>}
+          </div>
+        </>}
+
+        {/* STAFF — overview */}
+        {screen==='staff'&&<>
+          <div style={S.sideSec}>
+            <div style={S.sideHd}>👥 Staff Info</div>
+            <div style={{fontSize:13,color:TH.textDim,marginBottom:2}}>Hired: {hiredAppr.length}</div>
+            <div style={{fontSize:13,color:TH.textDim,marginBottom:2}}>Payroll: {fmtMoney(hiredAppr.reduce((s,a)=>s+a.salary,0))}/day</div>
+            <div style={{fontSize:13,color:TH.gold}}>Coin: {fmtMoney(gold)}</div>
+          </div>
+        </>}
+      </div>
+
+      </div>{/* end three-column flex */}
+
+      {/* CSS for responsive sidebars */}
+      <style>{`
+        @media(min-width:1080px){
+          .cv-sidebar-left,.cv-sidebar-right{display:block!important;}
+          .cv-journal-mobile{display:none!important;}
+        }
+        @media(max-width:1079px){
+          .cv-sidebar-left,.cv-sidebar-right{display:none!important;}
+          .cv-journal-mobile{display:block!important;}
+        }
+        * { overflow-anchor: none; }
+        .ws-closed > *:not(:first-child) { display: none !important; }
+        .cv-sidebar-left::-webkit-scrollbar,.cv-sidebar-right::-webkit-scrollbar{width:4px;}
+        .cv-sidebar-left::-webkit-scrollbar-thumb,.cv-sidebar-right::-webkit-scrollbar-thumb{background:${TH.border};border-radius:2px;}
+      `}</style>
+    </div>
+  );
+}
+
+function CindervaleAlchemist(){return <EB><CindervaleAlchemistInner/></EB>;}
+
+// ═══════ NPC PORTRAIT COMPONENT ═══════
+const NPC_PORTRAITS=typeof NPC_PORTRAIT_IMGS!=='undefined'?{...NPC_PORTRAIT_IMGS}:{};
+// Canva PNG portraits (npc_ prefix) — Cindervale NPCs, customers, and shared customers
+['brenna','tarn','holst','marta','gretta','thorek','barret','sister_venna','gorrik','sera','anya','fiona','jax','mama_grinn','rorik'].forEach(k=>{if(!NPC_PORTRAITS[k])NPC_PORTRAITS[k]='npc_'+k+'.png';});
+// Leonardo JPG portraits (npc_ prefix) — Ashfall + Tidecrest customers
+['kadir','yara','priestess_zara','haddad','old_nuri','harlan','pelara','brother_tide','sandrine','grizzle'].forEach(k=>{if(!NPC_PORTRAITS[k])NPC_PORTRAITS[k]='npc_'+k+'.jpg';});
+// Leonardo JPG portraits — Skyreach NPCs + customers
+['sr_kael','sr_lira','sr_bron','sr_yuki','sr_mika'].forEach(k=>{if(!NPC_PORTRAITS[k])NPC_PORTRAITS[k]='skyreach-npc-'+k.replace('sr_','')+'.jpg';});
+['reva','orin','sister_astral','finn_ridgerun','grandmother_peak'].forEach(k=>{if(!NPC_PORTRAITS[k])NPC_PORTRAITS[k]='npc_'+k+'.jpg';});
+function NpcPortrait({npc,size=80,customerData}){
+  const p=npc?.portrait||customerData?.portrait||{bg:['#444','#2a2a2a'],ring:'#888'};
+  const icon=npc?.icon||'🧑';
+  const name=npc?.name||'';
+  const s=size;
+  const imgKey=npc?.id||name.toLowerCase().replace(/\s+/g,'_');
+  const imgSrc=NPC_PORTRAITS[imgKey]||NPC_PORTRAITS[name]||NPC_PORTRAITS[name.toLowerCase()]||null;
+  return(
+    <div style={{width:s,height:s,borderRadius:'50%',position:'relative',flexShrink:0,
+      background:imgSrc?'#1a1610':`linear-gradient(135deg, ${p.bg[0]}, ${p.bg[1]})`,
+      border:`3px solid ${p.ring}`,
+      boxShadow:`0 0 12px ${p.ring}44, inset 0 0 20px rgba(0,0,0,.4)`,
+      display:'flex',alignItems:'center',justifyContent:'center',overflow:'hidden'}}>
+      {imgSrc?<img src={imgSrc} style={{width:'100%',height:'100%',objectFit:'cover',borderRadius:'50%'}} alt={name}
+        onError={e=>{e.target.style.display='none';e.target.parentElement.style.background=`linear-gradient(135deg, ${p.bg[0]}, ${p.bg[1]})`;
+          const ico=document.createElement('div');ico.style.cssText='font-size:'+s*0.45+'px;line-height:1;filter:drop-shadow(0 2px 4px rgba(0,0,0,.5));z-index:1;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)';ico.textContent=icon;e.target.parentElement.appendChild(ico);}}/>:<>
+        <div style={{position:'absolute',inset:4,borderRadius:'50%',border:`1px solid ${p.ring}66`}}/>
+        <div style={{fontSize:s*0.45,lineHeight:1,filter:'drop-shadow(0 2px 4px rgba(0,0,0,.5))',zIndex:1}}>{icon}</div>
+      </>}
+      <div style={{position:'absolute',bottom:-1,left:'50%',transform:'translateX(-50%)',
+        background:p.ring,color:'#fff',fontSize:Math.max(9,s*0.12),fontWeight:'bold',
+        padding:'1px 6px',borderRadius:'6px 6px 0 0',whiteSpace:'nowrap',
+        textShadow:'0 1px 2px rgba(0,0,0,.5)',letterSpacing:'.5px'}}>
+        {name}
+      </div>
+    </div>
+  );
+}
+
+// ═══════ NPC DIALOG MODAL ═══════
+function NpcDlg({npc,dlgLine,setDlgLine,setDlgNpc,availQ,aQ,acceptQ,compQ,qP,S,qObj,questDlg,setQuestDlg,openNpc}){
+  if(!npc)return null;
+  const npcQ=availQ.filter(q=>q.giver===npc.name);
+  const npcA=aQ.filter(q=>q.giver===npc.name);
+  const q=questDlg?[...QUESTS,...aQ].find(x=>x.id===questDlg.qId):null;
+
+  const closeDlg=()=>{setDlgNpc(null);setQuestDlg(null);};
+
+  // Modal overlay styles
+  const overlay={position:'fixed',top:0,left:0,right:0,bottom:0,background:'rgba(0,0,0,.75)',
+    zIndex:9998,display:'flex',alignItems:'center',justifyContent:'center',padding:12};
+  const modal={position:'relative',background:TH.panel,border:`2px solid ${npc.portrait?.ring||TH.borderGold}`,
+    borderRadius:12,maxWidth:560,width:'100%',maxHeight:'90vh',overflow:'auto',
+    boxShadow:`0 0 30px ${npc.portrait?.ring||TH.gold}33, 0 8px 32px rgba(0,0,0,.6)`};
+  const header={display:'flex',flexDirection:'column',alignItems:'center',padding:'16px 20px 12px',
+    borderBottom:`1px solid ${TH.border}`,
+    background:`linear-gradient(135deg, ${npc.portrait?.bg?.[0]||TH.panel}22, transparent)`};
+  const body={padding:'14px 20px'};
+  const bubble={padding:'14px 18px',background:TH.bg,borderRadius:10,
+    border:`1px solid ${npc.portrait?.ring||TH.border}44`,fontSize:17,lineHeight:1.7,
+    margin:'8px 0',fontStyle:'italic',color:TH.text,position:'relative'};
+  const bubbleArrow={position:'absolute',top:-8,left:20,width:0,height:0,
+    borderLeft:'8px solid transparent',borderRight:'8px solid transparent',
+    borderBottom:`8px solid ${npc.portrait?.ring||TH.border}44`};
+
+  const Header=()=>(
+    <div style={header}>
+      <button onClick={closeDlg} style={{position:'absolute',top:8,right:12,background:'none',border:'none',color:TH.textDim,fontSize:22,cursor:'pointer',padding:4,zIndex:1}}>✕</button>
+      <NpcPortrait npc={npc} size={140}/>
+      <div style={{textAlign:'center',marginTop:8}}>
+        <div style={{fontSize:22,color:TH.textBright,fontWeight:'bold'}}>{npc.name}</div>
+        <div style={{fontSize:15,color:npc.portrait?.ring||TH.textDim}}>{npc.title||''}</div>
+      </div>
+    </div>
+  );
+
+  const Bubble=({text,color})=>(
+    <div style={{...bubble,borderColor:(color||npc.portrait?.ring||TH.border)+'44'}}>
+      <div style={{...bubbleArrow,borderBottomColor:(color||npc.portrait?.ring||TH.border)+'44'}}/>
+      {text||'...'}
+    </div>
+  );
+
+  const BtnRow=({children})=>(<div style={{display:'flex',gap:8,marginTop:10}}>{children}</div>);
+
+  // ═══ QUEST CONVERSATION MODE ═══
+  if(questDlg&&q){
+    const {mode,lineIdx}=questDlg;
+
+    if(mode==='offer'){
+      const lines=q.offer||[q.desc||'"I have work for you."'];
+      const isLast=lineIdx>=lines.length-1;
+      return(
+        <div style={overlay} onClick={e=>{if(e.target===e.currentTarget)closeDlg();}}>
+          <div style={modal} onClick={e=>e.stopPropagation()}>
+            <Header/>
+            <div style={body}>
+              <Bubble text={lines[lineIdx]} color={TH.gold}/>
+              {!isLast?(
+                <button style={{...S.btn('gold'),width:'100%',padding:'10px'}} onClick={()=>setQuestDlg(p=>({...p,lineIdx:p.lineIdx+1}))}>
+                  Continue...
+                </button>
+              ):(
+                <>
+                  <div style={{padding:'12px 14px',background:`${TH.gold}10`,borderRadius:10,border:`1px solid ${TH.borderGold}`,margin:'10px 0'}}>
+                    <div style={{fontSize:19,color:TH.gold,fontWeight:'bold',marginBottom:4}}>📜 {q.name}</div>
+                    {q.chain&&<span style={{fontSize:12,padding:'1px 5px',background:FACTIONS[q.chain]?.color+'22',color:FACTIONS[q.chain]?.color,borderRadius:3,border:'1px solid '+FACTIONS[q.chain]?.color+'44'}}>{FACTIONS[q.chain]?.icon} Faction Chain</span>}
+                    <div style={{fontSize:16,color:TH.cyan,margin:'6px 0',lineHeight:1.5}}>📌 {qObj?qObj(q):q.name}</div>
+                    {q.hint&&<div style={{fontSize:15,color:TH.textDim,margin:'4px 0',lineHeight:1.4}}>💡 {q.hint}</div>}
+                    <div style={{display:'flex',gap:8,fontSize:15,color:TH.textDim,marginTop:8,flexWrap:'wrap'}}>
+                      <span style={{color:TH.gold}}>Reward: +{q.xp}XP +{fmtMoney(q.gold)}</span>
+                      {q.items?.length>0&&<span>Items: {q.items.map((id,i)=><span key={i}>{INGR[id]?.icon}{INGR[id]?.name} </span>)}</span>}
+                      {q.faction&&<span style={{color:FACTIONS[q.faction]?.color}}>{FACTIONS[q.faction]?.icon} +{q.fRep} rep</span>}
+                    </div>
+                  </div>
+                  <BtnRow>
+                    <button style={{...S.btn('gold'),flex:1,padding:'10px'}} onClick={()=>{
+                      acceptQ(q);
+                      if(q.onAccept)setQuestDlg({qId:q.id,mode:'accepted',lineIdx:0});
+                      else closeDlg();
+                    }}>Accept Quest</button>
+                    <button style={{...S.btn('dim'),padding:'10px'}} onClick={closeDlg}>Not right now</button>
+                  </BtnRow>
+                </>
+              )}
+            </div>
+          </div>
+        </div>);
+    }
+
+    if(mode==='accepted'){
+      return(
+        <div style={overlay} onClick={e=>{if(e.target===e.currentTarget)closeDlg();}}>
+          <div style={modal} onClick={e=>e.stopPropagation()}>
+            <Header/>
+            <div style={body}>
+              <Bubble text={q.onAccept||'"Good luck."'} color={TH.green}/>
+              <div style={{padding:'8px 12px',background:`${TH.green}10`,borderRadius:8,border:`1px solid ${TH.green}44`,fontSize:16,color:TH.green,margin:'8px 0',lineHeight:1.5}}>
+                ✅ Quest accepted: "{q.name}"
+              </div>
+              <button style={{...S.btn('gold'),width:'100%',padding:'10px'}} onClick={closeDlg}>Farewell</button>
+            </div>
+          </div>
+        </div>);
+    }
+
+    if(mode==='turnIn'){
+      const lines=q.turnIn||['"Thank you for this."'];
+      const isLast=lineIdx>=lines.length-1;
+      return(
+        <div style={overlay} onClick={e=>{if(e.target===e.currentTarget)closeDlg();}}>
+          <div style={modal} onClick={e=>e.stopPropagation()}>
+            <Header/>
+            <div style={body}>
+              <Bubble text={lines[lineIdx]} color={TH.green}/>
+              {!isLast?(
+                <button style={{...S.btn('gold'),width:'100%',padding:'10px'}} onClick={()=>setQuestDlg(p=>({...p,lineIdx:p.lineIdx+1}))}>
+                  Continue...
+                </button>
+              ):(
+                <>
+                  <div style={{padding:'10px 14px',background:`${TH.green}10`,borderRadius:10,border:`1px solid ${TH.green}`,margin:'8px 0'}}>
+                    <div style={{fontSize:18,color:TH.green,fontWeight:'bold'}}>✅ "{q.name}" — Complete!</div>
+                    <div style={{fontSize:15,color:TH.textDim,marginTop:3}}>Reward: +{q.xp}XP +{fmtMoney(q.gold)}{q.faction?` ${FACTIONS[q.faction]?.icon}+${q.fRep} rep`:''}</div>
+                  </div>
+                  <button style={{...S.btn('green'),width:'100%',padding:'10px'}} onClick={()=>{compQ(q);closeDlg();}}>
+                    ✓ Complete Quest
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>);
+    }
+  }
+
+  // ═══ IDLE CONVERSATION MODE ═══
+  return(
+    <div style={overlay} onClick={e=>{if(e.target===e.currentTarget)closeDlg();}}>
+      <div style={modal} onClick={e=>e.stopPropagation()}>
+        <Header/>
+        <div style={body}>
+          <Bubble text={npc.lines?.[dlgLine%npc.lines.length]}/>
+          <BtnRow>
+            <button style={S.btn()} onClick={()=>setDlgLine(l=>l+1)}>Chat</button>
+            <button style={S.btn('dim')} onClick={closeDlg}>Farewell</button>
+          </BtnRow>
+          {/* Available quests */}
+          {npcQ.length>0&&<div style={{marginTop:12}}>
+            <div style={{fontSize:13,color:TH.textDim,marginBottom:4,textTransform:'uppercase',letterSpacing:1}}>Available Quests</div>
+            {npcQ.map(qq=><div key={qq.id} style={{padding:'10px 12px',background:`${TH.gold}08`,borderRadius:8,marginBottom:4,border:`1px solid ${TH.borderGold}`,cursor:'pointer',transition:'all .15s'}}
+              onClick={()=>setQuestDlg({qId:qq.id,mode:'offer',lineIdx:0})}
+              onMouseEnter={e=>{e.currentTarget.style.background=TH.gold+'15';e.currentTarget.style.borderColor=TH.gold;}}
+              onMouseLeave={e=>{e.currentTarget.style.background=TH.gold+'08';e.currentTarget.style.borderColor=TH.borderGold;}}>
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                <span style={{fontSize:17,color:TH.gold}}>📜 {qq.name}</span>
+                <span style={{fontSize:14,color:TH.goldBright}}>Hear them out →</span>
+              </div>
+              <div style={{fontSize:14,color:TH.textDim,marginTop:3}}>{qq.desc}</div>
+            </div>)}
+          </div>}
+          {/* Ready turn-ins */}
+          {npcA.filter(qq=>{const p=qP(qq);return p.c>=p.n;}).map(qq=>(
+            <div key={qq.id} style={{padding:'10px 12px',background:`${TH.green}10`,borderRadius:8,marginTop:6,border:`1px solid ${TH.green}`,cursor:'pointer'}}
+              onClick={()=>setQuestDlg({qId:qq.id,mode:'turnIn',lineIdx:0})}>
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                <span style={{fontSize:17,color:TH.green}}>✅ {qq.name}</span>
+                <span style={{fontSize:14,color:TH.green}}>Turn in →</span>
+              </div>
+            </div>))}
+        </div>
+      </div>
+    </div>);
+}
+
+// ═══════ ANIMATED DICE POPUP ═══════
+// ═══════ DICE PIECES (shared by DicePopup and ExpeditionHourPopup) ═══════
+// A d20 face: spins while rolling, then shows the result coloured for nat 20 / nat 1 / success / fail.
+function D20Face({num,rolling,ch,size=52,fs}){
+  const n20=ch?.roll===20,n1=ch?.roll===1;
+  const border=rolling?TH.textDim:(n20?TH.goldBright:n1?TH.red:ch?.success?TH.green:TH.red);
+  const col=rolling?TH.textDim:(n20?TH.goldBright:n1?TH.red:TH.textBright);
+  return(<div style={{display:'inline-flex',alignItems:'center',justifyContent:'center',width:size,height:size,
+    border:'3px solid '+border,borderRadius:Math.round(size/7),background:TH.bg,fontSize:fs||(rolling?22:26),fontWeight:'bold',color:col,
+    transition:'all 0.3s ease',transform:rolling?`rotate(${num*18}deg) scale(1.05)`:'rotate(0deg) scale(1)',
+    boxShadow:!rolling&&n20?`0 0 ${size>60?20:16}px ${TH.goldBright}44`:'none'}}>{num}</div>);
+}
+// The "roll +stat +skill +extras = total vs DC" line under a die. String extras (e.g. "×2") show in gold.
+function CheckMods({ch,big}){
+  const mods=[];
+  if(ch.mod!==0)mods.push({val:ch.mod,label:ch.statName||'Stat'});
+  if(ch.rb!==0)mods.push({val:ch.rb,label:ch.name||'Skill'});
+  if(ch.extras)ch.extras.forEach(e=>{if(e.val!==0)mods.push(e);});
+  return(<div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:big?4:3,flexWrap:'wrap',fontSize:big?17:16,color:TH.text,marginTop:big?0:4}}>
+    <span style={{fontWeight:'bold',color:ch.roll===20?TH.goldBright:ch.roll===1?TH.red:TH.textBright,fontSize:big?19:18}}>{ch.roll}</span>
+    {mods.map((m,i)=><span key={i} style={{color:typeof m.val==='string'?TH.gold:m.val>=0?TH.green:TH.red}}>
+      {typeof m.val==='string'?(' '+m.val+' '):(m.val>=0?'+':'−')+Math.abs(m.val)} <span style={{fontSize:big?13:12,color:TH.textDim}}>({m.label})</span>
+    </span>)}
+    <span style={{color:TH.textBright,fontWeight:'bold'}}> = {ch.total}</span>
+    <span style={{color:TH.textDim,fontSize:big?undefined:14}}>vs</span>
+    <span style={{fontWeight:'bold',color:TH.gold}}>DC{ch.dc}</span>
+    {ch.dcNote&&<span style={{fontSize:11,color:TH.green}}>({ch.dcNote})</span>}
+  </div>);
+}
+
+function DicePopup({popup,LC,TH,S,onClose,playSfx}){
+  const [phase,setPhase]=useState('roll'); // roll → reveal → done
+  const [displayNum,setDisplayNum]=useState(1);
+  const hasCheck=!!popup.check;
+  const ch=popup.check||{};
+  const timerRef=useRef(null);
+  const frameRef=useRef(null);
+
+  useEffect(()=>{
+    if(!hasCheck){setPhase('done');return;}
+    // Play dice roll SFX
+    if(playSfx)playSfx(sfxDiceRoll);
+    // Animate: cycle random numbers for 1.2s, then reveal
+    let start=Date.now();
+    const animate=()=>{
+      const elapsed=Date.now()-start;
+      if(elapsed<1200){
+        setDisplayNum(Math.floor(Math.random()*20)+1);
+        frameRef.current=requestAnimationFrame(animate);
+      } else {
+        setDisplayNum(ch.roll);
+        setPhase('reveal');
+        // Play success/failure SFX
+        if(playSfx)playSfx(ch.success?sfxSuccess:sfxFailure);
+        timerRef.current=setTimeout(()=>setPhase('done'),600);
+      }
+    };
+    frameRef.current=requestAnimationFrame(animate);
+    return()=>{cancelAnimationFrame(frameRef.current);clearTimeout(timerRef.current);};
+  },[hasCheck,ch.roll]);
+
+  const color=LC[popup.type]||TH.gold;
+  const isNat20=ch.roll===20;
+  const isNat1=ch.roll===1;
+
+  const dieSize=phase==='done'?56:72;
+
+  return(
+    <div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'rgba(0,0,0,0.6)',zIndex:100,display:'flex',alignItems:'center',justifyContent:'center',padding:16}}
+      onClick={phase==='done'?onClose:undefined}>
+      <div style={{background:TH.panel,border:'2px solid '+color,borderRadius:12,padding:'20px 24px',maxWidth:380,width:'100%',textAlign:'center',boxShadow:'0 4px 30px rgba(0,0,0,0.6)'}}
+        onClick={e=>e.stopPropagation()}>
+
+        {/* Title — always visible */}
+        <div style={{fontSize:21,color,fontWeight:'bold',marginBottom:hasCheck?12:6}}>{popup.title}</div>
+
+        {/* Animated die */}
+        {hasCheck&&<div style={{marginBottom:12}}>
+          <D20Face num={displayNum} rolling={phase==='roll'} ch={ch} size={dieSize} fs={phase==='roll'?28:32}/>
+          {phase==='roll'&&<div style={{fontSize:14,color:TH.textDim,marginTop:4}}>Rolling {ch.icon} {ch.name}...</div>}
+
+          {/* Breakdown — appears on reveal */}
+          {phase!=='roll'&&<div style={{marginTop:10,transition:'opacity 0.3s',opacity:phase==='done'?1:0.8}}>
+            <CheckMods ch={ch} big/>
+            <div style={{fontSize:18,fontWeight:'bold',color:ch.success?TH.green:TH.red,marginTop:4}}>
+              {isNat20?'✨ Natural 20! — ':isNat1?'💀 Natural 1! — ':''}
+              {ch.success?'Success!':'Failed!'}
+            </div>
+          </div>}
+        </div>}
+
+        {/* Detail text — appears when done */}
+        {phase==='done'&&popup.detail&&<div style={{fontSize:16,color:TH.text,lineHeight:1.7,whiteSpace:'pre-line',margin:'8px 0',padding:'8px 0',borderTop:'1px solid '+TH.border}}>{popup.detail}</div>}
+
+        {/* OK button — appears when done */}
+        {phase==='done'&&<button style={{...S.btn(popup.type==='error'?'dim':'gold'),marginTop:6,fontSize:16,padding:'6px 28px'}} onClick={onClose}>OK</button>}
+
+        {/* Skip animation during roll, Continue during reveal */}
+        {phase==='roll'&&<button style={{fontSize:14,color:TH.textDim,background:'none',border:'none',cursor:'pointer',marginTop:8,fontFamily:'inherit'}}
+          onClick={()=>{cancelAnimationFrame(frameRef.current);clearTimeout(timerRef.current);setDisplayNum(ch.roll);setPhase('done');}}>Skip Animation</button>}
+        {phase==='reveal'&&<button style={{...S.btn('gold'),marginTop:8,fontSize:15,padding:'5px 20px'}}
+          onClick={()=>{clearTimeout(timerRef.current);setPhase('done');}}>Continue →</button>}
+      </div>
+    </div>
+  );
+}
+
+// ═══════ COMPANION DECISION POPUP ═══════
+function CompanionDecisionPopup({comps,companions,maxSlots,RANGER_COMPANIONS,TH,S,onDecide}){
+  const [swapTarget,setSwapTarget]=useState(null);
+  const comp=comps[0];if(!comp)return null;
+  const compData=RANGER_COMPANIONS.find(c=>c.id===comp.id)||comp;
+  const atMax=companions.length>=maxSlots;
+  const doTame=(replaceIdx)=>{
+    setSwapTarget(null);
+    onDecide(comp,true,replaceIdx!=null?replaceIdx:null);
+  };
+  const doSkip=()=>{
+    setSwapTarget(null);
+    onDecide(comp,false,null);
+  };
+  return(
+    <div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'rgba(0,0,0,0.7)',zIndex:100,display:'flex',alignItems:'center',justifyContent:'center',padding:12}}>
+      <div style={{background:TH.panel,border:'2px solid #60a060',borderRadius:12,padding:'20px 24px',maxWidth:420,width:'100%',boxShadow:'0 4px 30px rgba(0,0,0,0.6)'}}>
+        <div style={{fontSize:13,color:TH.textDim,marginBottom:6,textAlign:'center'}}>Companion Encounter {comps.length>1?'('+comps.length+' remaining)':''}</div>
+        <div style={{textAlign:'center',marginBottom:8}}>
+          <div style={{fontSize:48,marginBottom:4}}>{compData.img?<img src={compData.img} alt={compData.name} style={{width:80,height:80,borderRadius:'50%',border:'3px solid #60a060',objectFit:'cover'}}/>:compData.icon}</div>
+          <div style={{fontSize:22,color:'#60a060',fontWeight:'bold'}}>{compData.name}</div>
+          <div style={{fontSize:14,color:TH.textDim,fontStyle:'italic',margin:'4px 0'}}>{compData.desc||'A wild creature approaches cautiously.'}</div>
+          <div style={{fontSize:14,color:TH.textDim}}>Role: <b style={{color:TH.textBright}}>{compData.primary?.type||'companion'}</b></div>
+        </div>
+        <div style={{fontSize:14,color:TH.text,lineHeight:1.5,marginBottom:10,textAlign:'center'}}>
+          The creature seems to trust you. Do you want to tame it as a companion?
+        </div>
+        {atMax&&<div style={{background:'#c0404015',border:'1px solid #c0404044',borderRadius:6,padding:'8px 10px',marginBottom:10}}>
+          <div style={{fontSize:14,color:'#c04040',fontWeight:'bold',marginBottom:4}}>Companion slots full ({companions.length}/{maxSlots})</div>
+          <div style={{fontSize:13,color:TH.textDim,marginBottom:6}}>Choose a companion to release:</div>
+          {companions.map((c,i)=>{
+            const cd=RANGER_COMPANIONS.find(r=>r.id===c.compId);
+            return <button key={i} style={{display:'block',width:'100%',textAlign:'left',padding:'6px 10px',marginBottom:3,
+              background:swapTarget===i?'#c0404020':TH.panelLight,border:'1px solid '+(swapTarget===i?'#c0404066':TH.border),
+              borderRadius:4,cursor:'pointer',fontFamily:'inherit',fontSize:14,color:swapTarget===i?'#c04040':TH.text}}
+              onClick={()=>setSwapTarget(i)}>
+              {cd?.icon||''} {cd?.name||c.compId} (Loyalty {'\u2605'.repeat(c.loyalty)}) {swapTarget===i&&'\u2190 Release this one'}
+            </button>;
+          })}
+        </div>}
+        <div style={{display:'flex',gap:8,justifyContent:'center'}}>
+          <button style={{...S.btn(atMax&&swapTarget==null?'dim':'gold'),fontSize:16,padding:'8px 24px'}}
+            disabled={atMax&&swapTarget==null}
+            onClick={()=>doTame(atMax?swapTarget:null)}>
+            {atMax?'Tame (Release Selected)':'Tame Companion'}
+          </button>
+          <button style={{...S.btn('dim'),fontSize:16,padding:'8px 24px'}} onClick={doSkip}>
+            Let It Go
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ═══════ EXPEDITION ROLL POPUP ═══════
+function ExpeditionHourPopup({hr,TH,S,LC,INGR,FACTIONS,onOk,onSkipAll,remaining,playSfx}){
+  // Phases: ext_roll → ext_reveal → (evt_roll → evt_reveal →) done
+  const [phase,setPhase]=useState('ext_roll');
+  const [extNum,setExtNum]=useState(1);
+  const [evtNum,setEvtNum]=useState(1);
+  const frameRef=useRef(null);
+  const timerRef=useRef(null);
+  const evtFrameRef=useRef(null);
+  const evtTimerRef=useRef(null);
+  const keyRef=useRef(hr.hourNum);
+
+  // Reset phase when hour changes
+  useEffect(()=>{
+    if(keyRef.current!==hr.hourNum){keyRef.current=hr.hourNum;setPhase('ext_roll');setExtNum(1);setEvtNum(1);}
+  },[hr.hourNum]);
+
+  // Extraction roll animation
+  useEffect(()=>{
+    if(phase!=='ext_roll')return;
+    if(playSfx)playSfx(sfxDiceRoll);
+    let start=Date.now();
+    const animate=()=>{
+      if(Date.now()-start<1200){setExtNum(Math.floor(Math.random()*20)+1);frameRef.current=requestAnimationFrame(animate);}
+      else{setExtNum(hr.ext.roll);setPhase('ext_reveal');
+        if(playSfx)playSfx(hr.ext.success?sfxSuccess:sfxFailure);
+        timerRef.current=setTimeout(()=>{
+        if(hr.event?.check)setPhase('evt_roll');
+        else setPhase('done');
+      },800);}
+    };
+    frameRef.current=requestAnimationFrame(animate);
+    return()=>{cancelAnimationFrame(frameRef.current);clearTimeout(timerRef.current);};
+  },[phase,hr.ext.roll,hr.event,hr.hourNum]);
+
+  // Event skill check animation
+  useEffect(()=>{
+    if(phase!=='evt_roll'||!hr.event?.check)return;
+    if(playSfx)playSfx(sfxDiceRoll);
+    let start=Date.now();
+    const animate=()=>{
+      if(Date.now()-start<1200){setEvtNum(Math.floor(Math.random()*20)+1);evtFrameRef.current=requestAnimationFrame(animate);}
+      else{setEvtNum(hr.event.check.roll);setPhase('evt_reveal');
+        if(playSfx)playSfx(hr.event.check.success?sfxSuccess:sfxFailure);
+        evtTimerRef.current=setTimeout(()=>setPhase('done'),600);}
+    };
+    evtFrameRef.current=requestAnimationFrame(animate);
+    return()=>{cancelAnimationFrame(evtFrameRef.current);clearTimeout(evtTimerRef.current);};
+  },[phase,hr.event,hr.hourNum]);
+
+  const skipAll=()=>{
+    cancelAnimationFrame(frameRef.current);clearTimeout(timerRef.current);
+    cancelAnimationFrame(evtFrameRef.current);clearTimeout(evtTimerRef.current);
+    setExtNum(hr.ext.roll);if(hr.event?.check)setEvtNum(hr.event.check.roll);
+    setPhase('done');
+  };
+
+  const ext=hr.ext;
+  const isNat20=ext.roll===20;const isNat1=ext.roll===1;
+  const extColor=ext.success?TH.green:TH.red;
+  const past=phase==='ext_reveal'||phase==='evt_roll'||phase==='evt_reveal'||phase==='done';
+  const evtPast=phase==='evt_reveal'||phase==='done';
+  const isDone=phase==='done';
+
+  const borderColor=isDone?(hr.event&&!hr.event.good?TH.red:ext.success?TH.green:TH.orange):TH.gold;
+
+  return(
+    <div style={{position:'fixed',top:0,left:0,right:0,bottom:0,background:'rgba(0,0,0,0.65)',zIndex:100,display:'flex',alignItems:'center',justifyContent:'center',padding:12}}
+      onClick={isDone?onOk:undefined}>
+      <div style={{background:TH.panel,border:'2px solid '+borderColor,borderRadius:12,padding:'16px 20px',maxWidth:400,width:'100%',
+        boxShadow:'0 4px 30px rgba(0,0,0,0.6)',maxHeight:'85vh',overflowY:'auto'}} onClick={e=>e.stopPropagation()}>
+
+        {/* Header */}
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:10}}>
+          <div style={{fontSize:19,color:TH.gold,fontWeight:'bold'}}>{hr.regIcon} {hr.regName}</div>
+          <div style={{fontSize:15,color:TH.textDim}}>Roll {hr.hourNum}{hr.totalHours>1?' of '+hr.totalHours:''}</div>
+        </div>
+        <div style={{width:'100%',height:4,background:TH.bg,borderRadius:2,marginBottom:12}}>
+          <div style={{height:'100%',width:Math.round(hr.hourNum/hr.totalHours*100)+'%',background:TH.gold,borderRadius:2,transition:'width 0.3s'}}/>
+        </div>
+
+        {/* Extraction Check */}
+        <div style={{textAlign:'center',marginBottom:8}}>
+          <div style={{fontSize:15,color:TH.textDim,marginBottom:4}}>{ext.icon} Extraction Check</div>
+          <D20Face num={phase==='ext_roll'?extNum:ext.roll} rolling={phase==='ext_roll'} ch={ext}/>
+          {phase==='ext_roll'&&<div style={{fontSize:14,color:TH.textDim,marginTop:3}}>Rolling {ext.icon} {ext.name}...</div>}
+          {past&&<>
+            <CheckMods ch={ext}/>
+            <div style={{fontSize:17,fontWeight:'bold',color:extColor,marginTop:3}}>
+              {isNat20?'✨ Natural 20! — ':isNat1?'💀 Natural 1! — ':''}{ext.success?'Success!':'Failed!'}
+            </div>
+          </>}
+        </div>
+
+        {/* Items Gathered */}
+        {past&&<div style={{background:TH.bg,borderRadius:6,padding:'6px 10px',marginBottom:8,border:'1px solid '+TH.border}}>
+          <div style={{fontSize:14,color:TH.textDim,marginBottom:2}}>Gathered this roll:</div>
+          <div style={{display:'flex',flexWrap:'wrap',gap:4}}>
+            {Object.entries(hr.gathered).map(([id,q])=>(
+              <span key={id} style={{fontSize:15,padding:'2px 6px',borderRadius:3,background:q>0?`${TH.green}15`:TH.panelLight,
+                color:q>0?TH.green:TH.textDim,border:'1px solid '+(q>0?TH.green+'44':TH.border)}}>
+                <span title={INGR[id]?.name||id}>{INGR[id]?.icon}{INGR[id]?.name}</span> ×{q}
+              </span>))}
+          </div>
+          <div style={{fontSize:14,color:TH.gold,marginTop:3}}>+{hr.xp-(hr.event?.effectXp||0)} XP</div>
+        </div>}
+
+        {/* Naturalist Discovery */}
+        {hr.discovery&&past&&<div style={{background:hr.discovery.documented?TH.green+'08':'#a0a0a008',borderRadius:6,padding:'8px 10px',marginBottom:8,
+          border:'1px solid '+(hr.discovery.documented?TH.green+'44':'#a0a0a044')}}>
+          <div style={{fontSize:14,color:hr.discovery.documented?TH.green:'#a0a0a0',fontWeight:'bold',marginBottom:3}}>
+            {hr.discovery.documented?'🌿 Field Discovery!':'🌿 Something Interesting...'}
+          </div>
+          <div style={{fontSize:16,color:TH.textBright,marginBottom:2}}>{hr.discovery.icon} {hr.discovery.name}</div>
+          <div style={{fontSize:14,color:TH.textDim,fontStyle:'italic',lineHeight:1.4}}>{hr.discovery.desc||''}</div>
+          {hr.discovery.documented?
+            <div style={{fontSize:14,color:TH.green,marginTop:4}}>Documented in your Field Journal! Permanent bonus unlocked.</div>:
+            <div style={{fontSize:14,color:'#a0a0a0',marginTop:4}}>You noticed it, but could not document it in time.</div>}
+        </div>}
+
+        {/* Companion Encounter */}
+        {hr.companionEnc&&past&&<div style={{background:hr.companionEnc.approachable?'#60a06008':'#a0606008',borderRadius:6,padding:'8px 10px',marginBottom:8,
+          border:'1px solid '+(hr.companionEnc.approachable?'#60a06044':'#a0606044')}}>
+          <div style={{fontSize:14,color:hr.companionEnc.approachable?'#60a060':'#a06060',fontWeight:'bold',marginBottom:3}}>
+            {hr.companionEnc.approachable?'🐾 Creature Approached!':'🐾 Creature Spotted!'}
+          </div>
+          <div style={{fontSize:18,textAlign:'center',margin:'6px 0'}}>{hr.companionEnc.img?<img src={hr.companionEnc.img} alt={hr.companionEnc.name} style={{width:48,height:48,borderRadius:'50%',border:'2px solid '+(hr.companionEnc.approachable?'#60a060':'#a06060'),objectFit:'cover'}}/>:hr.companionEnc.icon}</div>
+          <div style={{fontSize:16,color:TH.textBright,textAlign:'center',marginBottom:2}}>{hr.companionEnc.name}</div>
+          <div style={{fontSize:13,color:TH.textDim,textAlign:'center',fontStyle:'italic'}}>{hr.companionEnc.desc||''}</div>
+          {hr.companionEnc.check&&<div style={{textAlign:'center',marginTop:6}}>
+            <div style={{fontSize:13,color:TH.textDim}}>Attunement Check vs DC {hr.companionEnc.check.dc}</div>
+            <div style={{fontSize:15,fontWeight:'bold',color:hr.companionEnc.approachable?TH.green:TH.red}}>
+              Roll: {hr.companionEnc.check.roll} + {hr.companionEnc.check.total-hr.companionEnc.check.roll} = {hr.companionEnc.check.total}
+              {hr.companionEnc.approachable?' — The creature trusts you!':' — It fled into the undergrowth.'}
+            </div>
+          </div>}
+          {hr.companionEnc.approachable&&<div style={{fontSize:13,color:'#60a060',marginTop:4,textAlign:'center'}}>
+            You will be able to tame this creature after the expedition.
+          </div>}
+        </div>}
+
+        {/* Cartographer Hidden Region */}
+        {hr.hiddenDisc&&past&&<div style={{background:hr.hiddenDisc.mapped?'#50a0a008':'#a0a06008',borderRadius:6,padding:'8px 10px',marginBottom:8,
+          border:'1px solid '+(hr.hiddenDisc.mapped?'#50a0a044':'#a0a06044')}}>
+          <div style={{fontSize:14,color:hr.hiddenDisc.mapped?'#50a0a0':'#a0a060',fontWeight:'bold',marginBottom:3}}>
+            {hr.hiddenDisc.mapped?'🗺️ Hidden Area Mapped!':'🗺️ Hidden Path Glimpsed'}
+          </div>
+          <div style={{fontSize:16,color:TH.textBright,marginBottom:2}}>{hr.hiddenDisc.icon} {hr.hiddenDisc.name}</div>
+          <div style={{fontSize:14,color:TH.textDim,fontStyle:'italic'}}>{hr.hiddenDisc.desc||''}</div>
+          {hr.hiddenDisc.mapped?
+            <div style={{fontSize:14,color:'#50a0a0',marginTop:4}}>Added to your Atlas! Unique ingredients now available when foraging here.
+              {hr.hiddenDisc.learnedRecipes&&hr.hiddenDisc.learnedRecipes.length>0&&<div style={{marginTop:4,color:TH.gold}}>📜 Recipes learned: {hr.hiddenDisc.learnedRecipes.join(', ')}</div>}
+            </div>:
+            <div style={{fontSize:14,color:'#a0a060',marginTop:4}}>You sensed a hidden path but could not map it. Try again next expedition.</div>}
+        </div>}
+
+        {/* Random Event */}
+        {hr.event&&past&&<div style={{background:hr.event.good?`${TH.green}08`:`${TH.red}08`,borderRadius:6,padding:'8px 10px',marginBottom:8,
+          border:'1px solid '+(hr.event.good?TH.green+'44':TH.red+'44')}}>
+          <div style={{fontSize:14,color:TH.orange,marginBottom:3,fontWeight:'bold'}}>⚡ Event!</div>
+          <div style={{fontSize:15,color:TH.text,fontStyle:'italic',lineHeight:1.4,marginBottom:4}}>{hr.event.text}</div>
+
+          {hr.event.check&&<div style={{textAlign:'center',margin:'6px 0'}}>
+            <div style={{fontSize:14,color:TH.textDim,marginBottom:3}}>{hr.event.check.icon} {hr.event.check.name} Check</div>
+            {(phase==='evt_roll'||evtPast)&&<>
+              <D20Face num={phase==='evt_roll'?evtNum:hr.event.check.roll} rolling={phase==='evt_roll'} ch={hr.event.check} size={44}/>
+              {phase==='evt_roll'&&<div style={{fontSize:13,color:TH.textDim,marginTop:2}}>Rolling {hr.event.check.icon} {hr.event.check.name}...</div>}
+              {evtPast&&<>
+                <CheckMods ch={hr.event.check}/>
+                <div style={{fontSize:16,fontWeight:'bold',color:hr.event.check.success?TH.green:TH.red,marginTop:2}}>
+                  {hr.event.check.roll===20?'✨ Nat 20! — ':hr.event.check.roll===1?'💀 Nat 1! — ':''}{hr.event.check.success?'Success!':'Failed!'}
+                </div>
+              </>}
+            </>}
+          </div>}
+
+          {(hr.event.check?evtPast:past)&&<>
+            {hr.event.resultText&&<div style={{fontSize:15,color:hr.event.good?TH.green:TH.red,marginTop:4,lineHeight:1.4}}>{hr.event.resultText}</div>}
+            {hr.event.effectDetail&&<div style={{fontSize:14,color:TH.orange,marginTop:2}}>→ {hr.event.effectDetail}</div>}
+            {hr.event.injuryPenalty>0&&<div style={{fontSize:14,color:'#c04040',marginTop:3,padding:'3px 8px',background:'#c0404010',borderRadius:4,border:'1px solid #c0404033'}}>
+              🩹 You are injured! -{hr.event.injuryPenalty} Energy tomorrow.
+            </div>}
+            {hr.event.lostItems&&Object.keys(hr.event.lostItems).length>0&&<div style={{fontSize:14,color:'#c06040',marginTop:3,padding:'3px 8px',background:'#c0604010',borderRadius:4,border:'1px solid #c0604033'}}>
+              💥 Lost from pack: {Object.entries(hr.event.lostItems).map(([id,q])=>(INGR[id]?.icon||'')+INGR[id]?.name+' ×'+q).join(', ')}
+            </div>}
+            {hr.event.companionLoss&&<div style={{fontSize:14,color:'#c0a040',marginTop:3,padding:'3px 8px',background:'#c0a04010',borderRadius:4,border:'1px solid #c0a04033'}}>
+              {hr.event.companionLoss.icon} {hr.event.companionLoss.name} loyalty dropped! The danger frightened your companion.
+            </div>}
+            {hr.event.gadgetDamage&&<div style={{fontSize:14,color:'#a06040',marginTop:3,padding:'3px 8px',background:'#a0604010',borderRadius:4,border:'1px solid #a0604033'}}>
+              🔧 Equipment damaged! A gadget may need repair.
+            </div>}
+            {hr.event.effectXp>0&&<div style={{fontSize:14,color:TH.gold,marginTop:1}}>+{hr.event.effectXp} bonus XP</div>}
+          </>}
+        </div>}
+
+        {/* Running Totals */}
+        {isDone&&<div style={{background:TH.panelLight,borderRadius:6,padding:'6px 10px',border:'1px solid '+TH.border}}>
+          <div style={{fontSize:14,color:TH.gold,marginBottom:3,fontWeight:'bold'}}>📦 Running Total (roll {hr.hourNum})</div>
+          <div style={{display:'flex',flexWrap:'wrap',gap:3}}>
+            {Object.entries(hr.cumGathered).filter(([,q])=>q>0).map(([id,q])=>(
+              <span key={id} title={INGR[id]?.name||id} style={{fontSize:14,padding:'1px 5px',borderRadius:2,background:TH.bg,color:TH.textBright,border:'1px solid '+TH.border,cursor:'help'}}>
+                {INGR[id]?.icon}{q}
+              </span>))}
+          </div>
+          <div style={{fontSize:14,color:TH.gold,marginTop:2}}>Total XP: +{hr.cumXp}</div>
+        </div>}
+
+        <div style={{textAlign:'center',marginTop:10}}>
+          {isDone&&<>
+            <button style={{...S.btn('gold'),fontSize:16,padding:'6px 24px'}} onClick={onOk}>
+              {hr.isFinal?'✅ Continue':'⛏️ Next →'}
+            </button>
+            {!hr.isFinal&&remaining>2&&<button style={{...S.btn('dim'),fontSize:14,padding:'4px 14px',marginLeft:6}} onClick={onSkipAll}>
+              Skip All ({remaining-1} left)
+            </button>}
+          </>}
+          {!isDone&&(phase==='ext_roll'||phase==='evt_roll')?
+            <button style={{fontSize:14,color:TH.textDim,background:'none',border:'none',cursor:'pointer',fontFamily:'inherit'}}
+              onClick={skipAll}>Skip Animation</button>:null}
+          {!isDone&&(phase==='ext_reveal'||phase==='evt_reveal')?
+            <button style={{...S.btn('gold'),fontSize:15,padding:'5px 20px'}}
+              onClick={skipAll}>Continue →</button>:null}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(CindervaleAlchemist));

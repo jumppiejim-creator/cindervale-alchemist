@@ -1627,6 +1627,117 @@ var LOCATIONS={
     intro:"The climb nearly killed you. Three days up the Stairway — a thousand steps carved into the mountainside by hands that vanished centuries ago. But when you step above the cloud line and see Skyreach for the first time — the stone towers catching starlight, the wind carrying the scent of glacier flowers — you understand why alchemists make the journey. Up here, the ingredients are unlike anything found below."}
 };
 
+// ═══ ZONE UI ═══
+// Per-zone names, NPCs and flavour text the screens show (market/tavern names, quest-giver lists,
+// patients, morning lines, skyline colours, class arrival text). Every zone carries every key —
+// read it through zoneUI() in index.html rather than writing gameLocation===... chains.
+var ZONE_UI={
+  cindervale:{
+    market:'Market',
+    marketTitle:'Market Square',
+    marketSub:'Shop · Brenna',
+    marketNpcs:[['brenna','Brenna']],
+    saleNpc:'Brenna',
+    starter:{npc:'brenna',name:'Brenna',alert:'Brenna at the Market has work for a new alchemist. Introduce yourself.',intro:'Brenna at the Market has work for you.'},
+    tavern:'Ember & Anvil',
+    tavernShort:'Tavern',
+    tavernSub:'Tavern · NPCs',
+    tavernNpcs:['tarn','holst','marta','gretta'],
+    chapelTurnIn:'⛪ Visit Chapel',
+    gates:'Village Gates',
+    starterRegion:'The Ashfields',
+    factions:['ashwardens','hearthkeepers','veilwalkers','cinderfolk'],
+    patients:['Elderly Miner','Young Farmer','Ashwarden Recruit','Tavern Regular','Cinderfolk Worker','Pilgrim','Traveling Peddler','Quarry Hand','Blacksmith\'s Wife','Shepherd Boy'],
+    commissioners:['Grizzled Miner','Ashwarden Sergeant','Traveling Scholar','Young Recruit','Forge Worker','Veilwalker Initiate','Caravan Guard','Village Elder'],
+    morning:['Dawn breaks over Cindervale. Smoke curls from the workshop chimney.','The morning bell rings across the village square.','Another day begins — the scent of ash and hearthfire fills the air.','Birdsong mixes with the distant clang of the smithy as you open shop.','Mist clings to the cobblestones as Cindervale stirs to life.','The sun crests the eastern ridge, painting the rooftops in amber.','A cool breeze carries the scent of ashbloom through the village.','You wake to the rhythmic tapping of the notice board being updated.'],
+    skyline:{sky1:'#1a0a08',sky2:'#804020',ground:'#605040',groundDk:'#404030',tree:'#606040',accent:'#c06030',water:null},
+    classIntros:{
+      alchemist:'  steps through Cindervale\'s gates, a leather satchel heavy with tinctures and a well-thumbed recipe journal. The village is smaller than expected, but the hearth smoke carries the scent of ashbloom — and where there\'s ashbloom, there\'s work to be done.',
+      enchanter:'  arrives in Cindervale with ink-stained fingers and a case of inscription tools. The ley lines here are strong — you can feel them humming beneath the cobblestones. A perfect place to practice the art.',
+      artificer:'  surveys Cindervale with a craftsman\'s eye. The workshop chimney is sound, the water supply reliable, the supply chains... improvable. You unpack your calibration tools. Time to build something efficient.',
+      scholar:'  enters Cindervale\'s modest library — three shelves and a reading desk — and smiles. The village has untapped potential, and you brought a notebook full of theories to test. Knowledge is the greatest catalyst.',
+      warden:'  crests the ridge above Cindervale and breathes deep. Ashfields to the east, whispering woods to the north, volcanic vents beyond. The land here is rich and wild. You shoulder your pack and head for the trails.'}
+  },
+  ashfall:{
+    market:'Bazaar',
+    marketTitle:'Desert Bazaar',
+    marketSub:'Shop · Sola · Razak',
+    marketNpcs:[['sola','Sola'],['razak','Razak']],
+    saleNpc:'Razak',
+    starter:{npc:'sola',name:'Sola',alert:'Sola at the Bazaar needs an alchemist. Introduce yourself.',intro:'Sola at the Bazaar has work for you.'},
+    tavern:'Oasis Cantina',
+    tavernShort:'Cantina',
+    tavernSub:'Amara · Nahla · Tarek',
+    tavernNpcs:['amara','nahla','tarek'],
+    chapelTurnIn:'🕯️ Visit Flamekeepers',
+    gates:'Desert Gates',
+    starterRegion:'The Sunscorch Flats',
+    factions:['sand_merchants','flamekeepers','dustwalkers'],
+    patients:['Dehydrated Nomad','Young Pilgrim','Dustwalker Scout','Cantina Regular','Guild Apprentice','Desert Traveler','Caravan Driver','Bazaar Vendor','Smith\'s Daughter','Sand Runner'],
+    commissioners:['Desert Guard','Dustwalker Scout','Traveling Merchant','Young Pilgrim','Forge Apprentice','Temple Acolyte','Caravan Master','Crossing Elder'],
+    morning:['Dawn breaks over the Crossing. Heat already shimmers on the sand.','The morning call to prayer echoes from the Flamekeeper shrine.','Another day begins — the scent of spice and sand fills the air.','The bazaar stirs as merchants unroll their awnings.','Warm wind sweeps through Ashfall Crossing as the sun climbs.','The sun crests the dunes, painting the sand in copper and gold.','A dry breeze carries the scent of scorchroot through the streets.','You wake to the sound of camel bells as the first caravan departs.'],
+    skyline:{sky1:'#2a1a08',sky2:'#c08040',ground:'#a08050',groundDk:'#806030',water:null,tree:'#908050',accent:'#c08040'},
+    classIntros:{
+      alchemist:'  steps through the Crossing\'s sun-bleached gates, a leather satchel heavy with tinctures. The heat is staggering, but the smell of desert spice and rare herbs fills the air — where there\'s sunpetal, there\'s work.',
+      enchanter:'  arrives at the Crossing with ink-stained fingers and a case of inscription tools. The desert ley lines are wild and untamed — you can feel them crackling beneath the sand. A perfect challenge.',
+      artificer:'  surveys the Crossing with a craftsman\'s eye. Sand-blasted walls, improvised plumbing, jury-rigged cooling systems... this place needs an engineer. You unpack your tools. Time to build something that lasts.',
+      scholar:'  enters the Crossing\'s cramped archive — sand-damaged scrolls and a cracked reading stone. But the Buried Temple holds secrets no library in the known world can match. You open your notebook.',
+      warden:'  crests a dune above the Crossing and squints against the glare. Scorched flats, obsidian wastes, sandworm tunnels beyond. The desert is merciless and wild. You shoulder your pack and head for the trails.'}
+  },
+  tidecrest:{
+    market:'Harbor Market',
+    marketTitle:'Harbor Market',
+    marketSub:'Shop · Mako · Finn',
+    marketNpcs:[['mako','Mako'],['finn','Finn']],
+    saleNpc:'Finn',
+    starter:{npc:'finn',name:'Finn',alert:'Finn at the Harbor Market is looking for an alchemist. Introduce yourself.',intro:'Finn at the Harbor Market has work for you.'},
+    tavern:'Driftwood Tavern',
+    tavernShort:'Driftwood Tavern',
+    tavernSub:'Reva · Old Anchor',
+    tavernNpcs:['reva','sister_coral','old_anchor'],
+    chapelTurnIn:'🌊 Visit Tidekeepers',
+    gates:'Harbor Docks',
+    starterRegion:'The Driftwood Shores',
+    factions:['harbormasters','pearl_divers','tidekeepers','merchant_marine'],
+    patients:['Seasick Sailor','Dock Worker','Pearl Diver Recruit','Tavern Regular','Ship\'s Cook','Fisherman','Harbor Guard','Net Mender','Lighthouse Keeper\'s Son','Crab Trapper'],
+    commissioners:['Harbor Guard','Pearl Diver','Ship\'s Mate','Dock Foreman','Lighthouse Keeper','Fisherman','Merchant Sailor','Tidekeeper Acolyte'],
+    morning:['Dawn breaks over Tidecrest Harbor. Gulls wheel above the fishing boats.','The tide horn sounds across the docks. Another day at sea.','Another day begins — the scent of salt and kelp fills the workshop.','Fishermen haul their catch as the harbor market stirs to life.','Morning fog rolls off the cliffs as Tidecrest wakes.','The sun glitters on the harbor. Ships rock gently at their moorings.','A salt breeze carries the cry of gulls through the open window.','You wake to the creak of rigging and the splash of the first divers.'],
+    skyline:{sky1:'#0a1a2a',sky2:'#4080c0',ground:'#506070',groundDk:'#405060',water:'#2060a0',tree:'#408060',accent:'#4090c0'},
+    classIntros:{
+      alchemist:'  hauls a salt-stained satchel up the harbor steps. The workshop overlooks the docks — gulls wheel overhead and the air tastes of brine and possibility. Where there\'s kelp, there\'s work.',
+      enchanter:'  steps off the gangplank with ink-stained fingers and a waterproof case of inscription tools. The tidal ley lines pulse beneath the harbor like a second heartbeat. Perfect.',
+      artificer:'  surveys Tidecrest with a shipwright\'s eye. Salt-eaten timber, corroded winches, leaky hulls everywhere... this harbor needs an engineer desperately. You unpack your tools. Time to build.',
+      scholar:'  ducks into the harbor archive — a cramped room above the tavern, reeking of mildew. But the Drowned Sanctum lies offshore, sealed for millennia. You open your waterproof notebook.',
+      warden:'  stands on the cliff edge and watches the sea churn below. Tidal pools, kelp forests, fog-shrouded caves, and the deep trench beyond. The ocean is merciless and wild. You shoulder your diving pack and head for the shore.'}
+  },
+  skyreach:{
+    market:'Mountain Market',
+    marketTitle:'Mountain Market',
+    marketSub:'Shop · Kael',
+    marketNpcs:[['sr_kael','Kael']],
+    saleNpc:'Kael',
+    starter:{npc:'sr_kael',name:'Kael',alert:'Kael Windforge at the Mountain Market has work for a new alchemist.',intro:'Kael Windforge at the Mountain Market has work for you.'},
+    tavern:'Summit Lodge',
+    tavernShort:'Summit Lodge',
+    tavernSub:'Lira · Bron · Yuki · Mika',
+    tavernNpcs:['sr_lira','sr_bron','sr_yuki','sr_mika'],
+    chapelTurnIn:'⛪ Visit Chapel',
+    gates:'Cliff Gates',
+    starterRegion:'The Alpine Meadows',
+    factions:['skywardens','starcallers','cloud_traders','windrunners'],
+    patients:['Altitude-Sick Climber','Cloud Trader Porter','Skywarden Recruit','Lodge Regular','Starcaller Novice','Goatherd','Bridge Keeper','Ice Cutter','Funicular Hand','Windrunner Courier'],
+    commissioners:['Skywarden Sergeant','Windrunner Scout','Cloud Trader','Observatory Scholar','Ice Cutter','Starcaller Acolyte','Caravan Guard','Summit Elder'],
+    morning:['Dawn breaks over Skyreach. The cloud sea below glows rose and gold.','The signal horn echoes off the peaks as the Cloud Traders ready their lines.','Another day begins — thin, cold air and the scent of pine resin fill the workshop.','Wind chimes ring along the cliff walk as Skyreach stirs to life.','Frost glitters on the rope bridges as the sun clears the eastern summit.','Eagles circle the observatory dome, riding the first warm updraft.','A Windrunner courier sprints past your door, satchel bouncing.','You wake to the creak of the funicular hauling supplies up from the valley.'],
+    skyline:{sky1:'#0a1430',sky2:'#7090c8',ground:'#7a8090',groundDk:'#5a6070',water:null,tree:'#406050',accent:'#90b0e0'},
+    classIntros:{
+      alchemist:'  steps off the funicular with a frost-rimed satchel of tinctures. The workshop clings to the cliffside, its windows full of cloud. Up here, every herb grows tough and potent — and the climbers always need remedies.',
+      enchanter:'  arrives at Skyreach with ink-stained fingers and a case of inscription tools. The ley lines run thin and bright at this altitude, humming like a plucked string. Old sky-runes still glimmer on the ruined towers above.',
+      artificer:'  surveys Skyreach with a craftsman\'s eye. Groaning winches, ice-split pulleys, rope bridges patched with hope... this settlement runs on clever machinery, and most of it is one storm from failing.',
+      scholar:'  climbs the observatory steps, breath fogging in the thin air. The star charts are centuries old and half-translated — and the ruins of a lost sky civilization wait just above the clouds.',
+      warden:'  stands at the cliff gates and drinks in the view. Alpine meadows, cloud forests, glacial lakes, and the storm-wracked spires beyond. The mountain does not forgive mistakes. Good.'}
+  },
+};
+
 // ═══ RELICS (Antiquarian) ═══
 var RELIC_CATS=[
   {id:'pottery',name:'Pottery',icon:'🏺',set:'Hearth Collection',
@@ -2535,6 +2646,8 @@ var LORE_CHAINS={
 var ALL_LORE_FRAGMENTS=Object.values(LORE_CHAINS).flatMap(c=>c.fragments.map(f=>({...f,chainId:c.id})));
 
 // ═══ RANGER COMPANION SYSTEM ═══
+// One-line summary of each companion role (Wild Ally cards, Wildcraft picker)
+var COMPANION_ROLE_DESC={gatherer:'Brings bonus ingredients each morning',gather:'Brings bonus ingredients each morning',shopkeeper:'Earns bonus coin from sales',scout:'Reduces expedition danger',guardian:'Boosts staff morale and blocks threat events',greeter:'Attracts extra customers',muse:'Boosts research discovery chance',research:'Boosts research discovery chance',combat:'Reduces expedition danger',trade:'Earns coin and boosts yield',legendary:'Unique legendary abilities'};
 var RANGER_COMPANIONS=[
   {id:'rc_fox',img:'companion_rc_fox.jpg',name:'Cinder Fox',icon:'🦊',region:'ashfields',role:'gatherer',color:'#d08040',
     desc:'A rust-furred fox that thrives in the ash. Knows every hidden bloom.',

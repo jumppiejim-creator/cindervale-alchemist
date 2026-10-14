@@ -4,6 +4,7 @@
 # (desktop + phone size)  5) seeded random-click "monkey" runs from a new game and from a late-game save.
 # Any page error, console error or crash screen fails a run.
 H=$(cd "$(dirname "$0")" && pwd); R=${1:-$(cd "$H/../.." && pwd)}
+echo "== build"; node "$R/dev/build.js" --check || exit 1
 echo "== lint"; "$H/lint.sh" "$R"
 echo "== data"; node "$H/datacheck.js" --repo "$R" --no-dead | tail -3
 echo "== state"; node "$H/statetest.js" "$R"

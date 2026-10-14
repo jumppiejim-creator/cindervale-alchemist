@@ -1,8 +1,9 @@
-const CACHE_NAME = 'cindervale-v2'; // bump to force-clear old caches on the next visit
+const CACHE_NAME = 'cindervale-v3'; // bump to force-clear old caches on the next visit
 const ASSETS = [
   './',
   './index.html',
   './game-data.js',
+  './game.js',
   './manifest.json',
   './icon-192.png',
   './icon-512.png',
@@ -15,7 +16,6 @@ const ASSETS = [
 const CDN_ASSETS = [
   'https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js',
   'https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js',
-  'https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js',
   'https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js',
   'https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js',
   'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js',
@@ -69,7 +69,8 @@ self.addEventListener('fetch', e => {
           caches.open(CACHE_NAME).then(c => c.put(e.request, clone));
           return r;
         })
-        .catch(() => caches.match(e.request))
+        // offline: exact URL first, else the precached copy (pages ask for game.js?v=..., the precache holds ./game.js)
+        .catch(() => caches.match(e.request).then(r => r || caches.match(e.request, { ignoreSearch: true })))
     );
     return;
   }

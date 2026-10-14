@@ -12,7 +12,7 @@ const ZONES = ['A quiet mountain village', 'A bustling desert trading post', 'A 
   // nav icons are the first row of short emoji buttons after the header
   const navs = await page.$$eval('button', bs => bs.map((b, i) => ({ i, t: b.innerText.trim() })).filter(x => x.t.length <= 3 && /\p{Extended_Pictographic}/u.test(x.t)).map(x => x.t));
   const uniq = [...new Set(navs)].filter(t => !['💾', '🎵'].includes(t));
-  const report = [];
+  const report = []; const stray = [];
   for (const n of uniq) {
     await page.locator('button', { hasText: n }).first().click({ timeout: 3000 }).catch(() => {});
     await page.waitForTimeout(300);
@@ -22,6 +22,11 @@ const ZONES = ['A quiet mountain village', 'A bustling desert trading post', 'A 
       await page.waitForTimeout(250);
       if (!n2) break;
     }
+    // A bare "0" text node sitting between elements is the React `{count&&<X/>}` slip (renders 0 when count is 0)
+    const zeros = await page.evaluate(() => { const out = []; const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT); let n;
+      while ((n = w.nextNode())) { if (n.nodeValue !== '0' || !n.parentElement || !n.parentElement.offsetParent) continue; const p = n.previousSibling, x = n.nextSibling;
+        if ((!p || p.nodeType === 1) && (!x || x.nodeType === 1) && n.parentElement.children.length > 0) out.push((n.parentElement.innerText || '').replace(/\s+/g, ' ').slice(0, 80)); } return out; });
+    if (zeros.length) stray.push(`${n}: ${zeros.join(' || ')}`);
     const crashed = await page.getByText('Cindervale crashed').count();
     const len = (await page.innerText('body')).length;
     report.push(`${n}:${len}`);
@@ -30,6 +35,7 @@ const ZONES = ['A quiet mountain village', 'A bustling desert trading post', 'A 
       await browser.close(); process.exit(1);
     }
   }
+  if (stray.length) { console.log('FAIL stray 0 rendered: ' + stray.join(' ## ')); await browser.close(); process.exit(1); }
   console.log(`OK tour zone=${z} variant=${v} screens=${report.join(' ')}`);
   await browser.close();
 })();

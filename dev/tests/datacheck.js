@@ -19,6 +19,7 @@ const CAP = VERBOSE ? Infinity : 12;
 const rd = f => fs.readFileSync(path.join(REPO, f), 'utf8');
 const DATA_FILES = ['portraits.js', 'location-images.js', 'game-data.js', 'npc-portraits.js']; // index.html load order
 const INDEX = rd('index.html');
+const APP = rd('game.jsx').replace(/\r\n/g, '\n'); // the app source (index.html loads its build, game.js)
 
 // ───────────── load data in a sandbox (same order as index.html <script> tags) ─────────────
 const ctx = { console: { log() {}, warn() {}, error() {} } };
@@ -266,7 +267,7 @@ check('Every INGR / HIDDEN_INGR ingredient is obtainable somewhere', () => {
   for (const z of ZONES) add(G.getSeasonalIngr(null, z, true));
   Object.values(G.FIELD_DISCOVERIES).flat().forEach(d => add(d.bonus?.ingredient));
   // hard-coded drop tables in index.html (e.g. salvage-auction rare trades) count as sources
-  for (const m of INDEX.matchAll(/'([a-z][a-z0-9_]+)'|\.([a-z][a-z0-9_]+)\s*=/g)) { const id = m[1] || m[2]; if (ING.has(id)) src.add(id); }
+  for (const m of APP.matchAll(/'([a-z][a-z0-9_]+)'|\.([a-z][a-z0-9_]+)\s*=/g)) { const id = m[1] || m[2]; if (ING.has(id)) src.add(id); }
   const unobt = [...ING].filter(i => !src.has(i));
   // only report the ones some recipe/enchant actually needs (otherwise it is dead data, reported in INFO)
   const needed = new Set([...ALL_RECIPES, ...G.ENCHANTMENTS].flatMap(r => r.ingr));
@@ -466,9 +467,9 @@ check('No references to removed stats/skills/classes/specs in game data', () => 
   return out;
 });
 
-check('No live references to removed stats/skills/classes in index.html (migration code excluded)', () => {
+check('No live references to removed stats/skills/classes in game.jsx (migration code excluded)', () => {
   const out = [];
-  const lines = INDEX.split('\n');
+  const lines = APP.split('\n');
   const ids = [...REMOVED_SKILLS, ...REMOVED_SPECS, 'merchant'].join('|');
   const reQuoted = new RegExp(`['"\`](${ids})['"\`]`);
   const reKey = new RegExp(`[{,]\\s*(com|${ids})\\s*:`);
@@ -479,15 +480,15 @@ check('No live references to removed stats/skills/classes in index.html (migrati
     if (allow.test(l)) return;
     for (const re of [reCall, reQuoted, reKey, reAccess]) {
       const m = l.match(re);
-      if (m) { out.push(`index.html:${i + 1}: …${l.slice(Math.max(0, m.index - 40), m.index + 50).trim()}…`); break; }
+      if (m) { out.push(`game.jsx:${i + 1}: …${l.slice(Math.max(0, m.index - 40), m.index + 50).trim()}…`); break; }
     }
   });
   return out;
 });
 
-check('Hard-coded id literals in index.html resolve against game-data', () => {
+check('Hard-coded id literals in game.jsx resolve against game-data', () => {
   const out = new Set();
-  const lines = INDEX.split('\n');
+  const lines = APP.split('\n');
   const SPEC = cid => new Set(keys(G.CLASSES[cid]?.specs));
   const MIL = new Set(keys(G.MILESTONES));
   const rules = [
@@ -514,7 +515,7 @@ check('Hard-coded id literals in index.html resolve against game-data', () => {
   const allow = /V2 migration|_removedSkills|s\.stats\?\.com|s\.specs\?\.merchant/;
   lines.forEach((l, i) => {
     if (allow.test(l) || /^\s*\/\//.test(l)) return;
-    for (const [re, f] of rules) for (const m of l.matchAll(re)) { const r = f(m); if (r) out.add(`index.html:${i + 1} unknown ${r}`); }
+    for (const [re, f] of rules) for (const m of l.matchAll(re)) { const r = f(m); if (r) out.add(`game.jsx:${i + 1} unknown ${r}`); }
   });
   return [...out];
 });
@@ -563,10 +564,10 @@ check('Companion / season img fields point to existing files', () => {
   return out;
 });
 
-check('NPC portrait map (npc-portraits.js + index.html NPC_PORTRAITS builder) points to existing files', () => {
+check('NPC portrait map (npc-portraits.js + game.jsx NPC_PORTRAITS builder) points to existing files', () => {
   const out = [];
   const map = { ...(G.NPC_PORTRAIT_IMGS || {}) };
-  for (const m of INDEX.matchAll(/\[([^\]]+)\]\.forEach\(k=>\{if\(!NPC_PORTRAITS\[k\]\)NPC_PORTRAITS\[k\]=(.+?);\}\);/g)) {
+  for (const m of APP.matchAll(/\[([^\]]+)\]\.forEach\(k=>\{if\(!NPC_PORTRAITS\[k\]\)NPC_PORTRAITS\[k\]=(.+?);\}\);/g)) {
     const ks = m[1].split(',').map(s => s.trim().replace(/^'|'$/g, ''));
     const fn = new Function('k', 'return ' + m[2]);
     for (const k of ks) if (!map[k]) map[k] = fn(k);
@@ -580,12 +581,12 @@ check('NPC portrait map (npc-portraits.js + index.html NPC_PORTRAITS builder) po
   return out;
 });
 
-check('Image filename literals in index.html exist in repo', () => {
+check('Image filename literals in game.jsx exist in repo', () => {
   const out = new Set();
-  for (const m of INDEX.matchAll(/['"`(]((?:\.\/)?[\w\-./]+\.(?:png|jpe?g|webp))['"`)]/gi)) {
+  for (const m of APP.matchAll(/['"`(]((?:\.\/)?[\w\-./]+\.(?:png|jpe?g|webp))['"`)]/gi)) {
     const f = m[1].replace(/^\.\//, '');
     if (/^https?:/.test(f) || f.includes('${')) continue;
-    if (!fs.existsSync(path.join(REPO, f))) out.add(`index.html references '${f}' (missing)`);
+    if (!fs.existsSync(path.join(REPO, f))) out.add(`game.jsx references '${f}' (missing)`);
   }
   return [...out];
 });
@@ -606,7 +607,7 @@ check('sw.js precache list, manifest icons and index.html <script src> files exi
     // so an unversioned local script is frozen for returning players after its first fetch.
     const networkFirst = new RegExp(`endsWith\\('${f.replace('.', '\\.')}'\\)`).test(sw) || /html\|js\|json/.test(sw);
     if (!networkFirst && !src.includes('?v=')) out.push(`index.html loads '${src}' unversioned but sw.js serves it cache-first under fixed CACHE_NAME -> edits never reach returning players`);
-    if (src.includes('?') && assets.includes(`'./${f}'`)) warnSw.push(`sw.js precaches './${f}' but index.html requests '${src}' (exact-URL cache match) -> precache entry never used`);
+    if (src.includes('?') && assets.includes(`'./${f}'`) && !/ignoreSearch/.test(sw)) warnSw.push(`sw.js precaches './${f}' but index.html requests '${src}' (exact-URL cache match) -> precache entry never used`);
   }
   let man; try { man = JSON.parse(rd('manifest.json')); } catch (e) { return [...out, 'manifest.json invalid JSON: ' + e.message]; }
   for (const i of man.icons || []) if (!fs.existsSync(path.join(REPO, i.src))) out.push(`manifest icon ${i.src} missing`);
@@ -648,7 +649,7 @@ if (DEAD) {
     for (const m of s.matchAll(/^(?:var|const|let|function)\s+([A-Za-z_$][\w$]*)/gm)) topNames.push([m[1], f, s.slice(0, m.index).split('\n').length]);
   }
   const strip = s => s.replace(/\/\/[^\n]*/g, '');
-  const IDX = strip(INDEX);
+  const IDX = strip(APP);
   const allData = Object.fromEntries(['game-data.js', 'location-images.js', 'npc-portraits.js'].map(f => [f, strip(rd(f))]));
   const countRefs = (src, name) => (src.match(new RegExp(`(?:^|[^\\w$.]|\\.\\.\\.)${name.replace(/\$/g, '\\$')}(?![\\w$])`, 'g')) || []).length;
   const dead = [], dataOnly = [];
@@ -657,8 +658,8 @@ if (DEAD) {
     const otherRefs = Object.entries(allData).reduce((a, [ff, s]) => a + countRefs(s, n) - (ff === f ? 1 : 0), 0);
     (otherRefs > 0 ? dataOnly : dead).push(`${n}  (${f}:${line})`);
   }
-  warn('Top-level data names never referenced by index.html nor any other data file (dead)', dead);
-  warn('Top-level data names used only inside the data files (not by index.html directly)', dataOnly);
+  warn('Top-level data names never referenced by game.jsx nor any other data file (dead)', dead);
+  warn('Top-level data names used only inside the data files (not by game.jsx directly)', dataOnly);
 
   // per-field usage: fields on entries of big collections that index.html never mentions
   const coll = {
@@ -679,7 +680,7 @@ if (DEAD) {
     for (const o of list) if (o && typeof o === 'object') for (const k of keys(o)) cnt[k] = (cnt[k] || 0) + 1;
     for (const [k, c] of Object.entries(cnt)) if (!new RegExp(`(\\.|\\?\\.)${k}\\b|\\[['"]${k}['"]\\]|\\{[^}]*\\b${k}\\b[^}]*\\}\\s*=`).test(IDX)) unusedFields.push(`${n}[].${k}  (on ${c}/${list.length} entries)`);
   }
-  warn('Entry fields never read by index.html (heuristic: no .field / [\'field\'] / destructure)', unusedFields);
+  warn('Entry fields never read by game.jsx (heuristic: no .field / [\'field\'] / destructure)', unusedFields);
 }
 
 warn('sw.js precache notes', warnSw);

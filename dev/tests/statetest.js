@@ -23,6 +23,9 @@ const fails = []; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m
   // Rest
   await page.locator('button', { hasText: 'Rest' }).first().click(); await page.getByText('Yes, Rest').first().click(); await page.waitForTimeout(1500);
   const after = await autoSave(page);
+  // Morning report Earnings "net" must equal the real change in coin
+  {const parse=t=>{const m=t.match(/([+-]?)\s*((?:\d+pp)?\s*(?:\d+g)?\s*(?:\d+s)?)\s*net/);if(!m)return null;let v=0;const pp=m[2].match(/(\d+)pp/),g=m[2].match(/(\d+)g/),sv=m[2].match(/(\d+)s/);v=(pp?+pp[1]*100:0)+(g?+g[1]*10:0)+(sv?+sv[1]:0);return m[1]==='-'?-v:v;};
+   const net=parse(await page.innerText('body'));const chg=after.gold-before.gold;ok(net!==null&&Math.abs(net-chg)<(Math.abs(chg)>=100?10:1),`earnings net ${net} matches coin change ${chg} (display hides silver once it reaches pp)`);}
   await dismissModals(page);
   ok(after.day === before.day + 1, `rest advanced day ${before.day}->${after.day}`);
   const shelfLeft = Object.values(after.shelves || {}).reduce((a, b) => a + b, 0);
